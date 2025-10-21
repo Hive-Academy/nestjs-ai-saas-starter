@@ -284,7 +284,10 @@ metadata: {
 const agentConfig = getAgentConfig(AgentClass);
 
 if (!agentConfig) {
-  throw new Error(`Agent ${AgentClass.name} is not decorated with @Agent. ` + `All agents in @MultiAgent must have @Agent decorator.`);
+  throw new Error(
+    `Agent ${AgentClass.name} is not decorated with @Agent. ` +
+      `All agents in @MultiAgent must have @Agent decorator.`
+  );
 }
 ```
 
@@ -293,13 +296,19 @@ if (!agentConfig) {
 ```typescript
 // Validate AgentClass is actually a function/constructor
 if (typeof AgentClass !== 'function') {
-  throw new TypeError(`Agent at index ${index} is not a valid class constructor. ` + `Expected function, got ${typeof AgentClass}.`);
+  throw new TypeError(
+    `Agent at index ${index} is not a valid class constructor. ` +
+      `Expected function, got ${typeof AgentClass}.`
+  );
 }
 
 const agentConfig = getAgentConfig(AgentClass);
 
 if (!agentConfig) {
-  throw new Error(`Agent ${AgentClass.name} is not decorated with @Agent. ` + `All agents in @MultiAgent must have @Agent decorator.`);
+  throw new Error(
+    `Agent ${AgentClass.name} is not decorated with @Agent. ` +
+      `All agents in @MultiAgent must have @Agent decorator.`
+  );
 }
 ```
 

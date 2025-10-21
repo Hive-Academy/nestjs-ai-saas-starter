@@ -58,7 +58,10 @@ import type {
 ```typescript
 @Injectable()
 export class MyPlatformService {
-  constructor(private readonly platformClient: PlatformClientService, private readonly webhookService: WebhookService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly webhookService: WebhookService
+  ) {}
 
   async setupPlatformIntegration() {
     // HTTP client for platform API calls
@@ -181,7 +184,12 @@ export function getPlatformConfig(): PlatformModuleOptions {
 ```typescript
 @Injectable()
 export class HybridDeploymentService {
-  constructor(private readonly platformClient: PlatformClientService, private readonly workflowEngine: WorkflowEngine, private readonly monitoring: MonitoringFacadeService, private readonly memory: MemoryService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly workflowEngine: WorkflowEngine,
+    private readonly monitoring: MonitoringFacadeService,
+    private readonly memory: MemoryService
+  ) {}
 
   async createHybridWorkflow(workflowName: string): Promise<HybridWorkflow> {
     // Deploy workflow graph to LangGraph Platform
@@ -216,10 +224,14 @@ export class HybridDeploymentService {
             // Execute locally with memory and monitoring
             const enrichedData = await this.enrichWithMemory(state.input);
 
-            await context.monitoring.recordTimer('hybrid.local.preprocessing', Date.now() - state.startTime, {
-              workflow_name: workflowName,
-              execution_mode: 'local',
-            });
+            await context.monitoring.recordTimer(
+              'hybrid.local.preprocessing',
+              Date.now() - state.startTime,
+              {
+                workflow_name: workflowName,
+                execution_mode: 'local',
+              }
+            );
 
             return { preprocessedData: enrichedData };
           },
@@ -263,11 +275,15 @@ export class HybridDeploymentService {
           execution: 'local',
           function: async (state, context) => {
             // Store results in local memory for future context
-            await context.memory.store(`workflow-${workflowName}`, JSON.stringify(state.platformResult), {
-              type: 'summary',
-              importance: 0.8,
-              tags: JSON.stringify(['hybrid-result', 'platform-processed']),
-            });
+            await context.memory.store(
+              `workflow-${workflowName}`,
+              JSON.stringify(state.platformResult),
+              {
+                type: 'summary',
+                importance: 0.8,
+                tags: JSON.stringify(['hybrid-result', 'platform-processed']),
+              }
+            );
 
             // Final local processing
             const finalResult = await this.finalizeResult(state.platformResult);
@@ -331,7 +347,10 @@ export class HybridDeploymentService {
 export class MultiEnvironmentPlatformService {
   constructor(private readonly platformClient: PlatformClientService) {}
 
-  async deployToEnvironment(workflowDefinition: WorkflowDefinition, environment: 'development' | 'staging' | 'production'): Promise<EnvironmentDeployment> {
+  async deployToEnvironment(
+    workflowDefinition: WorkflowDefinition,
+    environment: 'development' | 'staging' | 'production'
+  ): Promise<EnvironmentDeployment> {
     const envConfig = this.getEnvironmentConfig(environment);
 
     // Create environment-specific assistant
@@ -386,7 +405,10 @@ export class MultiEnvironmentPlatformService {
     };
   }
 
-  async promoteToProduction(stagingDeployment: EnvironmentDeployment, validationChecks: ValidationCheck[]): Promise<EnvironmentDeployment> {
+  async promoteToProduction(
+    stagingDeployment: EnvironmentDeployment,
+    validationChecks: ValidationCheck[]
+  ): Promise<EnvironmentDeployment> {
     // Run validation checks
     for (const check of validationChecks) {
       const result = await this.runValidationCheck(stagingDeployment.assistant.assistant_id, check);
@@ -470,7 +492,10 @@ export class MultiEnvironmentPlatformService {
 ```typescript
 @Injectable()
 export class PlatformMonitoringIntegration {
-  constructor(private readonly platformClient: PlatformClientService, private readonly monitoring: MonitoringFacadeService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly monitoring: MonitoringFacadeService
+  ) {}
 
   async initializePlatformMonitoring(): Promise<void> {
     // Monitor platform API health
@@ -509,7 +534,12 @@ export class PlatformMonitoringIntegration {
     await this.setupWebhookMonitoring();
   }
 
-  async trackPlatformExecution(assistantId: string, threadId: string, runId: string, operationType: string): Promise<void> {
+  async trackPlatformExecution(
+    assistantId: string,
+    threadId: string,
+    runId: string,
+    operationType: string
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -611,7 +641,11 @@ export class PlatformMonitoringIntegration {
 ```typescript
 @Injectable()
 export class PlatformAgentCoordination {
-  constructor(private readonly platformClient: PlatformClientService, private readonly agentNetwork: MultiAgentNetwork, private readonly memory: MemoryService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly agentNetwork: MultiAgentNetwork,
+    private readonly memory: MemoryService
+  ) {}
 
   async createHybridAgentNetwork(): Promise<HybridAgentNetwork> {
     // Create platform assistants for complex reasoning
@@ -698,7 +732,11 @@ export class PlatformAgentCoordination {
     });
   }
 
-  private async routeToPlatformAssistant(task: string, assistantId: string, context: AgentContext): Promise<any> {
+  private async routeToPlatformAssistant(
+    task: string,
+    assistantId: string,
+    context: AgentContext
+  ): Promise<any> {
     // Create thread for platform execution
     const thread = await this.platformClient.post<Thread>('/threads', {
       metadata: {
@@ -800,7 +838,10 @@ interface AssistantConfig {
 
 @Injectable()
 export class EnterpriseAssistantService {
-  constructor(private readonly platformClient: PlatformClientService, private readonly webhookService: WebhookService) {}
+  constructor(
+    private readonly platformClient: PlatformClientService,
+    private readonly webhookService: WebhookService
+  ) {}
 
   async createProductionAssistant(config: AssistantConfig): Promise<Assistant> {
     // Create assistant on LangGraph Platform
@@ -833,7 +874,11 @@ export class EnterpriseAssistantService {
     return assistant;
   }
 
-  async executeConversationalWorkflow(assistantId: string, userId: string, message: string): Promise<ConversationResult> {
+  async executeConversationalWorkflow(
+    assistantId: string,
+    userId: string,
+    message: string
+  ): Promise<ConversationResult> {
     // Create or get existing thread for user
     let thread: Thread;
     const threadId = `user-${userId}`;
@@ -875,18 +920,25 @@ export class EnterpriseAssistantService {
     );
 
     // Get final thread state
-    const finalState = await this.platformClient.get<ThreadState>(`/threads/${thread.thread_id}/state`);
+    const finalState = await this.platformClient.get<ThreadState>(
+      `/threads/${thread.thread_id}/state`
+    );
 
     return {
       runId: completedRun.run_id,
       threadId: thread.thread_id,
       response: finalState.values.messages?.[finalState.values.messages.length - 1],
       status: completedRun.status,
-      executionTime: new Date(completedRun.updated_at).getTime() - new Date(completedRun.created_at).getTime(),
+      executionTime:
+        new Date(completedRun.updated_at).getTime() - new Date(completedRun.created_at).getTime(),
     };
   }
 
-  private async waitForRunCompletion(threadId: string, runId: string, timeoutMs: number = 300000): Promise<Run> {
+  private async waitForRunCompletion(
+    threadId: string,
+    runId: string,
+    timeoutMs: number = 300000
+  ): Promise<Run> {
     const startTime = Date.now();
     const pollInterval = 1000; // 1 second
 
@@ -998,7 +1050,10 @@ export class LangGraphWebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   @Post('langgraph')
-  async handleLangGraphWebhook(@Body() payload: WebhookPayload, @Headers('x-langgraph-signature') signature: string): Promise<void> {
+  async handleLangGraphWebhook(
+    @Body() payload: WebhookPayload,
+    @Headers('x-langgraph-signature') signature: string
+  ): Promise<void> {
     // Verify webhook signature for security
     const secret = process.env.WEBHOOK_SECRET;
     const isValid = this.webhookService.verifySignature(JSON.stringify(payload), signature, secret);
@@ -1098,7 +1153,10 @@ export class LangGraphWebhookController {
 export class ThreadManagementService {
   constructor(private readonly platformClient: PlatformClientService) {}
 
-  async createConversationThread(userId: string, metadata: Record<string, any> = {}): Promise<Thread> {
+  async createConversationThread(
+    userId: string,
+    metadata: Record<string, any> = {}
+  ): Promise<Thread> {
     const thread = await this.platformClient.post<Thread>('/threads', {
       metadata: {
         user_id: userId,
@@ -1115,7 +1173,11 @@ export class ThreadManagementService {
     return this.platformClient.get<ThreadState>(`/threads/${threadId}/state`);
   }
 
-  async updateThreadState(threadId: string, values: Record<string, any>, asNode?: string): Promise<ThreadState> {
+  async updateThreadState(
+    threadId: string,
+    values: Record<string, any>,
+    asNode?: string
+  ): Promise<ThreadState> {
     const updatePayload: any = { values };
 
     if (asNode) {
@@ -1125,7 +1187,12 @@ export class ThreadManagementService {
     return this.platformClient.patch<ThreadState>(`/threads/${threadId}/state`, updatePayload);
   }
 
-  async getThreadHistory(threadId: string, limit: number = 10, before?: string, metadata?: Record<string, any>): Promise<ThreadHistoryResponse> {
+  async getThreadHistory(
+    threadId: string,
+    limit: number = 10,
+    before?: string,
+    metadata?: Record<string, any>
+  ): Promise<ThreadHistoryResponse> {
     const params: any = { limit };
 
     if (before) params.before = before;
@@ -1210,11 +1277,17 @@ export class RateLimitedPlatformService {
   }
 
   async createAssistantWithRateLimit(config: AssistantConfig): Promise<Assistant> {
-    return this.executeWithRateLimit(() => this.platformClient.post<Assistant>('/assistants', config), 'assistant_creation');
+    return this.executeWithRateLimit(
+      () => this.platformClient.post<Assistant>('/assistants', config),
+      'assistant_creation'
+    );
   }
 
   async executeRunWithRateLimit(threadId: string, runConfig: RunConfig): Promise<Run> {
-    return this.executeWithRateLimit(() => this.platformClient.post<Run>(`/threads/${threadId}/runs`, runConfig), `run_execution_${threadId}`);
+    return this.executeWithRateLimit(
+      () => this.platformClient.post<Run>(`/threads/${threadId}/runs`, runConfig),
+      `run_execution_${threadId}`
+    );
   }
 }
 ```

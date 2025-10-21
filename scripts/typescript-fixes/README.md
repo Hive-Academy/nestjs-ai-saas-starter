@@ -64,14 +64,14 @@ npm run ci:validate
 
 The validation system enforces these quality gates:
 
-| Metric | Threshold | Description |
-|--------|-----------|-------------|
-| TypeScript Errors | 0 | Zero compilation errors allowed |
-| ESLint Errors | 0 | Zero linting errors allowed |
-| 'any' Types | 0 | Zero usage of 'any' type allowed |
-| Type Coverage | ≥95% | Minimum 95% type coverage required |
-| Build Time | ≤5 min | Maximum 5 minutes build time per library |
-| Bundle Size Increase | ≤5% | Maximum 5% bundle size increase |
+| Metric               | Threshold | Description                              |
+| -------------------- | --------- | ---------------------------------------- |
+| TypeScript Errors    | 0         | Zero compilation errors allowed          |
+| ESLint Errors        | 0         | Zero linting errors allowed              |
+| 'any' Types          | 0         | Zero usage of 'any' type allowed         |
+| Type Coverage        | ≥95%      | Minimum 95% type coverage required       |
+| Build Time           | ≤5 min    | Maximum 5 minutes build time per library |
+| Bundle Size Increase | ≤5%       | Maximum 5% bundle size increase          |
 
 ## 🔧 Configuration
 
@@ -107,7 +107,7 @@ The strict configuration template includes:
 The validation system covers these libraries:
 
 - `nestjs-chromadb` - ChromaDB integration library
-- `nestjs-neo4j` - Neo4j integration library  
+- `nestjs-neo4j` - Neo4j integration library
 - `nestjs-langgraph` - Core LangGraph integration
 - `langgraph-modules/checkpoint` - Checkpoint functionality
 - `langgraph-modules/memory` - Memory management
@@ -137,7 +137,9 @@ The validation scripts generate detailed JSON reports:
     "failed": 2,
     "warnings": 5
   },
-  "qualityGates": { /* Quality gate thresholds */ },
+  "qualityGates": {
+    /* Quality gate thresholds */
+  },
   "results": [
     {
       "library": "nestjs-chromadb",
@@ -177,10 +179,7 @@ The system integrates with Husky and lint-staged to run validations on commit:
 
 ```json
 {
-  "libs/**/*.ts": [
-    "nx affected:lint",
-    "node scripts/typescript-fixes/validate-types.js typescript"
-  ]
+  "libs/**/*.ts": ["nx affected:lint", "node scripts/typescript-fixes/validate-types.js typescript"]
 }
 ```
 

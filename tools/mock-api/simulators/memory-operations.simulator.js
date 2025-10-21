@@ -23,7 +23,12 @@ class MemoryOperationsSimulator {
       return JSON.parse(rawData);
     } catch (error) {
       console.error('Failed to load mock memory data:', error);
-      return { episodicMemories: [], semanticMemories: [], proceduralMemories: [], workingMemories: [] };
+      return {
+        episodicMemories: [],
+        semanticMemories: [],
+        proceduralMemories: [],
+        workingMemories: [],
+      };
     }
   }
 
@@ -31,7 +36,9 @@ class MemoryOperationsSimulator {
    * Simulate ChromaDB vector search operation
    */
   async simulateChromaDBQuery(agentId, query, options = {}) {
-    const queryId = `chroma_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const queryId = `chroma_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     const { topK = 5, threshold = 0.3 } = options;
 
     console.log(`ChromaDB query started: ${queryId} for agent ${agentId}`);
@@ -43,7 +50,7 @@ class MemoryOperationsSimulator {
       type: 'chromadb',
       agentId,
       query,
-      startTime: Date.now()
+      startTime: Date.now(),
     });
 
     return new Promise((resolve) => {
@@ -57,11 +64,13 @@ class MemoryOperationsSimulator {
           timestamp: new Date(),
           data: {
             contexts: results,
-            operation: 'activate'
-          }
+            operation: 'activate',
+          },
         });
 
-        console.log(`ChromaDB query completed: ${queryId} (${delay}ms) - ${results.length} results`);
+        console.log(
+          `ChromaDB query completed: ${queryId} (${delay}ms) - ${results.length} results`
+        );
         resolve(results);
       }, delay);
     });
@@ -71,7 +80,9 @@ class MemoryOperationsSimulator {
    * Simulate Neo4j graph query operation
    */
   async simulateNeo4jQuery(agentId, cypherQuery, options = {}) {
-    const queryId = `neo4j_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const queryId = `neo4j_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     const { limit = 10 } = options;
 
     console.log(`Neo4j query started: ${queryId} for agent ${agentId}`);
@@ -83,7 +94,7 @@ class MemoryOperationsSimulator {
       type: 'neo4j',
       agentId,
       query: cypherQuery,
-      startTime: Date.now()
+      startTime: Date.now(),
     });
 
     return new Promise((resolve) => {
@@ -97,11 +108,13 @@ class MemoryOperationsSimulator {
           timestamp: new Date(),
           data: {
             contexts: results,
-            operation: 'add'
-          }
+            operation: 'add',
+          },
         });
 
-        console.log(`Neo4j query completed: ${queryId} (${delay}ms) - ${results.length} results`);
+        console.log(
+          `Neo4j query completed: ${queryId} (${delay}ms) - ${results.length} results`
+        );
         resolve(results);
       }, delay);
     });
@@ -113,17 +126,22 @@ class MemoryOperationsSimulator {
   generateChromaDBResults(query, topK, threshold) {
     const allMemories = [
       ...this.memoryData.semanticMemories,
-      ...this.memoryData.episodicMemories
+      ...this.memoryData.episodicMemories,
     ];
 
     // Simulate semantic similarity scoring
-    const scoredResults = allMemories.map(memory => ({
-      ...memory,
-      relevanceScore: this.calculateRelevanceScore(query, memory.content, memory.tags)
-    }))
-    .filter(memory => memory.relevanceScore >= threshold)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, topK);
+    const scoredResults = allMemories
+      .map((memory) => ({
+        ...memory,
+        relevanceScore: this.calculateRelevanceScore(
+          query,
+          memory.content,
+          memory.tags
+        ),
+      }))
+      .filter((memory) => memory.relevanceScore >= threshold)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, topK);
 
     return scoredResults;
   }
@@ -143,16 +161,14 @@ class MemoryOperationsSimulator {
     } else {
       relevantMemories = [
         ...this.memoryData.proceduralMemories,
-        ...this.memoryData.workingMemories
+        ...this.memoryData.workingMemories,
       ];
     }
 
-    return relevantMemories
-      .slice(0, limit)
-      .map(memory => ({
-        ...memory,
-        source: 'neo4j'
-      }));
+    return relevantMemories.slice(0, limit).map((memory) => ({
+      ...memory,
+      source: 'neo4j',
+    }));
   }
 
   /**
@@ -161,22 +177,22 @@ class MemoryOperationsSimulator {
   calculateRelevanceScore(query, content, tags) {
     const queryWords = query.toLowerCase().split(' ');
     const contentWords = content.toLowerCase().split(' ');
-    const tagWords = tags.map(tag => tag.toLowerCase());
+    const tagWords = tags.map((tag) => tag.toLowerCase());
 
     let score = 0;
     let matchCount = 0;
 
     // Check for word matches in content
-    queryWords.forEach(word => {
-      if (contentWords.some(contentWord => contentWord.includes(word))) {
+    queryWords.forEach((word) => {
+      if (contentWords.some((contentWord) => contentWord.includes(word))) {
         score += 0.3;
         matchCount++;
       }
     });
 
     // Check for tag matches (higher weight)
-    queryWords.forEach(word => {
-      if (tagWords.some(tag => tag.includes(word))) {
+    queryWords.forEach((word) => {
+      if (tagWords.some((tag) => tag.includes(word))) {
         score += 0.5;
         matchCount++;
       }
@@ -187,16 +203,20 @@ class MemoryOperationsSimulator {
 
     // Normalize and clamp score
     const normalizedScore = Math.min(score / queryWords.length, 1.0);
-    
+
     // Ensure minimum relevance if there are matches
-    return matchCount > 0 ? Math.max(normalizedScore, 0.3) : Math.random() * 0.2;
+    return matchCount > 0
+      ? Math.max(normalizedScore, 0.3)
+      : Math.random() * 0.2;
   }
 
   /**
    * Simulate memory retrieval for agent context
    */
   async retrieveAgentMemoryContext(agentId, contextType = 'all') {
-    console.log(`Retrieving memory context for agent ${agentId}, type: ${contextType}`);
+    console.log(
+      `Retrieving memory context for agent ${agentId}, type: ${contextType}`
+    );
 
     const delay = Math.floor(Math.random() * 100) + 50;
 
@@ -221,14 +241,15 @@ class MemoryOperationsSimulator {
             contexts = [
               ...this.memoryData.workingMemories,
               ...this.memoryData.episodicMemories.slice(0, 2),
-              ...this.memoryData.semanticMemories.slice(0, 2)
+              ...this.memoryData.semanticMemories.slice(0, 2),
             ];
         }
 
         // Filter for agent-relevant memories
-        const agentContexts = contexts.filter(context => 
-          context.relatedAgents.includes(agentId) || 
-          context.relatedAgents.includes('agent_coordinator_001') // Include coordinator contexts
+        const agentContexts = contexts.filter(
+          (context) =>
+            context.relatedAgents.includes(agentId) ||
+            context.relatedAgents.includes('agent_coordinator_001') // Include coordinator contexts
         );
 
         resolve(agentContexts);
@@ -245,7 +266,7 @@ class MemoryOperationsSimulator {
       queries.push({
         id,
         ...query,
-        duration: Date.now() - query.startTime
+        duration: Date.now() - query.startTime,
       });
     });
     return queries;
@@ -256,13 +277,22 @@ class MemoryOperationsSimulator {
    */
   generateRandomMemoryActivity(agentId) {
     const activities = [
-      () => this.simulateChromaDBQuery(agentId, 'semantic search for related concepts'),
-      () => this.simulateNeo4jQuery(agentId, 'MATCH (a:Agent)-[:COLLABORATES_WITH]->(b:Agent) RETURN a, b'),
+      () =>
+        this.simulateChromaDBQuery(
+          agentId,
+          'semantic search for related concepts'
+        ),
+      () =>
+        this.simulateNeo4jQuery(
+          agentId,
+          'MATCH (a:Agent)-[:COLLABORATES_WITH]->(b:Agent) RETURN a, b'
+        ),
       () => this.retrieveAgentMemoryContext(agentId, 'working'),
-      () => this.retrieveAgentMemoryContext(agentId, 'episodic')
+      () => this.retrieveAgentMemoryContext(agentId, 'episodic'),
     ];
 
-    const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+    const randomActivity =
+      activities[Math.floor(Math.random() * activities.length)];
     return randomActivity();
   }
 }

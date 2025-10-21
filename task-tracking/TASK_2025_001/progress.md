@@ -199,7 +199,8 @@ Following: task-tracking/TASK_2025_001/implementation-plan.md
 **Interface Added** (Lines 33-79):
 
 ```typescript
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> extends Omit<WorkflowAgentState, 'metadata'> {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
+  extends Omit<WorkflowAgentState, 'metadata'> {
   metadata: TMetadata;
 }
 ```
@@ -244,7 +245,9 @@ export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> ex
 The generics were already implemented in the functional-api module:
 
 ```typescript
-export interface TaskExecutionContext<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface TaskExecutionContext<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly state: TState;
   readonly taskName: string;
   readonly workflowId: string;
@@ -253,7 +256,9 @@ export interface TaskExecutionContext<TState extends FunctionalWorkflowState = F
   readonly metadata: Record<string, unknown>;
 }
 
-export interface TaskExecutionResult<TState extends FunctionalWorkflowState = FunctionalWorkflowState> {
+export interface TaskExecutionResult<
+  TState extends FunctionalWorkflowState = FunctionalWorkflowState
+> {
   readonly state: Partial<TState>;
   readonly nextTasks?: readonly string[];
   readonly metadata?: Record<string, unknown>;

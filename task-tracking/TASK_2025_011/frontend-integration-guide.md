@@ -73,7 +73,13 @@ curl -X POST http://localhost:3000/devbrand/execute \
   "websocketInstructions": {
     "connect": "io(\"ws://localhost:8080/streaming\", { transports: [\"websocket\", \"polling\"] })",
     "subscribe": "socket.emit(\"subscribe_execution\", { executionId: \"devbrand-1697456789\" })",
-    "events": ["stream_update - Workflow state changes (agent started, completed, routing)", "token_update - Real-time LLM token streaming (character-by-character)", "interruption_request - HITL approval requests from agents", "interruption_resolved - HITL responses processed, workflow continuing", "error - Workflow errors and failures"]
+    "events": [
+      "stream_update - Workflow state changes (agent started, completed, routing)",
+      "token_update - Real-time LLM token streaming (character-by-character)",
+      "interruption_request - HITL approval requests from agents",
+      "interruption_resolved - HITL responses processed, workflow continuing",
+      "error - Workflow errors and failures"
+    ]
   }
 }
 ```

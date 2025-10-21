@@ -332,7 +332,10 @@ export function getMultiAgentConfig(configService: ConfigService): MultiAgentMod
   return {
     llmProvider: {
       provider,
-      model: configService.get(`${provider.toUpperCase()}_MODEL`) || configService.get('LLM_MODEL') || getDefaultModel(provider),
+      model:
+        configService.get(`${provider.toUpperCase()}_MODEL`) ||
+        configService.get('LLM_MODEL') ||
+        getDefaultModel(provider),
       apiKey: configService.get(`${provider.toUpperCase()}_API_KEY`),
       baseUrl: configService.get(`${provider.toUpperCase()}_BASE_URL`),
       temperature: parseFloat(configService.get('LLM_TEMPERATURE', '0.7')),

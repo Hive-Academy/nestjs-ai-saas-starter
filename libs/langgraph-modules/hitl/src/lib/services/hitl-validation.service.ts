@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanApprovalRequest, HumanApprovalResponse, ApprovalWorkflowState } from './approval-workflow.types';
+import {
+  HumanApprovalRequest,
+  HumanApprovalResponse,
+  ApprovalWorkflowState,
+} from './approval-workflow.types';
 import { EscalationStrategy } from '../decorators/approval.decorator';
 import { IHitlValidationService } from '../interfaces/hitl-services.interface';
 import { HITL_DEFAULTS } from '../constants';
@@ -40,7 +44,10 @@ export class HitlValidationService implements IHitlValidationService {
       if (request.confidence.current < 0 || request.confidence.current > 1) {
         violations.push('Confidence must be between 0 and 1');
       }
-      if (request.confidence.threshold < 0 || request.confidence.threshold > 1) {
+      if (
+        request.confidence.threshold < 0 ||
+        request.confidence.threshold > 1
+      ) {
         violations.push('Confidence threshold must be between 0 and 1');
       }
 
@@ -49,36 +56,60 @@ export class HitlValidationService implements IHitlValidationService {
         violations.push('Timeout duration must be positive');
       }
       if (request.timeout.duration > HITL_DEFAULTS.MAX_APPROVAL_TIMEOUT_MS) {
-        warnings.push(`Timeout duration exceeds recommended maximum of ${HITL_DEFAULTS.MAX_APPROVAL_TIMEOUT_MS}ms`);
+        warnings.push(
+          `Timeout duration exceeds recommended maximum of ${HITL_DEFAULTS.MAX_APPROVAL_TIMEOUT_MS}ms`
+        );
       }
 
       // Validate workflow state
-      if (!Object.values(ApprovalWorkflowState).includes(request.workflowState)) {
+      if (
+        !Object.values(ApprovalWorkflowState).includes(request.workflowState)
+      ) {
         violations.push('Invalid workflow state');
       }
 
       // Validate retry settings
-      if (request.retry.count < 0) violations.push('Retry count cannot be negative');
-      if (request.retry.maxAttempts < 0) violations.push('Max retry attempts cannot be negative');
+      if (request.retry.count < 0)
+        violations.push('Retry count cannot be negative');
+      if (request.retry.maxAttempts < 0)
+        violations.push('Max retry attempts cannot be negative');
       if (request.retry.count > request.retry.maxAttempts) {
         violations.push('Retry count cannot exceed max attempts');
       }
 
       // Validate risk assessment if present
       if (request.riskAssessment) {
-        if (!['low', 'medium', 'high', 'critical'].includes(request.riskAssessment.level)) {
+        if (
+          !['low', 'medium', 'high', 'critical'].includes(
+            request.riskAssessment.level
+          )
+        ) {
           violations.push('Invalid risk assessment level');
         }
-        if (request.riskAssessment.score < 0 || request.riskAssessment.score > 1) {
+        if (
+          request.riskAssessment.score < 0 ||
+          request.riskAssessment.score > 1
+        ) {
           violations.push('Risk assessment score must be between 0 and 1');
         }
       }
 
       // Validate chain configuration if present
       if (request.chainId) {
-        const chainValidation = await this.validateChainConfiguration(request.chainId, request);
-        violations.push(...chainValidation.issues.filter(issue => issue.startsWith('Error:')));
-        warnings.push(...chainValidation.issues.filter(issue => issue.startsWith('Warning:')));
+        const chainValidation = await this.validateChainConfiguration(
+          request.chainId,
+          request
+        );
+        violations.push(
+          ...chainValidation.issues.filter((issue) =>
+            issue.startsWith('Error:')
+          )
+        );
+        warnings.push(
+          ...chainValidation.issues.filter((issue) =>
+            issue.startsWith('Warning:')
+          )
+        );
       }
 
       // Validate approvers list if present
@@ -86,7 +117,7 @@ export class HitlValidationService implements IHitlValidationService {
         if (request.approvers.length === 0) {
           warnings.push('No approvers specified for approval request');
         }
-        
+
         // Check for duplicate approvers
         const uniqueApprovers = new Set(request.approvers);
         if (uniqueApprovers.size !== request.approvers.length) {
@@ -115,7 +146,11 @@ export class HitlValidationService implements IHitlValidationService {
         warnings,
       };
     } catch (error) {
-      this.logger.error(`Validation error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Validation error: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return {
         isValid: false,
         violations: ['Internal validation error occurred'],
@@ -163,7 +198,7 @@ export class HitlValidationService implements IHitlValidationService {
       // Validate timing constraints
       const requestTime = request.timestamps.requested.getTime();
       const responseTime = response.timestamp.getTime();
-      
+
       if (responseTime < requestTime) {
         errors.push('Response timestamp cannot be before request timestamp');
       }
@@ -199,7 +234,11 @@ export class HitlValidationService implements IHitlValidationService {
         errors,
       };
     } catch (error) {
-      this.logger.error(`Response validation error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Response validation error: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return {
         isValid: false,
         errors: ['Internal validation error occurred'],
@@ -213,7 +252,10 @@ export class HitlValidationService implements IHitlValidationService {
   async requiresEscalation(request: HumanApprovalRequest): Promise<boolean> {
     try {
       // Check confidence-based escalation
-      if (request.confidence.current < HITL_DEFAULTS.ESCALATION_CONFIDENCE_THRESHOLD) {
+      if (
+        request.confidence.current <
+        HITL_DEFAULTS.ESCALATION_CONFIDENCE_THRESHOLD
+      ) {
         return true;
       }
 
@@ -221,7 +263,10 @@ export class HitlValidationService implements IHitlValidationService {
       if (request.riskAssessment?.level === 'critical') {
         return true;
       }
-      if (request.riskAssessment?.level === 'high' && request.confidence.current < 0.7) {
+      if (
+        request.riskAssessment?.level === 'high' &&
+        request.confidence.current < 0.7
+      ) {
         return true;
       }
 
@@ -234,7 +279,7 @@ export class HitlValidationService implements IHitlValidationService {
       const now = Date.now();
       const requestTime = request.timestamps.requested.getTime();
       const timeElapsed = now - requestTime;
-      
+
       if (timeElapsed > request.timeout.duration * 0.9) {
         return true;
       }
@@ -246,7 +291,11 @@ export class HitlValidationService implements IHitlValidationService {
 
       return false;
     } catch (error) {
-      this.logger.error(`Escalation check error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Escalation check error: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return false;
     }
   }
@@ -280,25 +329,35 @@ export class HitlValidationService implements IHitlValidationService {
 
       // Validate escalation strategy compatibility
       if (request.options.escalationStrategy === EscalationStrategy.DIRECT) {
-        issues.push('Warning: Direct escalation strategy conflicts with chain configuration');
+        issues.push(
+          'Warning: Direct escalation strategy conflicts with chain configuration'
+        );
       }
 
       // Check for circular chain references (basic check)
       if (chainId.includes(request.executionId)) {
-        issues.push('Warning: Potential circular reference in chain configuration');
+        issues.push(
+          'Warning: Potential circular reference in chain configuration'
+        );
       }
 
       // Validate timeout is reasonable for chain processing
-      if (request.timeout.duration < 60000) { // Less than 1 minute
+      if (request.timeout.duration < 60000) {
+        // Less than 1 minute
         issues.push('Warning: Timeout may be too short for chain processing');
       }
 
       return {
-        isValid: issues.filter(issue => issue.startsWith('Error:')).length === 0,
+        isValid:
+          issues.filter((issue) => issue.startsWith('Error:')).length === 0,
         issues,
       };
     } catch (error) {
-      this.logger.error(`Chain validation error: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Chain validation error: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return {
         isValid: false,
         issues: ['Error: Internal chain validation error'],
@@ -319,6 +378,6 @@ export class HitlValidationService implements IHitlValidationService {
       /\b(?:api[_-]?key|access[_-]?token)\s*[:=]\s*\S+/i, // API keys/tokens
     ];
 
-    return sensitivePatterns.some(pattern => pattern.test(text));
+    return sensitivePatterns.some((pattern) => pattern.test(text));
   }
 }

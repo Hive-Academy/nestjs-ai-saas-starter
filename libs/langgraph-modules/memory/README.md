@@ -500,7 +500,10 @@ interface UserMemoryPatterns {
 ```typescript
 export abstract class IVectorService {
   abstract store(collection: string, data: VectorStoreData): Promise<string>;
-  abstract search(collection: string, query: VectorSearchQuery): Promise<readonly VectorSearchResult[]>;
+  abstract search(
+    collection: string,
+    query: VectorSearchQuery
+  ): Promise<readonly VectorSearchResult[]>;
   abstract delete(collection: string, ids: readonly string[]): Promise<number>;
   abstract clear(collection: string): Promise<void>;
   abstract getStats(collection: string): Promise<VectorStats>;
@@ -512,8 +515,15 @@ export abstract class IVectorService {
 ```typescript
 export abstract class IGraphService {
   abstract createNode(data: GraphNodeData): Promise<string>;
-  abstract createRelationship(fromNodeId: string, toNodeId: string, data: GraphRelationshipData): Promise<string>;
-  abstract executeCypher(query: string, params?: Record<string, unknown>): Promise<GraphQueryResult>;
+  abstract createRelationship(
+    fromNodeId: string,
+    toNodeId: string,
+    data: GraphRelationshipData
+  ): Promise<string>;
+  abstract executeCypher(
+    query: string,
+    params?: Record<string, unknown>
+  ): Promise<GraphQueryResult>;
   abstract deleteNodes(nodeIds: readonly string[]): Promise<number>;
   abstract getStats(): Promise<GraphStats>;
 }
@@ -568,7 +578,11 @@ async getMemorySystemStats(): Promise<SystemStats> {
 ## Error Handling
 
 ```typescript
-import { MemoryStorageError, MemoryRetrievalError, MemoryConfigurationError } from '@hive-academy/langgraph-memory';
+import {
+  MemoryStorageError,
+  MemoryRetrievalError,
+  MemoryConfigurationError,
+} from '@hive-academy/langgraph-memory';
 
 @Injectable()
 export class RobustMemoryService {
@@ -641,7 +655,10 @@ describe('MemoryService', () => {
       type: 'preference',
     });
 
-    const context = await service.searchForContext('What programming languages do you know?', 'thread-1');
+    const context = await service.searchForContext(
+      'What programming languages do you know?',
+      'thread-1'
+    );
 
     expect(context.relevantMemories).toBeTruthy();
     expect(context.relevantMemories.length).toBeGreaterThan(0);

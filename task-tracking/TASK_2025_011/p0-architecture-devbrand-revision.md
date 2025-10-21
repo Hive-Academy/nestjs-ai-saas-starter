@@ -561,12 +561,19 @@ export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
   private readonly activeExecutions = new Map<string, any>();
 
-  constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow, private readonly hitlService: HumanApprovalService, private readonly streamingService: StreamingWebSocketService, private readonly brandMemory: PersonalBrandMemoryService) {}
+  constructor(
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
+    private readonly hitlService: HumanApprovalService,
+    private readonly streamingService: StreamingWebSocketService,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   @Post('execute')
   @ApiOperation({ summary: 'Execute DevBrand workflow (non-streaming)' })
   @ApiResponse({ status: 201, type: ExecuteDevBrandResponseDto })
-  async executeDevBrand(@Body() dto: ExecuteDevBrandRequestDto): Promise<ExecuteDevBrandResponseDto> {
+  async executeDevBrand(
+    @Body() dto: ExecuteDevBrandRequestDto
+  ): Promise<ExecuteDevBrandResponseDto> {
     const sessionId = dto.sessionId || `devbrand-${Date.now()}`;
 
     try {
@@ -705,7 +712,10 @@ export class DevBrandController {
   @Post(':sessionId/message')
   @ApiOperation({ summary: 'Send message to running workflow' })
   @ApiResponse({ status: 200, type: SendDevBrandMessageResponseDto })
-  async sendMessage(@Param('sessionId') sessionId: string, @Body() dto: SendDevBrandMessageDto): Promise<SendDevBrandMessageResponseDto> {
+  async sendMessage(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: SendDevBrandMessageDto
+  ): Promise<SendDevBrandMessageResponseDto> {
     try {
       // Handle HITL interruption response
       if (dto.interruptionId) {
@@ -718,7 +728,9 @@ export class DevBrandController {
 
         return {
           success: result.success,
-          message: result.success ? 'Message processed successfully' : result.error || 'Failed to process message',
+          message: result.success
+            ? 'Message processed successfully'
+            : result.error || 'Failed to process message',
           workflowResumed: result.shouldContinue,
           error: result.error,
         };
@@ -728,7 +740,12 @@ export class DevBrandController {
       await this.hitlService.requestUserInterruption({
         executionId: sessionId,
         nodeId: 'current',
-        type: dto.type === 'approval' ? 'approval_request' : dto.type === 'clarification' ? 'clarification' : 'input_request',
+        type:
+          dto.type === 'approval'
+            ? 'approval_request'
+            : dto.type === 'clarification'
+            ? 'clarification'
+            : 'input_request',
         message: dto.message,
         metadata: {
           timestamp: new Date(),
@@ -1283,7 +1300,9 @@ this.eventEmitter.on('hitl.interruption.requested', (event) => {
   const { interruptionId, executionId, agentId, type } = event;
 
   // Find subscribers to this execution
-  const subscribers = Array.from(this.connections.values()).filter((conn) => conn.subscriptions.executionIds.has(executionId));
+  const subscribers = Array.from(this.connections.values()).filter((conn) =>
+    conn.subscriptions.executionIds.has(executionId)
+  );
 
   // Broadcast interruption request
   subscribers.forEach((conn) => {
@@ -1404,7 +1423,9 @@ export function useDevBrandWorkflow(githubUsername: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [events, setEvents] = useState<DevBrandEvent[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'connecting' | 'running' | 'completed' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'running' | 'completed' | 'error'>(
+    'idle'
+  );
 
   useEffect(() => {
     // Connect to WebSocket
@@ -1513,11 +1534,14 @@ export function useDevBrandWorkflowSSE(githubUsername: string) {
     setStatus('running');
 
     // Open SSE connection
-    const eventSource = new EventSource(`http://localhost:3000/devbrand/execute/stream?githubUsername=${githubUsername}`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
+    const eventSource = new EventSource(
+      `http://localhost:3000/devbrand/execute/stream?githubUsername=${githubUsername}`,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
 
     eventSource.addEventListener('workflow.started', (e) => {
       const data = JSON.parse(e.data);
@@ -1579,7 +1603,12 @@ export function DevBrandDashboard() {
       {/* Input Form */}
       {status === 'idle' && (
         <div className="input-form">
-          <input type="text" placeholder="Enter GitHub username" value={githubUsername} onChange={(e) => setGithubUsername(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Enter GitHub username"
+            value={githubUsername}
+            onChange={(e) => setGithubUsername(e.target.value)}
+          />
           <button onClick={startWorkflow}>Start Workflow</button>
         </div>
       )}

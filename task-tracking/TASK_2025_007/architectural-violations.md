@@ -140,7 +140,15 @@ constructor(
 
 ```typescript
 // Re-export core interfaces for convenience
-export { IMemoryAdapter, isMemoryAdapter, MemorySearchOptions, AgentState, AgentMemoryContext, UserMemoryPatterns, Store } from '@hive-academy/langgraph-core';
+export {
+  IMemoryAdapter,
+  isMemoryAdapter,
+  MemorySearchOptions,
+  AgentState,
+  AgentMemoryContext,
+  UserMemoryPatterns,
+  Store,
+} from '@hive-academy/langgraph-core';
 ```
 
 **Estimated Effort**: 15 minutes

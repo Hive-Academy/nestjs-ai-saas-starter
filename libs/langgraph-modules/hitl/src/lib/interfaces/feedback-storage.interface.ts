@@ -12,7 +12,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export abstract class IFeedbackStorageService {
   // ===== FEEDBACK ENTRY MANAGEMENT =====
-  
+
   /**
    * Store feedback entry for persistence
    */
@@ -26,14 +26,16 @@ export abstract class IFeedbackStorageService {
   /**
    * Get all feedback entries for a specific execution
    */
-  abstract getFeedbackByExecution(executionId: string): Promise<FeedbackEntry[]>;
+  abstract getFeedbackByExecution(
+    executionId: string
+  ): Promise<FeedbackEntry[]>;
 
   /**
    * Update feedback processing status and results
    */
   abstract updateFeedbackStatus(
-    feedbackId: string, 
-    processed: boolean, 
+    feedbackId: string,
+    processed: boolean,
     results?: ProcessingResult
   ): Promise<void>;
 
@@ -106,9 +108,7 @@ export abstract class IFeedbackStorageService {
     }
 
     if (!feedback.type) {
-      throw new InvalidFeedbackDataError(
-        'Feedback type is required'
-      );
+      throw new InvalidFeedbackDataError('Feedback type is required');
     }
 
     if (!feedback.provider?.id?.trim()) {

@@ -64,7 +64,15 @@ User identified two files with incorrect implementations:
 import { Label, Property, Relationship, BaseNeo4jEntity } from '@hive-academy/nestjs-neo4j';
 
 // AFTER (CORRECT)
-import { Neo4jEntity, Neo4jProp, Id, Neo4jBaseEntity, Neo4jRelationship, NotNull, Unique } from '@hive-academy/nestjs-neo4j';
+import {
+  Neo4jEntity,
+  Neo4jProp,
+  Id,
+  Neo4jBaseEntity,
+  Neo4jRelationship,
+  NotNull,
+  Unique,
+} from '@hive-academy/nestjs-neo4j';
 ```
 
 2. Updated entity decorator:

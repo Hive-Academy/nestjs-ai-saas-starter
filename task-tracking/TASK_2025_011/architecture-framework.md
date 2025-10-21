@@ -501,7 +501,10 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     if (!requiredRoles) return true; // No roles required
     const { user } = context.switchToHttp().getRequest();
     return requiredRoles.some((role) => user.roles?.includes(role));
@@ -564,11 +567,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
 
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message = exception instanceof HttpException ? exception.message : 'Internal server error';
+    const message =
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
-    this.logger.error(`HTTP ${status} - ${request.method} ${request.url} - ${message}`, exception instanceof Error ? exception.stack : undefined);
+    this.logger.error(
+      `HTTP ${status} - ${request.method} ${request.url} - ${message}`,
+      exception instanceof Error ? exception.stack : undefined
+    );
 
     response.status(status).json({
       status: 'error',

@@ -3,20 +3,23 @@
 ## Core Software Engineering Principles
 
 ### SOLID Principles
+
 - **Single Responsibility Principle (SRP)**: Each class/service should have one reason to change
   - Services focus on a single domain concern (e.g., `ToolRegistryService` only manages tool registration)
   - Modules group related functionality but delegate specific tasks to specialized services
-  
 - **Open/Closed Principle (OCP)**: Open for extension, closed for modification
+
   - Use factory patterns for creating providers (`LLMProviderFactory`)
   - Implement interfaces for extensibility (`LangGraphOptionsFactory`)
   - Use decorators for cross-cutting concerns without modifying core logic
 
 - **Liskov Substitution Principle (LSP)**: Derived classes must be substitutable for base classes
+
   - All service implementations must honor their interface contracts
   - Provider implementations must be interchangeable through dependency injection
 
 - **Interface Segregation Principle (ISP)**: Clients shouldn't depend on interfaces they don't use
+
   - Create focused interfaces for specific use cases
   - Separate concerns into distinct service interfaces
 
@@ -25,12 +28,14 @@
   - Inject interfaces/tokens rather than concrete classes where possible
 
 ### DRY (Don't Repeat Yourself)
+
 - **Shared Utilities**: Extract common functionality into shared services
 - **Base Classes**: Use abstract base classes for common patterns (`DeclarativeWorkflowBase`)
 - **Constants**: Define reusable constants in dedicated files (`constants.ts`)
 - **Factory Patterns**: Centralize object creation logic
 
 ### KISS (Keep It Simple, Stupid)
+
 - **Clear Method Names**: Use descriptive, action-oriented method names
 - **Single Purpose Methods**: Each method should do one thing well
 - **Avoid Over-Engineering**: Don't add complexity until it's needed
@@ -39,6 +44,7 @@
 ## Nx Monorepo Best Practices
 
 ### Library Organization
+
 ```typescript
 // ✅ Good: Focused library with clear boundaries
 libs/
@@ -60,6 +66,7 @@ libs/
 ```
 
 ### Dependency Management
+
 ```typescript
 // ✅ Good: Libraries depend on abstractions
 import { Injectable } from '@nestjs/common';
@@ -70,6 +77,7 @@ import { SomeConcreteClass } from '../../../other-lib/concrete-class';
 ```
 
 ### Barrel Exports
+
 ```typescript
 // ✅ Good: Clean public API through index.ts
 // libs/nestjs-chromadb/src/index.ts
@@ -84,6 +92,7 @@ export { InternalHelperClass } from './lib/internal/helper';
 ## NestJS Patterns & Conventions
 
 ### Module Structure
+
 ```typescript
 // ✅ Good: Well-organized module with clear provider groups
 @Global()
@@ -127,14 +136,12 @@ export class WorkflowModule {}
 ```
 
 ### Service Implementation
+
 ```typescript
 // ✅ Good: Service with clear responsibilities
 @Injectable()
 export class UserService {
-  constructor(
-    private readonly userRepository: UserRepository,
-    private readonly logger: Logger,
-  ) {}
+  constructor(private readonly userRepository: UserRepository, private readonly logger: Logger) {}
 
   async createUser(userData: CreateUserDto): Promise<User> {
     this.logger.log('Creating new user');
@@ -150,6 +157,7 @@ export class EverythingService {
 ```
 
 ### Dependency Injection Best Practices
+
 ```typescript
 // ✅ Good: Use tokens for flexibility
 export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
@@ -171,6 +179,7 @@ export class UserService {
 ## TypeScript Standards
 
 ### Type Safety
+
 ```typescript
 // ✅ Good: Explicit types and interfaces
 interface CreateUserRequest {
@@ -190,6 +199,7 @@ async function createUser(request: any): Promise<any> {
 ```
 
 ### Generic Constraints
+
 ```typescript
 // ✅ Good: Constrained generics
 interface Repository<T extends BaseEntity> {
@@ -204,6 +214,7 @@ interface Repository<T> {
 ```
 
 ### Error Handling
+
 ```typescript
 // ✅ Good: Specific error types
 export class UserNotFoundError extends Error {
@@ -231,12 +242,13 @@ async function getUser(id: string): Promise<User> {
 ## Code Organization Patterns
 
 ### File Naming Conventions
+
 ```
 // Services
 user.service.ts
 user.service.spec.ts
 
-// Controllers  
+// Controllers
 user.controller.ts
 user.controller.spec.ts
 
@@ -255,6 +267,7 @@ user.decorator.ts
 ```
 
 ### Import Organization
+
 ```typescript
 // ✅ Good: Organized imports
 // 1. Node modules
@@ -283,6 +296,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 ```
 
 ### Method Organization
+
 ```typescript
 // ✅ Good: Logical method organization
 export class UserService {
@@ -291,16 +305,16 @@ export class UserService {
 
   // 2. Public methods (alphabetical or by feature)
   async createUser(data: CreateUserDto): Promise<User> {}
-  
+
   async deleteUser(id: string): Promise<void> {}
-  
+
   async getUserById(id: string): Promise<User> {}
-  
+
   async updateUser(id: string, data: UpdateUserDto): Promise<User> {}
 
   // 3. Private methods
   private validateUserData(data: CreateUserDto): void {}
-  
+
   private formatUserResponse(user: User): UserResponse {}
 }
 ```
@@ -308,6 +322,7 @@ export class UserService {
 ## Testing Standards
 
 ### Test Organization
+
 ```typescript
 // ✅ Good: Well-structured test file
 describe('UserService', () => {
@@ -357,6 +372,7 @@ describe('UserService', () => {
 ```
 
 ### AI Workflow Testing Patterns
+
 ```typescript
 // ✅ Good: Testing LangGraph workflow components
 describe('WorkflowService', () => {
@@ -410,6 +426,7 @@ describe('WorkflowService', () => {
 ## Performance & Security
 
 ### Performance Best Practices
+
 ```typescript
 // ✅ Good: Efficient database queries
 async function getUsersWithPosts(userIds: string[]): Promise<UserWithPosts[]> {
@@ -426,7 +443,7 @@ export class ExpensiveService {
     if (this.cache.has(key)) {
       return this.cache.get(key);
     }
-    
+
     const data = await this.performExpensiveOperation(key);
     this.cache.set(key, data);
     return data;
@@ -435,6 +452,7 @@ export class ExpensiveService {
 ```
 
 ### Security Considerations
+
 ```typescript
 // ✅ Good: Input validation
 @Injectable()
@@ -446,24 +464,25 @@ export class UserService {
 }
 
 // ✅ Good: Sanitize sensitive data in logs
-this.logger.log('User created', { 
-  userId: user.id, 
-  email: this.sanitizeEmail(user.email) 
+this.logger.log('User created', {
+  userId: user.id,
+  email: this.sanitizeEmail(user.email),
 });
 ```
 
 ## Documentation Standards
 
 ### JSDoc Comments
-```typescript
+
+````typescript
 /**
  * Creates a new user in the system
- * 
+ *
  * @param userData - The user data to create
  * @returns Promise resolving to the created user
  * @throws {ValidationError} When user data is invalid
  * @throws {ConflictError} When user email already exists
- * 
+ *
  * @example
  * ```typescript
  * const user = await userService.createUser({
@@ -475,10 +494,12 @@ this.logger.log('User created', {
 async createUser(userData: CreateUserDto): Promise<User> {
   // Implementation
 }
-```
+````
 
 ### README Documentation
+
 Each library should include:
+
 - Clear installation instructions
 - Quick start guide with examples
 - API reference with all public methods
@@ -489,6 +510,7 @@ Each library should include:
 ## Code Review Checklist
 
 ### Before Submitting
+
 - [ ] All tests pass
 - [ ] Code follows naming conventions
 - [ ] No unused imports or variables
@@ -498,6 +520,7 @@ Each library should include:
 - [ ] Security implications reviewed
 
 ### Review Focus Areas
+
 - [ ] SOLID principles adherence
 - [ ] Proper dependency injection usage
 - [ ] Type safety and interface design

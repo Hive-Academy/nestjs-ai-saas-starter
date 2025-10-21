@@ -23,7 +23,12 @@ import {
 
 // Real implementation: Facade coordinating specialized services
 class TimeTravelService {
-  constructor(private readonly branchManager: BranchManagerService, private readonly workflowReplay: WorkflowReplayService, private readonly executionHistory: ExecutionHistoryService, private readonly workflowRegistry: WorkflowRegistryService) {}
+  constructor(
+    private readonly branchManager: BranchManagerService,
+    private readonly workflowReplay: WorkflowReplayService,
+    private readonly executionHistory: ExecutionHistoryService,
+    private readonly workflowRegistry: WorkflowRegistryService
+  ) {}
 }
 ```
 
@@ -150,7 +155,9 @@ export function getTimeTravelConfig(): TimeTravelConfig {
     enableBranching: !isProduction && process.env.TIME_TRAVEL_ENABLE_BRANCHING !== 'false',
 
     // Environment-based branch limits
-    maxBranchesPerThread: parseInt(process.env.TIME_TRAVEL_MAX_BRANCHES_PER_THREAD || (isProduction ? '3' : '10')),
+    maxBranchesPerThread: parseInt(
+      process.env.TIME_TRAVEL_MAX_BRANCHES_PER_THREAD || (isProduction ? '3' : '10')
+    ),
 
     // Performance configuration
     performance: {
@@ -184,7 +191,11 @@ export function getTimeTravelConfig(): TimeTravelConfig {
 ```typescript
 @Injectable()
 export class CheckpointTimeTravelService {
-  constructor(private readonly timeTravel: TimeTravelService, private readonly checkpointManager: CheckpointManagerService, private readonly monitoring: MonitoringFacadeService) {}
+  constructor(
+    private readonly timeTravel: TimeTravelService,
+    private readonly checkpointManager: CheckpointManagerService,
+    private readonly monitoring: MonitoringFacadeService
+  ) {}
 
   async createTimelineDebugger(threadId: string): Promise<TimelineDebugger> {
     // Get complete checkpoint history
@@ -249,7 +260,8 @@ export class CheckpointTimeTravelService {
           return timeline.filter((node) => {
             if (criteria.nodeType && node.nodeType !== criteria.nodeType) return false;
             if (criteria.hasError && !node.error) return false;
-            if (criteria.timeRange && !this.inTimeRange(node.timestamp, criteria.timeRange)) return false;
+            if (criteria.timeRange && !this.inTimeRange(node.timestamp, criteria.timeRange))
+              return false;
             return true;
           });
         },
@@ -258,7 +270,11 @@ export class CheckpointTimeTravelService {
       compare: {
         // Compare any two points in time
         compareStates: async (checkpoint1Id: string, checkpoint2Id: string) => {
-          const comparison = await this.timeTravel.compareCheckpoints(threadId, checkpoint1Id, checkpoint2Id);
+          const comparison = await this.timeTravel.compareCheckpoints(
+            threadId,
+            checkpoint1Id,
+            checkpoint2Id
+          );
 
           await this.monitoring.recordCounter('timetravel.comparison.performed', 1, {
             thread_id: threadId,
@@ -270,19 +286,28 @@ export class CheckpointTimeTravelService {
 
         // Find state divergence points
         findDivergence: async (baselineCheckpointId: string) => {
-          const baseline = await this.checkpointManager.loadCheckpoint(threadId, baselineCheckpointId);
+          const baseline = await this.checkpointManager.loadCheckpoint(
+            threadId,
+            baselineCheckpointId
+          );
           const divergences = [];
 
           for (const checkpoint of checkpoints) {
             if (checkpoint.id === baselineCheckpointId) continue;
 
-            const comparison = await this.timeTravel.compareCheckpoints(threadId, baselineCheckpointId, checkpoint.id);
+            const comparison = await this.timeTravel.compareCheckpoints(
+              threadId,
+              baselineCheckpointId,
+              checkpoint.id
+            );
             if (!comparison.identical) {
               divergences.push({
                 checkpointId: checkpoint.id,
                 timestamp: checkpoint.ts,
                 differences: comparison.differences.length,
-                majorChanges: comparison.differences.filter((d) => d.path.includes('result') || d.path.includes('output')),
+                majorChanges: comparison.differences.filter(
+                  (d) => d.path.includes('result') || d.path.includes('output')
+                ),
               });
             }
           }
@@ -302,7 +327,11 @@ export class CheckpointTimeTravelService {
 ```typescript
 @Injectable()
 export class ProductionTimeTravelService {
-  constructor(private readonly timeTravel: TimeTravelService, private readonly monitoring: MonitoringFacadeService, private readonly platformClient: PlatformClientService) {}
+  constructor(
+    private readonly timeTravel: TimeTravelService,
+    private readonly monitoring: MonitoringFacadeService,
+    private readonly platformClient: PlatformClientService
+  ) {}
 
   async debugProductionIssue(issueReport: ProductionIssue): Promise<DebugSession> {
     const sessionId = `debug-${Date.now()}`;
@@ -341,16 +370,20 @@ export class ProductionTimeTravelService {
               session_id: sessionId,
             });
 
-            return this.timeTravel.replayFromCheckpoint(issueReport.threadId, issueReport.lastKnownGoodCheckpoint, {
-              newThreadId: `debug-replay-${sessionId}`,
-              stateModifications: {
-                ...modifications,
-                debugMode: true,
-                productionSafe: true,
-                isolatedExecution: true,
-              },
-              replaySpeed: 0.5, // Slow for analysis
-            });
+            return this.timeTravel.replayFromCheckpoint(
+              issueReport.threadId,
+              issueReport.lastKnownGoodCheckpoint,
+              {
+                newThreadId: `debug-replay-${sessionId}`,
+                stateModifications: {
+                  ...modifications,
+                  debugMode: true,
+                  productionSafe: true,
+                  isolatedExecution: true,
+                },
+                replaySpeed: 0.5, // Slow for analysis
+              }
+            );
           },
 
           testFix: async (fixModifications: any) => {
@@ -360,11 +393,15 @@ export class ProductionTimeTravelService {
               session_id: sessionId,
             });
 
-            const result = await this.timeTravel.replayFromCheckpoint(issueReport.threadId, issueReport.lastKnownGoodCheckpoint, {
-              newThreadId: testThreadId,
-              stateModifications: fixModifications,
-              replaySpeed: 2.0, // Faster for testing
-            });
+            const result = await this.timeTravel.replayFromCheckpoint(
+              issueReport.threadId,
+              issueReport.lastKnownGoodCheckpoint,
+              {
+                newThreadId: testThreadId,
+                stateModifications: fixModifications,
+                replaySpeed: 2.0, // Faster for testing
+              }
+            );
 
             // Validate fix
             const fixSuccess = !result.error && result.status === 'success';
@@ -408,22 +445,26 @@ export class ProductionTimeTravelService {
 
   private async createSafeDebugEnvironment(issue: ProductionIssue): Promise<SafeDebugEnvironment> {
     // Create isolated debug branch
-    const debugBranchId = await this.timeTravel.createBranch(issue.threadId, issue.lastKnownGoodCheckpoint, {
-      name: `prod-debug-${Date.now()}`,
-      description: `Production debug for ${issue.type}: ${issue.description}`,
-      stateModifications: {
-        debugMode: true,
-        productionSafe: true,
-        readOnly: true, // No side effects
-        mockExternalCalls: true, // Prevent external API calls
-      },
-      metadata: {
-        issueType: issue.type,
-        severity: issue.severity,
-        originalThreadId: issue.threadId,
-        isolatedExecution: true,
-      },
-    });
+    const debugBranchId = await this.timeTravel.createBranch(
+      issue.threadId,
+      issue.lastKnownGoodCheckpoint,
+      {
+        name: `prod-debug-${Date.now()}`,
+        description: `Production debug for ${issue.type}: ${issue.description}`,
+        stateModifications: {
+          debugMode: true,
+          productionSafe: true,
+          readOnly: true, // No side effects
+          mockExternalCalls: true, // Prevent external API calls
+        },
+        metadata: {
+          issueType: issue.type,
+          severity: issue.severity,
+          originalThreadId: issue.threadId,
+          isolatedExecution: true,
+        },
+      }
+    );
 
     return {
       debugBranchId,
@@ -448,9 +489,16 @@ export class ProductionTimeTravelService {
 ```typescript
 @Injectable()
 export class AgentNetworkDebugService {
-  constructor(private readonly timeTravel: TimeTravelService, private readonly agentNetwork: MultiAgentNetwork, private readonly memory: MemoryService) {}
+  constructor(
+    private readonly timeTravel: TimeTravelService,
+    private readonly agentNetwork: MultiAgentNetwork,
+    private readonly memory: MemoryService
+  ) {}
 
-  async debugAgentCoordination(networkId: string, issueTimestamp: Date): Promise<AgentDebugSession> {
+  async debugAgentCoordination(
+    networkId: string,
+    issueTimestamp: Date
+  ): Promise<AgentDebugSession> {
     // Find all agent threads around the issue time
     const affectedAgents = await this.agentNetwork.getAgentsActiveAt(networkId, issueTimestamp);
 
@@ -525,7 +573,9 @@ export class AgentNetworkDebugService {
                 severity: timeDiff > 120000 ? 'high' : 'medium', // 2 minutes = high
                 timestamp: current.timestamp,
                 involvedAgents: [previous.agentId, current.agentId],
-                description: `${timeDiff / 1000}s gap between ${previous.agentName} and ${current.agentName}`,
+                description: `${timeDiff / 1000}s gap between ${previous.agentName} and ${
+                  current.agentName
+                }`,
                 evidence: {
                   lastAction: previous,
                   nextAction: current,
@@ -556,7 +606,10 @@ export class AgentNetworkDebugService {
 
       // Agent-specific debugging
       debugAgent: {
-        replayAgentExecution: async (agentId: string, fromCheckpoint: string): Promise<AgentReplayResult> => {
+        replayAgentExecution: async (
+          agentId: string,
+          fromCheckpoint: string
+        ): Promise<AgentReplayResult> => {
           const agent = affectedAgents.find((a) => a.id === agentId);
           if (!agent) throw new Error(`Agent ${agentId} not found`);
 
@@ -595,13 +648,19 @@ export class AgentNetworkDebugService {
             analysis: {
               totalEntries: memoryEntries.length,
               memoryGaps: this.findMemoryGaps(memoryEntries),
-              coordinationMemories: memoryEntries.filter((m) => m.tags?.includes('coordination') || m.tags?.includes('communication')),
+              coordinationMemories: memoryEntries.filter(
+                (m) => m.tags?.includes('coordination') || m.tags?.includes('communication')
+              ),
               errorMemories: memoryEntries.filter((m) => m.tags?.includes('error')),
             },
           };
         },
 
-        compareAgentStates: async (agentId1: string, agentId2: string, timestamp: Date): Promise<AgentStateComparison> => {
+        compareAgentStates: async (
+          agentId1: string,
+          agentId2: string,
+          timestamp: Date
+        ): Promise<AgentStateComparison> => {
           const agent1 = affectedAgents.find((a) => a.id === agentId1);
           const agent2 = affectedAgents.find((a) => a.id === agentId2);
 
@@ -615,39 +674,54 @@ export class AgentNetworkDebugService {
             throw new Error('Could not find checkpoints near the specified time');
           }
 
-          const comparison = await this.timeTravel.compareCheckpoints(agent1.threadId, checkpoint1.id, checkpoint2.id);
+          const comparison = await this.timeTravel.compareCheckpoints(
+            agent1.threadId,
+            checkpoint1.id,
+            checkpoint2.id
+          );
 
           return {
             agent1: { id: agentId1, name: agent1.name, checkpoint: checkpoint1 },
             agent2: { id: agentId2, name: agent2.name, checkpoint: checkpoint2 },
             timestamp,
             stateComparison: comparison,
-            coordinationDifferences: comparison.differences.filter((d) => d.path.includes('coordination') || d.path.includes('network')),
+            coordinationDifferences: comparison.differences.filter(
+              (d) => d.path.includes('coordination') || d.path.includes('network')
+            ),
           };
         },
       },
 
       // Network-level analysis
       networkAnalysis: {
-        simulateNetworkRecovery: async (recoveryStrategy: NetworkRecoveryStrategy): Promise<RecoverySimulation> => {
+        simulateNetworkRecovery: async (
+          recoveryStrategy: NetworkRecoveryStrategy
+        ): Promise<RecoverySimulation> => {
           const simulationId = `recovery-sim-${Date.now()}`;
 
           // Create recovery branches for each affected agent
           const recoveryBranches = await Promise.all(
             affectedAgents.map(async (agent) => {
-              const lastGoodCheckpoint = await this.findLastGoodCheckpoint(agent.threadId, issueTimestamp);
+              const lastGoodCheckpoint = await this.findLastGoodCheckpoint(
+                agent.threadId,
+                issueTimestamp
+              );
 
               return {
                 agentId: agent.id,
-                branchId: await this.timeTravel.createBranch(agent.threadId, lastGoodCheckpoint.id, {
-                  name: `recovery-${simulationId}-${agent.name}`,
-                  description: `Recovery simulation for ${agent.name}`,
-                  stateModifications: {
-                    ...recoveryStrategy.agentModifications[agent.id],
-                    recoveryMode: true,
-                    simulationId,
-                  },
-                }),
+                branchId: await this.timeTravel.createBranch(
+                  agent.threadId,
+                  lastGoodCheckpoint.id,
+                  {
+                    name: `recovery-${simulationId}-${agent.name}`,
+                    description: `Recovery simulation for ${agent.name}`,
+                    stateModifications: {
+                      ...recoveryStrategy.agentModifications[agent.id],
+                      recoveryMode: true,
+                      simulationId,
+                    },
+                  }
+                ),
                 lastGoodCheckpoint,
               };
             })
@@ -658,11 +732,15 @@ export class AgentNetworkDebugService {
             recoveryBranches.map(async (branch) => {
               const agent = affectedAgents.find((a) => a.id === branch.agentId)!;
 
-              return this.timeTravel.replayFromCheckpoint(agent.threadId, branch.lastGoodCheckpoint.id, {
-                newThreadId: branch.branchId,
-                stateModifications: recoveryStrategy.agentModifications[branch.agentId],
-                replaySpeed: 2.0,
-              });
+              return this.timeTravel.replayFromCheckpoint(
+                agent.threadId,
+                branch.lastGoodCheckpoint.id,
+                {
+                  newThreadId: branch.branchId,
+                  stateModifications: recoveryStrategy.agentModifications[branch.agentId],
+                  replaySpeed: 2.0,
+                }
+              );
             })
           );
 
@@ -675,7 +753,14 @@ export class AgentNetworkDebugService {
             coordinationRestored: await this.validateCoordinationRestored(recoveryResults),
             cleanup: async () => {
               // Clean up simulation branches
-              await Promise.all(recoveryBranches.map((branch) => this.timeTravel.deleteBranch(affectedAgents.find((a) => a.id === branch.agentId)!.threadId, branch.branchId)));
+              await Promise.all(
+                recoveryBranches.map((branch) =>
+                  this.timeTravel.deleteBranch(
+                    affectedAgents.find((a) => a.id === branch.agentId)!.threadId,
+                    branch.branchId
+                  )
+                )
+              );
             },
           };
         },
@@ -742,7 +827,10 @@ interface DebugConfig {
 
 @Injectable()
 export class WorkflowDebuggerService {
-  constructor(private readonly timeTravelService: TimeTravelService, private readonly branchManager: BranchManagerService) {}
+  constructor(
+    private readonly timeTravelService: TimeTravelService,
+    private readonly branchManager: BranchManagerService
+  ) {}
 
   async debugWorkflowFailure(failedThreadId: string, config: DebugConfig): Promise<DebugReport> {
     // Step 1: Get execution history to find failure point
@@ -769,40 +857,52 @@ export class WorkflowDebuggerService {
     const preFailureState = await this.getCheckpointState(failedThreadId, preFailureCheckpoint);
 
     // Step 3: Create debug branch for analysis
-    const debugBranchId = await this.timeTravelService.createBranch(failedThreadId, preFailureCheckpoint, {
-      name: `debug-${Date.now()}`,
-      description: `Debug analysis for failure at ${failureNode.nodeId}`,
-      stateModifications: {
-        debugMode: true,
-        logLevel: config.logLevel,
-        failureAnalysis: true,
-      },
-      metadata: {
-        originalFailure: failureNode.error?.message,
-        debugConfig: config,
-      },
-    });
+    const debugBranchId = await this.timeTravelService.createBranch(
+      failedThreadId,
+      preFailureCheckpoint,
+      {
+        name: `debug-${Date.now()}`,
+        description: `Debug analysis for failure at ${failureNode.nodeId}`,
+        stateModifications: {
+          debugMode: true,
+          logLevel: config.logLevel,
+          failureAnalysis: true,
+        },
+        metadata: {
+          originalFailure: failureNode.error?.message,
+          debugConfig: config,
+        },
+      }
+    );
 
     // Step 4: Replay with debug configuration
-    const debugReplay = await this.timeTravelService.replayFromCheckpoint(failedThreadId, preFailureCheckpoint, {
-      newThreadId: debugBranchId,
-      replaySpeed: 0.5, // Slow replay for detailed analysis
-      stateModifications: {
-        debugMode: true,
-        verbose: true,
-        errorHandling: 'continue', // Don't stop on errors
-      },
-      skipNodes: [], // Don't skip any nodes for complete analysis
-      beforeNodeExecution: async (nodeId, state) => {
-        console.log(`Executing node: ${nodeId}`, { state: this.sanitizeState(state) });
-      },
-      afterNodeExecution: async (nodeId, state, result) => {
-        console.log(`Node ${nodeId} completed`, { result: this.sanitizeResult(result) });
-      },
-    });
+    const debugReplay = await this.timeTravelService.replayFromCheckpoint(
+      failedThreadId,
+      preFailureCheckpoint,
+      {
+        newThreadId: debugBranchId,
+        replaySpeed: 0.5, // Slow replay for detailed analysis
+        stateModifications: {
+          debugMode: true,
+          verbose: true,
+          errorHandling: 'continue', // Don't stop on errors
+        },
+        skipNodes: [], // Don't skip any nodes for complete analysis
+        beforeNodeExecution: async (nodeId, state) => {
+          console.log(`Executing node: ${nodeId}`, { state: this.sanitizeState(state) });
+        },
+        afterNodeExecution: async (nodeId, state, result) => {
+          console.log(`Node ${nodeId} completed`, { result: this.sanitizeResult(result) });
+        },
+      }
+    );
 
     // Step 5: Analyze differences and provide fix suggestions
-    const stateComparison = await this.timeTravelService.compareCheckpoints(failedThreadId, preFailureCheckpoint, failureNode.checkpointId);
+    const stateComparison = await this.timeTravelService.compareCheckpoints(
+      failedThreadId,
+      preFailureCheckpoint,
+      failureNode.checkpointId
+    );
 
     return {
       failureAnalysis: {
@@ -819,30 +919,42 @@ export class WorkflowDebuggerService {
     };
   }
 
-  async testWorkflowFix(originalThreadId: string, fixBranchId: string, testScenarios: TestScenario[]): Promise<TestResults> {
+  async testWorkflowFix(
+    originalThreadId: string,
+    fixBranchId: string,
+    testScenarios: TestScenario[]
+  ): Promise<TestResults> {
     const results: TestResult[] = [];
 
     for (const scenario of testScenarios) {
       console.log(`Testing scenario: ${scenario.name}`);
 
       // Create test branch from fix branch
-      const testBranchId = await this.timeTravelService.createBranch(originalThreadId, scenario.fromCheckpointId, {
-        name: `test-${scenario.name}-${Date.now()}`,
-        description: `Testing fix with scenario: ${scenario.description}`,
-        stateModifications: scenario.inputModifications,
-        metadata: {
-          testScenario: scenario.name,
-          expectedOutcome: scenario.expectedOutcome,
-        },
-      });
+      const testBranchId = await this.timeTravelService.createBranch(
+        originalThreadId,
+        scenario.fromCheckpointId,
+        {
+          name: `test-${scenario.name}-${Date.now()}`,
+          description: `Testing fix with scenario: ${scenario.description}`,
+          stateModifications: scenario.inputModifications,
+          metadata: {
+            testScenario: scenario.name,
+            expectedOutcome: scenario.expectedOutcome,
+          },
+        }
+      );
 
       try {
         // Execute test
-        const testResult = await this.timeTravelService.replayFromCheckpoint(originalThreadId, scenario.fromCheckpointId, {
-          newThreadId: testBranchId,
-          stateModifications: scenario.inputModifications,
-          replaySpeed: 2.0, // Faster replay for testing
-        });
+        const testResult = await this.timeTravelService.replayFromCheckpoint(
+          originalThreadId,
+          scenario.fromCheckpointId,
+          {
+            newThreadId: testBranchId,
+            stateModifications: scenario.inputModifications,
+            replaySpeed: 2.0, // Faster replay for testing
+          }
+        );
 
         // Validate result
         const passed = await this.validateTestResult(testResult, scenario.expectedOutcome);
@@ -875,7 +987,11 @@ export class WorkflowDebuggerService {
     };
   }
 
-  async createExperimentalBranch(threadId: string, checkpointId: string, experimentConfig: ExperimentConfig): Promise<string> {
+  async createExperimentalBranch(
+    threadId: string,
+    checkpointId: string,
+    experimentConfig: ExperimentConfig
+  ): Promise<string> {
     const branchId = await this.timeTravelService.createBranch(threadId, checkpointId, {
       name: `experiment-${experimentConfig.name}`,
       description: experimentConfig.description,
@@ -894,7 +1010,11 @@ export class WorkflowDebuggerService {
     return branchId;
   }
 
-  async compareExperimentResults(threadId: string, baselineCheckpointId: string, experimentBranchIds: string[]): Promise<ExperimentComparison> {
+  async compareExperimentResults(
+    threadId: string,
+    baselineCheckpointId: string,
+    experimentBranchIds: string[]
+  ): Promise<ExperimentComparison> {
     const comparisons: BranchComparison[] = [];
 
     for (const branchId of experimentBranchIds) {
@@ -936,7 +1056,10 @@ export class WorkflowDebuggerService {
     return result;
   }
 
-  private async generateFixRecommendations(comparison: StateComparison, failureNode: ExecutionHistoryNode): Promise<string[]> {
+  private async generateFixRecommendations(
+    comparison: StateComparison,
+    failureNode: ExecutionHistoryNode
+  ): Promise<string[]> {
     const recommendations: string[] = [];
 
     // Analyze state differences for common issues
@@ -950,7 +1073,9 @@ export class WorkflowDebuggerService {
       }
 
       if (diff.type === 'type-changed') {
-        recommendations.push(`Type mismatch detected in: ${diff.path} (${diff.type1} → ${diff.type2})`);
+        recommendations.push(
+          `Type mismatch detected in: ${diff.path} (${diff.type1} → ${diff.type2})`
+        );
       }
     }
 
@@ -1017,7 +1142,10 @@ export class WorkflowDebuggerService {
 
   private async getCheckpointState(threadId: string, checkpointId: string): Promise<any> {
     // Load checkpoint state via checkpoint adapter
-    const checkpoint = await this.timeTravelService['checkpointAdapter'].loadCheckpoint(threadId, checkpointId);
+    const checkpoint = await this.timeTravelService['checkpointAdapter'].loadCheckpoint(
+      threadId,
+      checkpointId
+    );
     return checkpoint?.channel_values;
   }
 }
@@ -1084,9 +1212,16 @@ TimeTravelModule.forRootAsync({
 ```typescript
 @Injectable()
 export class ExperimentationService {
-  constructor(private readonly timeTravelService: TimeTravelService, private readonly branchManager: BranchManagerService) {}
+  constructor(
+    private readonly timeTravelService: TimeTravelService,
+    private readonly branchManager: BranchManagerService
+  ) {}
 
-  async runABTest(threadId: string, baseCheckpointId: string, variants: ABTestVariant[]): Promise<ABTestResults> {
+  async runABTest(
+    threadId: string,
+    baseCheckpointId: string,
+    variants: ABTestVariant[]
+  ): Promise<ABTestResults> {
     const results: VariantResult[] = [];
 
     for (const variant of variants) {
@@ -1105,11 +1240,15 @@ export class ExperimentationService {
       // Execute variant multiple times for statistical significance
       const runs: VariantRun[] = [];
       for (let i = 0; i < variant.sampleSize; i++) {
-        const runResult = await this.timeTravelService.replayFromCheckpoint(threadId, baseCheckpointId, {
-          newThreadId: `${branchId}-run-${i}`,
-          stateModifications: variant.modifications,
-          replaySpeed: 5.0, // Fast execution for testing
-        });
+        const runResult = await this.timeTravelService.replayFromCheckpoint(
+          threadId,
+          baseCheckpointId,
+          {
+            newThreadId: `${branchId}-run-${i}`,
+            stateModifications: variant.modifications,
+            replaySpeed: 5.0, // Fast execution for testing
+          }
+        );
 
         runs.push({
           runId: `run-${i}`,
@@ -1139,18 +1278,26 @@ export class ExperimentationService {
     };
   }
 
-  async createCanaryDeployment(threadId: string, productionCheckpointId: string, canaryConfig: CanaryConfig): Promise<CanaryDeployment> {
+  async createCanaryDeployment(
+    threadId: string,
+    productionCheckpointId: string,
+    canaryConfig: CanaryConfig
+  ): Promise<CanaryDeployment> {
     // Create canary branch
-    const canaryBranchId = await this.timeTravelService.createBranch(threadId, productionCheckpointId, {
-      name: `canary-${canaryConfig.version}`,
-      description: `Canary deployment for version ${canaryConfig.version}`,
-      stateModifications: canaryConfig.changes,
-      metadata: {
-        deploymentType: 'canary',
-        version: canaryConfig.version,
-        trafficPercent: canaryConfig.trafficPercent,
-      },
-    });
+    const canaryBranchId = await this.timeTravelService.createBranch(
+      threadId,
+      productionCheckpointId,
+      {
+        name: `canary-${canaryConfig.version}`,
+        description: `Canary deployment for version ${canaryConfig.version}`,
+        stateModifications: canaryConfig.changes,
+        metadata: {
+          deploymentType: 'canary',
+          version: canaryConfig.version,
+          trafficPercent: canaryConfig.trafficPercent,
+        },
+      }
+    );
 
     // Set up monitoring and gradual rollout
     const monitoring = await this.setupCanaryMonitoring(canaryBranchId, canaryConfig);
@@ -1179,7 +1326,9 @@ export class ExperimentationService {
   }
 
   private determineWinner(results: VariantResult[]): string {
-    return results.reduce((winner, current) => (current.statistics.successRate > winner.statistics.successRate ? current : winner)).variantName;
+    return results.reduce((winner, current) =>
+      current.statistics.successRate > winner.statistics.successRate ? current : winner
+    ).variantName;
   }
 
   private calculateSignificance(results: VariantResult[]): number {
@@ -1207,7 +1356,11 @@ export class ExperimentationService {
 export class StateAnalysisService {
   constructor(private readonly timeTravelService: TimeTravelService) {}
 
-  async analyzeStateEvolution(threadId: string, fieldPath: string, options?: AnalysisOptions): Promise<StateEvolution> {
+  async analyzeStateEvolution(
+    threadId: string,
+    fieldPath: string,
+    options?: AnalysisOptions
+  ): Promise<StateEvolution> {
     const history = await this.timeTravelService.getExecutionHistory(threadId, {
       limit: options?.limit || 100,
       includeChildren: true,
@@ -1285,7 +1438,10 @@ export class StateAnalysisService {
     return anomalies.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
-  async generateExecutionReport(threadId: string, reportConfig: ReportConfig): Promise<ExecutionReport> {
+  async generateExecutionReport(
+    threadId: string,
+    reportConfig: ReportConfig
+  ): Promise<ExecutionReport> {
     const history = await this.timeTravelService.getExecutionHistory(threadId);
     const anomalies = await this.detectAnomalies(threadId, reportConfig.anomalyConfig);
 
@@ -1316,7 +1472,10 @@ export class StateAnalysisService {
       return acc;
     }, {} as Record<string, number>);
 
-    const avgDuration = history.filter((n) => n.executionDuration).reduce((sum, n) => sum + (n.executionDuration || 0), 0) / history.length;
+    const avgDuration =
+      history
+        .filter((n) => n.executionDuration)
+        .reduce((sum, n) => sum + (n.executionDuration || 0), 0) / history.length;
 
     return {
       nodeTypes,
@@ -1407,13 +1566,21 @@ interface StorageConfig {
 ## Error Handling
 
 ```typescript
-import { CheckpointNotFoundError, BranchNotFoundError, ReplayFailedError } from '@hive-academy/langgraph-time-travel';
+import {
+  CheckpointNotFoundError,
+  BranchNotFoundError,
+  ReplayFailedError,
+} from '@hive-academy/langgraph-time-travel';
 
 @Injectable()
 export class RobustTimeTravelService {
   constructor(private readonly timeTravelService: TimeTravelService) {}
 
-  async safeReplay<T>(threadId: string, checkpointId: string, options: ReplayOptions<T>): Promise<WorkflowExecution<T> | null> {
+  async safeReplay<T>(
+    threadId: string,
+    checkpointId: string,
+    options: ReplayOptions<T>
+  ): Promise<WorkflowExecution<T> | null> {
     try {
       return await this.timeTravelService.replayFromCheckpoint(threadId, checkpointId, options);
     } catch (error) {
@@ -1432,7 +1599,11 @@ export class RobustTimeTravelService {
     }
   }
 
-  private async attemptSimplifiedReplay<T>(threadId: string, checkpointId: string, options: ReplayOptions<T>): Promise<WorkflowExecution<T> | null> {
+  private async attemptSimplifiedReplay<T>(
+    threadId: string,
+    checkpointId: string,
+    options: ReplayOptions<T>
+  ): Promise<WorkflowExecution<T> | null> {
     // Retry with simplified state modifications
     const simplifiedOptions = {
       ...options,
@@ -1441,7 +1612,11 @@ export class RobustTimeTravelService {
     };
 
     try {
-      return await this.timeTravelService.replayFromCheckpoint(threadId, checkpointId, simplifiedOptions);
+      return await this.timeTravelService.replayFromCheckpoint(
+        threadId,
+        checkpointId,
+        simplifiedOptions
+      );
     } catch (error) {
       this.logger.error('Simplified replay also failed:', error.message);
       return null;

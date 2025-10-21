@@ -8,13 +8,12 @@ import type {
 
 /**
  * Options Validation Service
- * 
+ *
  * Handles validation of operation options and configuration
  * Following Single Responsibility Principle - only validates options
  */
 @Injectable()
 export class OptionsValidatorService {
-
   /**
    * Validate collection name
    */
@@ -71,7 +70,10 @@ export class OptionsValidatorService {
       warnings: [],
     };
 
-    if (options.batchSize && (options.batchSize <= 0 || options.batchSize > 1000)) {
+    if (
+      options.batchSize &&
+      (options.batchSize <= 0 || options.batchSize > 1000)
+    ) {
       result.errors.push('Batch size must be between 1 and 1000');
     }
 
@@ -93,19 +95,34 @@ export class OptionsValidatorService {
 
     // Validate chunking strategy
     if (options.chunkingStrategy) {
-      const validStrategies = ['recursive', 'token', 'character', 'markdown', 'semantic', 'smart'];
+      const validStrategies = [
+        'recursive',
+        'token',
+        'character',
+        'markdown',
+        'semantic',
+        'smart',
+      ];
       if (!validStrategies.includes(options.chunkingStrategy)) {
-        result.errors.push(`Invalid chunking strategy. Must be one of: ${validStrategies.join(', ')}`);
+        result.errors.push(
+          `Invalid chunking strategy. Must be one of: ${validStrategies.join(
+            ', '
+          )}`
+        );
       }
     }
 
     // Warn about performance implications
     if (options.batchSize && options.batchSize > 500) {
-      result.warnings.push('Large batch sizes may impact performance and memory usage');
+      result.warnings.push(
+        'Large batch sizes may impact performance and memory usage'
+      );
     }
 
     if (options.autoChunk && !options.chunkingStrategy) {
-      result.warnings.push('Auto-chunking enabled without specifying chunking strategy, using default');
+      result.warnings.push(
+        'Auto-chunking enabled without specifying chunking strategy, using default'
+      );
     }
 
     result.isValid = result.errors.length === 0;
@@ -123,7 +140,10 @@ export class OptionsValidatorService {
       warnings: [],
     };
 
-    if (options.nResults && (options.nResults <= 0 || options.nResults > 10000)) {
+    if (
+      options.nResults &&
+      (options.nResults <= 0 || options.nResults > 10000)
+    ) {
       result.errors.push('Number of results must be between 1 and 10000');
     }
 
@@ -136,7 +156,9 @@ export class OptionsValidatorService {
 
     // Validate whereDocument clause structure
     if (options.whereDocument) {
-      const whereDocValidation = this.validateWhereDocumentClause(options.whereDocument);
+      const whereDocValidation = this.validateWhereDocumentClause(
+        options.whereDocument
+      );
       result.errors.push(...whereDocValidation.errors);
       result.warnings.push(...whereDocValidation.warnings);
     }
@@ -168,8 +190,19 @@ export class OptionsValidatorService {
     }
 
     // Check for valid operators
-    const validOperators = ['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin', '$and', '$or'];
-    
+    const validOperators = [
+      '$eq',
+      '$ne',
+      '$gt',
+      '$gte',
+      '$lt',
+      '$lte',
+      '$in',
+      '$nin',
+      '$and',
+      '$or',
+    ];
+
     Object.entries(where).forEach(([key, value]) => {
       if (key.startsWith('$') && !validOperators.includes(key)) {
         result.errors.push(`Unknown operator '${key}' in where clause`);
@@ -194,7 +227,9 @@ export class OptionsValidatorService {
   /**
    * Validate whereDocument clause structure
    */
-  private validateWhereDocumentClause(whereDocument: Record<string, any>): ValidationResult {
+  private validateWhereDocumentClause(
+    whereDocument: Record<string, any>
+  ): ValidationResult {
     const result: MutableValidationResult = {
       isValid: true,
       errors: [],
@@ -209,14 +244,19 @@ export class OptionsValidatorService {
 
     // Check for valid document operators
     const validDocOperators = ['$contains', '$not_contains', '$and', '$or'];
-    
+
     Object.entries(whereDocument).forEach(([key, value]) => {
       if (key.startsWith('$') && !validDocOperators.includes(key)) {
-        result.errors.push(`Unknown document operator '${key}' in whereDocument clause`);
+        result.errors.push(
+          `Unknown document operator '${key}' in whereDocument clause`
+        );
       }
 
       // Validate contains operators require string values
-      if ((key === '$contains' || key === '$not_contains') && typeof value !== 'string') {
+      if (
+        (key === '$contains' || key === '$not_contains') &&
+        typeof value !== 'string'
+      ) {
         result.errors.push(`Operator '${key}' requires a string value`);
       }
 
@@ -279,11 +319,22 @@ export class OptionsValidatorService {
         return result;
       }
 
-      const validIncludes = ['embeddings', 'documents', 'metadatas', 'distances'];
-      const invalidIncludes = include.filter(item => !validIncludes.includes(item));
-      
+      const validIncludes = [
+        'embeddings',
+        'documents',
+        'metadatas',
+        'distances',
+      ];
+      const invalidIncludes = include.filter(
+        (item) => !validIncludes.includes(item)
+      );
+
       if (invalidIncludes.length > 0) {
-        result.errors.push(`Invalid include options: ${invalidIncludes.join(', ')}. Valid options: ${validIncludes.join(', ')}`);
+        result.errors.push(
+          `Invalid include options: ${invalidIncludes.join(
+            ', '
+          )}. Valid options: ${validIncludes.join(', ')}`
+        );
       }
     }
 

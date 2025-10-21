@@ -12,9 +12,11 @@ export class TraceProvider extends BaseCallbackHandler {
   override async handleLLMStart(
     llm: any,
     prompts: string[],
-    runId: string,
+    runId: string
   ): Promise<void> {
-    this.logger.debug(`LLM Start - Run ID: ${runId}, Prompts: ${prompts.length}`);
+    this.logger.debug(
+      `LLM Start - Run ID: ${runId}, Prompts: ${prompts.length}`
+    );
   }
 
   override async handleLLMEnd(output: any, runId: string): Promise<void> {
@@ -28,7 +30,7 @@ export class TraceProvider extends BaseCallbackHandler {
   override async handleChainStart(
     chain: any,
     inputs: any,
-    runId: string,
+    runId: string
   ): Promise<void> {
     this.logger.debug(`Chain Start - Run ID: ${runId}`);
   }
@@ -44,7 +46,7 @@ export class TraceProvider extends BaseCallbackHandler {
   override async handleToolStart(
     tool: any,
     input: string,
-    runId: string,
+    runId: string
   ): Promise<void> {
     this.logger.debug(`Tool Start - Run ID: ${runId}, Tool: ${tool.name}`);
   }
