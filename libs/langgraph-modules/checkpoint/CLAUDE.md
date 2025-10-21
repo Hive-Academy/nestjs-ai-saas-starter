@@ -64,7 +64,10 @@ export class AppModule {}
 ### **Production Setup (Verified Pattern)**
 
 ```typescript
-import { LanggraphModulesCheckpointModule, CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint';
+import {
+  LanggraphModulesCheckpointModule,
+  CheckpointModuleOptions,
+} from '@hive-academy/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 
 @Module({
@@ -128,10 +131,22 @@ export {
 
 ```typescript
 // Configuration interfaces
-export type { CheckpointConfig, CheckpointModuleConfig, CheckpointSaverConfig, CheckpointSaverMetadata } from '@hive-academy/langgraph-checkpoint';
+export type {
+  CheckpointConfig,
+  CheckpointModuleConfig,
+  CheckpointSaverConfig,
+  CheckpointSaverMetadata,
+} from '@hive-academy/langgraph-checkpoint';
 
 // Core interfaces
-export type { EnhancedCheckpointMetadata, EnhancedCheckpoint, EnhancedCheckpointTuple, ListCheckpointsOptions, CheckpointStats, CheckpointCleanupOptions } from '@hive-academy/langgraph-checkpoint';
+export type {
+  EnhancedCheckpointMetadata,
+  EnhancedCheckpoint,
+  EnhancedCheckpointTuple,
+  ListCheckpointsOptions,
+  CheckpointStats,
+  CheckpointCleanupOptions,
+} from '@hive-academy/langgraph-checkpoint';
 ```
 
 ## 🎯 VERIFIED ECOSYSTEM INTEGRATION PATTERNS
@@ -457,11 +472,16 @@ export class CheckpointIntegrationExample {
 
   async createPersistentResearchNetwork(): Promise<string> {
     // Create network with automatic checkpointing
-    const networkId = await this.multiAgentCoordinator.setupNetwork('research-network-persistent', [researcherAgent, analyzerAgent, reporterAgent], 'supervisor', {
-      systemPrompt: 'Research supervisor routing tasks appropriately',
-      workers: ['researcher', 'analyzer', 'reporter'],
-      removeHandoffMessages: false, // Keep for checkpoint continuity
-    });
+    const networkId = await this.multiAgentCoordinator.setupNetwork(
+      'research-network-persistent',
+      [researcherAgent, analyzerAgent, reporterAgent],
+      'supervisor',
+      {
+        systemPrompt: 'Research supervisor routing tasks appropriately',
+        workers: ['researcher', 'analyzer', 'reporter'],
+        removeHandoffMessages: false, // Keep for checkpoint continuity
+      }
+    );
 
     // Checkpointing automatically enabled - state persisted
     return networkId;
@@ -491,7 +511,9 @@ LanggraphModulesCheckpointModule.forRootAsync({
   imports: [ConfigModule],
   useFactory: async (configService: ConfigService) => ({
     // User provides external saver
-    saver: SqliteSaver.fromConnString(configService.get('CHECKPOINT_SQLITE_PATH', './data/checkpoints.db')),
+    saver: SqliteSaver.fromConnString(
+      configService.get('CHECKPOINT_SQLITE_PATH', './data/checkpoints.db')
+    ),
 
     // Optional service configuration
     cleanup: {
@@ -536,7 +558,10 @@ LanggraphModulesCheckpointModule.forRoot({
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { LanggraphModulesCheckpointModule, CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
+import {
+  LanggraphModulesCheckpointModule,
+  CheckpointManagerService,
+} from '@hive-academy/langgraph-checkpoint';
 
 describe('Real Checkpoint Integration', () => {
   let checkpointManager: CheckpointManagerService;

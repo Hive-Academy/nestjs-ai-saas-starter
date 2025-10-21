@@ -23,16 +23,16 @@ export enum ApprovalWorkflowState {
  * Human approval request structure
  */
 export interface HumanApprovalRequest {
-  id: string;                 // Request ID
-  executionId: string;        // Execution ID
-  nodeId: string;             // Node requesting approval
-  message: string;            // Approval message
+  id: string; // Request ID
+  executionId: string; // Execution ID
+  nodeId: string; // Node requesting approval
+  message: string; // Approval message
   metadata: Record<string, unknown>; // Request metadata
-  state: WorkflowState;       // Current workflow state snapshot
-  options: RequiresApprovalOptions;  // Approval options
+  state: WorkflowState; // Current workflow state snapshot
+  options: RequiresApprovalOptions; // Approval options
   workflowState: ApprovalWorkflowState; // Internal approval workflow state
-  approvers?: string[];       // Assigned approvers
-  chainId?: string;           // Approval chain ID
+  approvers?: string[]; // Assigned approvers
+  chainId?: string; // Approval chain ID
   riskAssessment?: {
     level: ApprovalRiskLevel;
     factors: string[];
@@ -65,15 +65,16 @@ export interface HumanApprovalRequest {
 export interface HumanApprovalResponse {
   requestId: string; // Request ID
   decision: 'approved' | 'rejected' | 'escalated' | 'retry' | 'modify'; // Decision
-  approver: {        // Approver information
+  approver: {
+    // Approver information
     id: string;
     name?: string;
     role?: string;
   };
-  message?: string;  // Response message
+  message?: string; // Response message
   modifications?: Record<string, unknown>; // Modifications to apply
   metadata?: Record<string, unknown>; // Additional metadata
-  timestamp: Date;   // Response timestamp
+  timestamp: Date; // Response timestamp
 }
 
 /**

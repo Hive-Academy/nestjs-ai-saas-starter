@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject } from '@nestjs/common';
 import { Observable, Subject, debounceTime, groupBy, scan } from 'rxjs';
-import { StreamUpdate, StreamEventType } from '../interfaces/streaming.interface';
+import {
+  StreamUpdate,
+  StreamEventType,
+} from '../interfaces/streaming.interface';
 
 /**
  * Service for processing and aggregating stream events
@@ -14,7 +17,9 @@ export class EventStreamProcessorService {
   private readonly eventBuffer = new Map<string, StreamUpdate[]>();
   private readonly aggregators = new Map<string, Subject<any>>();
 
-  constructor(@Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
+  ) {}
 
   /**
    * Process a single stream event
@@ -29,7 +34,9 @@ export class EventStreamProcessorService {
       // Emit the event to the event emitter system
       this.eventEmitter.emit(`workflow.${event.type}`, event);
 
-      this.logger.debug(`Processed event ${event.type} for ${event.metadata?.executionId}:${event.metadata?.nodeId}`);
+      this.logger.debug(
+        `Processed event ${event.type} for ${event.metadata?.executionId}:${event.metadata?.nodeId}`
+      );
     } catch (error) {
       this.logger.error('Failed to process event:', error);
       throw error;
@@ -42,12 +49,14 @@ export class EventStreamProcessorService {
   processBatch(
     events: StreamUpdate[],
     batchSize = 10,
-    debounceMs = 100,
+    debounceMs = 100
   ): Observable<StreamUpdate[]> {
     const subject = new Subject<StreamUpdate>();
 
     // Push events to subject
-    events.forEach(event => { subject.next(event); });
+    events.forEach((event) => {
+      subject.next(event);
+    });
 
     return subject.pipe(
       scan((batch, event) => {
@@ -57,7 +66,7 @@ export class EventStreamProcessorService {
         }
         return batch;
       }, [] as StreamUpdate[]),
-      debounceTime(debounceMs),
+      debounceTime(debounceMs)
     );
   }
 
@@ -65,10 +74,10 @@ export class EventStreamProcessorService {
    * Group events by type and execution
    */
   groupEventsByType(
-    events: Observable<StreamUpdate>,
+    events: Observable<StreamUpdate>
   ): Observable<Observable<StreamUpdate>> {
     return events.pipe(
-      groupBy(event => `${event.metadata?.executionId}_${event.type}`),
+      groupBy((event) => `${event.metadata?.executionId}_${event.type}`)
     );
   }
 
@@ -77,11 +86,11 @@ export class EventStreamProcessorService {
    */
   aggregateByExecution(
     executionId: string,
-    events: StreamUpdate[],
+    events: StreamUpdate[]
   ): Map<StreamEventType, StreamUpdate[]> {
     const aggregated = new Map<StreamEventType, StreamUpdate[]>();
 
-    events.forEach(event => {
+    events.forEach((event) => {
       if (event.metadata?.executionId === executionId) {
         const typeEvents = aggregated.get(event.type) || [];
         typeEvents.push(event);
@@ -103,14 +112,17 @@ export class EventStreamProcessorService {
       nodeId?: string;
       startTime?: Date;
       endTime?: Date;
-    },
+    }
   ): StreamUpdate[] {
-    return events.filter(event => {
+    return events.filter((event) => {
       if (criteria.types && !criteria.types.includes(event.type)) {
         return false;
       }
 
-      if (criteria.executionId && event.metadata?.executionId !== criteria.executionId) {
+      if (
+        criteria.executionId &&
+        event.metadata?.executionId !== criteria.executionId
+      ) {
         return false;
       }
 
@@ -118,11 +130,19 @@ export class EventStreamProcessorService {
         return false;
       }
 
-      if (criteria.startTime && event.metadata?.timestamp && event.metadata.timestamp < criteria.startTime) {
+      if (
+        criteria.startTime &&
+        event.metadata?.timestamp &&
+        event.metadata.timestamp < criteria.startTime
+      ) {
         return false;
       }
 
-      if (criteria.endTime && event.metadata?.timestamp && event.metadata.timestamp > criteria.endTime) {
+      if (
+        criteria.endTime &&
+        event.metadata?.timestamp &&
+        event.metadata.timestamp > criteria.endTime
+      ) {
         return false;
       }
 
@@ -135,7 +155,7 @@ export class EventStreamProcessorService {
    */
   transformEvents<T>(
     events: StreamUpdate[],
-    transformer: (event: StreamUpdate) => T,
+    transformer: (event: StreamUpdate) => T
   ): T[] {
     return events.map(transformer);
   }
@@ -158,15 +178,12 @@ export class EventStreamProcessorService {
   /**
    * Replay buffered events
    */
-  replayEvents(
-    executionId: string,
-    fromSequence?: number,
-  ): StreamUpdate[] {
+  replayEvents(executionId: string, fromSequence?: number): StreamUpdate[] {
     const buffer = this.eventBuffer.get(executionId) || [];
 
     if (fromSequence !== undefined) {
       return buffer.filter(
-        event => (event.metadata?.sequenceNumber || 0) >= fromSequence,
+        (event) => (event.metadata?.sequenceNumber || 0) >= fromSequence
       );
     }
 
@@ -193,7 +210,7 @@ export class EventStreamProcessorService {
     const buffer = this.eventBuffer.get(executionId) || [];
     const stats: Partial<Record<StreamEventType, number>> = {};
 
-    buffer.forEach(event => {
+    buffer.forEach((event) => {
       stats[event.type] = (stats[event.type] || 0) + 1;
     });
 
@@ -236,7 +253,7 @@ export class EventStreamProcessorService {
   handleProgressEvent(data: any): void {
     const executionId = data.metadata?.executionId || 'unknown';
     this.logger.debug(
-      `Progress update for ${executionId}: ${data.data?.progress}%`,
+      `Progress update for ${executionId}: ${data.data?.progress}%`
     );
 
     // Emit progress to connected clients
@@ -276,19 +293,21 @@ export class EventStreamProcessorService {
       const aggregator = new Subject<any>();
 
       // Setup aggregation pipeline
-      aggregator.pipe(
-        scan((acc, value) => {
-          acc.push(value);
-          return acc;
-        }, [] as any[]),
-        debounceTime(500),
-      ).subscribe(aggregated => {
-        this.eventEmitter.emit('tokens.aggregated', {
-          executionId,
-          tokens: aggregated,
-          totalCount: aggregated.length,
+      aggregator
+        .pipe(
+          scan((acc, value) => {
+            acc.push(value);
+            return acc;
+          }, [] as any[]),
+          debounceTime(500)
+        )
+        .subscribe((aggregated) => {
+          this.eventEmitter.emit('tokens.aggregated', {
+            executionId,
+            tokens: aggregated,
+            totalCount: aggregated.length,
+          });
         });
-      });
 
       this.aggregators.set(executionId, aggregator);
     }
@@ -316,7 +335,7 @@ export class EventStreamProcessorService {
     }
 
     let total = 0;
-    this.eventBuffer.forEach(buffer => {
+    this.eventBuffer.forEach((buffer) => {
       total += buffer.length;
     });
     return total;

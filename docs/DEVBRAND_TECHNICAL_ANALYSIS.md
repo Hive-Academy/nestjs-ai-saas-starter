@@ -1062,13 +1062,19 @@ const agentMetadataList = agents
   .filter((item) => item.metadata !== undefined);
 
 // Aggregate interruption config from worker agents
-const interruptionConfigs = agentMetadataList.map((item) => item.metadata?.workflow?.multiAgentInterruption).filter((cfg) => cfg?.enabled); // ← Only enabled configs
+const interruptionConfigs = agentMetadataList
+  .map((item) => item.metadata?.workflow?.multiAgentInterruption)
+  .filter((cfg) => cfg?.enabled); // ← Only enabled configs
 
 if (interruptionConfigs.length > 0) {
   // Aggregate interrupt before from all workers
-  const allInterruptBefore = interruptionConfigs.filter((cfg) => cfg?.interruptBefore).flatMap((cfg) => cfg!.interruptBefore!);
+  const allInterruptBefore = interruptionConfigs
+    .filter((cfg) => cfg?.interruptBefore)
+    .flatMap((cfg) => cfg!.interruptBefore!);
 
-  const allInterruptAfter = interruptionConfigs.filter((cfg) => cfg?.interruptAfter).flatMap((cfg) => cfg!.interruptAfter!);
+  const allInterruptAfter = interruptionConfigs
+    .filter((cfg) => cfg?.interruptAfter)
+    .flatMap((cfg) => cfg!.interruptAfter!);
 
   if (allInterruptBefore.length > 0) {
     interruptBefore = [...new Set(allInterruptBefore)]; // ← Deduplication
@@ -1118,7 +1124,10 @@ return (graph as any).compile({
 
 ```typescript
 // Prepare compilation options with checkpointer if enabled
-const compilationOptions = await this.prepareCompilationOptions(networkConfig.compilationOptions, networkConfig.id);
+const compilationOptions = await this.prepareCompilationOptions(
+  networkConfig.compilationOptions,
+  networkConfig.id
+);
 
 // Checkpointer automatically propagated to worker subgraphs by LangGraph
 ```
@@ -2155,8 +2164,14 @@ if (checkpoint.next !== expectedNext) {
 describe('GraphBuilderService - Interruption Metadata', () => {
   it('should aggregate interruptBefore from multiple agents', () => {
     const agents = [
-      { id: 'agent1', metadata: { multiAgentInterruption: { enabled: true, interruptBefore: ['agent1'] } } },
-      { id: 'agent2', metadata: { multiAgentInterruption: { enabled: true, interruptBefore: ['agent2'] } } },
+      {
+        id: 'agent1',
+        metadata: { multiAgentInterruption: { enabled: true, interruptBefore: ['agent1'] } },
+      },
+      {
+        id: 'agent2',
+        metadata: { multiAgentInterruption: { enabled: true, interruptBefore: ['agent2'] } },
+      },
     ];
 
     const result = graphBuilder.aggregateInterruptionConfig(agents);
@@ -2166,8 +2181,14 @@ describe('GraphBuilderService - Interruption Metadata', () => {
 
   it('should deduplicate interruption points', () => {
     const agents = [
-      { id: 'agent1', metadata: { multiAgentInterruption: { interruptBefore: ['shared', 'agent1'] } } },
-      { id: 'agent2', metadata: { multiAgentInterruption: { interruptBefore: ['shared', 'agent2'] } } },
+      {
+        id: 'agent1',
+        metadata: { multiAgentInterruption: { interruptBefore: ['shared', 'agent1'] } },
+      },
+      {
+        id: 'agent2',
+        metadata: { multiAgentInterruption: { interruptBefore: ['shared', 'agent2'] } },
+      },
     ];
 
     const result = graphBuilder.aggregateInterruptionConfig(agents);
@@ -2249,16 +2270,28 @@ describe('DevBrand Supervisor Workflow - HITL Integration', () => {
 
   it('should pause at multiple interruption points', async () => {
     // Configure all agents with interruption
-    const result1 = await coordinator.execute(input, { checkpointer, configurable: { thread_id: threadId } });
+    const result1 = await coordinator.execute(input, {
+      checkpointer,
+      configurable: { thread_id: threadId },
+    });
     expect(result1.next).toBe('github-analyzer'); // First interrupt
 
-    const result2 = await coordinator.execute({ ...input, approval: true }, { checkpointer, configurable: { thread_id: threadId } });
+    const result2 = await coordinator.execute(
+      { ...input, approval: true },
+      { checkpointer, configurable: { thread_id: threadId } }
+    );
     expect(result2.next).toBe('personal-brand-strategist'); // Second interrupt
 
-    const result3 = await coordinator.execute({ ...input, approval: true }, { checkpointer, configurable: { thread_id: threadId } });
+    const result3 = await coordinator.execute(
+      { ...input, approval: true },
+      { checkpointer, configurable: { thread_id: threadId } }
+    );
     expect(result3.next).toBe('content-creator'); // Third interrupt
 
-    const result4 = await coordinator.execute({ ...input, approval: true }, { checkpointer, configurable: { thread_id: threadId } });
+    const result4 = await coordinator.execute(
+      { ...input, approval: true },
+      { checkpointer, configurable: { thread_id: threadId } }
+    );
     expect(result4.next).toBeUndefined(); // Complete
     expect(result4.success).toBe(true);
   });
@@ -2274,7 +2307,10 @@ describe('Checkpoint State Persistence', () => {
     const threadId = 'test-thread';
 
     // Execute until first interrupt
-    const result1 = await coordinator.execute(input, { checkpointer, configurable: { thread_id: threadId } });
+    const result1 = await coordinator.execute(input, {
+      checkpointer,
+      configurable: { thread_id: threadId },
+    });
 
     // Retrieve checkpoint state
     const checkpoint1 = await checkpointer.get({ thread_id: threadId });
@@ -2282,7 +2318,10 @@ describe('Checkpoint State Persistence', () => {
     expect(checkpoint1.next).toBe(result1.next);
 
     // Resume execution
-    const result2 = await coordinator.execute({ ...input, approval: true }, { checkpointer, configurable: { thread_id: threadId } });
+    const result2 = await coordinator.execute(
+      { ...input, approval: true },
+      { checkpointer, configurable: { thread_id: threadId } }
+    );
 
     // Verify state continuity
     expect(result2.finalState.metadata.executionId).toBe(result1.finalState.metadata.executionId);
@@ -2297,7 +2336,10 @@ describe('Checkpoint State Persistence', () => {
 ```typescript
 describe('DevBrand Workflow - Full User Interaction', () => {
   it('should support cancel during interruption', async () => {
-    const result1 = await coordinator.execute(input, { checkpointer, configurable: { thread_id: threadId } });
+    const result1 = await coordinator.execute(input, {
+      checkpointer,
+      configurable: { thread_id: threadId },
+    });
     expect(result1.next).toBe('content-creator');
 
     // User cancels
@@ -2320,7 +2362,12 @@ describe('DevBrand Workflow - Full User Interaction', () => {
     await new Promise((resolve) => setTimeout(resolve, 6000));
 
     // Attempt to resume should fail with timeout
-    await expect(coordinator.execute({ ...input, approval: true }, { checkpointer, configurable: { thread_id: threadId } })).rejects.toThrow('Workflow timeout exceeded');
+    await expect(
+      coordinator.execute(
+        { ...input, approval: true },
+        { checkpointer, configurable: { thread_id: threadId } }
+      )
+    ).rejects.toThrow('Workflow timeout exceeded');
   });
 });
 ```
@@ -2475,7 +2522,10 @@ export class WorkflowsController {
   }
 
   @Post('resume/:threadId')
-  async resume(@Param('threadId') threadId: string, @Body() input: { action: 'approve' | 'cancel'; userInput?: any }) {
+  async resume(
+    @Param('threadId') threadId: string,
+    @Body() input: { action: 'approve' | 'cancel'; userInput?: any }
+  ) {
     if (input.action === 'cancel') {
       // Delete checkpoint and cancel workflow
       return { status: 'cancelled' };

@@ -231,11 +231,19 @@ export class WorkflowEngineService {
 ### **Production Monitoring**
 
 ```typescript
-import { CheckpointManagerService, CheckpointHealthService, CheckpointMetricsService } from '@hive-academy/langgraph-checkpoint';
+import {
+  CheckpointManagerService,
+  CheckpointHealthService,
+  CheckpointMetricsService,
+} from '@hive-academy/langgraph-checkpoint';
 
 @Injectable()
 export class CheckpointMonitoringService {
-  constructor(private readonly checkpoints: CheckpointManagerService, private readonly health: CheckpointHealthService, private readonly metrics: CheckpointMetricsService) {}
+  constructor(
+    private readonly checkpoints: CheckpointManagerService,
+    private readonly health: CheckpointHealthService,
+    private readonly metrics: CheckpointMetricsService
+  ) {}
 
   async getProductionHealth(): Promise<any> {
     // 🎯 Capability-aware monitoring
@@ -243,7 +251,11 @@ export class CheckpointMonitoringService {
       return { status: 'degraded', reason: 'Core services unavailable' };
     }
 
-    const [healthSummary, systemReport, metrics] = await Promise.all([this.health?.getHealthSummary() || null, this.checkpoints.getSystemReport(), this.metrics?.getAggregatedMetrics() || null]);
+    const [healthSummary, systemReport, metrics] = await Promise.all([
+      this.health?.getHealthSummary() || null,
+      this.checkpoints.getSystemReport(),
+      this.metrics?.getAggregatedMetrics() || null,
+    ]);
 
     return {
       status: healthSummary?.overall.healthySavers > 0 ? 'healthy' : 'degraded',
@@ -277,7 +289,8 @@ export class CheckpointMonitoringService {
 
     const moduleUsage = {
       multiAgent: checkpoints.filter((cp) => cp.metadata?.source?.includes('agent')).length,
-      workflowEngine: checkpoints.filter((cp) => cp.metadata?.source?.includes('workflow-engine')).length,
+      workflowEngine: checkpoints.filter((cp) => cp.metadata?.source?.includes('workflow-engine'))
+        .length,
       hitl: checkpoints.filter((cp) => cp.metadata?.source?.includes('hitl')).length,
       functionalApi: checkpoints.filter((cp) => cp.metadata?.source?.includes('functional')).length,
     };
@@ -398,7 +411,11 @@ export class HitlCheckpointService implements IHitlCheckpointService {
     private readonly checkpointAdapter: ICheckpointAdapter
   ) {}
 
-  async saveApprovalState(request: HumanApprovalRequest, source: string, additionalData?: Record<string, unknown>): Promise<void> {
+  async saveApprovalState(
+    request: HumanApprovalRequest,
+    source: string,
+    additionalData?: Record<string, unknown>
+  ): Promise<void> {
     if (!this.checkpointAdapter) {
       return; // Graceful degradation when adapter unavailable
     }
@@ -447,7 +464,12 @@ export class WorkflowCheckpointService {
   }
 
   private generateThreadId(executionId: string): string {
-    return NodeIdBuilder.create().domain('workflow-engine').phase('execution').activity('workflow').detail(executionId).build(); // workflow-engine.execution.workflow.{executionId}
+    return NodeIdBuilder.create()
+      .domain('workflow-engine')
+      .phase('execution')
+      .activity('workflow')
+      .detail(executionId)
+      .build(); // workflow-engine.execution.workflow.{executionId}
   }
 }
 ```

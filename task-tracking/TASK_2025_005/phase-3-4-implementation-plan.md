@@ -440,7 +440,11 @@ export class MultiAgentService {
     return context;
   }
 
-  async storeExecution(state: AgentState, result: Partial<AgentState>, agentId: string): Promise<void> {
+  async storeExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void> {
     // Store agent execution for learning and improvement
     await this.memoryAdapter.storeAgentExecution(state, result, agentId);
   }
@@ -460,7 +464,12 @@ export class AdvancedAgentService {
 
   async executeWithCheckpoint(agentId: string, threadId: string): Promise<void> {
     // Use sophisticated agent memory methods directly
-    const context = await this.agentMemory.getAgentMemoryContext(agentId, threadId, 'query', 'userId');
+    const context = await this.agentMemory.getAgentMemoryContext(
+      agentId,
+      threadId,
+      'query',
+      'userId'
+    );
 
     // Sync with checkpoint for coordinated persistence
     await this.agentMemory.syncWithCheckpoint(threadId, 'checkpoint-123', context.threadMemories);
@@ -643,11 +652,20 @@ interface IMemoryAdapter {
   // ✅ Implemented: agent-memory-bridge.service.ts:630-637
 
   // Method 2
-  storeAgentExecution(state: AgentState, result: Partial<AgentState>, agentId: string): Promise<void>;
+  storeAgentExecution(
+    state: AgentState,
+    result: Partial<AgentState>,
+    agentId: string
+  ): Promise<void>;
   // ✅ Implemented: agent-memory-bridge.service.ts:645-666
 
   // Method 3
-  storeConversationTurn(threadId: string, humanMessage: string, aiMessage: string, metadata?: Record<string, unknown>): Promise<void>;
+  storeConversationTurn(
+    threadId: string,
+    humanMessage: string,
+    aiMessage: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
   // ✅ Implemented: agent-memory-bridge.service.ts:674-696
 
   // Method 4
@@ -655,7 +673,15 @@ interface IMemoryAdapter {
   // ✅ Implemented: agent-memory-bridge.service.ts:591-615
 
   // Method 5
-  search(options: { query: string; threadId?: string; userId?: string; agentId?: string; limit?: number; namespace?: string[]; minRelevance?: number }): Promise<any[]>;
+  search(options: {
+    query: string;
+    threadId?: string;
+    userId?: string;
+    agentId?: string;
+    limit?: number;
+    namespace?: string[];
+    minRelevance?: number;
+  }): Promise<any[]>;
   // ✅ Implemented: agent-memory-bridge.service.ts:704-727
 
   // Method 6
@@ -663,7 +689,10 @@ interface IMemoryAdapter {
   // ✅ Implemented: agent-memory-bridge.service.ts:735-751
 
   // Method 7
-  storeBatch(threadId: string, entries: Array<{ content: string; metadata?: Record<string, unknown> }>): Promise<string[]>;
+  storeBatch(
+    threadId: string,
+    entries: Array<{ content: string; metadata?: Record<string, unknown> }>
+  ): Promise<string[]>;
   // ✅ Implemented: agent-memory-bridge.service.ts:759-774
 
   // Method 8
@@ -748,7 +777,9 @@ export class AgentMemoryBridgeService implements IAgentMemoryBridge, IMemoryAdap
 
    ```typescript
    // Scenario: Store paired conversation
-   await memoryAdapter.storeConversationTurn(threadId, 'Human message', 'AI response', { userId: 'user-123' });
+   await memoryAdapter.storeConversationTurn(threadId, 'Human message', 'AI response', {
+     userId: 'user-123',
+   });
 
    // Verify:
    // - Two memories created (human + AI)

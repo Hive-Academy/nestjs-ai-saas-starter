@@ -1,6 +1,6 @@
 /**
  * @fileoverview Type Definitions Index
- * 
+ *
  * Centralized exports for all Neo4j type definitions
  */
 

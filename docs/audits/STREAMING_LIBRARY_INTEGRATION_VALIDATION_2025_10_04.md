@@ -208,7 +208,11 @@ import type {
 import { StreamToken, StreamEvent, StreamProgress } from '@hive-academy/langgraph-streaming';
 
 // ✅ Service imports (unchanged interface)
-import { TokenStreamingService, WebSocketBridgeService, EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+import {
+  TokenStreamingService,
+  WebSocketBridgeService,
+  EventStreamProcessorService,
+} from '@hive-academy/langgraph-streaming';
 ```
 
 ---

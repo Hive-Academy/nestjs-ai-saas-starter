@@ -317,11 +317,24 @@ export interface ComponentLibrary {
 // Example: Document Processing Service
 @Injectable()
 export class DocumentProcessingService {
-  constructor(@InjectChromaDB() private chromaDB: ChromaDBService, @InjectNeo4j() private neo4j: Neo4jService, private workflowService: WorkflowGraphBuilderService) {}
+  constructor(
+    @InjectChromaDB() private chromaDB: ChromaDBService,
+    @InjectNeo4j() private neo4j: Neo4jService,
+    private workflowService: WorkflowGraphBuilderService
+  ) {}
 
   async processDocument(file: Express.Multer.File): Promise<ProcessingResult> {
     // 1. Create AI workflow for document processing
-    const workflow = this.workflowService.createWorkflow('document-processing').addNode('extract-text', this.extractText).addNode('extract-entities', this.extractEntities).addNode('store-embeddings', this.storeEmbeddings).addNode('create-relationships', this.createRelationships).addEdge('extract-text', 'extract-entities').addEdge('extract-entities', 'store-embeddings').addEdge('extract-entities', 'create-relationships').build();
+    const workflow = this.workflowService
+      .createWorkflow('document-processing')
+      .addNode('extract-text', this.extractText)
+      .addNode('extract-entities', this.extractEntities)
+      .addNode('store-embeddings', this.storeEmbeddings)
+      .addNode('create-relationships', this.createRelationships)
+      .addEdge('extract-text', 'extract-entities')
+      .addEdge('extract-entities', 'store-embeddings')
+      .addEdge('extract-entities', 'create-relationships')
+      .build();
 
     // 2. Execute workflow
     const result = await workflow.execute({ file });
@@ -537,7 +550,11 @@ describe('ChromaDB + Neo4j + LangGraph Integration', () => {
 
   beforeEach(async () => {
     testingModule = await Test.createTestingModule({
-      imports: [ChromaDBModule.forRoot(testChromaConfig), Neo4jModule.forRoot(testNeo4jConfig), NestjsLanggraphModule.forRoot(testLangGraphConfig)],
+      imports: [
+        ChromaDBModule.forRoot(testChromaConfig),
+        Neo4jModule.forRoot(testNeo4jConfig),
+        NestjsLanggraphModule.forRoot(testLangGraphConfig),
+      ],
     }).compile();
 
     chromaService = testingModule.get<ChromaDBService>(ChromaDBService);
@@ -557,7 +574,9 @@ describe('ChromaDB + Neo4j + LangGraph Integration', () => {
     expect(embeddings).toHaveLength(1);
 
     // Verify Neo4j storage
-    const graphData = await neo4jService.read((session) => session.run('MATCH (d:Document {id: $id}) RETURN d', { id: document.id }));
+    const graphData = await neo4jService.read((session) =>
+      session.run('MATCH (d:Document {id: $id}) RETURN d', { id: document.id })
+    );
     expect(graphData.records).toHaveLength(1);
 
     // Verify workflow completion

@@ -254,7 +254,10 @@ const networkId = await coordinator.setupNetwork(
 );
 
 // Execute workflow
-const result = await coordinator.executeSimpleWorkflow(networkId, 'Create comprehensive guide about TypeScript best practices');
+const result = await coordinator.executeSimpleWorkflow(
+  networkId,
+  'Create comprehensive guide about TypeScript best practices'
+);
 ```
 
 ### Swarm Pattern
@@ -452,7 +455,9 @@ const networkId = await coordinator.setupNetwork(
 
 // Function to determine strategy based on real-time conditions:
 function determineOptimalStrategy(request: any): 'urgent' | 'thorough' {
-  return request.priority === 'critical' || request.customerTier === 'enterprise' ? 'urgent' : 'thorough';
+  return request.priority === 'critical' || request.customerTier === 'enterprise'
+    ? 'urgent'
+    : 'thorough';
 }
 ```
 
@@ -895,7 +900,10 @@ describe('MultiAgentNetworkIntegration', () => {
       }
     );
 
-    const result = await coordinator.executeSimpleWorkflow(networkId, 'Create article about TypeScript best practices');
+    const result = await coordinator.executeSimpleWorkflow(
+      networkId,
+      'Create article about TypeScript best practices'
+    );
 
     expect(result.success).toBe(true);
     expect(result.executionPath).toContain('researcher');

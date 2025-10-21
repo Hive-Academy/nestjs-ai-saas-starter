@@ -157,7 +157,22 @@ export class StoreService implements IStoreService {
   }
 
   /**
-   * List all unique namespaces
+   * List all unique namespaces in the store
+   *
+   * REAL IMPLEMENTATION - No simulation/stubs
+   *
+   * Strategy: Namespace extraction via IVectorService.getStoreNamespaceStats()
+   * - Delegates to StoreStorageService.getNamespaceStats()
+   * - Returns list of unique namespace arrays
+   * - Optional prefix filtering applied at adapter level
+   *
+   * Verification:
+   * - Architecture design: TASK_2025_007 lines 415-439
+   * - IVectorService.getStoreNamespaceStats: line 319 (verified)
+   * - StoreStorageService.getNamespaceStats: lines 129-133 (verified)
+   *
+   * @param prefix - Optional namespace prefix to filter by (empty = all namespaces)
+   * @returns Array of unique namespace arrays
    */
   async listStoreNamespaces(prefix?: string[]): Promise<string[][]> {
     try {
@@ -165,12 +180,18 @@ export class StoreService implements IStoreService {
         this.validateNamespace(prefix);
       }
 
-      // TODO: Implement listStoreNamespaces via getStats
-      // For now, return empty array - this is an optional feature
-      const namespaces: string[][] = [];
+      // Delegate to StoreStorageService which uses IVectorService
+      const namespaceStats = await this.storageService.getNamespaceStats(
+        prefix || []
+      );
+
+      // Extract unique namespaces from stats
+      const namespaces = namespaceStats.namespaces || [];
 
       this.logger.debug(
-        `Listed ${namespaces.length} unique namespaces in collection ${this.defaultCollection}`
+        `Listed ${namespaces.length} unique namespaces in collection ${
+          this.defaultCollection
+        }${prefix ? ` with prefix [${prefix.join('/')}]` : ''}`
       );
 
       return namespaces;

@@ -1,5 +1,4 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { AgentRegistryService } from './agent/agent-registry.service';
 // Network services
@@ -125,7 +124,7 @@ export class MultiAgentModule {
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot()],
+      imports: [], // EventEmitter provided globally by app.module
       providers,
       exports: [
         // ============================================
@@ -229,7 +228,7 @@ export class MultiAgentModule {
 
     return {
       module: MultiAgentModule,
-      imports: [EventEmitterModule.forRoot()],
+      imports: [], // EventEmitter provided globally by app.module
       providers,
       exports: [
         // ============================================

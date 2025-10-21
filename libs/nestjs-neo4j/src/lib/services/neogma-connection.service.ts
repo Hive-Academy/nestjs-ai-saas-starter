@@ -60,7 +60,6 @@ export class NeogmaConnectionService implements OnModuleDestroy {
   private readonly logger = new Logger(NeogmaConnectionService.name);
   private connectionStartTime?: number;
   private lastHealthCheck?: ConnectionStatus;
-  private healthCheckInterval?: NodeJS.Timeout;
 
   constructor(
     @InjectNeogma() private readonly neogma: Neogma,
@@ -70,10 +69,8 @@ export class NeogmaConnectionService implements OnModuleDestroy {
     this.logger.log('NeogmaConnectionService initialized');
     this.connectionStartTime = Date.now();
 
-    // Start periodic health checks if enabled
-    if (this.options.healthCheck !== false) {
-      this.startPeriodicHealthChecks();
-    }
+    // Automatic health checks removed - consumers should call checkHealthNow() when needed
+    // This prevents unnecessary database load and initialization race conditions
   }
 
   /**
@@ -81,11 +78,6 @@ export class NeogmaConnectionService implements OnModuleDestroy {
    */
   async onModuleDestroy(): Promise<void> {
     this.logger.log('NeogmaConnectionService shutting down');
-
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-    }
-
     await this.closeConnections();
   }
 
@@ -318,27 +310,31 @@ export class NeogmaConnectionService implements OnModuleDestroy {
   }
 
   /**
-   * Start periodic health checks
+   * NOTE: Automatic periodic health checks have been removed.
+   *
+   * Rationale:
+   * - Prevents unnecessary database load
+   * - Avoids initialization race conditions
+   * - Consumers have better control over monitoring
+   * - Health checks should be triggered by actual usage, not timers
+   *
+   * For health monitoring, integrate with NestJS Terminus:
+   * @example
+   * ```typescript
+   * @Injectable()
+   * export class Neo4jHealthIndicator extends HealthIndicator {
+   *   constructor(private neo4jConnection: NeogmaConnectionService) {
+   *     super();
+   *   }
+   *
+   *   async isHealthy(key: string) {
+   *     const status = await this.neo4jConnection.checkHealthNow({
+   *       timeout: 3000,
+   *       retries: 1,
+   *     });
+   *     return this.getStatus(key, status.connected, status);
+   *   }
+   * }
+   * ```
    */
-  private startPeriodicHealthChecks(): void {
-    const interval = 30000; // 30 seconds
-
-    this.logger.debug(`Starting periodic health checks every ${interval}ms`);
-
-    this.healthCheckInterval = setInterval(async () => {
-      try {
-        await this.verifyConnectivity({
-          timeout: 3000,
-          retries: 1,
-          includeServerInfo: false,
-        });
-      } catch (error) {
-        this.logger.warn(
-          `Periodic health check failed: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`
-        );
-      }
-    }, interval);
-  }
 }

@@ -177,7 +177,8 @@ export class ContentStrategyEngine {
     }
 
     const days: ContentCalendar['days'] = [];
-    const platforms = goals.platforms.length > 0 ? goals.platforms : ['LinkedIn', 'Dev.to'];
+    const platforms =
+      goals.platforms.length > 0 ? goals.platforms : ['LinkedIn', 'Dev.to'];
 
     // Extract top topics from tech trends and audience interests
     const topTechnologies = [
@@ -196,7 +197,11 @@ export class ContentStrategyEngine {
       const platform = platforms[day % platforms.length];
 
       // Select content type based on day and platform
-      const contentType = this.selectContentType(day, platform, audienceAnalysis);
+      const contentType = this.selectContentType(
+        day,
+        platform,
+        audienceAnalysis
+      );
 
       // Select topic from trending technologies or audience interests
       const topicIndex = day % (topTechnologies.length + topicInterests.length);
@@ -286,7 +291,8 @@ export class ContentStrategyEngine {
     audienceAnalysis: AudienceInsights,
     techTrends: TrendAnalysis
   ): PlatformStrategy {
-    const preferredFormats = audienceAnalysis.engagementPatterns.preferredFormats;
+    const preferredFormats =
+      audienceAnalysis.engagementPatterns.preferredFormats;
     const topicInterests = audienceAnalysis.engagementPatterns.topicInterests;
     const trendingTopics = techTrends.trending
       .slice(0, 5)
@@ -327,7 +333,8 @@ export class ContentStrategyEngine {
       ...audienceAnalysis.engagementPatterns.topicInterests.slice(0, 5),
     ];
 
-    const platformList = platforms.length > 0 ? platforms : ['LinkedIn', 'Dev.to', 'Medium'];
+    const platformList =
+      platforms.length > 0 ? platforms : ['LinkedIn', 'Dev.to', 'Medium'];
 
     platformList.forEach((platform) => {
       topics.forEach((topic) => {
@@ -384,7 +391,10 @@ export class ContentStrategyEngine {
         title: `Getting Started with ${tech.metadata.technology}: A Practical Guide`,
         type: 'tutorial',
         platform: 'Dev.to',
-        topics: [tech.metadata.technology, ...tech.metadata.relatedSkills.slice(0, 2)],
+        topics: [
+          tech.metadata.technology,
+          ...tech.metadata.relatedSkills.slice(0, 2),
+        ],
         estimatedEngagement: Math.round(
           tech.metadata.popularity * 0.8 + tech.metadata.growthRate * 0.2
         ),
@@ -439,7 +449,12 @@ export class ContentStrategyEngine {
 
     // Platform-specific content type preferences
     const platformTypes: Record<string, string[]> = {
-      LinkedIn: ['thought-leadership', 'career-advice', 'case-study', 'quick-tip'],
+      LinkedIn: [
+        'thought-leadership',
+        'career-advice',
+        'case-study',
+        'quick-tip',
+      ],
       'Dev.to': ['tutorial', 'deep-dive', 'project-showcase', 'code-review'],
       Medium: ['long-form', 'case-study', 'technical-deep-dive', 'opinion'],
       Twitter: ['quick-tip', 'thread', 'announcement', 'poll'],

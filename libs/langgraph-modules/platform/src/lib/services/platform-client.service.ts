@@ -14,7 +14,7 @@ export class PlatformClientService {
   constructor(
     @Inject(PLATFORM_MODULE_OPTIONS)
     private readonly options: PlatformModuleOptions,
-    private readonly httpService: HttpService,
+    private readonly httpService: HttpService
   ) {}
 
   async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T> {
@@ -108,9 +108,14 @@ export class PlatformClientService {
 
   private handleError(error: unknown): Error {
     if (error && typeof error === 'object' && 'response' in error) {
-      const httpError = error as { response: { status: number; data?: { error?: string; message?: string } } };
-      const {status} = httpError.response;
-      const {data} = httpError.response;
+      const httpError = error as {
+        response: {
+          status: number;
+          data?: { error?: string; message?: string };
+        };
+      };
+      const { status } = httpError.response;
+      const { data } = httpError.response;
       const message = data?.message || data?.error || `HTTP ${status} error`;
       return new Error(`Platform API error (${status}): ${message}`);
     }

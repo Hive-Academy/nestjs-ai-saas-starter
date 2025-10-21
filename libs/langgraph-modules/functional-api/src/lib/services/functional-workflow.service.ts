@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit, Inject, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import { Observable, Subject, throwError } from 'rxjs';
 import {
   FunctionalWorkflowState,
@@ -145,18 +151,13 @@ export class FunctionalWorkflowService implements OnModuleInit {
           const taskExecutionTime = Date.now() - taskStartTime;
 
           // 🧠 MEMORY LEARNING: Store task performance metrics for optimization
-          await this.storeTaskPerformance(
-            workflowName,
-            taskName,
-            executionId,
-            {
-              success: true,
-              executionTime: taskExecutionTime,
-              inputState: currentState,
-              outputState: result.state,
-              shouldCheckpoint: result.shouldCheckpoint,
-            }
-          );
+          await this.storeTaskPerformance(workflowName, taskName, executionId, {
+            success: true,
+            executionTime: taskExecutionTime,
+            inputState: currentState,
+            outputState: result.state,
+            shouldCheckpoint: result.shouldCheckpoint,
+          });
 
           // Update state
           currentState = {
@@ -190,19 +191,14 @@ export class FunctionalWorkflowService implements OnModuleInit {
             error instanceof Error ? error : new Error(String(error));
 
           // 🧠 MEMORY LEARNING: Store error patterns for future avoidance
-          await this.storeTaskPerformance(
-            workflowName,
-            taskName,
-            executionId,
-            {
-              success: false,
-              executionTime: Date.now() - Date.now(), // Will be overridden with actual time
-              error: taskError.message,
-              errorType: taskError.constructor.name,
-              inputState: currentState,
-              executionPath: [...executionPath],
-            }
-          );
+          await this.storeTaskPerformance(workflowName, taskName, executionId, {
+            success: false,
+            executionTime: Date.now() - Date.now(), // Will be overridden with actual time
+            error: taskError.message,
+            errorType: taskError.constructor.name,
+            inputState: currentState,
+            executionPath: [...executionPath],
+          });
 
           await this.emitStreamEvent({
             type: 'task_error',
@@ -238,19 +234,15 @@ export class FunctionalWorkflowService implements OnModuleInit {
       });
 
       // 🧠 MEMORY LEARNING: Store complete workflow execution for future optimization
-      await this.storeWorkflowExecution(
-        workflowName,
-        executionId,
-        {
-          success: true,
-          finalState: currentState,
-          executionPath,
-          executionTime,
-          checkpointCount,
-          totalTasks: executionOrder.length,
-          initialState: options.initialState || {},
-        }
-      );
+      await this.storeWorkflowExecution(workflowName, executionId, {
+        success: true,
+        finalState: currentState,
+        executionPath,
+        executionTime,
+        checkpointCount,
+        totalTasks: executionOrder.length,
+        initialState: options.initialState || {},
+      });
 
       this.logger.log(
         `Workflow execution completed: ${workflowName} (${executionId}) in ${executionTime}ms`
@@ -277,18 +269,14 @@ export class FunctionalWorkflowService implements OnModuleInit {
       });
 
       // 🧠 MEMORY LEARNING: Store workflow failure patterns
-      await this.storeWorkflowExecution(
-        workflowName,
-        executionId,
-        {
-          success: false,
-          error: executionError.message,
-          errorType: executionError.constructor.name,
-          executionTime: Date.now() - startTime,
-          failedAt: (executionError as any).taskName,
-          initialState: options.initialState || {},
-        }
-      );
+      await this.storeWorkflowExecution(workflowName, executionId, {
+        success: false,
+        error: executionError.message,
+        errorType: executionError.constructor.name,
+        executionTime: Date.now() - startTime,
+        failedAt: (executionError as any).taskName,
+        initialState: options.initialState || {},
+      });
 
       this.logger.error(
         `Workflow execution failed: ${workflowName} (${executionId})`,
@@ -954,7 +942,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
   /**
    * Enhance workflow context with memory-based historical patterns
-   * 
+   *
    * Retrieves relevant execution patterns, optimizations, and learned behaviors
    * to improve workflow performance through contextual enhancement.
    */
@@ -980,7 +968,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         agentId: 'functional_workflow',
         userId,
         limit: 10,
-        namespace: [namespace, 'execution_patterns']
+        namespace: [namespace, 'execution_patterns'],
       });
 
       // Retrieve performance optimization insights
@@ -988,7 +976,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         query: `performance optimization ${workflowName}`,
         agentId: 'functional_workflow',
         limit: 5,
-        namespace: [namespace, 'performance']
+        namespace: [namespace, 'performance'],
       });
 
       // Retrieve error avoidance patterns
@@ -996,7 +984,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         query: `error pattern ${workflowName}`,
         agentId: 'functional_workflow',
         limit: 5,
-        namespace: [namespace, 'errors']
+        namespace: [namespace, 'errors'],
       });
 
       const enhancedContext: Record<string, unknown> = {};
@@ -1017,10 +1005,16 @@ export class FunctionalWorkflowService implements OnModuleInit {
         if (successfulExecutions.length > 0) {
           const fastestExecution = successfulExecutions[0];
           enhancedContext.memoryOptimizations = {
-            recommendedTimeout: Math.max(fastestExecution.executionTime * 1.5, 10000),
+            recommendedTimeout: Math.max(
+              fastestExecution.executionTime * 1.5,
+              10000
+            ),
             executionStrategy: 'memory_optimized',
-            historicalAverageTime: successfulExecutions.reduce((sum: any, exec: any) => 
-              sum + exec.executionTime, 0) / successfulExecutions.length
+            historicalAverageTime:
+              successfulExecutions.reduce(
+                (sum: any, exec: any) => sum + exec.executionTime,
+                0
+              ) / successfulExecutions.length,
           };
         }
       }
@@ -1041,7 +1035,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
           taskName: insight.taskName,
           avgExecutionTime: insight.avgExecutionTime,
           successRate: insight.successRate,
-          recommendations: insight.recommendations
+          recommendations: insight.recommendations,
         }));
       }
 
@@ -1062,11 +1056,11 @@ export class FunctionalWorkflowService implements OnModuleInit {
             taskName: pattern.taskName,
             errorType: pattern.errorType,
             avoidanceStrategy: pattern.avoidanceStrategy,
-            frequency: pattern.frequency
+            frequency: pattern.frequency,
           })),
           preventiveTimeout: Math.max(
             ...errorPatterns.map((p: any) => p.timeoutRecommendation || 30000)
-          )
+          ),
         };
       }
 
@@ -1075,16 +1069,15 @@ export class FunctionalWorkflowService implements OnModuleInit {
         optimizations: Object.keys(enhancedContext).length,
         executionMemories: executionMemories.length,
         performanceMemories: performanceMemories.length,
-        errorMemories: errorMemories.length
+        errorMemories: errorMemories.length,
       });
 
       return enhancedContext;
     } catch (error) {
-      return this.handleMemoryError(
-        'enhanceWorkflowContext',
-        error,
-        { workflowName, executionId }
-      );
+      return this.handleMemoryError('enhanceWorkflowContext', error, {
+        workflowName,
+        executionId,
+      });
     }
   }
 
@@ -1126,23 +1119,32 @@ export class FunctionalWorkflowService implements OnModuleInit {
         totalTasks: executionData.totalTasks || 0,
         checkpointCount: executionData.checkpointCount || 0,
         executionPath: executionData.executionPath || [],
-        
+
         // Performance metrics
         performance: {
-          tasksPerSecond: executionData.totalTasks && executionData.executionTime ? 
-            (executionData.totalTasks / (executionData.executionTime / 1000)) : 0,
-          avgTaskTime: executionData.totalTasks && executionData.executionTime ? 
-            (executionData.executionTime / executionData.totalTasks) : 0,
-          checkpointFrequency: executionData.totalTasks && executionData.checkpointCount ? 
-            (executionData.checkpointCount / executionData.totalTasks) : 0
+          tasksPerSecond:
+            executionData.totalTasks && executionData.executionTime
+              ? executionData.totalTasks / (executionData.executionTime / 1000)
+              : 0,
+          avgTaskTime:
+            executionData.totalTasks && executionData.executionTime
+              ? executionData.executionTime / executionData.totalTasks
+              : 0,
+          checkpointFrequency:
+            executionData.totalTasks && executionData.checkpointCount
+              ? executionData.checkpointCount / executionData.totalTasks
+              : 0,
         },
 
         // Context information
         context: {
           hour: new Date().getHours(),
           dayOfWeek: new Date().getDay(),
-          hasInitialState: Object.keys(executionData.initialState || {}).length > 0,
-          stateComplexity: this.calculateStateComplexity(executionData.finalState || {})
+          hasInitialState:
+            Object.keys(executionData.initialState || {}).length > 0,
+          stateComplexity: this.calculateStateComplexity(
+            executionData.finalState || {}
+          ),
         },
 
         // Error information (if applicable)
@@ -1151,9 +1153,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
             message: executionData.error,
             type: executionData.errorType,
             failedAt: executionData.failedAt,
-            executionProgress: executionData.executionPath?.length || 0
-          }
-        })
+            executionProgress: executionData.executionPath?.length || 0,
+          },
+        }),
       };
 
       // Store as execution pattern memory
@@ -1162,7 +1164,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
         JSON.stringify(executionMemory),
         {
           type: executionData.success ? 'execution_pattern' : 'error_pattern',
-          source: executionData.success ? 'workflow_learning' : 'error_learning',
+          source: executionData.success
+            ? 'workflow_learning'
+            : 'error_learning',
           agentId: 'functional_workflow',
           userId,
           importance: executionData.success ? 0.7 : 0.9, // Errors are more important for learning
@@ -1171,8 +1175,8 @@ export class FunctionalWorkflowService implements OnModuleInit {
             'workflow_execution',
             executionData.success ? 'success' : 'failure',
             workflowName,
-            ...(executionData.executionPath || [])
-          ])
+            ...(executionData.executionPath || []),
+          ]),
         }
       );
 
@@ -1180,14 +1184,13 @@ export class FunctionalWorkflowService implements OnModuleInit {
         workflowName,
         executionId,
         success: executionData.success,
-        executionTime: executionData.executionTime
+        executionTime: executionData.executionTime,
       });
     } catch (error) {
-      this.handleMemoryError(
-        'storeWorkflowExecution',
-        error,
-        { workflowName, executionId }
-      );
+      this.handleMemoryError('storeWorkflowExecution', error, {
+        workflowName,
+        executionId,
+      });
     }
   }
 
@@ -1227,29 +1230,33 @@ export class FunctionalWorkflowService implements OnModuleInit {
         success: taskData.success,
         executionTime: taskData.executionTime,
         shouldCheckpoint: taskData.shouldCheckpoint || false,
-        
+
         // State analysis
         stateAnalysis: {
-          inputComplexity: this.calculateStateComplexity(taskData.inputState || {}),
-          outputComplexity: this.calculateStateComplexity(taskData.outputState || {}),
-          stateTransformation: this.analyzeStateTransformation(
-            taskData.inputState || {}, 
+          inputComplexity: this.calculateStateComplexity(
+            taskData.inputState || {}
+          ),
+          outputComplexity: this.calculateStateComplexity(
             taskData.outputState || {}
-          )
+          ),
+          stateTransformation: this.analyzeStateTransformation(
+            taskData.inputState || {},
+            taskData.outputState || {}
+          ),
         },
 
         // Performance characteristics
         performance: {
           executionSpeed: this.categorizeExecutionSpeed(taskData.executionTime),
           resourceIntensive: taskData.executionTime > 10000, // > 10 seconds
-          checkpointWorthy: taskData.shouldCheckpoint
+          checkpointWorthy: taskData.shouldCheckpoint,
         },
 
         // Context metadata
         context: {
           executionOrder: taskData.executionPath?.indexOf(taskName) ?? -1,
           totalTasksInWorkflow: taskData.executionPath?.length ?? 1,
-          timeOfDay: new Date().getHours()
+          timeOfDay: new Date().getHours(),
         },
 
         // Error details (if applicable)
@@ -1257,44 +1264,40 @@ export class FunctionalWorkflowService implements OnModuleInit {
           error: {
             message: taskData.error,
             type: taskData.errorType,
-            inputStateSnapshot: JSON.stringify(taskData.inputState)
-          }
-        })
+            inputStateSnapshot: JSON.stringify(taskData.inputState),
+          },
+        }),
       };
 
-      await this.memoryAdapter.store(
-        namespace,
-        JSON.stringify(taskMemory),
-        {
-          type: taskData.success ? 'performance_insight' : 'error_pattern',
-          source: taskData.success ? 'task_optimization' : 'error_learning',
-          agentId: 'functional_workflow',
-          userId,
-          importance: taskData.success ? 0.6 : 0.8,
-          persistent: true,
-          tags: JSON.stringify([
-            'task_performance',
-            taskData.success ? 'success' : 'failure',
-            taskName,
-            workflowName,
-            this.categorizeExecutionSpeed(taskData.executionTime)
-          ])
-        }
-      );
+      await this.memoryAdapter.store(namespace, JSON.stringify(taskMemory), {
+        type: taskData.success ? 'performance_insight' : 'error_pattern',
+        source: taskData.success ? 'task_optimization' : 'error_learning',
+        agentId: 'functional_workflow',
+        userId,
+        importance: taskData.success ? 0.6 : 0.8,
+        persistent: true,
+        tags: JSON.stringify([
+          'task_performance',
+          taskData.success ? 'success' : 'failure',
+          taskName,
+          workflowName,
+          this.categorizeExecutionSpeed(taskData.executionTime),
+        ]),
+      });
 
       this.logger.debug(`Stored task performance memory`, {
         workflowName,
         taskName,
         executionId,
         success: taskData.success,
-        executionTime: taskData.executionTime
+        executionTime: taskData.executionTime,
       });
     } catch (error) {
-      this.handleMemoryError(
-        'storeTaskPerformance',
-        error,
-        { workflowName, taskName, executionId }
-      );
+      this.handleMemoryError('storeTaskPerformance', error, {
+        workflowName,
+        taskName,
+        executionId,
+      });
     }
   }
 
@@ -1310,7 +1313,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       `Memory operation '${operation}' failed - continuing with degraded functionality`,
       {
         error: error instanceof Error ? error.message : String(error),
-        context
+        context,
       }
     );
     // Return empty object for graceful degradation
@@ -1325,7 +1328,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
       const stateString = JSON.stringify(state);
       const keyCount = Object.keys(state).length;
       const dataSize = stateString.length;
-      
+
       // Simple complexity score: key count + data size factor
       return keyCount + Math.floor(dataSize / 1000);
     } catch {
@@ -1342,11 +1345,11 @@ export class FunctionalWorkflowService implements OnModuleInit {
   ): string {
     const inputKeys = Object.keys(inputState);
     const outputKeys = Object.keys(outputState);
-    
-    const addedKeys = outputKeys.filter(key => !inputKeys.includes(key));
-    const removedKeys = inputKeys.filter(key => !outputKeys.includes(key));
-    const modifiedKeys = inputKeys.filter(key => 
-      outputKeys.includes(key) && inputState[key] !== outputState[key]
+
+    const addedKeys = outputKeys.filter((key) => !inputKeys.includes(key));
+    const removedKeys = inputKeys.filter((key) => !outputKeys.includes(key));
+    const modifiedKeys = inputKeys.filter(
+      (key) => outputKeys.includes(key) && inputState[key] !== outputState[key]
     );
 
     if (addedKeys.length > removedKeys.length + modifiedKeys.length) {
@@ -1364,9 +1367,9 @@ export class FunctionalWorkflowService implements OnModuleInit {
    * Categorize execution speed for pattern analysis
    */
   private categorizeExecutionSpeed(executionTime: number): string {
-    if (executionTime < 1000) return 'fast';      // < 1 second
-    if (executionTime < 5000) return 'moderate';  // 1-5 seconds
-    if (executionTime < 15000) return 'slow';     // 5-15 seconds
-    return 'very_slow';                           // > 15 seconds
+    if (executionTime < 1000) return 'fast'; // < 1 second
+    if (executionTime < 5000) return 'moderate'; // 1-5 seconds
+    if (executionTime < 15000) return 'slow'; // 5-15 seconds
+    return 'very_slow'; // > 15 seconds
   }
 }

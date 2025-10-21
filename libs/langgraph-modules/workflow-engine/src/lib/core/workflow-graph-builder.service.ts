@@ -6,7 +6,12 @@ import type {
   WorkflowEdge,
   WorkflowDefinition,
 } from '../interfaces';
-import type { IMemoryAdapter, ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import type {
+  IMemoryAdapter,
+  ICheckpointAdapter,
+  AgentState,
+  AgentMemoryContext,
+} from '@hive-academy/langgraph-core';
 import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
 import { MetadataProcessorService } from './metadata-processor.service';
 import { DecoratorTranslationService } from '../services/decorator-translation.service';
@@ -61,7 +66,8 @@ export class WorkflowGraphBuilderService {
   ) {}
 
   /**
-   * Build a workflow graph from a definition
+   * Build a workflow graph from a definition with agent context and tracking
+   * Phase 2: Builder tracked as agent
    */
   async buildFromDefinition<TState extends WorkflowState = WorkflowState>(
     definition: WorkflowDefinition<TState>,
@@ -70,11 +76,25 @@ export class WorkflowGraphBuilderService {
     const startTime = performance.now();
     this.logger.debug(`Building workflow graph: ${definition.name}`);
 
-    // Apply optimization patterns if memory adapter is available
-    const optimizedOptions = await this.graphOptimization.enhanceWithOptimizationPatterns(
-      definition,
-      options
+    // 1. Get builder's learned patterns (non-blocking on failure)
+    const builderContext = await this.getBuilderContext(definition).catch(
+      (error) => {
+        this.logger.debug('No builder context available:', error);
+        return null;
+      }
     );
+
+    // 2. Enhance options with learned patterns
+    const contextEnhancedOptions = builderContext
+      ? this.applyBuilderContext(options, builderContext)
+      : options;
+
+    // Apply optimization patterns if memory adapter is available
+    const optimizedOptions =
+      await this.graphOptimization.enhanceWithOptimizationPatterns(
+        definition,
+        contextEnhancedOptions
+      );
 
     // Create state graph with appropriate annotation
     const stateAnnotation =
@@ -85,7 +105,8 @@ export class WorkflowGraphBuilderService {
     const graph = new StateGraph<TState>(stateAnnotation);
 
     // Analyze graph complexity for optimization
-    const graphComplexity = this.graphOptimization.analyzeGraphComplexity(definition);
+    const graphComplexity =
+      this.graphOptimization.analyzeGraphComplexity(definition);
 
     // Add nodes
     for (const node of definition.nodes) {
@@ -117,10 +138,21 @@ export class WorkflowGraphBuilderService {
       );
     }
 
+    // 3. Store builder execution (non-blocking)
+    if (this.memoryAdapter) {
+      this.storeBuilderExecution(definition, buildTime, optimizedOptions).catch(
+        (error) => {
+          this.logger.warn('Failed to store builder execution:', error);
+        }
+      );
+    }
+
     this.logger.debug(
-      `Workflow graph built successfully: ${definition.name} (${buildTime.toFixed(2)}ms)`
+      `Workflow graph built successfully: ${
+        definition.name
+      } (${buildTime.toFixed(2)}ms)`
     );
-    
+
     return graph;
   }
 
@@ -131,10 +163,13 @@ export class WorkflowGraphBuilderService {
     workflowClass: any,
     options: GraphBuilderOptions = {}
   ): Promise<StateGraph<TState>> {
-    this.logger.debug(`Building workflow graph from decorators: ${workflowClass.name}`);
+    this.logger.debug(
+      `Building workflow graph from decorators: ${workflowClass.name}`
+    );
 
     // Extract workflow definition from decorator metadata
-    const definition = this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+    const definition =
+      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
 
     // Validate the definition
     this.metadataProcessor.validateWorkflowDefinition(definition);
@@ -150,7 +185,9 @@ export class WorkflowGraphBuilderService {
   /**
    * Build from functional-api decorator definition
    */
-  async buildFromDecoratorDefinition<TState extends WorkflowState = WorkflowState>(
+  async buildFromDecoratorDefinition<
+    TState extends WorkflowState = WorkflowState
+  >(
     definition: DecoratorDefinition<TState>,
     instance: object,
     options: GraphBuilderOptions = {}
@@ -161,32 +198,39 @@ export class WorkflowGraphBuilderService {
       );
     }
 
-    this.logger.debug(`Building graph from functional-api decorator definition`);
-    
-    // Translate the decorator definition to workflow-engine format
-    const translationResult = await this.decoratorTranslation.translateDecoratorDefinition(
-      definition,
-      instance,
-      options.bridgeConfig
+    this.logger.debug(
+      `Building graph from functional-api decorator definition`
     );
-    
+
+    // Translate the decorator definition to workflow-engine format
+    const translationResult =
+      await this.decoratorTranslation.translateDecoratorDefinition(
+        definition,
+        instance,
+        options.bridgeConfig
+      );
+
     // Validate the translation
-    const validation = this.decoratorTranslation.validateTranslation(translationResult);
+    const validation =
+      this.decoratorTranslation.validateTranslation(translationResult);
     if (!validation.valid) {
       this.logger.error('Translation validation failed:', validation.errors);
-      throw new Error(`Invalid decorator translation: ${validation.errors.join(', ')}`);
+      throw new Error(
+        `Invalid decorator translation: ${validation.errors.join(', ')}`
+      );
     }
-    
+
     // Optimize the translation
-    const optimizedTranslation = this.decoratorTranslation.optimizeTranslation(translationResult);
-    
+    const optimizedTranslation =
+      this.decoratorTranslation.optimizeTranslation(translationResult);
+
     // Create workflow definition from translation
     const workflowDef = this.decoratorTranslation.createWorkflowDefinition(
       optimizedTranslation,
       this.getDefinitionName(definition),
       `Workflow translated from ${optimizedTranslation.metadata.source} decorators`
     );
-    
+
     // Build the graph using the translated definition
     return await this.buildFromDefinition<TState>(workflowDef, options);
   }
@@ -205,8 +249,10 @@ export class WorkflowGraphBuilderService {
     },
     options: GraphBuilderOptions = {}
   ): Promise<StateGraph<TState>> {
-    this.logger.debug(`Building workflow graph with streaming config: ${definition.name}`);
-    
+    this.logger.debug(
+      `Building workflow graph with streaming config: ${definition.name}`
+    );
+
     // Enhance options with streaming configuration
     const enhancedOptions: GraphBuilderOptions = {
       ...options,
@@ -214,17 +260,17 @@ export class WorkflowGraphBuilderService {
       // channels are for StateGraph configuration, not streaming options
       channels: options.channels,
     };
-    
+
     // Build the graph with enhanced options
     const graph = await this.buildFromDefinition(definition, enhancedOptions);
-    
+
     // Attach streaming metadata to the graph for runtime use
     (graph as any).__streamingMetadata = {
       streamingEnabled: true,
       streamingOptions,
       multiAgentMode: streamingOptions.multiAgentMode || false,
     };
-    
+
     return graph;
   }
 
@@ -249,7 +295,10 @@ export class WorkflowGraphBuilderService {
     node: WorkflowNode<TState>,
     options: GraphBuilderOptions = {}
   ): void {
-    const wrappedHandler = this.workflowExecution.wrapNodeHandler(node, options);
+    const wrappedHandler = this.workflowExecution.wrapNodeHandler(
+      node,
+      options
+    );
     this.workflowExecution.safeAddNode(graph, node.id, wrappedHandler);
   }
 
@@ -309,7 +358,8 @@ export class WorkflowGraphBuilderService {
     const startTime = performance.now();
 
     // Get optimized compile options from learning service
-    const optimizedCompileOptions = await this.graphOptimization.getOptimizedCompileOptions(options);
+    const optimizedCompileOptions =
+      await this.graphOptimization.getOptimizedCompileOptions(options);
 
     const compileOptions: any = { ...optimizedCompileOptions };
 
@@ -328,7 +378,9 @@ export class WorkflowGraphBuilderService {
     const compiledGraph = graph.compile(compileOptions);
     const compileTime = performance.now() - startTime;
 
-    this.logger.debug(`Graph compiled successfully (${compileTime.toFixed(2)}ms)`);
+    this.logger.debug(
+      `Graph compiled successfully (${compileTime.toFixed(2)}ms)`
+    );
     return compiledGraph;
   }
 
@@ -345,7 +397,7 @@ export class WorkflowGraphBuilderService {
   /**
    * Delegate pattern creation to GraphPatternsService
    */
-  
+
   buildWithHITL<TState extends WorkflowState = WorkflowState>(
     name: string,
     options: any
@@ -359,7 +411,12 @@ export class WorkflowGraphBuilderService {
     workers: Record<string, NodeHandler<TState>>,
     options?: any
   ): StateGraph<TState> {
-    return this.graphPatterns.buildSupervisorGraph(name, supervisor, workers, options);
+    return this.graphPatterns.buildSupervisorGraph(
+      name,
+      supervisor,
+      workers,
+      options
+    );
   }
 
   buildPipelineGraph<TState extends WorkflowState = WorkflowState>(
@@ -396,5 +453,122 @@ export class WorkflowGraphBuilderService {
       }
     }
     return 'unknown_definition';
+  }
+
+  /**
+   * Get workflow builder agent context
+   * Phase 2: Retrieve builder's learned compilation strategies
+   *
+   * Verification:
+   * - getAgentContext interface: memory-adapter.interface.ts:115
+   * - Pattern: implementation-plan-workflow-engine.md:420-436
+   */
+  private async getBuilderContext<TState extends WorkflowState = WorkflowState>(
+    definition: WorkflowDefinition<TState>
+  ): Promise<AgentMemoryContext | null> {
+    if (!this.memoryAdapter) return null;
+
+    const state: AgentState = {
+      messages: [],
+      metadata: {
+        agentId: 'workflow-graph-builder',
+        graphType:
+          this.graphOptimization.analyzeGraphComplexity(definition).complexity,
+        nodeCount: definition.nodes.length,
+        edgeCount: definition.edges.length,
+      },
+    };
+
+    return await this.memoryAdapter.getAgentContext(state);
+  }
+
+  /**
+   * Apply builder context to options
+   * Extract learned preferences from agent memories
+   */
+  private applyBuilderContext(
+    options: GraphBuilderOptions,
+    context: AgentMemoryContext
+  ): GraphBuilderOptions {
+    // Extract learned preferences from agent memories
+    const learnedExecutions = context.agentMemories
+      .filter((m: any) => m.type === 'builder_execution')
+      .filter((m: any) => m.success)
+      .slice(0, 5); // Top 5 successful compilations
+
+    if (learnedExecutions.length === 0) {
+      return options;
+    }
+
+    // Apply common optimizations from successful builds
+    return {
+      ...options,
+      // Use learned debug preference
+      debug:
+        options.debug !== undefined
+          ? options.debug
+          : learnedExecutions.some((m: any) => m.debugEnabled),
+    };
+  }
+
+  /**
+   * Store builder agent execution
+   * Phase 2: Track builder decisions for learning
+   *
+   * Verification:
+   * - storeAgentExecution interface: memory-adapter.interface.ts:121-125
+   * - Pattern: implementation-plan-workflow-engine.md:464-496
+   */
+  private async storeBuilderExecution<
+    TState extends WorkflowState = WorkflowState
+  >(
+    definition: WorkflowDefinition<TState>,
+    compilationTime: number,
+    options: GraphBuilderOptions
+  ): Promise<void> {
+    const graphComplexity =
+      this.graphOptimization.analyzeGraphComplexity(definition);
+
+    const state: AgentState = {
+      messages: [],
+      metadata: {
+        agentId: 'workflow-graph-builder',
+        graphType: graphComplexity.complexity,
+        workflowName: definition.name,
+      },
+    };
+
+    const result: Partial<AgentState> = {
+      metadata: {
+        graphComplexity: graphComplexity.complexity,
+        compilationTime,
+        optimizationsApplied: this.extractAppliedOptimizations(options),
+        success: compilationTime < 1000, // Success if <1 second
+        performance: {
+          nodeCount: definition.nodes.length,
+          edgeCount: definition.edges.length,
+          avgNodeComplexity: graphComplexity.averageNodeComplexity,
+        },
+      },
+    };
+
+    await this.memoryAdapter!.storeAgentExecution(
+      state,
+      result,
+      'workflow-graph-builder'
+    );
+
+    this.logger.debug(`Stored builder execution for ${definition.name}`);
+  }
+
+  /**
+   * Extract applied optimizations from options
+   */
+  private extractAppliedOptimizations(options: GraphBuilderOptions): string[] {
+    const optimizations: string[] = [];
+    if (options.debug) optimizations.push('debug');
+    if (options.interrupt) optimizations.push('interrupts');
+    if (options.checkpointer) optimizations.push('checkpointer');
+    return optimizations;
   }
 }

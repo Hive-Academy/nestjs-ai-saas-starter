@@ -26,8 +26,8 @@ import * as THREE from 'three';
 import { BehaviorSubject, interval } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
-import { ReactiveStateManagerService } from './reactive-state-manager.service';
-import { PerformanceMonitorService } from '../../../features/spatial-interface/services/performance-monitor.service';
+import { Angular3DStateStore } from './angular-3d-state.store';
+import { PerformanceMonitorService } from './performance-monitor.service';
 
 // Enhanced optimization interfaces
 export interface FrustumCullingConfig {
@@ -80,7 +80,7 @@ export interface PerformanceTarget {
   providedIn: 'root',
 })
 export class AdvancedPerformanceOptimizerService {
-  private readonly stateManager = inject(ReactiveStateManagerService);
+  private readonly stateStore = inject(Angular3DStateStore);
   private readonly performanceMonitor = inject(PerformanceMonitorService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -130,21 +130,24 @@ export class AdvancedPerformanceOptimizerService {
   private readonly frustum = new THREE.Frustum();
   private readonly cameraMatrix = new THREE.Matrix4();
   private cullingBatchIndex = 0;
-  private cullingObjects: Array<{ object: THREE.Object3D; visible: boolean }> = [];
+  private cullingObjects: Array<{ object: THREE.Object3D; visible: boolean }> =
+    [];
 
   // Texture atlas management
   private textureAtlas?: THREE.Texture;
   private atlasCanvas?: HTMLCanvasElement;
   private atlasContext?: CanvasRenderingContext2D;
-  private atlasRegions: Map<string, { x: number; y: number; width: number; height: number }> = new Map();
+  private atlasRegions: Map<
+    string,
+    { x: number; y: number; width: number; height: number }
+  > = new Map();
 
   // Memory tracking
   private memoryUsageHistory: number[] = [];
 
   // Performance streams for reactive coordination
-  private readonly _optimizationUpdates$ = new BehaviorSubject<OptimizationMetrics>(
-    this.currentOptimizations()
-  );
+  private readonly _optimizationUpdates$ =
+    new BehaviorSubject<OptimizationMetrics>(this.currentOptimizations());
 
   // Public reactive interface
   readonly isActive = this.isInitialized.asReadonly();
@@ -152,14 +155,17 @@ export class AdvancedPerformanceOptimizerService {
   readonly performanceTargetConfig = this.performanceTarget.asReadonly();
 
   readonly performanceHealthScore = computed(() => {
-    const metrics = this.stateManager.performanceStatus();
+    const metrics = this.stateStore.performanceStatus();
     const target = this.performanceTarget();
 
     const fpsScore = Math.min(metrics.fps / target.targetFPS, 1);
-    const frameTimeScore = Math.min(target.maxFrameTime / (metrics.frameTime || target.maxFrameTime), 1);
+    const frameTimeScore = Math.min(
+      target.maxFrameTime / (metrics.frameTime || target.maxFrameTime),
+      1
+    );
     const memoryScore = metrics.averageLoad < 0.8 ? 1 : 0.5;
 
-    return Math.round((fpsScore + frameTimeScore + memoryScore) / 3 * 100);
+    return Math.round(((fpsScore + frameTimeScore + memoryScore) / 3) * 100);
   });
 
   readonly shouldOptimize = computed(() => {
@@ -175,7 +181,8 @@ export class AdvancedPerformanceOptimizerService {
     return {
       active: this.isInitialized(),
       healthScore,
-      optimizationsApplied: metrics.lodReductions + metrics.culledObjects + metrics.atlasedTextures,
+      optimizationsApplied:
+        metrics.lodReductions + metrics.culledObjects + metrics.atlasedTextures,
       performanceGain: metrics.frameTimeImprovement,
       memoryFreed: metrics.memoryFreed,
     };
@@ -199,7 +206,7 @@ export class AdvancedPerformanceOptimizerService {
 
     // Update frustum culling config with camera
     if (camera) {
-      this.frustumCullingConfig.update(config => ({
+      this.frustumCullingConfig.update((config) => ({
         ...config,
         camera,
       }));
@@ -211,14 +218,16 @@ export class AdvancedPerformanceOptimizerService {
     this.startOptimizationLoop();
 
     this.isInitialized.set(true);
-    console.log(`AdvancedPerformanceOptimizerService initialized for scene: ${sceneId}`);
+    console.log(
+      `AdvancedPerformanceOptimizerService initialized for scene: ${sceneId}`
+    );
   }
 
   /**
    * Update performance target configuration
    */
   updatePerformanceTarget(target: Partial<PerformanceTarget>): void {
-    this.performanceTarget.update(current => ({
+    this.performanceTarget.update((current) => ({
       ...current,
       ...target,
     }));
@@ -228,7 +237,7 @@ export class AdvancedPerformanceOptimizerService {
    * Update frustum culling configuration
    */
   updateFrustumCullingConfig(config: Partial<FrustumCullingConfig>): void {
-    this.frustumCullingConfig.update(current => ({
+    this.frustumCullingConfig.update((current) => ({
       ...current,
       ...config,
     }));
@@ -238,7 +247,7 @@ export class AdvancedPerformanceOptimizerService {
    * Update texture atlas configuration
    */
   updateTextureAtlasConfig(config: Partial<TextureAtlasConfig>): void {
-    this.textureAtlasConfig.update(current => ({
+    this.textureAtlasConfig.update((current) => ({
       ...current,
       ...config,
     }));
@@ -248,7 +257,7 @@ export class AdvancedPerformanceOptimizerService {
    * Update memory optimization configuration
    */
   updateMemoryConfig(config: Partial<MemoryOptimizationConfig>): void {
-    this.memoryConfig.update(current => ({
+    this.memoryConfig.update((current) => ({
       ...current,
       ...config,
     }));
@@ -278,7 +287,7 @@ export class AdvancedPerformanceOptimizerService {
   }> {
     const recommendations = [];
     const healthScore = this.performanceHealthScore();
-    const metrics = this.stateManager.performanceStatus();
+    const metrics = this.stateStore.performanceStatus();
 
     if (metrics.fps < this.performanceTarget().targetFPS * 0.8) {
       recommendations.push({
@@ -296,11 +305,12 @@ export class AdvancedPerformanceOptimizerService {
         severity: 'medium' as const,
         description: 'High object count affecting performance',
         impact: 'Enable aggressive frustum culling',
-        action: () => this.updateFrustumCullingConfig({
-          enabled: true,
-          updateFrequency: 60,
-          batchSize: 100
-        }),
+        action: () =>
+          this.updateFrustumCullingConfig({
+            enabled: true,
+            updateFrequency: 60,
+            batchSize: 100,
+          }),
       });
     }
 
@@ -310,10 +320,11 @@ export class AdvancedPerformanceOptimizerService {
         severity: 'high' as const,
         description: 'Overall performance health is poor',
         impact: 'Enable aggressive memory cleanup',
-        action: () => this.updateMemoryConfig({
-          aggressiveCleanup: true,
-          cleanupInterval: 15
-        }),
+        action: () =>
+          this.updateMemoryConfig({
+            aggressiveCleanup: true,
+            cleanupInterval: 15,
+          }),
       });
     }
 
@@ -360,13 +371,13 @@ export class AdvancedPerformanceOptimizerService {
       this.trackMonitorMetrics(metrics);
     });
 
-    // Subscribe to state manager updates for object tracking
-    this.stateManager.sceneUpdates$
+    // Subscribe to state store updates for object tracking
+    this.stateStore.sceneUpdates$
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         debounceTime(16) // 60fps throttle
       )
-      .subscribe(scenes => {
+      .subscribe((scenes) => {
         this.updateCullingObjects(scenes);
       });
   }
@@ -460,7 +471,10 @@ export class AdvancedPerformanceOptimizerService {
 
     // Process objects in batches to avoid frame drops
     const batchStart = this.cullingBatchIndex;
-    const batchEnd = Math.min(batchStart + config.batchSize, this.cullingObjects.length);
+    const batchEnd = Math.min(
+      batchStart + config.batchSize,
+      this.cullingObjects.length
+    );
 
     for (let i = batchStart; i < batchEnd; i++) {
       const item = this.cullingObjects[i];
@@ -468,7 +482,9 @@ export class AdvancedPerformanceOptimizerService {
 
       // Expand bounding box by margin for smoother culling
       const box = new THREE.Box3().setFromObject(item.object);
-      box.expandByScalar(box.getSize(new THREE.Vector3()).length() * config.margin);
+      box.expandByScalar(
+        box.getSize(new THREE.Vector3()).length() * config.margin
+      );
 
       const isVisible = this.frustum.intersectsBox(box);
 
@@ -479,10 +495,11 @@ export class AdvancedPerformanceOptimizerService {
     }
 
     // Update batch index for next frame
-    this.cullingBatchIndex = batchEnd >= this.cullingObjects.length ? 0 : batchEnd;
+    this.cullingBatchIndex =
+      batchEnd >= this.cullingObjects.length ? 0 : batchEnd;
 
     // Update metrics
-    this.currentOptimizations.update(metrics => ({
+    this.currentOptimizations.update((metrics) => ({
       ...metrics,
       culledObjects: culledCount,
     }));
@@ -506,7 +523,7 @@ export class AdvancedPerformanceOptimizerService {
     // Add textures to atlas (simplified implementation)
     atlasedCount = this.packTexturesIntoAtlas();
 
-    this.currentOptimizations.update(metrics => ({
+    this.currentOptimizations.update((metrics) => ({
       ...metrics,
       atlasedTextures: atlasedCount,
     }));
@@ -540,7 +557,7 @@ export class AdvancedPerformanceOptimizerService {
       memoryFreed = this.performRoutineCleanup();
     }
 
-    this.currentOptimizations.update(metrics => ({
+    this.currentOptimizations.update((metrics) => ({
       ...metrics,
       memoryFreed: metrics.memoryFreed + memoryFreed,
     }));
@@ -552,10 +569,10 @@ export class AdvancedPerformanceOptimizerService {
   private trackMonitorMetrics(metrics: any): void {
     // Convert performance monitor metrics to expected format
     const target = this.performanceTarget();
-    const frameTime = (1000 / (metrics.fps || 60)); // Calculate frame time from fps
+    const frameTime = 1000 / (metrics.fps || 60); // Calculate frame time from fps
     const frameTimeImprovement = target.maxFrameTime - frameTime;
 
-    this.currentOptimizations.update(current => ({
+    this.currentOptimizations.update((current) => ({
       ...current,
       frameTimeImprovement: Math.max(0, frameTimeImprovement),
     }));

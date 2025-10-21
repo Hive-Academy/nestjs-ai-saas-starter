@@ -29,8 +29,14 @@ export abstract class IVectorService {
   // Generic Vector Operations (Lines 13-58)
   // ===================================================================
   abstract store(collection: string, data: VectorStoreData): Promise<string>;
-  abstract storeBatch(collection: string, data: readonly VectorStoreData[]): Promise<readonly string[]>;
-  abstract search(collection: string, query: VectorSearchQuery): Promise<readonly VectorSearchResult[]>;
+  abstract storeBatch(
+    collection: string,
+    data: readonly VectorStoreData[]
+  ): Promise<readonly string[]>;
+  abstract search(
+    collection: string,
+    query: VectorSearchQuery
+  ): Promise<readonly VectorSearchResult[]>;
   abstract delete(collection: string, ids: readonly string[]): Promise<void>;
   abstract deleteByFilter(collection: string, filter: Record<string, unknown>): Promise<number>;
   abstract getStats(collection: string): Promise<VectorStats>;
@@ -50,13 +56,26 @@ export abstract class IVectorService {
   // Library services (MemoryStorageService) delegate to these methods.
   // ===================================================================
 
-  abstract storeMemory(threadId: string, content: string, metadata?: Partial<MemoryMetadata>, userId?: string): Promise<MemoryEntry>;
+  abstract storeMemory(
+    threadId: string,
+    content: string,
+    metadata?: Partial<MemoryMetadata>,
+    userId?: string
+  ): Promise<MemoryEntry>;
 
-  abstract storeMemoriesBatch(threadId: string, entries: Array<{ content: string; metadata?: Partial<MemoryMetadata> }>, userId?: string): Promise<MemoryEntry[]>;
+  abstract storeMemoriesBatch(
+    threadId: string,
+    entries: Array<{ content: string; metadata?: Partial<MemoryMetadata> }>,
+    userId?: string
+  ): Promise<MemoryEntry[]>;
 
   abstract retrieveByThread(threadId: string, limit?: number): Promise<MemoryEntry[]>;
 
-  abstract searchMemoriesSimilar(query: string, filter?: Record<string, unknown>, limit?: number): Promise<MemoryEntry[]>;
+  abstract searchMemoriesSimilar(
+    query: string,
+    filter?: Record<string, unknown>,
+    limit?: number
+  ): Promise<MemoryEntry[]>;
 
   abstract deleteMemories(memoryIds: readonly string[]): Promise<number>;
 
@@ -467,7 +486,12 @@ export interface NamespaceStats {
 ```typescript
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { IVectorService } from '../../../interfaces/vector-service.interface';
-import type { StoreItem, StoreListOptions, StoreSearchOptions, NamespaceStats } from '../../../interfaces/vector-service.interface';
+import type {
+  StoreItem,
+  StoreListOptions,
+  StoreSearchOptions,
+  NamespaceStats,
+} from '../../../interfaces/vector-service.interface';
 
 /**
  * Store storage service - pure delegation to vector service adapter
@@ -512,7 +536,11 @@ export class StoreStorageService {
    * Search for items in the Store
    * Delegates to application adapter's searchStoreItems method
    */
-  async search(namespace: readonly string[], query?: string, options?: StoreSearchOptions): Promise<readonly StoreItem[]> {
+  async search(
+    namespace: readonly string[],
+    query?: string,
+    options?: StoreSearchOptions
+  ): Promise<readonly StoreItem[]> {
     return await this.vectorService.searchStoreItems(namespace, query, options);
   }
 
@@ -520,7 +548,10 @@ export class StoreStorageService {
    * List all items in a namespace
    * Delegates to application adapter's listStoreItems method
    */
-  async list(namespace: readonly string[], options?: StoreListOptions): Promise<readonly StoreItem[]> {
+  async list(
+    namespace: readonly string[],
+    options?: StoreListOptions
+  ): Promise<readonly StoreItem[]> {
     return await this.vectorService.listStoreItems(namespace, options);
   }
 

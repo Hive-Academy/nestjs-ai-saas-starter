@@ -75,7 +75,10 @@ for await (const { event, data } of eventStream) {
 @Injectable()
 export class TokenStreamingService {
   // Wraps LangGraph's stream with NestJS DI and RxJS observables
-  async streamFromLangGraph(langGraphStream: AsyncIterable<any>, config: StreamTokenDecoratorMetadata): Promise<void> {
+  async streamFromLangGraph(
+    langGraphStream: AsyncIterable<any>,
+    config: StreamTokenDecoratorMetadata
+  ): Promise<void> {
     // Convert LangGraph async iterable → RxJS Observable
     // Add NestJS logging, error handling, EventEmitter2 integration
     // Buffer tokens for WebSocket broadcasting
@@ -125,7 +128,10 @@ private convertToObservable(
 // Our module: Broadcast LangGraph streams to WebSocket clients
 @Injectable()
 export class WebSocketBridgeService {
-  async broadcastLangGraphStream(executionId: string, langGraphStream: AsyncIterable<any>): Promise<void> {
+  async broadcastLangGraphStream(
+    executionId: string,
+    langGraphStream: AsyncIterable<any>
+  ): Promise<void> {
     for await (const chunk of langGraphStream) {
       // NestJS WebSocket Gateway integration
       this.gateway.server.to(executionId).emit('stream_update', {

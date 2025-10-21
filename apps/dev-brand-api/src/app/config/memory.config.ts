@@ -57,21 +57,37 @@ export function getMemoryConfig(): Omit<MemoryModuleOptions, 'adapters'> {
 
     // Configurable operational limits
     limits: {
-      countAccuracyLimit: parseInt(process.env.MEMORY_COUNT_ACCURACY_LIMIT || '1000'),
+      countAccuracyLimit: parseInt(
+        process.env.MEMORY_COUNT_ACCURACY_LIMIT || '1000'
+      ),
       memoryContentLimit: parseInt(process.env.MEMORY_CONTENT_LIMIT || '1000'),
-      relationshipQueryLimit: parseInt(process.env.MEMORY_RELATIONSHIP_QUERY_LIMIT || '10'),
-      batchOperationLimit: parseInt(process.env.MEMORY_BATCH_OPERATION_LIMIT || '100'),
-      searchResultLimit: parseInt(process.env.MEMORY_SEARCH_RESULT_LIMIT || '100'),
+      relationshipQueryLimit: parseInt(
+        process.env.MEMORY_RELATIONSHIP_QUERY_LIMIT || '10'
+      ),
+      batchOperationLimit: parseInt(
+        process.env.MEMORY_BATCH_OPERATION_LIMIT || '100'
+      ),
+      searchResultLimit: parseInt(
+        process.env.MEMORY_SEARCH_RESULT_LIMIT || '100'
+      ),
     },
 
     // Semantic relationship configuration
     semanticRelationships: {
       enabled: process.env.MEMORY_SEMANTIC_RELATIONSHIPS_ENABLED !== 'false',
-      strategy: (process.env.MEMORY_SEMANTIC_STRATEGY as 'word_matching' | 'vector_similarity' | 'hybrid') || 'hybrid',
-      similarityThreshold: parseFloat(process.env.MEMORY_SIMILARITY_THRESHOLD || '0.7'),
+      strategy:
+        (process.env.MEMORY_SEMANTIC_STRATEGY as
+          | 'word_matching'
+          | 'vector_similarity'
+          | 'hybrid') || 'hybrid',
+      similarityThreshold: parseFloat(
+        process.env.MEMORY_SIMILARITY_THRESHOLD || '0.7'
+      ),
       minCommonWords: parseInt(process.env.MEMORY_MIN_COMMON_WORDS || '2'),
       requireApoc: process.env.MEMORY_REQUIRE_APOC === 'true',
-      maxRelationshipsPerMemory: parseInt(process.env.MEMORY_MAX_RELATIONSHIPS_PER_MEMORY || '5'),
+      maxRelationshipsPerMemory: parseInt(
+        process.env.MEMORY_MAX_RELATIONSHIPS_PER_MEMORY || '5'
+      ),
     },
   };
 }

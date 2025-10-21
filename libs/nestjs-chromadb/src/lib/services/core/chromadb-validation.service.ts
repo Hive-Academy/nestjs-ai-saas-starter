@@ -20,7 +20,6 @@ import { DocumentSanitizerService } from './validation/document-sanitizer.servic
  */
 @Injectable()
 export class ChromaDBValidationService implements IChromaValidation {
-
   constructor(
     private readonly documentValidator: DocumentValidatorService,
     private readonly optionsValidator: OptionsValidatorService,
