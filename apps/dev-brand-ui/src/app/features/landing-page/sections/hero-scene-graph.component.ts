@@ -22,6 +22,7 @@ import { BackgroundCubesComponent } from '../../../core/angular-3d/components/pr
 import { ParticleSystemComponent } from '../../../core/angular-3d/components/primitives/particle-system.component';
 
 // Register Three.js lights as Angular Three components
+// TODO: create shared abstractions for these lights to be applied across scenes
 extend({ AmbientLight, DirectionalLight, PointLight });
 
 @Component({

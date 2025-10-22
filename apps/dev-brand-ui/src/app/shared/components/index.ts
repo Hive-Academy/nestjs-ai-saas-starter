@@ -26,3 +26,7 @@ export { SectionDividerComponent } from './section-divider.component';
 export { SectionParticleBackgroundComponent } from './section-particle-background.component';
 export { CodeSnippetComponent } from './code-snippet.component';
 export { DecorativePatternComponent } from './decorative-patterns.component';
+export {
+  ScrollingCodeTimelineComponent,
+  type TimelineStep,
+} from './scrolling-code-timeline.component';

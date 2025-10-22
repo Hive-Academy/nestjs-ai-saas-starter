@@ -72,6 +72,7 @@ export class SectionContainerComponent {
   readonly subtitle = input<string>('');
   readonly background = input<'white' | 'light-gray'>('white'); // Simplified for light design
   readonly minHeight = input<string>('auto'); // Changed from 100vh to auto (content-driven)
+  readonly verticalPadding = input<'normal' | 'large' | 'xlarge'>('normal'); // Vertical padding size
 
   // Computed background classes (light design system)
   readonly containerClasses = computed(() => {
@@ -79,6 +80,7 @@ export class SectionContainerComponent {
       white: 'bg-white',
       'light-gray': 'bg-gray-50', // #F9FAFB equivalent
     };
-    return backgroundMap[this.background()] || backgroundMap['white'];
+    const bgClass = backgroundMap[this.background()] || backgroundMap['white'];
+    return `${bgClass}`;
   });
 }

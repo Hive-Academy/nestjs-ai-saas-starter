@@ -8,11 +8,7 @@ import {
 } from '@angular/core';
 
 import { HeroSectionComponent } from './sections/hero-section.component';
-import { DataFoundationSectionComponent } from './sections/data-foundation-section.component';
-import { CoreFoundationSectionComponent } from './sections/core-foundation-section.component';
-import { WorkflowOrchestrationSectionComponent } from './sections/workflow-orchestration-section.component';
-import { IntelligenceLayerSectionComponent } from './sections/intelligence-layer-section.component';
-import { ProductionSystemsSectionComponent } from './sections/production-systems-section.component';
+import { ChromadbSectionComponent } from './sections/chromadb-section.component';
 
 @Component({
   selector: 'brand-landing-page',
@@ -20,14 +16,10 @@ import { ProductionSystemsSectionComponent } from './sections/production-systems
   imports: [
     CommonModule,
     HeroSectionComponent,
-    DataFoundationSectionComponent,
-    CoreFoundationSectionComponent,
-    WorkflowOrchestrationSectionComponent,
-    IntelligenceLayerSectionComponent,
-    ProductionSystemsSectionComponent,
+    ChromadbSectionComponent,
   ],
   template: ` <div
-    class="w-full min-h-screen bg-gradient-to-br from-[#0f0f23] via-[#1a1a3e] to-[#2d2d5f] text-white opacity-0 transition-opacity duration-700 ease-in-out relative"
+    class="w-full min-h-screen bg-white opacity-0 transition-opacity duration-700 ease-in-out relative"
     [class.opacity-100]="isLoaded()"
     #landingContainer
   >
@@ -98,31 +90,11 @@ import { ProductionSystemsSectionComponent } from './sections/production-systems
         <brand-hero-section />
       </div>
 
-      <!-- LangGraph Module Showcase (11 modules across 5 sections) -->
-      <section class="langgraph-modules-showcase">
-        <!-- Data Foundation: ChromaDB + Neo4j -->
-        <div id="data-foundation" class="section-container">
-          <app-data-foundation-section />
-        </div>
-
-        <!-- Core Foundation: Core + Functional API -->
-        <div id="core-foundation" class="section-container">
-          <app-core-foundation-section />
-        </div>
-
-        <!-- Workflow Orchestration: Multi-agent + Checkpoint + Memory -->
-        <div id="workflow-orchestration" class="section-container">
-          <app-workflow-orchestration-section />
-        </div>
-
-        <!-- Intelligence Layer: HITL + Time-Travel -->
-        <div id="intelligence-layer" class="section-container">
-          <app-intelligence-layer-section />
-        </div>
-
-        <!-- Production Systems: Monitoring + Streaming + Platform -->
-        <div id="production-systems" class="section-container">
-          <app-production-systems-section />
+      <!-- Library Showcase Sections (Light Design System) -->
+      <section class="library-showcase">
+        <!-- ChromaDB Section -->
+        <div id="chromadb" class="section-container">
+          <app-chromadb-section />
         </div>
       </section>
     </main>
@@ -135,11 +107,11 @@ import { ProductionSystemsSectionComponent } from './sections/production-systems
         scroll-margin-top: 0;
       }
 
-      .langgraph-modules-showcase {
+      .library-showcase {
         display: flex;
         flex-direction: column;
         gap: 0;
-        background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 100%);
+        background: white;
       }
 
       html {
@@ -181,11 +153,7 @@ export class LandingPageComponent implements AfterViewInit {
   readonly loadingProgress = signal(0);
   readonly sections = signal([
     'hero',
-    'data-foundation',
-    'core-foundation',
-    'workflow-orchestration',
-    'intelligence-layer',
-    'production-systems',
+    'chromadb',
   ]);
 
   ngAfterViewInit(): void {
@@ -242,11 +210,11 @@ export class LandingPageComponent implements AfterViewInit {
   getSectionLabel(sectionId: string): string {
     const labelMap: Record<string, string> = {
       hero: 'Hero',
-      'data-foundation': 'Data Foundation',
-      'core-foundation': 'Core Foundation',
-      'workflow-orchestration': 'Workflow',
-      'intelligence-layer': 'Intelligence',
-      'production-systems': 'Production',
+      chromadb: 'ChromaDB',
+      neo4j: 'Neo4j',
+      'langgraph-core': 'LangGraph Core',
+      memory: 'Memory',
+      checkpoint: 'Checkpoint',
     };
     return labelMap[sectionId] || sectionId.replace('-', ' ');
   }
@@ -289,31 +257,31 @@ export class LandingPageComponent implements AfterViewInit {
 
   // Hero component event handlers
   onGetStarted(): void {
-    // Navigate to the data foundation section
-    this.scrollToSection('data-foundation');
+    // Navigate to the ChromaDB section
+    this.scrollToSection('chromadb');
   }
 
   onWatchDemo(): void {
-    // Scroll to the workflow orchestration section
-    this.scrollToSection('workflow-orchestration');
+    // Scroll to the LangGraph Core section
+    this.scrollToSection('langgraph-core');
   }
 
   onFeatureSelected(featureId: string): void {
     // Handle feature selection - could trigger animations or navigation
     console.log('Feature selected:', featureId);
-    // Navigate to relevant LangGraph module sections
+    // Navigate to relevant library sections
     switch (featureId) {
       case 'ai-automation':
-        this.scrollToSection('intelligence-layer');
+        this.scrollToSection('memory');
         break;
       case 'data-analytics':
-        this.scrollToSection('data-foundation');
+        this.scrollToSection('chromadb');
         break;
       case 'cloud-integration':
-        this.scrollToSection('production-systems');
+        this.scrollToSection('checkpoint');
         break;
       default:
-        this.scrollToSection('core-foundation');
+        this.scrollToSection('langgraph-core');
     }
   }
 }
