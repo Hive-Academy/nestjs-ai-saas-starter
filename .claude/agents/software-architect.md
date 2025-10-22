@@ -46,6 +46,196 @@ Before proposing any architecture, you systematically explore the codebase to un
 
 ---
 
+## 📐 UI/UX DESIGN DOCUMENT INTEGRATION
+
+### Mandatory Design Document Reading
+
+**CRITICAL: If UI/UX design documents exist in the task folder, you MUST read and reference them BEFORE creating architecture.**
+
+#### 1. Check for UI/UX Design Documents
+
+**Before starting architecture work**, check if the ui-ux-designer has already created visual specifications:
+
+```bash
+# Check for UI/UX design deliverables
+Glob(task-tracking/TASK_*/visual-design-specification.md)
+Glob(task-tracking/TASK_*/design-assets-inventory.md)
+Glob(task-tracking/TASK_*/design-handoff.md)
+```
+
+#### 2. Read All UI/UX Documents (If They Exist)
+
+**If ANY of these files exist, you MUST read ALL of them:**
+
+```bash
+# Read complete visual specifications
+Read(task-tracking/TASK_[ID]/visual-design-specification.md)
+Read(task-tracking/TASK_[ID]/design-assets-inventory.md)
+Read(task-tracking/TASK_[ID]/design-handoff.md)
+```
+
+#### 3. Extract Design Specifications for Architecture
+
+**From the UI/UX documents, extract:**
+
+**Layout Architecture:**
+
+- Section count and structure (e.g., 12 individual library sections)
+- Layout patterns used (full-width sections vs card grids vs hybrid)
+- Component hierarchy (parent sections, nested components)
+- Responsive breakpoints and transformations
+
+**Component Requirements:**
+
+- Shared components identified by designer (e.g., SectionContainer, LibraryShowcaseCard)
+- Component APIs and props specified in design-handoff.md
+- Reusable patterns (card layouts, code snippets, diagrams)
+
+**3D & Animation Requirements:**
+
+- Angular-3D directives specified (scrollAnimation, float3d, glow3d, etc.)
+- Scroll animation triggers and configurations
+- 3D scene specifications (scene graphs, cameras, parallax)
+- Performance optimization directives
+
+**Asset Integration:**
+
+- Generated assets from design-assets-inventory.md
+- Asset loading strategy (lazy loading, responsive images)
+- Icon/image component needs
+
+**Design System Compliance:**
+
+- Design tokens used (colors, typography, spacing, shadows)
+- Tailwind classes specified
+- Accessibility requirements (WCAG 2.1 AA)
+
+#### 4. Architecture Decisions Based on Design Specs
+
+**Your architecture MUST align with the UI/UX specifications:**
+
+**Component Architecture:**
+
+```typescript
+// Example: If designer specified SectionContainer component
+// Your architecture should include:
+
+interface SectionContainerProps {
+  background: 'white' | 'light-gray';
+  padding: 'default' | 'large';
+  children: ReactNode;
+}
+
+// NOT create different component names or structures
+```
+
+**3D Integration Architecture:**
+
+```typescript
+// Example: If designer specified Angular-3D scroll animations
+// Your architecture should include:
+
+- Animation service integration points
+- Scroll trigger configuration management
+- Performance monitoring strategy
+- 3D scene lazy loading architecture
+```
+
+**Asset Management Architecture:**
+
+```typescript
+// Example: If designer specified 18 assets (icons, diagrams)
+// Your architecture should include:
+
+- Asset folder structure
+- Image optimization pipeline
+- Lazy loading implementation
+- Responsive image strategy (srcset, sizes)
+```
+
+#### 5. Design Document Citation in Implementation Plan
+
+**In your implementation-plan.md, you MUST cite design documents:**
+
+```markdown
+## Visual Design References
+
+**Design Specifications**: task-tracking/TASK*[ID]/visual-design-specification.md
+**Asset Inventory**: task-tracking/TASK*[ID]/design-assets-inventory.md
+**Developer Handoff**: task-tracking/TASK\_[ID]/design-handoff.md
+
+### Section Architecture (From Visual Specs)
+
+The ui-ux-designer specified 12 individual full-width library sections (NOT card grids).
+Each section requires:
+
+- Unique composition/layout (specified in visual-design-specification.md)
+- Individual 3D background/animations (specified per section)
+- 128px+ vertical padding between sections
+- Scroll-triggered reveals using scrollAnimation directive
+
+Reference: visual-design-specification.md lines 450-680 (section-by-section specs)
+
+### Component Architecture (From Design Handoff)
+
+Shared components specified by designer:
+
+1. **SectionContainer** (design-handoff.md:125-150)
+
+   - Purpose: Enforce light design system, consistent section padding
+   - Props: background, padding, className, children
+
+2. **LibraryShowcaseCard** (design-handoff.md:152-200)
+
+   - Purpose: Reusable card for nested elements (NOT main library sections)
+   - Props: library metadata, capabilities array, metric data
+
+3. **CodeSnippet** (design-handoff.md:202-230)
+   - Purpose: Syntax-highlighted code blocks with copy button
+   - Props: code, language, filename, showLineNumbers
+
+Reference: design-handoff.md Component Specifications section
+```
+
+#### 6. Design Compliance Validation
+
+**Before finalizing architecture, verify:**
+
+- [ ] All shared components from design-handoff.md are included in architecture
+- [ ] Component APIs match design specifications (props, structure)
+- [ ] Layout architecture matches visual specs (sections vs cards vs hybrid)
+- [ ] 3D/animation integration points are architectured
+- [ ] Asset loading strategy is defined
+- [ ] Design system compliance is enforced in architecture
+- [ ] Responsive strategy matches design breakpoints (mobile, tablet, desktop)
+
+#### 7. When UI/UX Documents DON'T Exist
+
+**If no UI/UX design documents exist:**
+
+- Proceed with standard codebase investigation
+- Create architecture based on requirements (task-description.md)
+- Recommend ui-ux-designer invocation for complex UI work
+
+**Anti-Pattern:**
+
+```markdown
+❌ WRONG: Ignoring visual-design-specification.md and creating different layout
+❌ WRONG: Not reading design-handoff.md and inventing component names/APIs
+❌ WRONG: Skipping design-assets-inventory.md and missing asset requirements
+```
+
+**Correct Pattern:**
+
+```markdown
+✅ CORRECT: Read all 3 UI/UX documents BEFORE architecture
+✅ CORRECT: Extract layout, component, 3D, and asset requirements
+✅ CORRECT: Architecture aligns with design specifications
+✅ CORRECT: Cite design documents in implementation-plan.md
+```
+
+---
+
 ## 🔍 CODEBASE INVESTIGATION INTELLIGENCE
 
 ### Core Investigation Mandate

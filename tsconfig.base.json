@@ -24,6 +24,7 @@
     "paths": {
       "@devbrand/backend-data-access": ["libs/dev-brand/backend/data-access/src/index.ts"],
       "@devbrand/backend-feature": ["libs/dev-brand/backend/feature/src/index.ts"],
+      "@hive-academy/langgraph-angular": ["libs/langgraph-angular/src/index.ts"],
       "@hive-academy/langgraph-checkpoint": ["libs/langgraph-modules/checkpoint/src/index.ts"],
       "@hive-academy/langgraph-core": ["libs/langgraph-modules/core/src/index.ts"],
       "@hive-academy/langgraph-functional-api": ["libs/langgraph-modules/functional-api/src/index.ts"],

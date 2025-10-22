@@ -1,146 +1,40 @@
 /**
- * Workflow Orchestration Section - Rebuilt with comprehensive business value
+ * Workflow Orchestration Section Component (Light Design)
+ *
+ * Showcases the orchestration layer with 3 libraries:
+ * - Workflow-Engine (central coordination hub)
+ * - Streaming (real-time processing)
+ * - Memory (hybrid vector + graph storage)
+ *
+ * Design System: Light theme with 3-column responsive grid
+ * - White background with soft shadows
+ * - 3-column grid (desktop), 2-column (tablet), 1-column (mobile)
  */
 
 import { CommonModule } from '@angular/common';
-import { Component, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
-
-interface WorkflowModule {
-  icon: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  color: 'blue' | 'purple' | 'cyan';
-  features: string[];
-  metric: { value: string; label: string };
-  particleTint: 'blue' | 'purple' | 'cyan';
-  slug: string;
-}
+import { Component, signal } from '@angular/core';
+import { SectionContainerComponent } from '../../../shared/components/section-container.component';
+import {
+  LibraryShowcaseGridComponent,
+  type LibraryCard,
+} from '../../../shared/components/library-showcase-grid.component';
 
 @Component({
   selector: 'app-workflow-orchestration-section',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
-    SectionParticleBackgroundComponent,
-    ScrollAnimationDirective,
+    SectionContainerComponent,
+    LibraryShowcaseGridComponent,
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <section
-      class="w-full min-h-screen relative bg-gradient-to-br from-black via-blue-900 to-black py-20 overflow-hidden"
+    <app-section-container
+      title="Orchestration Layer"
+      subtitle="Execute, stream, and remember - complete workflow coordination"
+      background="white"
     >
-      <!-- Flowing Particles Background -->
-      <div class="absolute inset-0 pointer-events-none">
-        <app-section-particle-background
-          [particleCount]="40"
-          tintColor="blue"
-          [particleSize]="0.6"
-          [particleOpacity]="0.3"
-        />
-      </div>
-
-      <div class="container mx-auto px-8 relative z-10">
-        <div
-          class="text-center mb-16"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'slideUp',
-            start: 'top 80%',
-            duration: 0.6,
-            ease: 'power2.out'
-          }"
-        >
-          <h2
-            class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 bg-clip-text text-transparent"
-          >
-            🔧 Workflow Orchestration
-          </h2>
-          <p class="text-xl md:text-2xl text-white/80 max-w-4xl mx-auto">
-            Dual paradigm execution combining declarative graphs and functional
-            elegance for enterprise AI workflows
-          </p>
-        </div>
-
-        <!-- 3-Card Horizontal Pipeline -->
-        <div class="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto mb-12">
-          @for (module of workflowModules(); track module.title; let i = $index)
-          {
-          <a
-            [routerLink]="['/library', module.slug]"
-            class="relative group block cursor-pointer"
-            scrollAnimation
-            [scrollConfig]="{
-              animation: 'slideUp',
-              start: 'top 80%',
-              duration: 0.6,
-              delay: i * 0.15,
-              ease: 'power2.out'
-            }"
-          >
-            <div
-              class="relative h-full bg-{{
-                module.color
-              }}-600/30 backdrop-blur-sm border border-{{
-                module.color
-              }}-400/30 rounded-2xl p-8 hover:bg-white/20 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-{{
-                module.color
-              }}-500/40"
-            >
-              <div class="text-5xl mb-4">{{ module.icon }}</div>
-              <h3
-                class="text-2xl md:text-3xl font-bold text-{{
-                  module.color
-                }}-400 mb-3"
-              >
-                {{ module.title }}
-              </h3>
-              <p class="text-base md:text-lg text-white/70 mb-6">
-                {{ module.description }}
-              </p>
-
-              <ul class="space-y-2 mb-6">
-                @for (feature of module.features; track feature) {
-                <li class="flex items-start gap-2 text-white/60 text-sm">
-                  <span class="text-{{ module.color }}-400">▸</span>
-                  <span>{{ feature }}</span>
-                </li>
-                }
-              </ul>
-
-              <div class="bg-black/30 rounded p-4 text-center">
-                <span class="text-{{ module.color }}-300 font-bold text-lg">{{
-                  module.metric.value
-                }}</span>
-                <div class="text-xs text-white/50 mt-1">
-                  {{ module.metric.label }}
-                </div>
-              </div>
-            </div>
-          </a>
-          }
-        </div>
-
-        <!-- Flow Visualization -->
-        <div
-          class="flex items-center justify-center gap-4 text-white/40 text-2xl"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'fadeIn',
-            start: 'top 80%',
-            duration: 0.6,
-            ease: 'power2.out'
-          }"
-        >
-          <span>📥 Input</span><span>→</span><span>⚙️ Process</span
-          ><span>→</span><span>📤 Output</span>
-        </div>
-      </div>
-    </section>
+      <app-library-showcase-grid [libraries]="libraries()" [columns]="3" />
+    </app-section-container>
   `,
   styles: [
     `
@@ -151,60 +45,63 @@ interface WorkflowModule {
   ],
 })
 export class WorkflowOrchestrationSectionComponent {
-  readonly workflowModules = signal<WorkflowModule[]>([
-    {
-      icon: '🔧',
-      title: 'Workflow Engine',
-      subtitle: 'Central orchestration hub',
-      description:
-        'Graph execution with decorator-based workflows and automatic streaming integration',
-      color: 'blue',
-      features: [
-        'StateGraph compilation',
-        'Conditional routing',
-        'Error recovery',
-        'Command processing',
-        'Subgraph management',
-      ],
-      metric: { value: 'Central Hub', label: 'Coordinates all modules' },
-      particleTint: 'blue',
-      slug: 'langgraph-workflow-engine',
-    },
+  readonly libraries = signal<LibraryCard[]>([
     {
       icon: '🎯',
-      title: 'Functional API',
-      subtitle: 'FP-style workflows',
+      packageName: '@hive-academy/langgraph-workflow-engine',
+      businessValue: 'Central Coordination Hub',
       description:
-        '@Workflow decorators for functional programming patterns with 40% code reduction',
-      color: 'purple',
-      features: [
-        '@Workflow decorators',
-        'Task composition',
-        'Parallel execution',
-        '@Node/@Edge/@Task',
-        'Pure functions',
+        'Single registration point for agents, tools, and workflows with embedded streaming services. No circular dependencies.',
+      capabilities: [
+        'CentralRegistryService for all agents, tools, workflows',
+        'Embedded streaming (no circular dependencies)',
+        'MetadataProcessorService for automatic decorator extraction',
+        'Production caching with 5-minute compilation TTL',
       ],
-      metric: { value: '40% Less Code', label: 'vs imperative patterns' },
-      particleTint: 'purple',
-      slug: 'langgraph-functional-api',
+      metric: {
+        value: 'Coordinates',
+        label: 'All 12 libraries',
+      },
+      ctaText: 'Explore Workflow-Engine',
+      slug: 'workflow-engine',
     },
     {
-      icon: '📡',
-      title: 'Streaming',
-      subtitle: 'Real-time processing',
+      icon: '⚡',
+      packageName: '@hive-academy/langgraph-streaming',
+      businessValue: 'Build ChatGPT-like Streaming',
       description:
-        'WebSocket token streaming with @StreamToken decorator for progressive AI responses',
-      color: 'cyan',
-      features: [
-        'Progressive results',
-        'Live updates',
-        'Backpressure handling',
-        '@StreamToken decorator',
-        'WebSocket support',
+        'Real-time token streaming with WebSocket and Server-Sent Events support. Individual token processing with decorators.',
+      capabilities: [
+        'Token-level streaming with @StreamToken decorator',
+        'WebSocket support for bidirectional communication',
+        'Server-Sent Events (SSE) for HTTP streaming',
+        'Multi-level streaming (node, workflow, token)',
       ],
-      metric: { value: 'Real-Time', label: 'Token-by-token streaming' },
-      particleTint: 'cyan',
-      slug: 'langgraph-streaming',
+      metric: {
+        value: 'Real-Time',
+        label: 'Streaming feedback',
+      },
+      ctaText: 'Explore Streaming',
+      slug: 'streaming',
+    },
+    {
+      icon: '🧠',
+      packageName: '@hive-academy/langgraph-memory',
+      businessValue: 'Hybrid Vector + Graph Memory',
+      description:
+        'Intelligent memory system combining ChromaDB (vector) and Neo4j (graph) storage. Automatic memory context for agents.',
+      capabilities: [
+        'IMemoryAdapter pattern for standardized operations',
+        'Hybrid storage: ChromaDB (vector) + Neo4j (graph)',
+        'Semantic memory with automatic embedding generation',
+        'Auto-enhances Multi-Agent, HITL, Workflow-Engine',
+      ],
+      metric: {
+        value: 'Auto-Enhanced',
+        label: 'Agent memory',
+      },
+      ctaText: 'Explore Memory',
+      slug: 'memory',
     },
   ]);
 }

@@ -1,0 +1,27 @@
+{
+  "name": "@hive-academy/langgraph-angular",
+  "version": "0.0.1",
+  "description": "Angular components and services for LangGraph integration",
+  "author": "Hive Academy Team",
+  "license": "MIT",
+  "keywords": [
+    "angular",
+    "langgraph",
+    "components",
+    "services",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-angular"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
+  "peerDependencies": {
+    "@nx/angular": "21.5.1"
+  },
+  "sideEffects": false
+}

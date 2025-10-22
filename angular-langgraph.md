@@ -1,4 +1,4 @@
-# 🚀 Angular LangGraph Integration Library
+# 🚀 LangGraph Angular Integration Library
 
 **Comprehensive Research & Architecture Design**
 
@@ -33,12 +33,12 @@ I've conducted a comprehensive analysis of:
 
 ---
 
-## 🎯 Proposed Library: `@hive-academy/angular-langgraph`
+## 🎯 Proposed Library: `@hive-academy/langgraph-angular`
 
 ### Library Architecture Overview
 
 ```
-@hive-academy/angular-langgraph
+@hive-academy/langgraph-angular
 ├── core/                           # Core services and protocols
 │   ├── services/
 │   │   ├── langgraph-connection.service.ts    # WebSocket + REST connection
@@ -1075,7 +1075,7 @@ export function provideLangGraphFeature(providers: Provider[]): EnvironmentProvi
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideLangGraph } from '@hive-academy/angular-langgraph';
+import { provideLangGraph } from '@hive-academy/langgraph-angular';
 import { environment } from './environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -1108,7 +1108,7 @@ export const appConfig: ApplicationConfig = {
 ### Step 1: Install
 
 ```bash
-npm install @hive-academy/angular-langgraph
+npm install @hive-academy/langgraph-angular
 ```
 
 ### Step 2: Configure Providers
@@ -1118,7 +1118,7 @@ npm install @hive-academy/angular-langgraph
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideLangGraph } from '@hive-academy/angular-langgraph';
+import { provideLangGraph } from '@hive-academy/langgraph-angular';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -1141,8 +1141,8 @@ export const appConfig: ApplicationConfig = {
 ```typescript
 // devbrand-workflow.component.ts
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { LangGraphChatComponent } from '@hive-academy/angular-langgraph';
-import type { WorkflowExecution, ApprovalRequest } from '@hive-academy/angular-langgraph';
+import { LangGraphChatComponent } from '@hive-academy/langgraph-angular';
+import type { WorkflowExecution, ApprovalRequest } from '@hive-academy/langgraph-angular';
 
 @Component({
   selector: 'app-devbrand-workflow',
@@ -1192,7 +1192,7 @@ export class DevBrandWorkflowComponent {
 ```typescript
 // devbrand-simple.component.ts
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { useLangGraphWorkflow } from '@hive-academy/angular-langgraph';
+import { useLangGraphWorkflow } from '@hive-academy/langgraph-angular';
 
 @Component({
   selector: 'app-devbrand-simple',
@@ -1311,7 +1311,7 @@ Navigate to `http://localhost:4200` and see your LangGraph workflow in action! �
 
 **Deliverables**:
 
-- `@hive-academy/angular-langgraph` NPM package
+- `@hive-academy/langgraph-angular` NPM package
 - Core services functional
 - Basic WebSocket connection established
 - Token streaming operational
@@ -1428,7 +1428,7 @@ Navigate to `http://localhost:4200` and see your LangGraph workflow in action! �
 
 ## 📊 Comparison: CopilotKit vs Angular LangGraph
 
-| Feature          | CopilotKit (React)       | @hive-academy/angular-langgraph    |
+| Feature          | CopilotKit (React)       | @hive-academy/langgraph-angular    |
 | ---------------- | ------------------------ | ---------------------------------- |
 | **Framework**    | React only               | Angular only                       |
 | **Backend**      | Generic LangGraph        | Your NestJS LangGraph ecosystem    |

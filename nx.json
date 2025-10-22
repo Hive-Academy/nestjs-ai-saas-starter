@@ -149,7 +149,8 @@
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
       "libs/langgraph-modules/platform",
-      "angular-3d"
+      "angular-3d",
+      "langgraph-angular"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",
