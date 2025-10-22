@@ -7,7 +7,7 @@
 | TASK_2025_017 | Landing Page Redesign - Light Design System    | ⏸️ Paused (Phase 5 Checkpoint - 13% Implementation) | Feature     | P1-High   | XL     | 2025-10-21 | 2025-01-22 23:50:00 |           | feature/017 |
 | TASK_2025_018 | Angular-LangGraph Generic Rewrite (Meta-Plan)  | ✅ Complete                                 | Documentation | P1-High   | XL     | 2025-01-22 | 2025-01-22 23:45:00 | 2025-01-22 | feature/018 |
 | TASK_2025_019 | Core Services & Models Rewrite                 | 🔄 Active (Requirements Complete)           | Documentation | P1-High   | L      | 2025-01-22 | 2025-01-22 23:55:00 |           | feature/019 |
-| TASK_2025_020 | Components & Directives Rewrite                | 📋 Pending                                  | Documentation | P1-High   | L      | 2025-01-22 |                     |           | feature/020 |
-| TASK_2025_021 | Composables & Providers Rewrite                | 📋 Pending                                  | Documentation | P1-High   | M      | 2025-01-22 |                     |           | feature/021 |
-| TASK_2025_022 | Examples Package Creation                      | 📋 Pending                                  | Documentation | P1-High   | L      | 2025-01-22 |                     |           | feature/022 |
-| TASK_2025_023 | Documentation Consolidation & Final Review     | 📋 Pending                                  | Documentation | P1-High   | M      | 2025-01-22 |                     |           | feature/023 |
+| TASK_2025_020 | Components & Directives Rewrite                | 🔄 Active (Requirements Complete)           | Documentation | P1-High   | L      | 2025-01-22 | 2025-01-22 00:10:00 |           | feature/020 |
+| TASK_2025_021 | Composables & Providers Rewrite                | 🔄 Active (Requirements Complete)           | Documentation | P1-High   | M      | 2025-01-22 | 2025-01-22 01:15:00 |           | feature/021 |
+| TASK_2025_022 | Examples Package Creation (In dev-brand-ui)    | 🔄 Active (Requirements Complete)           | Implementation | P1-High   | L      | 2025-01-22 | 2025-01-22 06:40:00 |           | feature/022 |
+| TASK_2025_023 | Documentation Consolidation & Final Review     | 🔄 Active (Requirements Complete)           | Documentation | P1-High   | M      | 2025-01-22 | 2025-01-22 20:30:00 |           | feature/023 |
