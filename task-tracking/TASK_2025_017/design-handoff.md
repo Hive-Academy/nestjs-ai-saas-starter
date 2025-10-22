@@ -396,6 +396,472 @@ npm install prismjs @types/prismjs
 
 ---
 
+## Angular-3D Integration Specifications
+
+### When to Use Angular-3D vs Static Assets
+
+**STRATEGIC DECISION MATRIX**:
+
+**Use Angular-3D for**:
+- Architecture diagrams (12-library 5-layer system) - Interactive depth visualization
+- Complex system visualizations (flowcharts, network graphs) - Dynamic connections
+- Interactive demos (RAG system retrieval, multi-agent coordination) - Real-time visualization
+- Data flow visualizations (Checkpoint timeline, Streaming pipeline) - Animated flows
+
+**Use Static Assets (Canva/SVG/PNG) for**:
+- Library icons (12 simple SVG icons) - Simple, lightweight
+- Logos and branding - Brand consistency
+- Simple decorative graphics - Fast loading
+- Background patterns - Static visuals
+
+**Benefits of Angular-3D**:
+- Interactive (mouse parallax creates depth perception)
+- Animated (floating elements, pulsing connections)
+- Smaller file sizes (30KB 3D scene vs 200KB+ PNG)
+- Responsive (scales perfectly to any screen)
+- Showcases project capabilities (demonstrates Angular-3D framework)
+
+### Angular-3D Component Integration Pattern
+
+**Architecture**: All Angular-3D components are already available in `apps/dev-brand-ui/src/app/core/angular-3d/`
+
+**Available Components**:
+- `Scene3DComponent` - Configurable NgtCanvas wrapper
+- `BoxComponent` - 3D box primitives (for architecture diagram layers)
+- `FloatingSphereComponent` - Floating sphere elements
+- `ParticleSystemComponent` - Particle effects
+- `TorusComponent`, `CylinderComponent`, `Text3DComponent` - Additional primitives
+
+**Available Directives**:
+- `scrollAnimation` - GSAP ScrollTrigger integration (fadeIn, slideUp, parallax, custom)
+- `float3d` - Floating animation with GSAP
+- `glow3d` - 3D glow/bloom effects
+- `mouseParallax3d` - Mouse-responsive parallax for depth
+- `performance3d` - Performance optimization and quality adjustment
+
+**Services**:
+- `AnimationService` - GSAP timeline management
+- `PerformanceMonitorService` - FPS tracking
+- `AdvancedPerformanceOptimizerService` - Dynamic quality adjustment
+
+---
+
+### Step-by-Step: Embed 3D Scene in Section
+
+**Step 1: Import Angular-3D Components**
+
+```typescript
+// integration-showcase-section.component.ts
+
+import { Component } from '@angular/core';
+import { SectionContainerComponent } from '../../shared/components/section-container.component';
+import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+```
+
+**Step 2: Create Section Component with 3D Scene**
+
+```typescript
+@Component({
+  selector: 'app-integration-showcase-section',
+  standalone: true,
+  imports: [SectionContainerComponent, Scene3DComponent, ScrollAnimationDirective],
+  template: `
+    <app-section-container background="white" verticalPadding="xlarge">
+      <!-- Section Header -->
+      <div class="text-center mb-16">
+        <h2 class="text-6xl font-bold text-gray-900 mb-4">Complete Integration</h2>
+        <p class="text-2xl text-gray-500">12 Libraries Working Together</p>
+      </div>
+
+      <!-- Angular-3D Scene Container -->
+      <div class="w-full h-[600px] relative rounded-2xl overflow-hidden">
+        <app-architecture-3d-scene
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 80%',
+            duration: 1.5,
+            ease: 'power3.out'
+          }"
+        />
+      </div>
+
+      <!-- Fallback for non-WebGL browsers -->
+      @if (!webGLSupported) {
+      <img
+        src="assets/images/architecture-12-libraries-fallback.svg"
+        alt="12-Library Architecture Diagram"
+        class="w-full max-w-5xl mx-auto"
+      />
+      }
+    </app-section-container>
+  `,
+})
+export class IntegrationShowcaseSectionComponent {
+  webGLSupported = this.checkWebGLSupport();
+
+  private checkWebGLSupport(): boolean {
+    try {
+      const canvas = document.createElement('canvas');
+      return !!(
+        window.WebGLRenderingContext &&
+        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+}
+```
+
+**Step 3: Create 3D Scene Component**
+
+```typescript
+// architecture-3d-scene.component.ts
+
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { BoxComponent } from '../../../core/angular-3d/components/primitives/box.component';
+import { Float3dDirective } from '../../../core/angular-3d/directives/float-3d.directive';
+import { Performance3dDirective } from '../../../core/angular-3d/directives/performance-3d.directive';
+import { MouseParallax3dDirective } from '../../../core/angular-3d/directives/mouse-parallax-3d.directive';
+
+@Component({
+  selector: 'app-architecture-3d-scene',
+  standalone: true,
+  imports: [
+    Scene3DComponent,
+    BoxComponent,
+    Float3dDirective,
+    Performance3dDirective,
+    MouseParallax3dDirective
+  ],
+  template: `
+    <app-scene-3d
+      [sceneGraph]="ArchitectureSceneGraph"
+      [camera]="cameraConfig"
+      [gl]="rendererConfig"
+      [enableMouseParallax]="true"
+      [mouseParallax]="mouseParallaxConfig"
+      performance3d
+    />
+  `,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+export class Architecture3DSceneComponent {
+  // Camera configuration for orthographic view
+  cameraConfig = {
+    position: [0, 0, 800] as [number, number, number],
+    fov: 75,
+  };
+
+  // WebGL renderer configuration
+  rendererConfig = {
+    antialias: true,
+    alpha: true, // Transparent background
+    powerPreference: 'high-performance' as const,
+  };
+
+  // Mouse parallax for depth perception
+  mouseParallaxConfig = {
+    sensitivity: 0.3,
+    smoothing: 6,
+    cameraDistance: 800,
+  };
+
+  // Scene graph component (defined separately)
+  ArchitectureSceneGraph = ArchitectureSceneGraphComponent;
+}
+
+// Separate scene graph component for cleaner structure
+@Component({
+  standalone: true,
+  imports: [BoxComponent],
+  template: `
+    <!-- LAYER 1: CORE FOUNDATION (Bottom) -->
+    <app-box
+      [position]="[0, -300, 0]"
+      [width]="600"
+      [height]="120"
+      [depth]="20"
+      [color]="0xEEF2FF"
+      [metalness]="0.1"
+      [roughness]="0.8"
+      [floatConfig]="{ height: 0.2, speed: 4000, ease: 'sine.inOut' }"
+    />
+
+    <!-- LAYER 2: DATA LAYER (3 boxes side-by-side) -->
+    <app-box
+      [position]="[-450, -150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xDBEAFE"
+      [floatConfig]="{ height: 0.2, speed: 4200, delay: 0 }"
+    />
+    <app-box
+      [position]="[0, -150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xDBEAFE"
+      [floatConfig]="{ height: 0.2, speed: 4200, delay: 200 }"
+    />
+    <app-box
+      [position]="[450, -150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xDBEAFE"
+      [floatConfig]="{ height: 0.2, speed: 4200, delay: 400 }"
+    />
+
+    <!-- LAYER 3: ORCHESTRATION LAYER (3 boxes) -->
+    <app-box
+      [position]="[-450, 0, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xD1FAE5"
+      [floatConfig]="{ height: 0.25, speed: 4000, delay: 100 }"
+    />
+    <app-box
+      [position]="[0, 0, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xD1FAE5"
+      [floatConfig]="{ height: 0.25, speed: 4000, delay: 300 }"
+    />
+    <app-box
+      [position]="[450, 0, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xD1FAE5"
+      [floatConfig]="{ height: 0.25, speed: 4000, delay: 500 }"
+    />
+
+    <!-- LAYER 4: AGENT SYSTEMS (3 boxes) -->
+    <app-box
+      [position]="[-450, 150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xF3E8FF"
+      [floatConfig]="{ height: 0.3, speed: 3800, delay: 200 }"
+    />
+    <app-box
+      [position]="[0, 150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xF3E8FF"
+      [floatConfig]="{ height: 0.3, speed: 3800, delay: 400 }"
+    />
+    <app-box
+      [position]="[450, 150, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xF3E8FF"
+      [floatConfig]="{ height: 0.3, speed: 3800, delay: 600 }"
+    />
+
+    <!-- LAYER 5: PRODUCTION LAYER (3 boxes) -->
+    <app-box
+      [position]="[-450, 300, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xFED7AA"
+      [floatConfig]="{ height: 0.35, speed: 3600, delay: 300 }"
+    />
+    <app-box
+      [position]="[0, 300, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xFED7AA"
+      [floatConfig]="{ height: 0.35, speed: 3600, delay: 500 }"
+    />
+    <app-box
+      [position]="[450, 300, 0]"
+      [width]="400"
+      [height]="120"
+      [depth]="20"
+      [color]="0xFED7AA"
+      [floatConfig]="{ height: 0.35, speed: 3600, delay: 700 }"
+    />
+
+    <!-- NOTE: Text labels can be added as CSS overlays or using Text3DComponent -->
+    <!-- Connecting arrows can be added using CylinderComponent + ConeComponent -->
+  `,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+class ArchitectureSceneGraphComponent {}
+```
+
+---
+
+### Angular-3D Performance Guidelines
+
+**Performance Budget per 3D Scene**:
+- Target: 60 FPS on mid-range devices
+- Max polygons: 50,000 per scene (architecture diagram: ~15,000)
+- Max draw calls: 100
+- Max texture memory: 10MB
+
+**Optimization Strategies**:
+
+1. **Use `performance3d` directive** - Auto-adjusts quality based on FPS
+   ```html
+   <app-scene-3d performance3d [targetFPS]="60" />
+   ```
+
+2. **Geometry instancing** for repeated elements (library boxes)
+   ```typescript
+   // BoxComponent already optimized for instancing
+   ```
+
+3. **Level of detail (LOD)** for complex meshes (if needed)
+   ```typescript
+   // Reduce geometry segments on mobile
+   const segments = isMobile ? 8 : 16;
+   ```
+
+4. **Lazy scene loading** - Load 3D scenes only when section in viewport
+   ```typescript
+   @if (sectionVisible) {
+     <app-architecture-3d-scene />
+   }
+   ```
+
+5. **Dispose resources** when component destroyed
+   ```typescript
+   ngOnDestroy(): void {
+     this.scene?.traverse((object) => {
+       if (object instanceof THREE.Mesh) {
+         object.geometry?.dispose();
+         object.material?.dispose();
+       }
+     });
+     this.renderer?.dispose();
+   }
+   ```
+
+**Example Performance Monitoring**:
+
+```typescript
+import { PerformanceMonitorService } from '../../../core/angular-3d/services/performance-monitor.service';
+
+export class Architecture3DSceneComponent implements OnDestroy {
+  constructor(private perfMonitor: PerformanceMonitorService) {}
+
+  ngOnInit() {
+    // Monitor FPS
+    this.perfMonitor.startMonitoring((fps) => {
+      if (fps < 30) {
+        console.warn('[3D Scene] Low FPS detected:', fps);
+        // performance3d directive will auto-reduce quality
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.perfMonitor.stopMonitoring();
+    // Dispose Three.js resources
+    this.disposeResources();
+  }
+
+  private disposeResources(): void {
+    // Cleanup implementation
+  }
+}
+```
+
+---
+
+### Fallback Strategies
+
+**Non-WebGL Browsers**:
+
+```typescript
+// Check WebGL support before rendering 3D
+if (!this.checkWebGLSupport()) {
+  // Render static SVG fallback
+  return;
+}
+
+private checkWebGLSupport(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch (e) {
+    return false;
+  }
+}
+```
+
+**Template with Fallback**:
+
+```html
+@if (webGLSupported) {
+  <app-architecture-3d-scene />
+} @else {
+  <img
+    src="assets/images/architecture-12-libraries-fallback.svg"
+    alt="12-Library Architecture Diagram"
+    class="w-full max-w-5xl mx-auto"
+  />
+}
+```
+
+**Low-Performance Devices**:
+
+```typescript
+// performance3d directive auto-reduces quality if FPS drops
+<app-architecture-3d-scene performance3d [targetFPS]="60" />
+
+// Directive internally:
+// - Reduces particle count
+// - Lowers shadow quality
+// - Reduces geometry segments
+// - Disables post-processing effects
+```
+
+---
+
+### Asset Integration Checklist (Updated)
+
+**Angular-3D Assets** (Complex Visualizations):
+- [ ] Architecture diagram 3D scene created (`Architecture3DSceneComponent`)
+- [ ] RAG system 3D demo created (`EnterpriseRAG3DSceneComponent`) - Optional
+- [ ] Multi-agent 3D demo created (`MultiAgent3DSceneComponent`) - Optional
+- [ ] All 3D scenes have `performance3d` directive
+- [ ] All 3D scenes have `scrollAnimation` directive for viewport entry
+- [ ] All 3D scenes have fallback SVG/PNG for non-WebGL
+- [ ] WebGL detection implemented in parent components
+- [ ] Resource disposal in `ngOnDestroy()` implemented
+
+**Static Assets** (Simple Icons/Graphics):
+- [ ] All 12 library icons created (SVG, < 10KB each)
+- [ ] Simple use case illustrations created (PNG, < 100KB) - If using static
+- [ ] All static assets optimized
+- [ ] All static assets lazy loaded with `loading="lazy"`
+
+**Performance Validation**:
+- [ ] 3D scenes maintain 60 FPS on mid-range devices
+- [ ] 3D scenes auto-reduce quality on low-end devices
+- [ ] Polygon budget < 50,000 per scene
+- [ ] Total 3D bundle size < 100KB (excluding Three.js core)
+
+---
+
 ### Phase 2: Section Implementation (Hours 5-20)
 
 Implement sections in this order (ensures consistent quality):

@@ -1,0 +1,39 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Memory: Brain with neural connections -->
+
+  <!-- Brain outline (left hemisphere) -->
+  <path d="M 80 80 Q 60 90 60 110 Q 60 140 70 160 Q 75 180 90 190 Q 100 195 110 190"
+        fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Brain outline (right hemisphere) -->
+  <path d="M 176 80 Q 196 90 196 110 Q 196 140 186 160 Q 181 180 166 190 Q 156 195 146 190"
+        fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Top connection -->
+  <path d="M 110 70 Q 128 60 146 70" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Bottom connection -->
+  <path d="M 110 190 Q 128 200 146 190" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Neural pathways (internal connections) -->
+  <!-- Left hemisphere -->
+  <path d="M 75 100 Q 85 110 80 120" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 70 130 Q 80 140 75 150" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 85 115 Q 95 125 90 135" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+
+  <!-- Right hemisphere -->
+  <path d="M 181 100 Q 171 110 176 120" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 186 130 Q 176 140 181 150" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 171 115 Q 161 125 166 135" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+
+  <!-- Synaptic nodes -->
+  <circle cx="80" cy="110" r="3" fill="#6366F1"/>
+  <circle cx="75" cy="140" r="3" fill="#6366F1"/>
+  <circle cx="90" cy="125" r="3" fill="#6366F1"/>
+  <circle cx="176" cy="110" r="3" fill="#6366F1"/>
+  <circle cx="181" cy="140" r="3" fill="#6366F1"/>
+  <circle cx="166" cy="125" r="3" fill="#6366F1"/>
+
+  <!-- Connecting corpus callosum -->
+  <line x1="110" y1="130" x2="146" y2="130" stroke="#6366F1" stroke-width="2" opacity="0.7"/>
+</svg>

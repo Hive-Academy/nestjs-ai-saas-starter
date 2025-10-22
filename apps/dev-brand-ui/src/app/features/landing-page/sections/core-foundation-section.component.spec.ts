@@ -10,7 +10,7 @@
 
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { CoreFoundationSectionComponent } from './core-foundation-section.component';
-import { GlassmorphismCardComponent } from '../../../shared/components/glassmorphism-card.component';
+import { LibraryShowcaseCardComponent } from '../../../shared/components/library-showcase-card.component';
 import { SectionContainerComponent } from '../../../shared/components/section-container.component';
 import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
 
@@ -22,7 +22,7 @@ describe('CoreFoundationSectionComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         CoreFoundationSectionComponent,
-        GlassmorphismCardComponent,
+        LibraryShowcaseCardComponent,
         SectionContainerComponent,
         SectionParticleBackgroundComponent,
       ],

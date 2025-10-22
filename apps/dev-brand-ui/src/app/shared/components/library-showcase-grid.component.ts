@@ -20,7 +20,7 @@
 
 import { CommonModule } from '@angular/common';
 import { Component, input, computed } from '@angular/core';
-import { GlassmorphismCardComponent } from './glassmorphism-card.component';
+import { LibraryShowcaseCardComponent } from './library-showcase-card.component';
 
 export interface LibraryCard {
   icon: string;
@@ -36,11 +36,11 @@ export interface LibraryCard {
 @Component({
   selector: 'app-library-showcase-grid',
   standalone: true,
-  imports: [CommonModule, GlassmorphismCardComponent],
+  imports: [CommonModule, LibraryShowcaseCardComponent],
   template: `
     <div [class]="gridClasses()">
       @for (library of libraries(); track library.packageName) {
-      <app-glassmorphism-card
+      <app-library-showcase-card
         [icon]="library.icon"
         [packageName]="library.packageName"
         [title]="library.businessValue"

@@ -1,0 +1,19 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- HITL (Human in the Loop): Hand with checkmark -->
+
+  <!-- Hand outline -->
+  <path d="M 100 180 L 100 120 Q 100 110 110 110 L 110 100 Q 110 90 120 90 L 120 80 Q 120 70 130 70 L 130 60 Q 130 50 140 50 L 140 110"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Thumb -->
+  <path d="M 140 110 L 160 110 Q 170 110 170 120 L 170 150 Q 170 160 160 160 L 100 160 L 100 180 L 140 180 Q 160 180 170 170 L 180 160"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Palm lines (detail) -->
+  <line x1="110" y1="140" x2="150" y2="140" stroke="#6366F1" stroke-width="1.5" opacity="0.4"/>
+  <line x1="110" y1="150" x2="150" y2="150" stroke="#6366F1" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Checkmark (approval symbol) -->
+  <circle cx="180" cy="80" r="30" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 165 80 L 175 90 L 195 65" fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

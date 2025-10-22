@@ -10,7 +10,7 @@
 
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { WorkflowOrchestrationSectionComponent } from './workflow-orchestration-section.component';
-import { GlassmorphismCardComponent } from '../../../shared/components/glassmorphism-card.component';
+import { LibraryShowcaseCardComponent } from '../../../shared/components/library-showcase-card.component';
 import { SectionContainerComponent } from '../../../shared/components/section-container.component';
 import { SectionParticleBackgroundComponent } from '../../../shared/components/section-particle-background.component';
 
@@ -22,7 +22,7 @@ describe('WorkflowOrchestrationSectionComponent', () => {
     await TestBed.configureTestingModule({
       imports: [
         WorkflowOrchestrationSectionComponent,
-        GlassmorphismCardComponent,
+        LibraryShowcaseCardComponent,
         SectionContainerComponent,
         SectionParticleBackgroundComponent,
       ],

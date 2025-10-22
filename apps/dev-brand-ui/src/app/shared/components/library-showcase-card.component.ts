@@ -11,7 +11,7 @@
  *
  * Usage:
  * ```html
- * <app-glassmorphism-card
+ * <app-library-showcase-card
  *   icon="🔍"
  *   packageName="@hive-academy/nestjs-chromadb"
  *   title="Build RAG applications in minutes"
@@ -28,7 +28,7 @@ import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
 @Component({
-  selector: 'app-glassmorphism-card',
+  selector: 'app-library-showcase-card',
   standalone: true,
   imports: [CommonModule],
   template: `
@@ -114,7 +114,7 @@ import { Component, input, output } from '@angular/core';
     `,
   ],
 })
-export class GlassmorphismCardComponent {
+export class LibraryShowcaseCardComponent {
   // Configuration inputs (light design focused)
   readonly icon = input<string>('');
   readonly packageName = input<string>(''); // @hive-academy/package-name
