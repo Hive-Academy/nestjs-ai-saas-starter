@@ -166,7 +166,11 @@ project-manager → USER VALIDATION ✋
 [if research needed] → researcher-expert
 [if UI/UX work] → ui-ux-designer (visual design + Canva assets + 3D specs)
 software-architect → USER VALIDATION ✋
-[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md with atomic task breakdown]
+team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
+  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
+  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 3: COMPLETION - Final verification when all tasks complete]
 [USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
 modernization-detector
 ```
@@ -177,8 +181,11 @@ modernization-detector
 project-manager → USER VALIDATION ✋
 ui-ux-designer → [Generates visual specs + Canva assets + 3D configurations]
 software-architect → USER VALIDATION ✋ [References design specs]
-frontend-developer → [Implements with exact Tailwind + Angular-3D directives]
-senior-tester AND code-reviewer (can run in parallel)
+team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md from design specs + implementation plan]
+team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
+  ↓ [Iterates: Assign task → frontend-developer implements → Verify → Repeat]
+team-leader → [MODE 3: COMPLETION - Final verification when all tasks complete]
+[USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
 modernization-detector
 ```
 
@@ -187,7 +194,11 @@ modernization-detector
 ```
 [skip project-manager - requirements already known]
 [optional] researcher-expert (if complex)
-[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md for bug fix steps]
+team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
+  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
+  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 3: COMPLETION - Final verification]
 [USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
 ```
 
@@ -195,7 +206,11 @@ modernization-detector
 
 ```
 software-architect → USER VALIDATION ✋
-[ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md for refactoring steps]
+team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
+  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
+  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 3: COMPLETION - Final verification]
 [USER DECIDES] → senior-tester (regression) AND/OR code-reviewer (can run in parallel)
 ```
 
@@ -230,6 +245,30 @@ When selecting between backend-developer and frontend-developer, analyze:
 
 Use your intelligence to determine which developer type best fits the task at hand. You may consider both if the task spans multiple domains, but typically select the primary focus area.
 
+**Team-Leader Integration** (Three-Mode Operation):
+
+**INVOKE team-leader after software-architect completes**:
+
+**MODE 1: DECOMPOSITION** (First Invocation)
+- Team-leader reads implementation-plan.md (and design specs if UI/UX work)
+- Creates tasks.md with atomic task breakdown
+- Assigns first task to appropriate developer
+- Returns with: "Task 1 assigned to [developer-type]"
+
+**MODE 2: ASSIGNMENT** (Iterative - After Each Developer Return)
+- Team-leader verifies completed task (git commit, file exists, tasks.md updated)
+- If verification passes: Assigns next task
+- If verification fails: Escalates to user
+- Returns with: "Task N verification: PASSED/FAILED, Task N+1 assigned" OR "All tasks complete"
+
+**MODE 3: COMPLETION** (When All Tasks Complete)
+- Team-leader performs final verification
+- All tasks show ✅ COMPLETE status
+- All git commits verified
+- Returns with: "All [N] tasks completed and verified ✅"
+
+**Critical**: Team-leader operates in iterative cycles. After MODE 1, you will invoke team-leader multiple times in MODE 2 (once per task) until MODE 3 signals completion.
+
 **DOCUMENTATION (Minimal)**:
 
 ```
@@ -245,7 +284,90 @@ researcher-expert → business-analyst validation
 [if implementation follows] → Continue with FEATURE strategy
 ```
 
-#### D. Return Initial Guidance
+#### D. Team-Leader Invocation Prompts
+
+After software-architect completes and user validates, provide these prompts for team-leader:
+
+**PROMPT FOR TEAM-LEADER MODE 1 (DECOMPOSITION)**:
+
+```
+You are team-leader for TASK_2025_XXX in DECOMPOSITION mode (MODE 1).
+
+## TASK CONTEXT
+
+- Task ID: TASK_2025_XXX
+- User Request: "[ORIGINAL REQUEST]"
+- Task folder: task-tracking/TASK_2025_XXX/
+
+## YOUR RESPONSIBILITIES
+
+Read ALL planning documents:
+1. Read(task-tracking/TASK_2025_XXX/implementation-plan.md)
+2. [If UI/UX work] Read(task-tracking/TASK_2025_XXX/visual-design-specification.md)
+3. [If UI/UX work] Read(task-tracking/TASK_2025_XXX/design-handoff.md)
+4. Read(task-tracking/TASK_2025_XXX/task-description.md)
+
+Then:
+1. Analyze task type (backend vs frontend)
+2. Decompose implementation plan into ATOMIC tasks (one file/component per task)
+3. Create task-tracking/TASK_2025_XXX/tasks.md with:
+   - Each task with exact file path, verification requirements, commit pattern
+   - Implementation details (Tailwind classes if UI, imports if backend)
+   - Status tracking (⏸️ PENDING, 🔄 IN PROGRESS, ✅ COMPLETE)
+4. Assign Task 1 to appropriate developer ([backend-developer|frontend-developer])
+5. Return assignment guidance for main thread to invoke developer
+
+CRITICAL: Follow your DECOMPOSITION MODE protocol exactly.
+```
+
+**PROMPT FOR TEAM-LEADER MODE 2 (ASSIGNMENT/VERIFICATION)**:
+
+```
+You are team-leader for TASK_2025_XXX in ASSIGNMENT mode (MODE 2).
+
+## DEVELOPER COMPLETION REPORT
+
+[Include developer's completion report from main thread]
+
+## YOUR RESPONSIBILITIES
+
+1. Verify git commit exists: git log --oneline -1
+2. Verify file exists: Read([file-path-from-tasks.md])
+3. Verify tasks.md updated: Read(task-tracking/TASK_2025_XXX/tasks.md)
+4. If ALL verifications pass:
+   - Assign next task
+   - Return assignment guidance for main thread
+5. If ANY verification fails:
+   - Mark task as ❌ FAILED
+   - Escalate to user with evidence
+
+CRITICAL: Follow your ASSIGNMENT MODE protocol exactly. Never accept self-reported completion without verification.
+```
+
+**PROMPT FOR TEAM-LEADER MODE 3 (COMPLETION)**:
+
+```
+You are team-leader for TASK_2025_XXX in COMPLETION mode (MODE 3).
+
+## FINAL VERIFICATION
+
+All tasks in tasks.md show ✅ COMPLETE status.
+
+## YOUR RESPONSIBILITIES
+
+1. Read(task-tracking/TASK_2025_XXX/tasks.md) - Final verification
+2. Verify all git commits documented
+3. Verify all files exist
+4. Return completion summary:
+   - Total tasks completed
+   - All git commit SHAs
+   - All files created/modified
+   - Verification results
+
+CRITICAL: This is the final quality gate before QA phase.
+```
+
+#### E. Return Initial Guidance
 
 Provide your first guidance to the main thread in this format:
 
@@ -274,11 +396,14 @@ Provide your first guidance to the main thread in this format:
 2. Phase 2: researcher-expert (technical research) [CONDITIONAL]
 3. Phase 3: ui-ux-designer (visual design + assets) [CONDITIONAL - UI/UX work]
 4. Phase 4: software-architect (technical design)
-5. Phase 5: [backend-developer|frontend-developer] (implementation)
-6. Phase 6: senior-tester (testing)
-7. Phase 7: code-reviewer (review)
-8. Phase 8: Task completion (PR creation)
-9. Phase 9: modernization-detector (future work)
+5. Phase 5a: team-leader MODE 1 (task decomposition - creates tasks.md)
+6. Phase 5b: team-leader MODE 2 (iterative assignment + verification)
+   - Cycles through: Assign task → [backend-developer|frontend-developer] → Verify → Repeat
+7. Phase 5c: team-leader MODE 3 (final verification - all tasks complete)
+8. Phase 6: senior-tester (testing) [USER CHOICE]
+9. Phase 7: code-reviewer (review) [USER CHOICE]
+10. Phase 8: Task completion (PR creation)
+11. Phase 9: modernization-detector (future work)
 
 ---
 
@@ -363,17 +488,18 @@ Read(task-tracking/registry.md)
 
 **Phase Detection Logic** - Check which documents exist:
 
-| Document Exists                   | Phase Completed         | Next Action                                                                      |
-| --------------------------------- | ----------------------- | -------------------------------------------------------------------------------- |
-| ❌ context.md missing             | Task doesn't exist      | ERROR: Invalid TASK_ID                                                           |
-| ✅ context.md only                | Initialized             | Invoke project-manager                                                           |
-| ✅ task-description.md            | PM complete             | Ask user to validate (if not done) OR invoke researcher/ui-ux-designer/architect |
-| ✅ visual-design-specification.md | UI/UX Designer complete | Invoke software-architect (references design specs)                              |
-| ✅ implementation-plan.md         | Architect complete      | Ask user to validate (if not done) OR invoke developer                           |
-| ✅ progress.md                    | Developer complete      | Ask user for QA choice                                                           |
-| ✅ test-report.md                 | Tester complete         | Continue based on user's QA choice                                               |
-| ✅ code-review.md                 | Reviewer complete       | Provide COMPLETE guidance                                                        |
-| ✅ future-enhancements.md         | All done                | Workflow already complete                                                        |
+| Document Exists                   | Phase Completed                 | Next Action                                                                      |
+| --------------------------------- | ------------------------------- | -------------------------------------------------------------------------------- |
+| ❌ context.md missing             | Task doesn't exist              | ERROR: Invalid TASK_ID                                                           |
+| ✅ context.md only                | Initialized                     | Invoke project-manager                                                           |
+| ✅ task-description.md            | PM complete                     | Ask user to validate (if not done) OR invoke researcher/ui-ux-designer/architect |
+| ✅ visual-design-specification.md | UI/UX Designer complete         | Invoke software-architect (references design specs)                              |
+| ✅ implementation-plan.md         | Architect complete              | Ask user to validate (if not done) OR invoke team-leader (MODE 1)                |
+| ✅ tasks.md (no IN PROGRESS)      | All tasks complete              | Ask user for QA choice                                                           |
+| ✅ tasks.md (has IN PROGRESS)     | Development in progress         | Invoke team-leader (MODE 2 - continue iterative assignment)                      |
+| ✅ test-report.md                 | Tester complete                 | Continue based on user's QA choice                                               |
+| ✅ code-review.md                 | Reviewer complete               | Provide COMPLETE guidance                                                        |
+| ✅ future-enhancements.md         | All done                        | Workflow already complete                                                        |
 
 #### C. Read Existing Context
 
@@ -383,7 +509,7 @@ Use **Read** to understand what was done:
 Read(task-tracking/$TASK_ID/context.md)        # Original intent
 Read(task-tracking/$TASK_ID/task-description.md)  # If exists
 Read(task-tracking/$TASK_ID/implementation-plan.md) # If exists
-Read(task-tracking/$TASK_ID/progress.md)       # If exists
+Read(task-tracking/$TASK_ID/tasks.md)          # If exists (check for IN PROGRESS tasks)
 ```
 
 #### D. Return Continuation Guidance
@@ -403,7 +529,8 @@ Read(task-tracking/$TASK_ID/progress.md)       # If exists
 ✅ Phase 0: Initialization (context.md exists)
 ✅ Phase 1: Requirements (task-description.md exists) [if exists]
 ✅ Phase 2: Architecture (implementation-plan.md exists) [if exists]
-✅ Phase 3: Development (progress.md exists) [if exists]
+✅ Phase 3: Task Decomposition (tasks.md exists) [if exists]
+✅ Phase 4: Development (tasks.md shows completed tasks) [if exists]
 ⏸️ **PAUSED HERE** - Resuming workflow
 
 ## Existing Deliverables
@@ -655,17 +782,22 @@ After Phase 8 completes:
 3. ✅ Phase 2: Research (researcher-expert) [if applicable]
 4. ✅ Phase 3: Visual Design (ui-ux-designer) [if UI/UX work]
 5. ✅ Phase 4: Architecture (software-architect) - USER VALIDATED ✋
-6. ✅ Phase 5: Implementation (developer)
-7. ✅ Phase 6: QA (user-chosen: senior-tester and/or code-reviewer) [if chosen]
-8. ✅ Phase 6: Future Work Analysis (modernization-detector)
+6. ✅ Phase 5a: Task Decomposition (team-leader MODE 1 - tasks.md created)
+7. ✅ Phase 5b: Iterative Development (team-leader MODE 2 - all tasks verified)
+8. ✅ Phase 5c: Final Verification (team-leader MODE 3 - quality gate passed)
+9. ✅ Phase 6: QA (user-chosen: senior-tester and/or code-reviewer) [if chosen]
+10. ✅ Phase 7: Future Work Analysis (modernization-detector)
 
 ## Deliverables Created
 
 - context.md ✅
 - task-description.md ✅ (validated by user)
 - research-report.md ✅ [if applicable]
+- visual-design-specification.md ✅ [if UI/UX work]
+- design-handoff.md ✅ [if UI/UX work]
+- design-assets-inventory.md ✅ [if UI/UX work]
 - implementation-plan.md ✅ (validated by user)
-- progress.md ✅
+- tasks.md ✅ (managed by team-leader with atomic task breakdown)
 - test-report.md ✅ [if user chose tester]
 - code-review.md ✅ [if user chose reviewer]
 - future-enhancements.md ✅

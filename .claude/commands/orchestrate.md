@@ -96,11 +96,16 @@ NEW_TASK - Initialize a new workflow
 
 **Execution Strategy**:
 - Choose appropriate agent sequence based on task type:
-  - FEATURE: PM → USER VALIDATES → [Research] → Architect → USER VALIDATES → Dev → USER CHOOSES QA → Modernization
-  - BUGFIX: Dev → USER CHOOSES QA (skip PM/Architect - requirements clear)
-  - REFACTORING: Architect → USER VALIDATES → Dev → USER CHOOSES QA
+  - FEATURE: PM → USER VALIDATES → [Research] → [UI/UX Designer] → Architect → USER VALIDATES → Team-Leader (3 modes) → USER CHOOSES QA → Modernization
+  - BUGFIX: Team-Leader (3 modes) → USER CHOOSES QA (skip PM/Architect - requirements clear)
+  - REFACTORING: Architect → USER VALIDATES → Team-Leader (3 modes) → USER CHOOSES QA
   - DOCUMENTATION: PM → USER VALIDATES → Dev
   - RESEARCH: Researcher → [conditional implementation]
+
+**Team-Leader 3-Mode Operation**:
+  - MODE 1: DECOMPOSITION - Creates tasks.md from implementation plan
+  - MODE 2: ASSIGNMENT - Iterative: Assign task → Developer implements → Verify → Repeat
+  - MODE 3: COMPLETION - Final verification when all tasks complete
 
 **Return Format**:
 Provide guidance using formats defined in your agent definition:
@@ -135,8 +140,10 @@ CONTINUATION - Resume existing workflow
 4. Determine completed phases by checking which documents exist:
    - context.md → Task initialized
    - task-description.md → PM completed
+   - visual-design-specification.md → UI/UX Designer completed
    - implementation-plan.md → Architect completed
-   - progress.md → Developer working/completed
+   - tasks.md (no IN PROGRESS) → All development tasks completed
+   - tasks.md (has IN PROGRESS) → Development in progress, continue with team-leader MODE 2
    - test-report.md → Tester completed
    - code-review.md → Reviewer completed
    - future-enhancements.md → Modernization completed
@@ -301,21 +308,28 @@ The orchestrator intelligently chooses the workflow based on task analysis:
 
 - Project manager → **USER VALIDATES** ✋
 - Researcher (if needed)
+- UI/UX Designer (if visual design work)
 - Software architect → **USER VALIDATES** ✋
-- Developer
+- Team-leader MODE 1 → Creates tasks.md with atomic task breakdown
+- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
+- Team-leader MODE 3 → Final verification (all tasks complete)
 - **USER CHOOSES** → Tester and/or Reviewer (can run parallel) or skip
 - Modernization detector
 
 ### BUGFIX (Streamlined)
 
-- Developer
+- Team-leader MODE 1 → Creates tasks.md for bug fix steps
+- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
+- Team-leader MODE 3 → Final verification
 - **USER CHOOSES** → Tester and/or Reviewer or skip
 - (Skip PM/Architect - requirements clear)
 
 ### REFACTORING (Focused)
 
 - Software architect → **USER VALIDATES** ✋
-- Developer
+- Team-leader MODE 1 → Creates tasks.md for refactoring steps
+- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
+- Team-leader MODE 3 → Final verification
 - **USER CHOOSES** → Tester (regression) and/or Reviewer or skip
 
 ### DOCUMENTATION (Minimal)
@@ -382,18 +396,30 @@ The orchestrator intelligently chooses the workflow based on task analysis:
 15. **You** → Show implementation-plan.md to user, ask for validation
 16. **User** → "APPROVED ✅"
 17. **You** → Return to orchestrator with user approval
-18. **Orchestrator** → Returns: "INVOKE backend-developer"
-19. **You** → Invoke backend-developer
-20. **Developer** → Implements feature
-21. **You** → Return to orchestrator with dev results
-22. **Orchestrator** → Returns: "USER_CHOICE for QA agents"
-23. **You** → Ask user: "Choose QA: tester/reviewer/both/skip"
-24. **User** → "both"
-25. **You** → Invoke senior-tester AND code-reviewer in PARALLEL
-26. **Both agents** → Complete and return results
-27. **You** → Return to orchestrator with QA results
-28. **Orchestrator** → Returns: "COMPLETE - user handles git"
-29. **You** → Notify user, invoke modernization-detector for Phase 8
+18. **Orchestrator** → Returns: "INVOKE team-leader MODE 1 (DECOMPOSITION)"
+19. **You** → Invoke team-leader
+20. **Team-Leader** → Creates tasks.md with 5 atomic tasks, assigns Task 1 to backend-developer
+21. **You** → Return to orchestrator with team-leader results
+22. **Orchestrator** → Returns: "INVOKE backend-developer for Task 1"
+23. **You** → Invoke backend-developer
+24. **Developer** → Implements Task 1, commits to git, updates tasks.md
+25. **You** → Return to orchestrator with developer completion report
+26. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (VERIFICATION)"
+27. **You** → Invoke team-leader
+28. **Team-Leader** → Verifies git commit, file exists, tasks.md updated ✅, assigns Task 2
+29. **You** → Return to orchestrator with verification results
+30. **Orchestrator** → Returns: "INVOKE backend-developer for Task 2"
+    ... [Steps 23-29 repeat for Tasks 2, 3, 4, 5]
+31. **Team-Leader** → MODE 3: All 5 tasks verified complete ✅
+32. **You** → Return to orchestrator with completion
+33. **Orchestrator** → Returns: "USER_CHOICE for QA agents"
+34. **You** → Ask user: "Choose QA: tester/reviewer/both/skip"
+35. **User** → "both"
+36. **You** → Invoke senior-tester AND code-reviewer in PARALLEL
+37. **Both agents** → Complete and return results
+38. **You** → Return to orchestrator with QA results
+39. **Orchestrator** → Returns: "COMPLETE - user handles git"
+40. **You** → Notify user, invoke modernization-detector for Phase 8
     ... workflow complete
 
 ---
