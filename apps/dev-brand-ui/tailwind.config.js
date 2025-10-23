@@ -19,6 +19,8 @@ module.exports = {
         'accent-primary': '#6366F1', // Indigo (4.6:1 contrast)
         'accent-primary-dark': '#4F46E5', // Darker indigo for hover
         'border-subtle': '#E5E7EB', // Subtle gray borders
+        'glow-accent': '#A1FF4F', // Neon green for 3D highlights
+        'glow-dark': '#0A0E11', // Deep black for 3D depth
       },
       fontSize: {
         base: '18px', // Design system: 18px body
@@ -31,6 +33,7 @@ module.exports = {
       boxShadow: {
         card: '0 4px 32px rgba(0, 0, 0, 0.04)', // Soft shadow
         'card-hover': '0 8px 48px rgba(0, 0, 0, 0.08)', // Elevated shadow
+        'button-hover': '0 8px 24px rgba(99, 102, 241, 0.3)', // Accent glow
       },
       borderRadius: {
         card: '16px', // Card border radius
@@ -39,6 +42,10 @@ module.exports = {
       spacing: {
         18: '4.5rem', // 72px
         22: '5.5rem', // 88px
+        128: '128px', // For py-32 (massive section padding)
+      },
+      scale: {
+        102: '1.02', // Subtle card hover scale
       },
     },
   },
