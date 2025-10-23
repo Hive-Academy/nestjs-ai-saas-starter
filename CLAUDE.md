@@ -134,10 +134,14 @@ npm run dev:reset                 # Reset data
    - Executes Phase 0 (git, task setup)
    - Analyzes task type, creates dynamic strategy
    - Provides turn-by-turn guidance
-4. **Specialist Agents**: project-manager, researcher, architect, developers, testers, reviewers
-5. **Validation Agent**: business-analyst (quality gates)
+4. **Team Leader Agent** (.claude/agents/team-leader.md): Task decomposition & assignment coordinator
+   - DECOMPOSITION mode: Breaks implementation plans into atomic tasks
+   - ASSIGNMENT mode: Assigns tasks to developers with git verification
+   - COMPLETION mode: Validates all tasks complete, triggers final review
+5. **Specialist Agents**: project-manager, researcher, architect, developers, testers, reviewers
+6. **Validation Agent**: business-analyst (quality gates)
 
-**Key Insight**: Agents return to main thread, NOT to other agents. Orchestrator = GPS, Main thread = driver.
+**Key Insight**: Agents return to main thread, NOT to other agents. Orchestrator = GPS, Team Leader = project manager, Main thread = driver.
 
 ### Execution Flow
 
@@ -164,16 +168,52 @@ You: Return to orchestrator
   ↓
 Orchestrator: "INVOKE software-architect"
   ↓
-... repeat until "WORKFLOW COMPLETE"
+You: Invoke software-architect
+  ↓
+Architect: Returns implementation-plan.md
+  ↓
+You: Return to orchestrator with results
+  ↓
+Orchestrator: "INVOKE team-leader"
+  ↓
+You: Invoke team-leader (DECOMPOSITION mode)
+  ↓
+Team Leader: Creates tasks.md with atomic tasks
+  ↓
+You: Return to orchestrator
+  ↓
+Orchestrator: "INVOKE team-leader (ASSIGNMENT)"
+  ↓
+You: Invoke team-leader (ASSIGNMENT mode)
+  ↓
+Team Leader: "ASSIGN TASK [N] to senior-developer"
+  ↓
+You: Invoke senior-developer with task
+  ↓
+Developer: Implements code
+  ↓
+You: Verify git commit exists
+  ↓
+You: Return to team-leader with results
+  ↓
+Team Leader: Updates tasks.md, assigns next task OR "COMPLETION"
+  ↓
+... repeat assignment loop until all tasks complete
+  ↓
+You: Return to orchestrator
+  ↓
+Orchestrator: "INVOKE senior-tester"
+  ↓
+... continue until "WORKFLOW COMPLETE"
 ```
 
 ### Dynamic Task-Type Strategies
 
-- **FEATURE**: PM → Research → Architect → Dev → Test → Review → Modernization
-- **BUGFIX**: Dev → Test → Review (skip planning)
-- **REFACTORING**: Architect → Dev → Test → Review
-- **DOCUMENTATION**: PM → Dev → Review
-- **RESEARCH**: Researcher → conditional implementation
+- **FEATURE**: PM → Research → Architect → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review → Modernization
+- **BUGFIX**: Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review
+- **REFACTORING**: Architect → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review
+- **DOCUMENTATION**: PM → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Review
+- **RESEARCH**: Researcher → conditional implementation (Team Leader if code needed)
 
 ### Usage
 
@@ -191,7 +231,14 @@ Orchestrator: "INVOKE software-architect"
 3. You invoke recommended agent
 4. Agent returns results
 5. You return to orchestrator with results
-6. Repeat until "WORKFLOW COMPLETE"
+6. **Team Leader Iterative Loop** (when in ASSIGNMENT mode):
+   - Team Leader assigns task to developer
+   - You invoke developer with task details
+   - Developer implements and commits code
+   - You verify git commit exists before returning to Team Leader
+   - Team Leader updates tasks.md and assigns next task OR signals COMPLETION
+   - Repeat until all tasks complete
+7. Repeat orchestrator loop until "WORKFLOW COMPLETE"
 
 ---
 
@@ -208,14 +255,14 @@ Orchestrator: "INVOKE software-architect"
 
 ### Agent Selection Matrix
 
-| Request Type | Agent Path                        | Trigger             |
-| ------------ | --------------------------------- | ------------------- |
-| Implement X  | project-manager → architect → dev | New features        |
-| Fix bug      | dev → test → review               | Bug reports         |
-| Research X   | researcher-expert → architect     | Technical questions |
-| Review code  | code-reviewer                     | Quality checks      |
-| Test X       | senior-tester                     | Testing             |
-| Architecture | software-architect                | Design              |
+| Request Type | Agent Path                                          | Trigger             |
+| ------------ | --------------------------------------------------- | ------------------- |
+| Implement X  | project-manager → architect → team-leader → dev    | New features        |
+| Fix bug      | team-leader → dev → test → review                  | Bug reports         |
+| Research X   | researcher-expert → architect                       | Technical questions |
+| Review code  | code-reviewer                                       | Quality checks      |
+| Test X       | senior-tester                                       | Testing             |
+| Architecture | software-architect                                  | Design              |
 
 **Default**: When uncertain, use `/orchestrate`
 
@@ -235,7 +282,7 @@ task-tracking/
     ├── context.md            # User intent, conversation summary
     ├── task-description.md   # Requirements
     ├── implementation-plan.md # Design
-    ├── progress.md           # Progress tracking
+    ├── tasks.md              # Atomic task breakdown & assignments (team-leader managed)
     ├── test-report.md        # Testing
     ├── code-review.md        # Review
     └── future-enhancements.md # Future work
@@ -423,8 +470,9 @@ export class RAGPipelineService {
 3. **Type Safety**: Search before creating types
 4. **Direct Replacement**: No backward compatibility
 5. **Registry-First**: Track all work in task-tracking/
-6. **Agent Pattern**: All agents return to main thread
+6. **Agent Pattern**: All agents return to main thread (team-leader coordinates developers via main thread)
 7. **Dynamic Workflows**: Task-type determines agent sequence
+8. **Atomic Tasks**: Implementation plans decomposed into git-verifiable tasks via team-leader
 
 ---
 

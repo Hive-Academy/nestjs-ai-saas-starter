@@ -167,12 +167,20 @@ project-manager → USER VALIDATION ✋
 [if UI/UX work] → ui-ux-designer (visual design + Canva assets + 3D specs)
 software-architect → USER VALIDATION ✋
 team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md with atomic task breakdown]
-team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
-  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
-  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 2: ASSIGNMENT - Assigns Task 1]
+  ↓ [Developer implements Task 1 → returns]
+team-leader → [MODE 2: VERIFICATION+ASSIGNMENT - Verifies Task 1, assigns Task 2]
+  ↓ [Developer implements Task 2 → returns]
+  ↓ [LOOP: Repeat MODE 2 (VERIFICATION+ASSIGNMENT) for each remaining task]
+  ↓ [Per-Task Loop: Each developer return triggers team-leader MODE 2 invocation]
+  ↓ [ANALYZE TASK → team-leader selects: backend-developer OR frontend-developer]
+team-leader → [MODE 2: VERIFICATION - Last task verified, all complete]
 team-leader → [MODE 3: COMPLETION - Final verification when all tasks complete]
 [USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
 modernization-detector
+
+NOTE: MODE 2 is highly iterative. For a task with 5 subtasks, you will invoke team-leader
+in MODE 2 approximately 5 times (once per developer return for verification+next assignment).
 ```
 
 **FEATURE with UI/UX Focus (Landing Pages, Visual Redesigns)**:
@@ -182,11 +190,19 @@ project-manager → USER VALIDATION ✋
 ui-ux-designer → [Generates visual specs + Canva assets + 3D configurations]
 software-architect → USER VALIDATION ✋ [References design specs]
 team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md from design specs + implementation plan]
-team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
-  ↓ [Iterates: Assign task → frontend-developer implements → Verify → Repeat]
+team-leader → [MODE 2: ASSIGNMENT - Assigns Task 1]
+  ↓ [frontend-developer implements Task 1 → returns]
+team-leader → [MODE 2: VERIFICATION+ASSIGNMENT - Verifies Task 1, assigns Task 2]
+  ↓ [frontend-developer implements Task 2 → returns]
+  ↓ [LOOP: Repeat MODE 2 (VERIFICATION+ASSIGNMENT) for each remaining task]
+  ↓ [Per-Task Loop: Each developer return triggers team-leader MODE 2 invocation]
+team-leader → [MODE 2: VERIFICATION - Last task verified, all complete]
 team-leader → [MODE 3: COMPLETION - Final verification when all tasks complete]
 [USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
 modernization-detector
+
+NOTE: UI/UX tasks typically use frontend-developer for all tasks. MODE 2 iteration count
+matches the number of UI components/pages (e.g., 7 tasks for 7 page sections).
 ```
 
 **BUGFIX (Streamlined)**:
@@ -195,11 +211,18 @@ modernization-detector
 [skip project-manager - requirements already known]
 [optional] researcher-expert (if complex)
 team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md for bug fix steps]
-team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
-  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
-  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 2: ASSIGNMENT - Assigns Task 1]
+  ↓ [Developer implements Task 1 → returns]
+team-leader → [MODE 2: VERIFICATION+ASSIGNMENT - Verifies Task 1, assigns Task 2]
+  ↓ [Developer implements Task 2 → returns]
+  ↓ [LOOP: Repeat MODE 2 (VERIFICATION+ASSIGNMENT) for each remaining task]
+  ↓ [Per-Task Loop: Each developer return triggers team-leader MODE 2 invocation]
+  ↓ [ANALYZE TASK → team-leader selects: backend-developer OR frontend-developer]
+team-leader → [MODE 2: VERIFICATION - Last task verified, all complete]
 team-leader → [MODE 3: COMPLETION - Final verification]
 [USER DECIDES] → senior-tester AND/OR code-reviewer (can run in parallel)
+
+NOTE: MODE 2 iteration count depends on number of tasks in tasks.md (typically 2-3 for bugfixes).
 ```
 
 **REFACTORING (Focused)**:
@@ -207,11 +230,18 @@ team-leader → [MODE 3: COMPLETION - Final verification]
 ```
 software-architect → USER VALIDATION ✋
 team-leader → [MODE 1: DECOMPOSITION - Creates tasks.md for refactoring steps]
-team-leader → [MODE 2: ASSIGNMENT - Iterative task assignment + verification]
-  ↓ [Iterates: Assign task → Developer implements → Verify → Repeat]
-  [ANALYZE TASK → select appropriate developer: backend-developer OR frontend-developer]
+team-leader → [MODE 2: ASSIGNMENT - Assigns Task 1]
+  ↓ [Developer implements Task 1 → returns]
+team-leader → [MODE 2: VERIFICATION+ASSIGNMENT - Verifies Task 1, assigns Task 2]
+  ↓ [Developer implements Task 2 → returns]
+  ↓ [LOOP: Repeat MODE 2 (VERIFICATION+ASSIGNMENT) for each remaining task]
+  ↓ [Per-Task Loop: Each developer return triggers team-leader MODE 2 invocation]
+  ↓ [ANALYZE TASK → team-leader selects: backend-developer OR frontend-developer]
+team-leader → [MODE 2: VERIFICATION - Last task verified, all complete]
 team-leader → [MODE 3: COMPLETION - Final verification]
 [USER DECIDES] → senior-tester (regression) AND/OR code-reviewer (can run in parallel)
+
+NOTE: MODE 2 iteration count matches number of refactoring steps (varies by complexity).
 ```
 
 **UI/UX Designer Selection** (Analyze visual design needs):
@@ -232,18 +262,20 @@ team-leader → [MODE 3: COMPLETION - Final verification]
 2. `design-assets-inventory.md` - Canva-generated assets with URLs
 3. `design-handoff.md` - Developer implementation guide
 
-**Developer Selection** (Analyze task nature):
+**Developer Selection** (team-leader selects, orchestrator follows):
 
-When selecting between backend-developer and frontend-developer, analyze:
+**CRITICAL**: The **team-leader** (not orchestrator) selects the appropriate developer type for each task based on tasks.md requirements.
+
+When team-leader analyzes each task, it considers:
 
 - What layers of the application are being modified? (UI vs API vs business logic)
 - What files are being created/modified? (components vs services vs controllers)
 - What technologies are primarily involved? (Angular/React vs NestJS vs tooling)
 - What expertise is most critical for success?
 
-**Important**: If UI/UX Designer created visual specifications, **ALWAYS select frontend-developer** to implement the designs.
+**Orchestrator's role**: Follow team-leader's assignments from tasks.md. When team-leader returns with "Assign Task N to backend-developer", invoke backend-developer. When it returns "Assign Task N to frontend-developer", invoke frontend-developer.
 
-Use your intelligence to determine which developer type best fits the task at hand. You may consider both if the task spans multiple domains, but typically select the primary focus area.
+**Important**: If UI/UX Designer created visual specifications, team-leader will typically assign frontend tasks to **frontend-developer** to implement the designs.
 
 **Team-Leader Integration** (Three-Mode Operation):
 
@@ -255,11 +287,14 @@ Use your intelligence to determine which developer type best fits the task at ha
 - Assigns first task to appropriate developer
 - Returns with: "Task 1 assigned to [developer-type]"
 
-**MODE 2: ASSIGNMENT** (Iterative - After Each Developer Return)
-- Team-leader verifies completed task (git commit, file exists, tasks.md updated)
-- If verification passes: Assigns next task
-- If verification fails: Escalates to user
-- Returns with: "Task N verification: PASSED/FAILED, Task N+1 assigned" OR "All tasks complete"
+**MODE 2: ITERATIVE ASSIGNMENT+VERIFICATION** (After Each Developer Return)
+- **First iteration (after MODE 1)**: ASSIGNMENT only - assigns Task 1
+- **Subsequent iterations**: VERIFICATION+ASSIGNMENT cycle
+  1. Verifies completed task (git commit, file exists, tasks.md updated)
+  2. If verification passes: Marks task ✅ COMPLETE and assigns next task
+  3. If verification fails: Marks task ❌ FAILED and escalates to user
+- **Last iteration**: VERIFICATION only - verifies final task, signals all complete
+- Returns with: "Task N verification: PASSED/FAILED, Task N+1 assigned" OR "All tasks complete, ready for MODE 3"
 
 **MODE 3: COMPLETION** (When All Tasks Complete)
 - Team-leader performs final verification
@@ -267,7 +302,7 @@ Use your intelligence to determine which developer type best fits the task at ha
 - All git commits verified
 - Returns with: "All [N] tasks completed and verified ✅"
 
-**Critical**: Team-leader operates in iterative cycles. After MODE 1, you will invoke team-leader multiple times in MODE 2 (once per task) until MODE 3 signals completion.
+**Critical**: Team-leader operates in iterative MODE 2 cycles. After MODE 1 assigns Task 1, you will invoke team-leader in MODE 2 multiple times (once per developer return) until all tasks verified, then invoke MODE 3 for final completion.
 
 **DOCUMENTATION (Minimal)**:
 
@@ -301,29 +336,40 @@ You are team-leader for TASK_2025_XXX in DECOMPOSITION mode (MODE 1).
 
 ## YOUR RESPONSIBILITIES
 
-Read ALL planning documents:
+**Phase 1: Read ALL Planning Documents**
 1. Read(task-tracking/TASK_2025_XXX/implementation-plan.md)
 2. [If UI/UX work] Read(task-tracking/TASK_2025_XXX/visual-design-specification.md)
 3. [If UI/UX work] Read(task-tracking/TASK_2025_XXX/design-handoff.md)
 4. Read(task-tracking/TASK_2025_XXX/task-description.md)
 
-Then:
-1. Analyze task type (backend vs frontend)
+**Phase 2: Task Decomposition**
+1. Analyze task type (backend vs frontend vs full-stack)
 2. Decompose implementation plan into ATOMIC tasks (one file/component per task)
-3. Create task-tracking/TASK_2025_XXX/tasks.md with:
-   - Each task with exact file path, verification requirements, commit pattern
-   - Implementation details (Tailwind classes if UI, imports if backend)
-   - Status tracking (⏸️ PENDING, 🔄 IN PROGRESS, ✅ COMPLETE)
-4. Assign Task 1 to appropriate developer ([backend-developer|frontend-developer])
-5. Return assignment guidance for main thread to invoke developer
+3. For each task, determine appropriate developer type (backend-developer OR frontend-developer)
 
-CRITICAL: Follow your DECOMPOSITION MODE protocol exactly.
+**Phase 3: Create tasks.md**
+Create task-tracking/TASK_2025_XXX/tasks.md with:
+- Each task with exact file path, verification requirements, commit pattern
+- Implementation details (Tailwind classes if UI, imports if backend)
+- Developer assignment for each task ([backend-developer|frontend-developer])
+- Status tracking (⏸️ PENDING, 🔄 IN PROGRESS, ✅ COMPLETE)
+- All tasks start as ⏸️ PENDING
+
+**Phase 4: Assign First Task**
+1. Mark Task 1 as 🔄 IN PROGRESS in tasks.md
+2. Return assignment guidance for main thread to invoke the assigned developer
+
+**Return Format**:
+"✅ MODE 1 COMPLETE - tasks.md created with [N] tasks
+📋 NEXT ACTION: Invoke [backend-developer|frontend-developer] for Task 1: [task title]"
+
+CRITICAL: This is MODE 1 (DECOMPOSITION). You will be invoked again in MODE 2 after each developer completion for VERIFICATION+ASSIGNMENT. Follow your DECOMPOSITION MODE protocol exactly.
 ```
 
-**PROMPT FOR TEAM-LEADER MODE 2 (ASSIGNMENT/VERIFICATION)**:
+**PROMPT FOR TEAM-LEADER MODE 2 (VERIFICATION+ASSIGNMENT)**:
 
 ```
-You are team-leader for TASK_2025_XXX in ASSIGNMENT mode (MODE 2).
+You are team-leader for TASK_2025_XXX in MODE 2 (VERIFICATION+ASSIGNMENT).
 
 ## DEVELOPER COMPLETION REPORT
 
@@ -331,17 +377,22 @@ You are team-leader for TASK_2025_XXX in ASSIGNMENT mode (MODE 2).
 
 ## YOUR RESPONSIBILITIES
 
+**VERIFICATION PHASE**:
 1. Verify git commit exists: git log --oneline -1
 2. Verify file exists: Read([file-path-from-tasks.md])
 3. Verify tasks.md updated: Read(task-tracking/TASK_2025_XXX/tasks.md)
-4. If ALL verifications pass:
-   - Assign next task
-   - Return assignment guidance for main thread
-5. If ANY verification fails:
-   - Mark task as ❌ FAILED
-   - Escalate to user with evidence
 
-CRITICAL: Follow your ASSIGNMENT MODE protocol exactly. Never accept self-reported completion without verification.
+**ASSIGNMENT PHASE** (if verification passes):
+4. Mark completed task as ✅ COMPLETE in tasks.md
+5. Check if more tasks remain:
+   - If yes: Assign next task, return assignment guidance
+   - If no: Signal "All tasks complete, ready for MODE 3"
+
+**ESCALATION** (if verification fails):
+- Mark task as ❌ FAILED in tasks.md
+- Escalate to user with evidence
+
+CRITICAL: Follow your MODE 2 VERIFICATION+ASSIGNMENT protocol exactly. Never accept self-reported completion without verification. This is an iterative cycle - you will be invoked once per developer return.
 ```
 
 **PROMPT FOR TEAM-LEADER MODE 3 (COMPLETION)**:
@@ -397,13 +448,21 @@ Provide your first guidance to the main thread in this format:
 3. Phase 3: ui-ux-designer (visual design + assets) [CONDITIONAL - UI/UX work]
 4. Phase 4: software-architect (technical design)
 5. Phase 5a: team-leader MODE 1 (task decomposition - creates tasks.md)
-6. Phase 5b: team-leader MODE 2 (iterative assignment + verification)
-   - Cycles through: Assign task → [backend-developer|frontend-developer] → Verify → Repeat
+6. Phase 5b: team-leader MODE 2 (ITERATIVE - invoked once per task)
+   - First iteration: ASSIGNMENT - Assigns Task 1
+   - Developer implements Task 1 → returns
+   - Second iteration: VERIFICATION+ASSIGNMENT - Verifies Task 1, assigns Task 2
+   - Developer implements Task 2 → returns
+   - [LOOP continues for each remaining task]
+   - Last iteration: VERIFICATION - All tasks verified
 7. Phase 5c: team-leader MODE 3 (final verification - all tasks complete)
 8. Phase 6: senior-tester (testing) [USER CHOICE]
 9. Phase 7: code-reviewer (review) [USER CHOICE]
 10. Phase 8: Task completion (PR creation)
 11. Phase 9: modernization-detector (future work)
+
+NOTE: Phase 5b (MODE 2) is highly iterative. For a task decomposed into N subtasks,
+team-leader will be invoked in MODE 2 approximately N times.
 
 ---
 
@@ -514,6 +573,23 @@ Read(task-tracking/$TASK_ID/tasks.md)          # If exists (check for IN PROGRES
 
 #### D. Return Continuation Guidance
 
+**Team-Leader Mode Detection** (when resuming tasks with tasks.md):
+
+When tasks.md exists, check its status to determine correct team-leader mode:
+
+```bash
+Read(task-tracking/$TASK_ID/tasks.md)
+```
+
+**Detection Logic**:
+
+- **tasks.md missing** → Invoke team-leader MODE 1 (DECOMPOSITION - create tasks.md)
+- **tasks.md exists, all "⏸️ PENDING"** → Invoke team-leader MODE 2 (ASSIGNMENT - assign first task)
+- **tasks.md has "🔄 IN PROGRESS"** → Invoke team-leader MODE 2 (VERIFICATION+ASSIGNMENT - verify completed task, assign next)
+- **tasks.md all "✅ COMPLETE"** → Invoke team-leader MODE 3 (COMPLETION - final verification) OR proceed to QA if MODE 3 already done
+
+**Critical**: MODE 2 is iterative. Each developer completion requires returning to team-leader MODE 2 for verification before next assignment.
+
 ```markdown
 # 🎯 Workflow Orchestration - CONTINUATION MODE
 
@@ -532,6 +608,12 @@ Read(task-tracking/$TASK_ID/tasks.md)          # If exists (check for IN PROGRES
 ✅ Phase 3: Task Decomposition (tasks.md exists) [if exists]
 ✅ Phase 4: Development (tasks.md shows completed tasks) [if exists]
 ⏸️ **PAUSED HERE** - Resuming workflow
+
+## Team-Leader Mode Detection
+
+[If tasks.md exists, show detected mode]:
+- Current tasks.md status: [X ✅ COMPLETE, Y 🔄 IN PROGRESS, Z ⏸️ PENDING]
+- Detected team-leader mode: [MODE 1 | MODE 2 ASSIGNMENT | MODE 2 VERIFICATION | MODE 3]
 
 ## Existing Deliverables
 
@@ -576,9 +658,20 @@ When main thread returns with agent results:
 - Re-invoke same agent with user's corrections
 - Include user feedback in revised prompt
 
-**If developer just finished**:
+**If developer just finished a task (but more tasks remain in tasks.md)**:
 
-- Ask USER: "Would you like to invoke senior-tester, code-reviewer, both (parallel), or neither?"
+- **CRITICAL**: Invoke team-leader MODE 2 (VERIFICATION+ASSIGNMENT)
+- Include developer's completion report in prompt
+- Team-leader will:
+  1. Verify task completion (git commit, file exists, tasks.md updated)
+  2. Mark task as ✅ COMPLETE or ❌ FAILED
+  3. Assign next task if verification passes
+- Continue loop until team-leader signals all tasks complete
+
+**If developer finished last task (all tasks.md show ✅ COMPLETE)**:
+
+- Invoke team-leader MODE 3 (COMPLETION - final verification)
+- After MODE 3 completes, ask USER: "Would you like to invoke senior-tester, code-reviewer, both (parallel), or neither?"
 - Proceed based on user choice
 
 **If workflow complete (all chosen phases done)**:
@@ -782,8 +875,10 @@ After Phase 8 completes:
 3. ✅ Phase 2: Research (researcher-expert) [if applicable]
 4. ✅ Phase 3: Visual Design (ui-ux-designer) [if UI/UX work]
 5. ✅ Phase 4: Architecture (software-architect) - USER VALIDATED ✋
-6. ✅ Phase 5a: Task Decomposition (team-leader MODE 1 - tasks.md created)
-7. ✅ Phase 5b: Iterative Development (team-leader MODE 2 - all tasks verified)
+6. ✅ Phase 5a: Task Decomposition (team-leader MODE 1 - tasks.md created with N tasks)
+7. ✅ Phase 5b: Iterative Development (team-leader MODE 2 - invoked N times for verification+assignment)
+   - All N tasks verified and completed ✅
+   - Each developer return triggered team-leader MODE 2 invocation
 8. ✅ Phase 5c: Final Verification (team-leader MODE 3 - quality gate passed)
 9. ✅ Phase 6: QA (user-chosen: senior-tester and/or code-reviewer) [if chosen]
 10. ✅ Phase 7: Future Work Analysis (modernization-detector)

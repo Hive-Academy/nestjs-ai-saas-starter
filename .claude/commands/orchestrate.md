@@ -181,6 +181,41 @@ The orchestrator will return structured guidance containing:
 3. Wait for agent to complete and return results
 4. Go to **Step 3**
 
+**SPECIAL CASE - Team-Leader Iterative Pattern:**
+
+The team-leader agent operates in 3 distinct modes with specific invocation patterns:
+
+1. **MODE 1 (DECOMPOSITION)** - Invoked ONCE at start
+   - Creates tasks.md with N atomic tasks
+   - All tasks initially marked IN PROGRESS
+   - Returns to orchestrator after completion
+
+2. **MODE 2 (ASSIGNMENT + VERIFICATION)** - Invoked N times (iteratively)
+   - **Assignment phase**: Assigns next task to developer, updates tasks.md (task → ASSIGNED)
+   - Return to orchestrator → Orchestrator guides you to invoke developer
+   - Developer implements task, commits to git, updates tasks.md (task → COMPLETED)
+   - Return to orchestrator → Orchestrator guides you back to team-leader MODE 2
+   - **Verification phase**: Verifies git commit exists, file implementation correct, tasks.md status updated
+   - Pattern repeats for each remaining task
+   - This iterative pattern prevents hallucination through atomic verification
+
+3. **MODE 3 (COMPLETION)** - Invoked ONCE at end
+   - Final verification that all N tasks are COMPLETED
+   - All git commits verified
+   - Implementation complete and ready for QA
+   - Returns to orchestrator after completion
+
+**CRITICAL - After Developer Task Completion:**
+
+When a developer agent returns with a task completion report:
+
+1. **DO NOT** invoke another agent immediately
+2. **DO NOT** ask user for validation
+3. **DO NOT** make assumptions about next steps
+4. **IMMEDIATELY** return to orchestrator with the developer's complete report
+5. Orchestrator will guide you to invoke team-leader MODE 2 for verification
+6. This ensures atomic verification prevents hallucination and maintains integrity
+
 #### If NEXT ACTION = ASK_USER:
 
 1. **Read** the deliverable file specified (task-description.md or implementation-plan.md)
@@ -238,6 +273,35 @@ Provide next step guidance:
 - User interaction instructions if needed
 
 I will continue following your guidance until workflow is complete.
+```
+
+**SPECIAL TEMPLATE - Team-Leader MODE 2 Verification Results:**
+
+When returning team-leader MODE 2 verification results to orchestrator, use this enhanced format:
+
+```
+You are the workflow-orchestrator agent. I'm returning with team-leader MODE 2 verification results.
+
+## Previous Step
+team-leader MODE 2 (VERIFICATION) completed
+
+## Verification Results
+- Git commit verification: [SHA] ✅ exists in repository
+- File implementation verification: [files] ✅ implementation correct
+- tasks.md status verification: Task [N] marked COMPLETED ✅
+- Remaining tasks: [count] tasks still IN PROGRESS
+
+## Context
+- Task ID: [TASK_ID]
+- Current Phase: Development (Team-Leader MODE 2 iteration [N] of [TOTAL])
+- Completed tasks: [N]
+- Remaining tasks: [M]
+
+## What I Need
+If tasks remain:
+  - NEXT ACTION: INVOKE_AGENT (team-leader MODE 2 for next assignment)
+If all tasks complete:
+  - NEXT ACTION: INVOKE_AGENT (team-leader MODE 3 for final completion)
 ```
 
 ### Step 4: Repeat Steps 2-3
@@ -310,26 +374,32 @@ The orchestrator intelligently chooses the workflow based on task analysis:
 - Researcher (if needed)
 - UI/UX Designer (if visual design work)
 - Software architect → **USER VALIDATES** ✋
-- Team-leader MODE 1 → Creates tasks.md with atomic task breakdown
-- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
-- Team-leader MODE 3 → Final verification (all tasks complete)
+- **Team-leader MODE 1** → Creates tasks.md with atomic task breakdown (invoked ONCE)
+- **Team-leader MODE 2** → **LOOP: Invoked N times** (where N = number of tasks)
+  - Each iteration: Verify previous task → Assign next task → Developer implements → Return verification
+  - Pattern: Assign Task 1 → Dev → Verify → Assign Task 2 → Dev → Verify → ... → Assign Task N → Dev → Verify
+- **Team-leader MODE 3** → Final verification when all tasks complete (invoked ONCE)
 - **USER CHOOSES** → Tester and/or Reviewer (can run parallel) or skip
 - Modernization detector
 
 ### BUGFIX (Streamlined)
 
-- Team-leader MODE 1 → Creates tasks.md for bug fix steps
-- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
-- Team-leader MODE 3 → Final verification
+- **Team-leader MODE 1** → Creates tasks.md for bug fix steps (invoked ONCE)
+- **Team-leader MODE 2** → **LOOP: Invoked N times** (where N = number of fix tasks)
+  - Each iteration: Verify previous task → Assign next task → Developer implements → Return verification
+  - Pattern: Assign Task 1 → Dev → Verify → Assign Task 2 → Dev → Verify → ... (until all fixed)
+- **Team-leader MODE 3** → Final verification (invoked ONCE)
 - **USER CHOOSES** → Tester and/or Reviewer or skip
 - (Skip PM/Architect - requirements clear)
 
 ### REFACTORING (Focused)
 
 - Software architect → **USER VALIDATES** ✋
-- Team-leader MODE 1 → Creates tasks.md for refactoring steps
-- Team-leader MODE 2 → Iterative cycles: Assign task → Developer → Verify → Repeat
-- Team-leader MODE 3 → Final verification
+- **Team-leader MODE 1** → Creates tasks.md for refactoring steps (invoked ONCE)
+- **Team-leader MODE 2** → **LOOP: Invoked N times** (where N = number of refactoring tasks)
+  - Each iteration: Verify previous task → Assign next task → Developer implements → Return verification
+  - Pattern: Assign Task 1 → Dev → Verify → Assign Task 2 → Dev → Verify → ... (until all refactored)
+- **Team-leader MODE 3** → Final verification (invoked ONCE)
 - **USER CHOOSES** → Tester (regression) and/or Reviewer or skip
 
 ### DOCUMENTATION (Minimal)
@@ -354,6 +424,10 @@ The orchestrator intelligently chooses the workflow based on task analysis:
 ✅ **Traceable**: Full progress tracking in task-tracking/
 ✅ **Standards-Enforced**: Real implementation mandate, anti-backward compatibility
 ✅ **No Git Burden**: User handles git when ready, not forced by orchestrator
+✅ **Atomic Verification**: Team-leader MODE 2 verifies each task individually, preventing cascading errors
+✅ **Hallucination Prevention**: Git commit verification ensures claims match reality
+✅ **Iterative Control**: Break large implementations into verified atomic units
+✅ **Progress Transparency**: tasks.md provides real-time status of all development tasks
 
 ---
 
@@ -397,29 +471,66 @@ The orchestrator intelligently chooses the workflow based on task analysis:
 16. **User** → "APPROVED ✅"
 17. **You** → Return to orchestrator with user approval
 18. **Orchestrator** → Returns: "INVOKE team-leader MODE 1 (DECOMPOSITION)"
-19. **You** → Invoke team-leader
-20. **Team-Leader** → Creates tasks.md with 5 atomic tasks, assigns Task 1 to backend-developer
-21. **You** → Return to orchestrator with team-leader results
-22. **Orchestrator** → Returns: "INVOKE backend-developer for Task 1"
-23. **You** → Invoke backend-developer
-24. **Developer** → Implements Task 1, commits to git, updates tasks.md
-25. **You** → Return to orchestrator with developer completion report
-26. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (VERIFICATION)"
-27. **You** → Invoke team-leader
-28. **Team-Leader** → Verifies git commit, file exists, tasks.md updated ✅, assigns Task 2
-29. **You** → Return to orchestrator with verification results
-30. **Orchestrator** → Returns: "INVOKE backend-developer for Task 2"
-    ... [Steps 23-29 repeat for Tasks 2, 3, 4, 5]
-31. **Team-Leader** → MODE 3: All 5 tasks verified complete ✅
-32. **You** → Return to orchestrator with completion
-33. **Orchestrator** → Returns: "USER_CHOICE for QA agents"
-34. **You** → Ask user: "Choose QA: tester/reviewer/both/skip"
-35. **User** → "both"
-36. **You** → Invoke senior-tester AND code-reviewer in PARALLEL
-37. **Both agents** → Complete and return results
-38. **You** → Return to orchestrator with QA results
-39. **Orchestrator** → Returns: "COMPLETE - user handles git"
-40. **You** → Notify user, invoke modernization-detector for Phase 8
+19. **You** → Invoke team-leader with MODE 1
+20. **Team-Leader MODE 1** → Creates tasks.md with 5 atomic tasks (Task 1-5 all IN PROGRESS)
+21. **You** → Return to orchestrator with decomposition results
+
+    **[TASK 1 CYCLE]**
+22. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (ASSIGNMENT) - assign first task"
+23. **You** → Invoke team-leader with MODE 2
+24. **Team-Leader MODE 2** → Assigns Task 1 to backend-developer, updates tasks.md (Task 1: ASSIGNED, rest: IN PROGRESS)
+25. **You** → Return to orchestrator with assignment
+26. **Orchestrator** → Returns: "INVOKE backend-developer for Task 1"
+27. **You** → Invoke backend-developer with Task 1 details
+28. **Developer** → Implements Task 1, commits git (SHA: abc123), updates tasks.md (Task 1: COMPLETED)
+29. **You** → Return to orchestrator with developer completion report
+30. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (VERIFICATION)"
+31. **You** → Invoke team-leader with MODE 2 and developer results
+32. **Team-Leader MODE 2** → Verifies git commit abc123 exists ✅, file implementation verified ✅, tasks.md status correct ✅
+33. **You** → Return to orchestrator with verification results
+
+    **[TASK 2 CYCLE]**
+34. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (ASSIGNMENT) - assign next task"
+35. **You** → Invoke team-leader with MODE 2
+36. **Team-Leader MODE 2** → Assigns Task 2 to backend-developer, updates tasks.md (Task 2: ASSIGNED, rest: IN PROGRESS)
+37. **You** → Return to orchestrator with assignment
+38. **Orchestrator** → Returns: "INVOKE backend-developer for Task 2"
+39. **You** → Invoke backend-developer with Task 2 details
+40. **Developer** → Implements Task 2, commits git (SHA: def456), updates tasks.md (Task 2: COMPLETED)
+41. **You** → Return to orchestrator with developer completion report
+42. **Orchestrator** → Returns: "INVOKE team-leader MODE 2 (VERIFICATION)"
+43. **You** → Invoke team-leader with MODE 2 and developer results
+44. **Team-Leader MODE 2** → Verifies git commit def456 exists ✅, file implementation verified ✅, tasks.md status correct ✅
+45. **You** → Return to orchestrator with verification results
+
+    **[TASKS 3-5 CYCLES - Same Pattern]**
+46-69. **Pattern repeats** for Tasks 3, 4, 5:
+    - Orchestrator → "INVOKE team-leader MODE 2 (ASSIGNMENT)"
+    - You → Invoke team-leader MODE 2
+    - Team-leader → Assigns task, updates tasks.md
+    - You → Return to orchestrator
+    - Orchestrator → "INVOKE backend-developer"
+    - You → Invoke developer
+    - Developer → Implements, commits, updates tasks.md
+    - You → Return to orchestrator with completion
+    - Orchestrator → "INVOKE team-leader MODE 2 (VERIFICATION)"
+    - You → Invoke team-leader MODE 2
+    - Team-leader → Verifies commit, files, tasks.md
+    - You → Return to orchestrator with verification
+
+    **[FINAL COMPLETION]**
+70. **Orchestrator** → Returns: "INVOKE team-leader MODE 3 (COMPLETION)"
+71. **You** → Invoke team-leader with MODE 3
+72. **Team-Leader MODE 3** → Final verification: All 5 tasks COMPLETED ✅, all commits verified ✅, implementation complete ✅
+73. **You** → Return to orchestrator with final completion
+74. **Orchestrator** → Returns: "USER_CHOICE for QA agents"
+75. **You** → Ask user: "Choose QA: tester/reviewer/both/skip"
+76. **User** → "both"
+77. **You** → Invoke senior-tester AND code-reviewer in PARALLEL
+78. **Both agents** → Complete and return results
+79. **You** → Return to orchestrator with QA results
+80. **Orchestrator** → Returns: "COMPLETE - user handles git"
+81. **You** → Notify user, invoke modernization-detector for Phase 8
     ... workflow complete
 
 ---
