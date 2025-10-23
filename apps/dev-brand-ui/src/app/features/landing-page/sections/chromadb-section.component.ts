@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
-import { ScrollingCodeTimelineComponent, TimelineStep } from '../../../shared/components/scrolling-code-timeline.component';
-import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
+import { HijackedScrollTimelineComponent } from '../../../shared/components/hijacked-scroll-timeline.component';
+import { HijackedScrollItemDirective } from '../../../core/angular-3d/directives/hijacked-scroll-item.directive';
+import { CodeSnippetComponent } from '../../../shared/components/code-snippet.component';
+import { DecorativePatternComponent } from '../../../shared/components/decorative-patterns.component';
+import type { TimelineStep } from '../../../shared/components/scrolling-code-timeline.component';
 
 /**
  * ChromaDB Section - Vector Database for Semantic Search
@@ -31,23 +33,38 @@ import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
   standalone: true,
   imports: [
     CommonModule,
-    ScrollingCodeTimelineComponent,
-    Scene3DComponent,
+    HijackedScrollTimelineComponent,
+    HijackedScrollItemDirective,
+    CodeSnippetComponent,
+    DecorativePatternComponent,
     ScrollAnimationDirective,
   ],
   template: `
-    <div class="relative w-full bg-white" style="min-height: 100vh;">
-      <!-- 3D Background Scene (subtle particles + spheres) -->
-      <app-scene-3d
-        class="absolute inset-0 opacity-40 z-0"
-        [sceneGraph]="chromadbSceneGraph"
-        style="pointer-events: none;"
-      />
-
+    <div class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden">
       <!-- Content Container -->
-      <div class="container mx-auto px-8 py-20">
-        <!-- Section Hero -->
-        <div class="relative z-10 text-center mb-24">
+      <div class="container mx-auto px-8 py-12">
+        <!-- Section Hero with Integrated Vector Arrows (70vh) -->
+        <div class="relative text-center py-24 flex flex-col justify-center">
+          <!-- Vector Arrows SVG - Larger and more visible -->
+          <div
+            class="absolute inset-0 flex items-center justify-center pointer-events-none"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'custom',
+              start: 'top 90%',
+              end: 'bottom 30%',
+              scrub: 0.5,
+              from: { scale: 0.6, opacity: 0, rotation: -20, y: 50 },
+              to: { scale: 1, opacity: 0.8, rotation: 0, y: -50 }
+            }"
+          >
+            <div class="w-[800px] h-[800px] text-indigo-500">
+              <app-decorative-pattern [pattern]="'vector-arrows'" />
+            </div>
+          </div>
+
+          <!-- Hero Content (layered on top) -->
+        <div class="relative z-10">
         <!-- Layer Badge -->
         <div
           class="inline-block"
@@ -73,7 +90,7 @@ import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
 
         <!-- Main Headline -->
         <h2
-          class="text-7xl font-bold text-gray-900 mb-6 leading-tight"
+          class="text-7xl font-bold text-gray-900 mb-6 leading-tight text-3d-extruded"
           scrollAnimation
           [scrollConfig]="{
             animation: 'custom',
@@ -132,16 +149,153 @@ import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
             <div class="text-sm text-gray-500 uppercase tracking-wide">Documents/sec</div>
           </div>
         </div>
+        </div>
       </div>
 
-      <!-- Progressive Code Timeline -->
-      <div class="relative z-10 mt-32">
-        <app-scrolling-code-timeline [timelineData]="codeTimeline()" />
-      </div>
+      <!-- Progressive Code Timeline with Content Projection -->
+      <app-hijacked-scroll-timeline [scrollHeightPerStep]="1000">
+        @for (step of codeTimeline(); track step.id; let i = $index) {
+          <div hijackedScrollItem [slideDirection]="getSlideDirection(step.layout)">
+            <!-- Step Container with Decoration -->
+            <div class="relative min-h-[60vh] flex items-center">
+              <!-- Decoration: Alternating patterns per step with scroll animations -->
+              @if (i === 0) {
+                <div
+                  class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-96 pointer-events-none opacity-30 decoration-step-0"
+                  [attr.data-decoration-index]="i"
+                >
+                  <div class="w-full h-full text-purple-400 decoration-inner">
+                    <app-decorative-pattern [pattern]="'data-flow'" />
+                  </div>
+                </div>
+              }
+              @if (i === 1) {
+                <div
+                  class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30 decoration-step-1"
+                  [attr.data-decoration-index]="i"
+                >
+                  <div class="w-full h-full text-indigo-400 decoration-inner">
+                    <app-decorative-pattern [pattern]="'network-nodes'" />
+                  </div>
+                </div>
+              }
+              @if (i === 2) {
+                <div
+                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30 decoration-step-2"
+                  [attr.data-decoration-index]="i"
+                >
+                  <div class="w-full h-full text-purple-300 decoration-inner">
+                    <app-decorative-pattern [pattern]="'circuit-board'" />
+                  </div>
+                </div>
+              }
+              @if (i === 3) {
+                <div
+                  class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-3"
+                  [attr.data-decoration-index]="i"
+                >
+                  <div class="w-full h-full text-indigo-300 decoration-inner">
+                    <app-decorative-pattern [pattern]="'gradient-blob'" />
+                  </div>
+                </div>
+              }
 
-      <!-- Integration Ecosystem -->
+              <!-- Content -->
+              <div class="container mx-auto px-8 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+                  <!-- Content Side (Title + Description) -->
+                  <div
+                    [class.lg:order-1]="step.layout === 'left'"
+                    [class.lg:order-2]="step.layout === 'right'"
+                  >
+                    <!-- Step Number Badge -->
+                    <div class="inline-flex items-center gap-3 mb-6">
+                      <span
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-lg shadow-lg"
+                      >
+                        {{ step.step }}
+                      </span>
+                      <div
+                        class="h-px flex-1 bg-gradient-to-r from-indigo-200 to-transparent max-w-[100px]"
+                      ></div>
+                    </div>
+
+                    <!-- Title -->
+                    <h3 class="text-4xl font-bold text-gray-900 mb-4 leading-tight text-3d">
+                      {{ step.title }}
+                    </h3>
+
+                    <!-- Description -->
+                    <p class="text-lg text-gray-600 leading-relaxed mb-6">
+                      {{ step.description }}
+                    </p>
+
+                    <!-- Notes -->
+                    @if (step.notes && step.notes.length > 0) {
+                      <div class="space-y-3">
+                        @for (note of step.notes; track $index) {
+                          <div class="flex items-start gap-3">
+                            <svg
+                              class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            <p class="text-sm text-gray-700">{{ note }}</p>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Code Side -->
+                  <div
+                    [class.lg:order-2]="step.layout === 'left'"
+                    [class.lg:order-1]="step.layout === 'right'"
+                  >
+                    @if (step.code) {
+                      <app-code-snippet
+                        [code]="step.code"
+                        [language]="step.language || 'typescript'"
+                      />
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </app-hijacked-scroll-timeline>
+
+      <!-- Integration Ecosystem with Network Nodes  -->
+      <div class="relative py-24 flex items-center">
+        <!-- Network Nodes SVG - Large and visible -->
+        <div
+          class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[700px] h-[700px] pointer-events-none"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'custom',
+            start: 'top 90%',
+            end: 'bottom 10%',
+            scrub: 0.6,
+            from: { scale: 0.8, opacity: 0, x: 80, rotation: -10 },
+            to: { scale: 1.1, opacity: 0.8, x: -20, rotation: 10 }
+          }"
+        >
+          <div class="w-full h-full text-indigo-400">
+            <app-decorative-pattern [pattern]="'network-nodes'" />
+          </div>
+        </div>
+
       <div
-        class="relative z-10 mt-32 max-w-5xl mx-auto"
+        class="relative z-10 max-w-5xl mx-auto"
         scrollAnimation
         [scrollConfig]="{
           animation: 'custom',
@@ -152,7 +306,7 @@ import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
           to: { opacity: 1, y: 0 }
         }"
       >
-        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-12 border border-indigo-100">
+        <div class=" p-12 ">
           <h3 class="text-3xl font-bold text-gray-900 mb-6 text-center">
             LangGraph Ecosystem Integration
           </h3>
@@ -168,35 +322,29 @@ import { ChromadbSceneGraphComponent } from './chromadb-scene-graph.component';
         </div>
       </div>
 
-      <!-- Call to Action -->
-      <div
-        class="relative z-10 text-center mt-24"
-        scrollAnimation
-        [scrollConfig]="{
-          animation: 'custom',
-          start: 'top 80%',
-          end: 'top 40%',
-          scrub: 0.8,
-          from: { opacity: 0, scale: 0.95 },
-          to: { opacity: 1, scale: 1 }
-        }"
-      >
-        <a
-          href="#neo4j"
-          class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-        >
-          Explore Graph Database
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </a>
       </div>
+
+
       </div>
     </div>
   `,
   styles: [],
 })
 export class ChromadbSectionComponent {
+  /**
+   * Convert layout type to slide direction
+   */
+  getSlideDirection(layout: 'left' | 'right' | 'center'): 'left' | 'right' | 'none' {
+    switch (layout) {
+      case 'left':
+        return 'left';
+      case 'right':
+        return 'right';
+      default:
+        return 'none';
+    }
+  }
+
   /**
    * Progressive code revelation timeline
    * Real code extracted from libs/nestjs-chromadb/*
@@ -206,185 +354,89 @@ export class ChromadbSectionComponent {
       id: 'install',
       step: 1,
       title: 'Installation & Setup',
-      description: 'Get started with ChromaDB in your NestJS application. Zero configuration required for local development.',
-      code: `// Install the package
-npm install @hive-academy/nestjs-chromadb
+      description: 'Install with NPM and configure in seconds. Supports OpenAI, HuggingFace, and Cohere embedding providers. SSL and multi-tenant configurations available with automatic health checks and connection pooling.',
+      code: `npm install @hive-academy/nestjs-chromadb
 
-// Import and configure
-import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-
-@Module({
-  imports: [
-    ChromaDBModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 8000,
-        ssl: false,
-      },
-      embedding: {
-        provider: 'openai',
-        config: {
-          apiKey: process.env.OPENAI_API_KEY,
-          model: 'text-embedding-3-small',
-        },
-      },
-    }),
-  ],
-})
-export class AppModule {}`,
+ChromaDBModule.forRoot({
+  connection: { host: 'localhost', port: 8000 },
+  embedding: { provider: 'openai' }
+})`,
       language: 'typescript',
       layout: 'left',
       notes: [
-        'Supports OpenAI, HuggingFace, Cohere embedding providers',
-        'SSL and multi-tenant configurations available',
-        'Automatic health checks and connection pooling',
+        'Zero configuration for local development',
+        'Production-ready defaults',
+        'Auto health checks & connection pooling',
       ],
     },
     {
       id: 'entity',
       step: 2,
-      title: 'Define Your Entity',
-      description: 'Create type-safe entities with decorators. Automatic embedding generation and metadata handling.',
-      code: `import {
-  BaseChromaEntity,
-  ChromaEntity,
-  ChromaId,
-  ChromaProp,
-} from '@hive-academy/nestjs-chromadb';
-
-interface KnowledgeMetadata {
-  title: string;
-  category: string;
-  tags: string[];
-  author: string;
-  publishedDate: string;
-}
-
-@ChromaEntity({
+      title: 'TypeORM-Style Decorators',
+      description: 'Use familiar decorators to define entities. Auto-generate embeddings, timestamps, and IDs. Full type safety with generic metadata support. Automatic JSON serialization for complex types.',
+      code: `@ChromaEntity({
   collection: 'knowledge',
-  autoEmbed: true,           // Auto-generate embeddings
-  autoTimestamp: true,        // Auto-manage createdAt/updatedAt
-  autoGenerateIds: true,      // Auto-generate UUIDs
+  autoEmbed: true,
+  autoTimestamp: true
 })
-export class KnowledgeDocument extends BaseChromaEntity<KnowledgeMetadata> {
-  @ChromaId()
-  id!: string;
-
-  @ChromaProp()
-  content!: string;           // Document content for embedding
-
+class KnowledgeDocument extends BaseChromaEntity {
+  @ChromaId() id!: string;
+  @ChromaProp() content!: string;
   metadata!: KnowledgeMetadata;
-  embedding?: readonly number[];
 }`,
       language: 'typescript',
       layout: 'right',
       notes: [
-        'TypeORM-style decorators for familiar DX',
-        'Automatic JSON serialization for complex types',
-        'Smart defaults for timestamps and IDs',
+        'TypeORM-style decorators',
+        'Auto JSON serialization',
+        'Smart defaults (timestamps, IDs, embeddings)',
       ],
     },
     {
       id: 'repository',
       step: 3,
-      title: 'TypeORM-Style Repository',
-      description: 'Inherit 15+ CRUD methods automatically. Add custom business logic as needed. Zero boilerplate.',
-      code: `import { Injectable } from '@nestjs/common';
-import {
-  ChromaDBRepository,
-  ChromaDBService,
-} from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class KnowledgeRepository extends ChromaDBRepository<KnowledgeDocument> {
+      title: '15+ Methods Inherited',
+      description: 'Extend ChromaDBRepository to inherit 15+ CRUD methods automatically: findById, findAll, create, update, upsert, delete, search, searchWithScores, and more. Add custom business logic as needed. 90% less code vs manual implementation with full type safety.',
+      code: `@Injectable()
+class KnowledgeRepository extends ChromaDBRepository<KnowledgeDocument> {
   constructor(chromaDB: ChromaDBService) {
     super(KnowledgeDocument, 'knowledge', chromaDB);
   }
 
-  // ✅ All CRUD methods inherited:
-  // - findById, findByIds, findAll, count, exists
-  // - create, createMany, update, updateMany
-  // - upsert, upsertMany, delete, deleteMany
-  // - search, searchWithScores, searchSimilar
-
-  // Add custom business methods
-  async findByCategory(category: string): Promise<KnowledgeDocument[]> {
-    const all = await this.findAll({ limit: 1000 });
-    return all.filter(doc => doc.metadata.category === category);
-  }
-
-  async searchByTags(tags: string[]): Promise<KnowledgeDocument[]> {
-    const query = tags.join(' ');
-    return this.search(query, { limit: 20 });
-  }
+  // All CRUD + search methods inherited ✅
+  // Add custom methods as needed
 }`,
       language: 'typescript',
       layout: 'left',
       notes: [
-        '90% less code vs manual implementation',
-        'Full type safety with generic constraints',
-        'Composition pattern with ChromaDBService',
+        '15+ methods: CRUD, search, upsert, batch ops',
+        'Full type safety with generics',
+        'Composition pattern, zero boilerplate',
       ],
     },
     {
       id: 'usage',
       step: 4,
       title: 'RAG in 3 Lines',
-      description: 'Build production-ready RAG applications with minimal code. Semantic search, caching, and monitoring included.',
-      code: `@Injectable()
-export class RAGService {
-  constructor(
-    private readonly knowledgeRepo: KnowledgeRepository
-  ) {}
+      description: 'Build production-ready RAG applications with semantic search, metadata filtering, and hybrid search. Sub-100ms performance for 10K+ documents. Built-in caching, retry mechanisms, comprehensive error handling, and performance monitoring.',
+      code: `// Semantic search with metadata filters
+const context = await repo.search(query, {
+  limit: 5,
+  where: { category: 'technical' }
+});
 
-  async generateAnswer(userQuery: string): Promise<string> {
-    // 1. Semantic search for relevant context
-    const context = await this.knowledgeRepo.search(userQuery, {
-      limit: 5,                                    // Top 5 results
-      where: { category: 'technical' },            // Filter by category
-    });
-
-    // 2. Build RAG context from results
-    const ragContext = context
-      .map(doc => \`\${doc.metadata.title}\\n\${doc.content}\`)
-      .join('\\n\\n');
-
-    // 3. Send to LLM with context
-    const answer = await this.llm.invoke({
-      context: ragContext,
-      query: userQuery,
-    });
-
-    return answer;
-  }
-
-  // Hybrid search: Vector + metadata filtering
-  async advancedSearch(
-    query: string,
-    filters: { category?: string; tags?: string[] }
-  ) {
-    const results = await this.knowledgeRepo.searchWithScores(query, {
-      limit: 10,
-      where: {
-        category: filters.category,
-        // ChromaDB filters work on metadata fields
-      },
-    });
-
-    // Post-filter by tags (application layer)
-    return results.filter(r =>
-      filters.tags?.some(tag => r.document.metadata.tags.includes(tag))
-    );
-  }
-}`,
+// Hybrid search with scores
+const results = await repo.searchWithScores(query, {
+  limit: 10,
+  where: { author: 'team' }
+});`,
       language: 'typescript',
-      layout: 'center',
+      layout: 'right',
       notes: [
-        'Sub-100ms vector search for 10K+ documents',
-        'Built-in caching and retry mechanisms',
-        'Comprehensive error handling',
-        'Production-ready performance monitoring',
+        'Sub-100ms for 10K+ docs',
+        'Hybrid search: vector + metadata',
+        'Built-in caching & retry',
+        'Production monitoring included',
       ],
     },
   ]);
@@ -409,9 +461,4 @@ export class RAGService {
       description: 'Vector operation metrics and performance tracking',
     },
   ]);
-
-  /**
-   * Scene graph reference for 3D background
-   */
-  readonly chromadbSceneGraph = ChromadbSceneGraphComponent;
 }

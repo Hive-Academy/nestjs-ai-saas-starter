@@ -16,14 +16,8 @@
  * ```
  */
 
-export { LibraryShowcaseCardComponent } from './library-showcase-card.component';
-export { SectionContainerComponent } from './section-container.component';
-export {
-  LibraryShowcaseGridComponent,
-  type LibraryCard,
-} from './library-showcase-grid.component';
+
 export { SectionDividerComponent } from './section-divider.component';
-export { SectionParticleBackgroundComponent } from './section-particle-background.component';
 export { CodeSnippetComponent } from './code-snippet.component';
 export { DecorativePatternComponent } from './decorative-patterns.component';
 export {

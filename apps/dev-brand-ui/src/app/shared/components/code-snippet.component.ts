@@ -27,7 +27,7 @@ import { Component, input, signal } from '@angular/core';
     <div class="relative group">
       <!-- Code Block - Clean and Minimal -->
       <div class="bg-gray-50 rounded-xl p-6 shadow-md overflow-x-auto">
-        <pre class="text-sm font-mono text-gray-800 leading-relaxed m-0 whitespace-pre-wrap break-words"><code>{{ code() }}</code></pre>
+        <pre class="text-xs font-mono text-gray-700 leading-relaxed m-0 whitespace-pre-wrap break-words"><code>{{ code() }}</code></pre>
       </div>
 
       <!-- Copy Button - Appears on Hover -->
