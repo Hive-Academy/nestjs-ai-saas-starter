@@ -487,7 +487,7 @@ Categorize discovered documents by filename patterns:
 
 **Progress Documents** (Read LAST, current state):
 
-- `progress.md` - Current task progress
+- `tasks.md` - Atomic task breakdown and completion status (managed by team-leader)
 - `status-*.md` - Status updates
 
 #### 3. Intelligent Reading Priority
@@ -561,7 +561,7 @@ Glob(task-tracking/TASK_2025_005/**.md)
 # - implementation-plan.md
 # - phase-1.4-store-architecture-plan.md
 # - phase-1.4-architecture-validation.md
-# - progress.md
+# - tasks.md
 
 # Step 2: Categorize
 Core: context.md, task-description.md
@@ -569,7 +569,7 @@ Override: correction-plan.md
 Evidence: query-analysis.md, memory-vs-store-analysis.md, langgraph-store-analysis.md
 Planning: implementation-plan.md, phase-1.4-store-architecture-plan.md
 Validation: phase-1.4-architecture-validation.md
-Progress: progress.md
+Progress: tasks.md
 
 # Step 3: Reading priority order
 1. Read context.md (user intent)
@@ -581,7 +581,7 @@ Progress: progress.md
 7. Read phase-1.4-store-architecture-plan.md (SPECIFIC plan - prefer this)
 8. Read implementation-plan.md (generic plan - for reference only)
 9. Read phase-1.4-architecture-validation.md (approval status)
-10. Read progress.md (current state)
+10. Read tasks.md (current task status - managed by team-leader)
 
 # Step 4: Relationship analysis
 - correction-plan.md may override decisions in implementation-plan.md
@@ -650,7 +650,7 @@ Glob(task-tracking/TASK_[ID]/**.md)
 3. Evidence documents (_-analysis.md, _-research.md)
 4. Planning documents (\*-plan.md, prefer phase-specific)
 5. Validation documents (\*-validation.md)
-6. Progress documents (progress.md)
+6. Progress documents (tasks.md)
 
 **Step 1c: Extract Technical Requirements**
 
@@ -921,7 +921,7 @@ Before implementing, developer MUST verify:
 
 **Created Files**:
 - ✅ implementation-plan.md - Complete architecture with evidence citations
-- ✅ progress.md - Professional progress tracking
+- Note: tasks.md will be created by team-leader agent (not architect's responsibility)
 
 **Evidence Quality**:
 - **Citation Count**: [Number] file:line citations
