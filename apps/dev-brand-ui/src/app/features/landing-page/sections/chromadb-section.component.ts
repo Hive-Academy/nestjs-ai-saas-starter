@@ -43,8 +43,8 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     <div class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden">
       <!-- Content Container -->
       <div class="container mx-auto px-8 py-12">
-        <!-- Section Hero with Integrated Vector Arrows (70vh) -->
-        <div class="relative text-center py-24 flex flex-col justify-center">
+        <!-- Section Hero with Integrated Vector Arrows -->
+        <div class="relative text-center py-16 flex flex-col justify-center ">
           <!-- Vector Arrows SVG - Larger and more visible -->
           <div
             class="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -153,11 +153,14 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
       </div>
 
       <!-- Progressive Code Timeline with Content Projection -->
-      <app-hijacked-scroll-timeline [scrollHeightPerStep]="1000">
+      <app-hijacked-scroll-timeline
+        [scrollHeightPerStep]="1000"
+        [start]="'top top'"
+      >
         @for (step of codeTimeline(); track step.id; let i = $index) {
-          <div hijackedScrollItem [slideDirection]="getSlideDirection(step.layout)">
+          <div hijackedScrollItem [slideDirection]="'none'">
             <!-- Step Container with Decoration -->
-            <div class="relative min-h-[60vh] flex items-center">
+            <div class="relative  flex items-start py-18">
               <!-- Decoration: Alternating patterns per step with scroll animations -->
               @if (i === 0) {
                 <div
@@ -203,10 +206,19 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
               <!-- Content -->
               <div class="container mx-auto px-8 relative z-10">
                 <div class="grid lg:grid-cols-2 gap-16 items-center">
-                  <!-- Content Side (Title + Description) -->
+                  <!-- Content Side (Title + Description) with slide animation -->
                   <div
                     [class.lg:order-1]="step.layout === 'left'"
                     [class.lg:order-2]="step.layout === 'right'"
+                    scrollAnimation
+                    [scrollConfig]="{
+                      animation: 'custom',
+                      start: 'top 80%',
+                      end: 'top 30%',
+                      scrub: 1,
+                      from: { opacity: 0, x: step.layout === 'left' ? -60 : 60, y: 20 },
+                      to: { opacity: 1, x: 0, y: 0 }
+                    }"
                   >
                     <!-- Step Number Badge -->
                     <div class="inline-flex items-center gap-3 mb-6">
@@ -255,12 +267,47 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                     }
                   </div>
 
-                  <!-- Code Side -->
+                  <!-- Visual Side (Image or Code) with fade + translateX animation -->
                   <div
                     [class.lg:order-2]="step.layout === 'left'"
                     [class.lg:order-1]="step.layout === 'right'"
+                    scrollAnimation
+                    [scrollConfig]="{
+                      animation: 'custom',
+                      start: 'top 75%',
+                      end: 'top 25%',
+                      scrub: 1,
+                      from: { opacity: 0, x: step.layout === 'left' ? 80 : -80, scale: 0.95 },
+                      to: { opacity: 1, x: 0, scale: 1 }
+                    }"
                   >
-                    @if (step.code) {
+                    @if (step.language === 'image') {
+                      <!-- AI-Generated Business Value Image - Flat, no border/shadow -->
+                      <div class="relative group">
+                        <img
+                          [src]="step.code"
+                          [alt]="step.title"
+                          class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                          loading="lazy"
+                        />
+                      </div>
+                    } @else if (!step.code || step.code === '') {
+                      <!-- Image Placeholder -->
+                      <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-indigo-100/50 aspect-video bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                          <div class="text-center p-8">
+                            <div class="w-24 h-24 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                              <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <p class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">Visual Asset</p>
+                            <p class="text-xs text-gray-500 mt-2">Step {{ step.step }}: {{ step.id }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <!-- Code Snippet -->
                       <app-code-snippet
                         [code]="step.code"
                         [language]="step.language || 'typescript'"
@@ -272,57 +319,50 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
             </div>
           </div>
         }
-      </app-hijacked-scroll-timeline>
 
-      <!-- Integration Ecosystem with Network Nodes  -->
-      <div class="relative py-24 flex items-center">
-        <!-- Network Nodes SVG - Large and visible -->
-        <div
-          class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[700px] h-[700px] pointer-events-none"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 90%',
-            end: 'bottom 10%',
-            scrub: 0.6,
-            from: { scale: 0.8, opacity: 0, x: 80, rotation: -10 },
-            to: { scale: 1.1, opacity: 0.8, x: -20, rotation: 10 }
-          }"
-        >
-          <div class="w-full h-full text-indigo-400">
-            <app-decorative-pattern [pattern]="'network-nodes'" />
-          </div>
-        </div>
-
-      <div
-        class="relative z-10 max-w-5xl mx-auto"
-        scrollAnimation
-        [scrollConfig]="{
-          animation: 'custom',
-          start: 'top 75%',
-          end: 'top 25%',
-          scrub: 1,
-          from: { opacity: 0, y: 60 },
-          to: { opacity: 1, y: 0 }
-        }"
-      >
-        <div class=" p-12 ">
-          <h3 class="text-3xl font-bold text-gray-900 mb-6 text-center">
-            LangGraph Ecosystem Integration
-          </h3>
-          <div class="grid grid-cols-3 gap-6">
-            @for (integration of integrations(); track integration.name) {
-              <div class="bg-white rounded-2xl p-6 border border-indigo-100 hover:shadow-lg transition-shadow duration-300">
-                <div class="text-4xl mb-4">{{ integration.icon }}</div>
-                <h4 class="text-lg font-bold text-gray-900 mb-2">{{ integration.name }}</h4>
-                <p class="text-sm text-gray-500">{{ integration.description }}</p>
+        <!-- Integration Ecosystem - Sticky at bottom, always visible -->
+        <div class="fixed bottom-0 left-0 right-0 z-0 pointer-events-none">
+            <div class="container mx-auto px-8 relative z-10 pointer-events-auto">
+              <div class="max-w-5xl mx-auto py-6">
+                <h3
+                  class="text-2xl font-bold text-gray-900 mb-4 text-center"
+                  scrollAnimation
+                  [scrollConfig]="{
+                    animation: 'custom',
+                    start: 'top bottom',
+                    end: 'top 70%',
+                    scrub: 1,
+                    from: { opacity: 0, y: 20 },
+                    to: { opacity: 1, y: 0 }
+                  }"
+                >
+                  LangGraph Ecosystem Integration
+                </h3>
+                <div class="grid grid-cols-3 gap-4">
+                  @for (integration of integrations(); track integration.name; let i = $index) {
+                    <div
+                      class="bg-white/95 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-shadow duration-300"
+                      scrollAnimation
+                      [scrollConfig]="{
+                        animation: 'custom',
+                        start: 'top bottom',
+                        end: 'top 60%',
+                        scrub: 1,
+                        from: { opacity: 0, y: 30, scale: 0.9 },
+                        to: { opacity: 1, y: 0, scale: 1 },
+                        delay: i * 0.1
+                      }"
+                    >
+                      <div class="text-3xl mb-2">{{ integration.icon }}</div>
+                      <h4 class="text-base font-bold text-gray-900 mb-1">{{ integration.name }}</h4>
+                      <p class="text-xs text-gray-500">{{ integration.description }}</p>
+                    </div>
+                  }
+                </div>
               </div>
-            }
-          </div>
+            </div>
         </div>
-      </div>
-
-      </div>
+      </app-hijacked-scroll-timeline>
 
 
       </div>
@@ -346,97 +386,68 @@ export class ChromadbSectionComponent {
   }
 
   /**
-   * Progressive code revelation timeline
-   * Real code extracted from libs/nestjs-chromadb/*
+   * Business value timeline
+   * Based on task-tracking/TASK_2025_017/library-analysis.md
    */
   readonly codeTimeline = signal<TimelineStep[]>([
     {
-      id: 'install',
+      id: 'rag-pipeline',
       step: 1,
-      title: 'Installation & Setup',
-      description: 'Install with NPM and configure in seconds. Supports OpenAI, HuggingFace, and Cohere embedding providers. SSL and multi-tenant configurations available with automatic health checks and connection pooling.',
-      code: `npm install @hive-academy/nestjs-chromadb
-
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
-  embedding: { provider: 'openai' }
-})`,
-      language: 'typescript',
+      title: 'Build RAG Applications in Minutes',
+      description: 'Transform your enterprise knowledge into intelligent AI systems. Our ChromaDB integration enables semantic search across documents with AI-powered understanding, bringing ChatGPT-like capabilities to your internal data. Deploy production-ready RAG applications without months of development.',
+      code: 'assets/images/step_1.png', // AI-generated image
+      language: 'image',
       layout: 'left',
       notes: [
-        'Zero configuration for local development',
-        'Production-ready defaults',
-        'Auto health checks & connection pooling',
+        'RAG pipelines ready in 3 lines of code',
+        'Semantic search with AI understanding',
+        'Enterprise knowledge retrieval',
+        'Build ChatGPT-like internal systems',
       ],
     },
     {
-      id: 'entity',
+      id: 'developer-productivity',
       step: 2,
-      title: 'TypeORM-Style Decorators',
-      description: 'Use familiar decorators to define entities. Auto-generate embeddings, timestamps, and IDs. Full type safety with generic metadata support. Automatic JSON serialization for complex types.',
-      code: `@ChromaEntity({
-  collection: 'knowledge',
-  autoEmbed: true,
-  autoTimestamp: true
-})
-class KnowledgeDocument extends BaseChromaEntity {
-  @ChromaId() id!: string;
-  @ChromaProp() content!: string;
-  metadata!: KnowledgeMetadata;
-}`,
-      language: 'typescript',
+      title: '70% Less Boilerplate Code',
+      description: 'Our TypeORM-style repository pattern eliminates repetitive code. Inherit 15+ CRUD methods automatically, focus on business logic instead of infrastructure. Smart defaults for embeddings, timestamps, and IDs mean you write only what matters.',
+      code: 'assets/images/step_2.png', // AI-generated image
+      language: 'image',
       layout: 'right',
       notes: [
-        'TypeORM-style decorators',
-        'Auto JSON serialization',
-        'Smart defaults (timestamps, IDs, embeddings)',
+        '15+ methods inherited automatically',
+        'TypeORM-style familiar patterns',
+        'Zero boilerplate, maximum productivity',
+        'Focus on features, not infrastructure',
       ],
     },
     {
-      id: 'repository',
+      id: 'enterprise-ready',
       step: 3,
-      title: '15+ Methods Inherited',
-      description: 'Extend ChromaDBRepository to inherit 15+ CRUD methods automatically: findById, findAll, create, update, upsert, delete, search, searchWithScores, and more. Add custom business logic as needed. 90% less code vs manual implementation with full type safety.',
-      code: `@Injectable()
-class KnowledgeRepository extends ChromaDBRepository<KnowledgeDocument> {
-  constructor(chromaDB: ChromaDBService) {
-    super(KnowledgeDocument, 'knowledge', chromaDB);
-  }
-
-  // All CRUD + search methods inherited ✅
-  // Add custom methods as needed
-}`,
-      language: 'typescript',
+      title: 'Enterprise Multi-Tenancy Built-In',
+      description: 'Launch your SaaS with confidence. Complete tenant isolation ensures data privacy and compliance with GDPR, HIPAA, and SOC2 standards. Intelligent caching, connection pooling, and automatic health checks provide production-grade reliability from day one.',
+      code: 'assets/images/step_3.png', // AI-generated image
+      language: 'image',
       layout: 'left',
       notes: [
-        '15+ methods: CRUD, search, upsert, batch ops',
-        'Full type safety with generics',
-        'Composition pattern, zero boilerplate',
+        'Complete data isolation per tenant',
+        'GDPR, HIPAA, SOC2 compliant',
+        'Production-ready reliability',
+        'Intelligent caching & health checks',
       ],
     },
     {
-      id: 'usage',
+      id: 'performance',
       step: 4,
-      title: 'RAG in 3 Lines',
-      description: 'Build production-ready RAG applications with semantic search, metadata filtering, and hybrid search. Sub-100ms performance for 10K+ documents. Built-in caching, retry mechanisms, comprehensive error handling, and performance monitoring.',
-      code: `// Semantic search with metadata filters
-const context = await repo.search(query, {
-  limit: 5,
-  where: { category: 'technical' }
-});
-
-// Hybrid search with scores
-const results = await repo.searchWithScores(query, {
-  limit: 10,
-  where: { author: 'team' }
-});`,
-      language: 'typescript',
+      title: 'Sub-100ms Performance at Scale',
+      description: 'Handle 10,000+ documents with lightning-fast vector search under 100ms. Batch operations process 100 documents per second. Built-in performance monitoring, retry mechanisms, and comprehensive error handling ensure your AI stays responsive as you scale.',
+      code: 'assets/images/step_4.png', // AI-generated image
+      language: 'image',
       layout: 'right',
       notes: [
-        'Sub-100ms for 10K+ docs',
-        'Hybrid search: vector + metadata',
-        'Built-in caching & retry',
-        'Production monitoring included',
+        'Sub-100ms search for 10K+ documents',
+        'Batch: 100 documents/second',
+        'Built-in performance monitoring',
+        'Production error handling & retry',
       ],
     },
   ]);

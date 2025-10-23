@@ -51,7 +51,7 @@ import { HijackedScrollDirective } from '../../core/angular-3d/directives/hijack
   hostDirectives: [
     {
       directive: HijackedScrollDirective,
-      inputs: ['scrollHeightPerStep', 'animationDuration', 'ease', 'markers', 'minHeight'],
+      inputs: ['scrollHeightPerStep', 'animationDuration', 'ease', 'markers', 'minHeight', 'start', 'end'],
       outputs: ['currentStepChange', 'progressChange'],
     },
   ],
@@ -73,7 +73,9 @@ export class HijackedScrollTimelineComponent {
   readonly animationDuration = input<number>(0.3); // seconds
   readonly ease = input<string>('power2.out');
   readonly markers = input<boolean>(false);
-  readonly minHeight = input<string>('70vh');
+  readonly minHeight = input<string>('100vh');
+  readonly start = input<string>('top top'); // ScrollTrigger start point
+  readonly end = input<string | undefined>(undefined); // ScrollTrigger end point
 
   // Event outputs (pass-through via hostDirectives)
   readonly currentStepChange = output<number>();

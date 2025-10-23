@@ -58,6 +58,8 @@ export interface HijackedScrollConfig {
   ease?: string; // GSAP easing function (default: 'power2.out')
   markers?: boolean; // show debug markers (default: false)
   minHeight?: string; // minimum container height (default: '70vh')
+  start?: string; // ScrollTrigger start point (default: 'top top')
+  end?: string; // ScrollTrigger end point (default: calculated from steps)
 }
 
 @Directive({
@@ -78,7 +80,9 @@ export class HijackedScrollDirective implements OnDestroy {
   readonly animationDuration = input<number>(0.3); // seconds
   readonly ease = input<string>('power2.out');
   readonly markers = input<boolean>(false);
-  readonly minHeight = input<string>('70vh');
+  readonly minHeight = input<string>('100vh');
+  readonly start = input<string>('top top'); // ScrollTrigger start point
+  readonly end = input<string | undefined>(undefined); // ScrollTrigger end point (optional)
 
   // Event outputs
   readonly currentStepChange = output<number>();
@@ -156,7 +160,7 @@ export class HijackedScrollDirective implements OnDestroy {
       element.style.position = 'absolute';
       element.style.inset = '0';
       element.style.display = 'flex';
-      element.style.alignItems = 'center';
+      element.style.alignItems = 'flex-start';
 
       // Find decoration element for this step (if exists)
       const decoration = element.querySelector(`[data-decoration-index="${index}"]`) as HTMLElement;
@@ -255,13 +259,14 @@ export class HijackedScrollDirective implements OnDestroy {
     // Create ScrollTrigger
     this.scrollTrigger = ScrollTrigger.create({
       trigger: container,
-      start: 'top top',
-      end: `+=${totalSteps * this.scrollHeightPerStep()}vh`,
+      start: this.start(), // Configurable start point
+      end: this.end() || `+=${totalSteps * this.scrollHeightPerStep()}vh`, // Configurable or calculated end
       pin: true,
       scrub: 1,
       animation: this.masterTimeline,
       markers: this.markers(),
       anticipatePin: 1,
+      invalidateOnRefresh: true,
       onUpdate: (self) => {
         // Calculate current step based on progress
         const currentStep = Math.floor(self.progress * totalSteps);
