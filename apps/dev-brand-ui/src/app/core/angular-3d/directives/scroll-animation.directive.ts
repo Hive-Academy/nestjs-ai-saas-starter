@@ -79,6 +79,7 @@ export interface ScrollAnimationConfig {
   end?: string; // e.g., 'bottom 20%'
   scrub?: boolean | number; // Link animation to scroll progress
   pin?: boolean; // Pin the element during scroll
+  pinSpacing?: boolean; // Add spacing when pinning (default: true)
   markers?: boolean; // Show debug markers (dev only)
 
   // Animation properties
@@ -175,6 +176,7 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
       end: config.end,
       scrub: config.scrub ?? false,
       pin: config.pin ?? false,
+      pinSpacing: config.pinSpacing ?? true, // Default to true (GSAP default)
       markers: config.markers ?? false, // Enable with markers: true in config
       animation: timeline,
       once: config.once ?? false,

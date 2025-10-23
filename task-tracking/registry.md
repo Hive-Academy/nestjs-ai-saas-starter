@@ -11,3 +11,6 @@
 | TASK_2025_021 | Composables & Providers Rewrite                | ✅ Complete                                 | Documentation | P1-High   | M      | 2025-01-22 | 2025-01-22 01:15:00 | 2025-01-22 | feature/021 |
 | TASK_2025_022 | Examples Package Documentation                 | ✅ Complete                                 | Documentation | P1-High   | L      | 2025-01-22 | 2025-01-22 06:40:00 | 2025-01-22 | feature/022 |
 | TASK_2025_023 | Documentation Consolidation                    | ✅ Complete (Skipped - modular preferred)   | Documentation | P1-High   | M      | 2025-01-22 | 2025-01-22 20:30:00 | 2025-01-22 | feature/023 |
+| TASK_2025_024 | Landing Page Sections - 11 Libraries           | ⏸️ Paused (Repurposed as Library Detail Pages - 27% Complete) | Feature       | P2-Medium   | XL     | 2025-01-23 | 2025-01-23 12:00:00 |            | feature/024 |
+| TASK_2025_025 | Dev-Brand-UI POC - LangGraph Integration | 🔄 Active (Architecture Revision Complete) | Feature | P1-High | XL | 2025-01-23 | 2025-01-23 08:00:00 |  | feature/025 |
+| TASK_2025_026 | Landing Page Redesign - Benefit-Focused Narrative | 🔄 Active (Architecture Complete - Ready for Validation) | Feature | P1-High | XL | 2025-10-23 | 2025-10-23 14:30:00 |  | feature/026 |

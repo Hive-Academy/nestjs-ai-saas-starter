@@ -6,6 +6,175 @@
 
 The Streaming Module provides production-ready real-time processing using RxJS observables and WebSocket integration, with comprehensive decorator system for streaming workflows.
 
+---
+
+## ⚡ Quick Start: Consumer Applications
+
+### Simple Workflow Streaming (3 Lines of Code)
+
+The **WorkflowStreamingOrchestrator** provides a high-level facade for the most common pattern: starting a workflow with automatic WebSocket streaming.
+
+```typescript
+import { Controller, Post, Body } from '@nestjs/common';
+import { WorkflowStreamingOrchestrator } from '@hive-academy/langgraph-streaming';
+import { MyWorkflow } from './my-workflow';
+
+@Controller('workflow')
+export class WorkflowController {
+  constructor(
+    private readonly myWorkflow: MyWorkflow,
+    private readonly orchestrator: WorkflowStreamingOrchestrator
+  ) {}
+
+  @Post('execute')
+  async execute(@Body() dto: { userId: string; data: any }) {
+    const executionId = `exec-${Date.now()}`;
+
+    // ✨ ONE-LINER: Start workflow + automatic WebSocket streaming
+    return this.orchestrator.startWorkflowWithStreaming({
+      workflow: this.myWorkflow,
+      input: { userId: dto.userId, data: dto.data },
+      executionId,
+    });
+
+    // Returns:
+    // {
+    //   executionId: "exec-1234567890",
+    //   status: "started",
+    //   message: "Workflow started successfully...",
+    //   websocketUrl: "ws://localhost:8080/streaming",
+    //   subscriptionInfo: {
+    //     event: "subscribe_execution",
+    //     payload: { executionId: "exec-1234567890" }
+    //   }
+    // }
+  }
+}
+```
+
+### What the Orchestrator Does Automatically
+
+1. **Starts workflow in background** (non-blocking)
+2. **Consumes async generator** from `executeWithStreaming()`
+3. **Events auto-broadcast** via EventEmitter2 → WebSocketBridge → WebSocket clients
+4. **Handles errors and cleanup** automatically
+5. **Returns immediately** with WebSocket connection info
+
+### Before vs After
+
+**Before (75+ lines):**
+```typescript
+@Controller('workflow')
+export class WorkflowController {
+  async execute(@Body() dto: any) {
+    const executionId = `exec-${Date.now()}`;
+
+    // Manual background execution
+    this.startWorkflowInBackground(executionId, dto);
+
+    // Manual response construction
+    return {
+      executionId,
+      status: 'started',
+      websocketUrl: 'ws://localhost:8080/streaming',
+      // ... manual instructions
+    };
+  }
+
+  // 50+ lines of manual async iteration, error handling, logging...
+  private async startWorkflowInBackground(executionId: string, dto: any) {
+    try {
+      const stream = this.workflow.executeWithStreaming({ ...dto, executionId });
+
+      for await (const event of stream) {
+        this.logger.debug(`Event: ${event?.type}`);
+        // Events auto-broadcast, but still need to iterate
+      }
+
+      this.logger.log('Completed');
+    } catch (error) {
+      this.logger.error('Failed', error);
+    }
+  }
+}
+```
+
+**After (10 lines):**
+```typescript
+@Controller('workflow')
+export class WorkflowController {
+  async execute(@Body() dto: any) {
+    return this.orchestrator.startWorkflowWithStreaming({
+      workflow: this.workflow,
+      input: dto,
+      executionId: `exec-${Date.now()}`,
+    });
+  }
+}
+```
+
+### Additional Orchestrator Methods
+
+```typescript
+// Get execution status
+const status = this.orchestrator.getExecutionStatus('exec-123');
+// Returns: { executionId, active, connectedClients, startTime, lastActivity }
+
+// Get all active executions
+const activeExecs = this.orchestrator.getActiveExecutions();
+// Returns: ['exec-123', 'exec-456']
+
+// Cancel a running execution
+await this.orchestrator.cancelExecution('exec-123');
+// Emits cancellation event to workflow and WebSocket clients
+
+// Cleanup completed executions (call periodically)
+this.orchestrator.cleanupCompletedExecutions(60); // 60 minutes
+```
+
+### Real Example: DevBrand API Controller
+
+```typescript
+// apps/dev-brand-api/src/app/controllers/devbrand.controller.ts
+@Controller('devbrand')
+export class DevBrandController {
+  constructor(
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
+    private readonly streamingOrchestrator: WorkflowStreamingOrchestrator
+  ) {}
+
+  @Post('execute')
+  async executeDevBrand(@Body() dto: ExecuteDevBrandDto) {
+    const executionId = `devbrand-${Date.now()}`;
+
+    // One-liner replaces 75+ lines of manual orchestration
+    const workflowInfo = await this.streamingOrchestrator.startWorkflowWithStreaming({
+      workflow: this.devBrandWorkflow,
+      input: {
+        userId: dto.userId || 'anonymous',
+        githubUsername: dto.githubUsername,
+      },
+      executionId,
+    });
+
+    return {
+      executionId: workflowInfo.executionId,
+      status: workflowInfo.status,
+      message: workflowInfo.message,
+      websocketUrl: workflowInfo.websocketUrl,
+      // Add custom instructions if needed
+      websocketInstructions: {
+        connect: 'io("ws://localhost:8080/streaming")',
+        subscribe: `socket.emit("${workflowInfo.subscriptionInfo.event}", ...)`,
+        events: ['stream_update', 'token_update', 'error'],
+      },
+    };
+  }
+}
+```
+
+---
+
 ## EventEmitter Configuration
 
 The Streaming module uses NestJS EventEmitter2 for real-time token streaming and event broadcasting.

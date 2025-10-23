@@ -9,6 +9,7 @@ export * from './lib/services/token-streaming.service';
 export * from './lib/services/websocket-bridge.service';
 export * from './lib/services/event-stream-processor.service';
 export * from './lib/services/streaming-websocket.service';
+export * from './lib/services/workflow-streaming-orchestrator.service';
 
 // Adapter for core interface compatibility
 export * from './lib/adapters/streaming-service.adapter';

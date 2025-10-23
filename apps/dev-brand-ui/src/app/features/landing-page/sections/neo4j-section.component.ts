@@ -8,28 +8,26 @@ import { DecorativePatternComponent } from '../../../shared/components/decorativ
 import type { TimelineStep } from '../../../shared/components/scrolling-code-timeline.component';
 
 /**
- * ChromaDB Section - Vector Database for Semantic Search
+ * Neo4j Section - Enterprise Graph Database
  *
  * Showcases:
- * - TypeORM-style repository pattern
- * - Real codebase examples from libs/nestjs-chromadb/*
- * - Progressive code revelation timeline
- * - Floating 3D particle decorations
- * - Asymmetric scroll animations
+ * - Model complex relationships for AI decision-making
+ * - Enterprise security built-in (5-decorator system)
+ * - Graph algorithms for AI applications
+ * - Multi-tenant graph isolation
  *
  * Design Pattern:
  * - Hero intro with floating metrics
- * - Scrolling code timeline (Install → Configure → Use → Integrate)
- * - 3D particle effects for visual depth
- * - Real code extracted from actual library implementation
+ * - Scrolling timeline (4 business value steps)
+ * - Decorative patterns for visual depth
+ * - Real business value from library-analysis.md
  *
  * Data Sources:
  * - task-tracking/TASK_2025_017/library-analysis.md (business value)
- * - libs/nestjs-chromadb/CLAUDE.md (real code examples)
- * - libs/nestjs-chromadb/src/lib/* (actual implementation)
+ * - task-tracking/TASK_2025_024/content-mapping.md (extracted content)
  */
 @Component({
-  selector: 'app-chromadb-section',
+  selector: 'app-neo4j-section',
   standalone: true,
   imports: [
     CommonModule,
@@ -43,7 +41,7 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     <div class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden">
       <!-- Content Container -->
       <div class="container mx-auto px-8 py-12">
-        <!-- Section Hero with Integrated Vector Arrows - Becomes sticky -->
+        <!-- Section Hero with Integrated Network Nodes - Becomes sticky -->
         <div
           class="relative text-center py-16 flex flex-col justify-center"
           scrollAnimation
@@ -51,13 +49,12 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
             animation: 'custom',
             start: 'top top',
             end: '+=4000',
-
             scrub: 0.5,
             from: { scale: 1, y: 0 },
             to: { scale: 0.8, y: -20, opacity: 0.6 }
           }"
         >
-          <!-- Vector Arrows SVG - Larger and more visible -->
+          <!-- Network Nodes SVG - Larger and more visible -->
           <div
             class="absolute inset-0 flex items-center justify-end pointer-events-none"
             scrollAnimation
@@ -71,7 +68,7 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
             }"
           >
             <div class="w-[800px] h-[800px] text-indigo-500 pt-18">
-              <app-decorative-pattern [pattern]="'vector-arrows'" />
+              <app-decorative-pattern [pattern]="'network-nodes'" />
             </div>
           </div>
 
@@ -113,7 +110,7 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
             to: { opacity: 1, y: 0 }
           }"
         >
-          ChromaDB
+          Neo4j
         </h2>
 
         <!-- Subtitle -->
@@ -129,9 +126,9 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
             to: { opacity: 1, y: 0 }
           }"
         >
-          Vector database for semantic search and RAG applications.
+          Enterprise-grade graph relationships for AI knowledge graphs
           <span class="block mt-2 text-indigo-600 font-semibold">
-            Build production-ready AI features in minutes, not weeks.
+            Model complex relationships for AI decision-making
           </span>
         </p>
 
@@ -149,16 +146,16 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
           }"
         >
           <div class="text-center">
-            <div class="text-4xl font-bold text-indigo-600 mb-2">Sub-100ms</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Vector Search</div>
+            <div class="text-4xl font-bold text-indigo-600 mb-2">7 Decorators</div>
+            <div class="text-sm text-gray-500 uppercase tracking-wide">CRUD System</div>
           </div>
           <div class="text-center">
-            <div class="text-4xl font-bold text-purple-600 mb-2">70%</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Less Boilerplate</div>
+            <div class="text-4xl font-bold text-purple-600 mb-2">100+ Connections</div>
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Concurrent Pool</div>
           </div>
           <div class="text-center">
-            <div class="text-4xl font-bold text-pink-600 mb-2">10K+</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Documents/sec</div>
+            <div class="text-4xl font-bold text-pink-600 mb-2">1000+ Nodes/sec</div>
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Graph Traversal</div>
           </div>
         </div>
         </div>
@@ -176,37 +173,37 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
               <!-- Decoration: Alternating patterns per step with scroll animations -->
               @if (i === 0) {
                 <div
-                  class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-96 pointer-events-none opacity-30 decoration-step-0"
+                  class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30 decoration-step-0"
                   [attr.data-decoration-index]="i"
                 >
                   <div class="w-full h-full text-purple-400 decoration-inner">
-                    <app-decorative-pattern [pattern]="'data-flow'" />
+                    <app-decorative-pattern [pattern]="'network-nodes'" />
                   </div>
                 </div>
               }
               @if (i === 1) {
                 <div
-                  class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30 decoration-step-1"
+                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30 decoration-step-1"
                   [attr.data-decoration-index]="i"
                 >
                   <div class="w-full h-full text-indigo-400 decoration-inner">
-                    <app-decorative-pattern [pattern]="'network-nodes'" />
+                    <app-decorative-pattern [pattern]="'circuit-board'" />
                   </div>
                 </div>
               }
               @if (i === 2) {
                 <div
-                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30 decoration-step-2"
+                  class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-2"
                   [attr.data-decoration-index]="i"
                 >
                   <div class="w-full h-full text-purple-300 decoration-inner">
-                    <app-decorative-pattern [pattern]="'circuit-board'" />
+                    <app-decorative-pattern [pattern]="'data-flow'" />
                   </div>
                 </div>
               }
               @if (i === 3) {
                 <div
-                  class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-3"
+                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-3"
                   [attr.data-decoration-index]="i"
                 >
                   <div class="w-full h-full text-indigo-300 decoration-inner">
@@ -294,7 +291,7 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                     }"
                   >
                     @if (step.language === 'image') {
-                      <!-- AI-Generated Business Value Image - Flat, no border/shadow -->
+                      <!-- AI-Generated Business Value Image -->
                       <div class="relative group pt-5">
                         <img
                           [src]="step.code"
@@ -303,27 +300,6 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                           loading="lazy"
                         />
                       </div>
-                    } @else if (!step.code || step.code === '') {
-                      <!-- Image Placeholder -->
-                      <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-indigo-100/50 aspect-video bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                          <div class="text-center p-8">
-                            <div class="w-24 h-24 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                              <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                            <p class="text-sm font-semibold text-indigo-600 uppercase tracking-wide">Visual Asset</p>
-                            <p class="text-xs text-gray-500 mt-2">Step {{ step.step }}: {{ step.id }}</p>
-                          </div>
-                        </div>
-                      </div>
-                    } @else {
-                      <!-- Code Snippet -->
-                      <app-code-snippet
-                        [code]="step.code"
-                        [language]="step.language || 'typescript'"
-                      />
                     }
                   </div>
                 </div>
@@ -359,7 +335,6 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
         </div>
       </app-hijacked-scroll-timeline>
 
-
       </div>
     </div>
   `,
@@ -383,117 +358,103 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     `,
   ],
 })
-export class ChromadbSectionComponent {
+export class Neo4jSectionComponent {
   /**
-   * Computed opacity for ecosystem section based on scroll position
+   * Ecosystem section opacity control
    */
   readonly ecosystemOpacity = signal(0);
 
   constructor() {
-    // Fade in ecosystem section after component mounts
+    // Fade in ecosystem after mount
     setTimeout(() => {
       this.ecosystemOpacity.set(1);
     }, 500);
   }
-  /**
-   * Convert layout type to slide direction
-   */
-  getSlideDirection(layout: 'left' | 'right' | 'center'): 'left' | 'right' | 'none' {
-    switch (layout) {
-      case 'left':
-        return 'left';
-      case 'right':
-        return 'right';
-      default:
-        return 'none';
-    }
-  }
 
   /**
-   * Business value timeline
-   * Based on task-tracking/TASK_2025_017/library-analysis.md
+   * Business value timeline - 4 steps
    */
   readonly codeTimeline = signal<TimelineStep[]>([
     {
-      id: 'rag-pipeline',
+      id: 'complex-relationships',
       step: 1,
-      title: 'Build RAG Applications in Minutes',
-      description: 'Transform your enterprise knowledge into intelligent AI systems. Our ChromaDB integration enables semantic search across documents with AI-powered understanding, bringing ChatGPT-like capabilities to your internal data. Deploy production-ready RAG applications without months of development.',
-      code: 'assets/images/step_1.png', // AI-generated image
+      title: 'Model Complex Relationships',
+      description: 'Revolutionary 7-decorator Entity CRUD system (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity) reduces boilerplate code by 90%. Build sophisticated knowledge graphs and relationship models for AI decision-making with type-safe queries, enterprise-grade Neo4jQueryBuilder, and intelligent graph traversal algorithms.',
+      code: 'assets/images/libraries/neo4j_step_1.png',
       language: 'image',
       layout: 'left',
       notes: [
-        'RAG pipelines ready in 3 lines of code',
-        'Semantic search with AI understanding',
-        'Enterprise knowledge retrieval',
-        'Build ChatGPT-like internal systems',
+        '7 CRUD decorators eliminate 90% of boilerplate code',
+        'Type-safe query builder for complex graph relationships',
+        'Knowledge graphs for AI reasoning and decision-making',
+        'Intelligent graph traversal with fluent API',
       ],
     },
     {
-      id: 'developer-productivity',
+      id: 'enterprise-security',
       step: 2,
-      title: '70% Less Boilerplate Code',
-      description: 'Our TypeORM-style repository pattern eliminates repetitive code. Inherit 15+ CRUD methods automatically, focus on business logic instead of infrastructure. Smart defaults for embeddings, timestamps, and IDs mean you write only what matters.',
-      code: 'assets/images/step_2.png', // AI-generated image
+      title: 'Enterprise Security Built-In',
+      description: 'Comprehensive 5-decorator security layer provides enterprise-grade protection: @Safe for input sanitization, @Authorize for role-based access control, @ValidateInput for schema validation, @AuditLog for compliance tracking, and @RateLimit for DoS protection. Type-safe query builder prevents injection attacks while maintaining developer productivity with full TypeScript support.',
+      code: 'assets/images/libraries/neo4j_step_2.png',
       language: 'image',
       layout: 'right',
       notes: [
-        '15+ methods inherited automatically',
-        'TypeORM-style familiar patterns',
-        'Zero boilerplate, maximum productivity',
-        'Focus on features, not infrastructure',
+        '5 security decorators (Safe, Authorize, Validate, Audit, RateLimit)',
+        'Type-safe query builder prevents injection attacks',
+        'GDPR, HIPAA, SOC2 compliance with audit logging',
+        'Enterprise access control with role-based permissions',
       ],
     },
     {
-      id: 'enterprise-ready',
+      id: 'graph-algorithms',
       step: 3,
-      title: 'Enterprise Multi-Tenancy Built-In',
-      description: 'Launch your SaaS with confidence. Complete tenant isolation ensures data privacy and compliance with GDPR, HIPAA, and SOC2 standards. Intelligent caching, connection pooling, and automatic health checks provide production-grade reliability from day one.',
-      code: 'assets/images/step_3.png', // AI-generated image
+      title: 'Graph Algorithms for AI',
+      description: 'Specialized GraphRepository provides advanced algorithms for AI applications: centrality analysis identifies key nodes in knowledge graphs, community detection discovers relationships patterns, shortest path finds optimal connections. Perfect for knowledge graphs, recommendation engines, relationship analysis, and network intelligence for AI decision-making systems.',
+      code: 'assets/images/libraries/neo4j_step_3.png',
       language: 'image',
       layout: 'left',
       notes: [
-        'Complete data isolation per tenant',
-        'GDPR, HIPAA, SOC2 compliant',
-        'Production-ready reliability',
-        'Intelligent caching & health checks',
+        'Centrality algorithms identify key knowledge graph nodes',
+        'Community detection discovers relationship patterns',
+        'Shortest path finds optimal entity connections',
+        'Recommendation engines powered by graph analysis',
       ],
     },
     {
-      id: 'performance',
+      id: 'multi-tenant-isolation',
       step: 4,
-      title: 'Sub-100ms Performance at Scale',
-      description: 'Handle 10,000+ documents with lightning-fast vector search under 100ms. Batch operations process 100 documents per second. Built-in performance monitoring, retry mechanisms, and comprehensive error handling ensure your AI stays responsive as you scale.',
-      code: 'assets/images/step_4.png', // AI-generated image
+      title: 'Multi-Tenant Graph Isolation',
+      description: 'Database-per-tenant architecture provides complete data isolation for SaaS applications. Automatic tenant routing ensures each customer data remains separate with zero cross-contamination risk. ACID transactions, connection pooling, and intelligent caching optimize performance while maintaining enterprise-grade security and compliance standards.',
+      code: 'assets/images/libraries/neo4j_step_4.png',
       language: 'image',
       layout: 'right',
       notes: [
-        'Sub-100ms search for 10K+ documents',
-        'Batch: 100 documents/second',
-        'Built-in performance monitoring',
-        'Production error handling & retry',
+        'Database-per-tenant complete data isolation',
+        'Automatic tenant routing prevents cross-contamination',
+        'ACID transactions with connection pooling (100+ concurrent)',
+        'Enterprise-grade security and compliance',
       ],
     },
   ]);
 
   /**
-   * LangGraph ecosystem integrations
+   * Integration ecosystem cards - 3 per library
    */
   readonly integrations = signal([
     {
       icon: '🧠',
       name: 'Memory Module',
-      description: 'Long-term contextual memory for AI agents powered by vector search',
+      description: 'Graph storage for relationship tracking',
     },
     {
-      icon: '🔄',
+      icon: '🤖',
+      name: 'Multi-Agent',
+      description: 'Agent coordination and relationship modeling',
+    },
+    {
+      icon: '⚙️',
       name: 'Workflow Engine',
-      description: 'State persistence and retrieval for complex agent workflows',
-    },
-    {
-      icon: '📊',
-      name: 'Monitoring',
-      description: 'Vector operation metrics and performance tracking',
+      description: 'Workflow relationship analysis',
     },
   ]);
 }

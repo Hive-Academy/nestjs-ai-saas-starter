@@ -13,6 +13,7 @@ import {
 } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import { WorkflowStreamingOrchestrator } from '@hive-academy/langgraph-streaming';
 
 /**
  * DevBrand Workflow Controller - Simplified Architecture
@@ -116,7 +117,10 @@ export class ExecuteDevBrandResponseDto {
 export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
 
-  constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow) {}
+  constructor(
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
+    private readonly streamingOrchestrator: WorkflowStreamingOrchestrator
+  ) {}
 
   /**
    * Start DevBrand Workflow
@@ -181,23 +185,27 @@ export class DevBrandController {
       `🚀 Starting DevBrand workflow for GitHub user: ${dto.githubUsername} (executionId: ${executionId})`
     );
 
-    // Start workflow in background (non-blocking)
-    // The executeWithStreaming() method returns an async iterator
-    // Events are automatically emitted via:
-    //   WorkflowStreamService → EventEmitter2 → WebSocketBridgeService → StreamingWebSocketService
-    this.startWorkflowInBackground(executionId, userId, dto.githubUsername);
-
-    // Return immediately with WebSocket subscription instructions
-    return {
+    // Use WorkflowStreamingOrchestrator for one-liner workflow execution + streaming
+    // This replaces the manual startWorkflowInBackground() method
+    const workflowInfo = await this.streamingOrchestrator.startWorkflowWithStreaming({
+      workflow: this.devBrandWorkflow,
+      input: {
+        userId,
+        githubUsername: dto.githubUsername,
+      },
       executionId,
-      status: 'started',
-      message:
-        'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
-      websocketUrl: 'ws://localhost:8080/streaming',
+    });
+
+    // Return enriched response with additional instructions
+    return {
+      executionId: workflowInfo.executionId,
+      status: workflowInfo.status,
+      message: workflowInfo.message,
+      websocketUrl: workflowInfo.websocketUrl,
       websocketInstructions: {
         connect:
           'io("ws://localhost:8080/streaming", { transports: ["websocket", "polling"] })',
-        subscribe: `socket.emit("subscribe_execution", { executionId: "${executionId}" })`,
+        subscribe: `socket.emit("${workflowInfo.subscriptionInfo.event}", ${JSON.stringify(workflowInfo.subscriptionInfo.payload)})`,
         events: [
           'stream_update - Workflow state changes (agent started, completed, routing)',
           'token_update - Real-time LLM token streaming (character-by-character)',
@@ -209,56 +217,11 @@ export class DevBrandController {
     };
   }
 
-  /**
-   * Start workflow execution in background
-   *
-   * Consumes the async iterator from executeWithStreaming().
-   * All events are automatically broadcast by the streaming infrastructure:
-   * - WorkflowStreamService emits via EventEmitter2
-   * - WebSocketBridgeService listens with @OnEvent decorators
-   * - StreamingWebSocketService broadcasts to subscribed WebSocket clients
-   *
-   * No manual event transformation needed!
-   */
-  private async startWorkflowInBackground(
-    executionId: string,
-    userId: string,
-    githubUsername: string
-  ): Promise<void> {
-    try {
-      // Get the streaming iterator from workflow
-      // This returns AsyncIterableIterator<any> with workflow events
-      const stream = this.devBrandWorkflow.executeWithStreaming({
-        userId,
-        githubUsername,
-        executionId,
-      });
-
-      // Consume the stream
-      // Events are automatically emitted by WorkflowStreamService via EventEmitter2
-      // WebSocketBridgeService listens via @OnEvent('workflow.stream.*', 'workflow.token.*', etc.)
-      // StreamingWebSocketService broadcasts to all clients subscribed to this executionId
-      for await (const event of stream) {
-        // Just consume - events are automatically broadcast
-        // WorkflowStreamService emits:
-        //   - workflow.stream.${executionId} (line 358)
-        //   - workflow.token.${executionId} (line 454, 553, 634)
-        //   - workflow.progress.${executionId} (line 676)
-        //   - workflow.milestone.${executionId} (line 694)
-        this.logger.debug(
-          `Event processed for ${executionId}: ${event?.type || 'unknown'}`
-        );
-      }
-
-      this.logger.log(`✅ DevBrand workflow completed: ${executionId}`);
-    } catch (error) {
-      this.logger.error(
-        `❌ DevBrand workflow failed: ${executionId}`,
-        error instanceof Error ? error.stack : error
-      );
-
-      // Error events are also automatically broadcast via streaming infrastructure
-      // WebSocketBridgeService will emit error updates to subscribed clients
-    }
-  }
+  // ✨ REMOVED: startWorkflowInBackground() method
+  // Now handled automatically by WorkflowStreamingOrchestrator
+  // Benefits:
+  // - No manual async generator iteration
+  // - No manual error handling
+  // - No boilerplate code in controllers
+  // - Reusable across all workflow endpoints
 }

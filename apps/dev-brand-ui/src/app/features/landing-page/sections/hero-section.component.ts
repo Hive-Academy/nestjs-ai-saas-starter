@@ -10,7 +10,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
   imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
     <div
-      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-black via-sky-900 to-black"
+      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-white via-sky-400 to-white"
       style="perspective: 1000px;"
     >
       <!-- 3D Background Scene (spheres + cubes) -->
@@ -37,9 +37,9 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             class="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in-up"
             style="text-shadow: 0 10px 30px rgba(168, 85, 247, 0.5), 0 2px 5px rgba(0,0,0,0.8);"
           >
-            <span class="text-white drop-shadow-2xl">Enterprise AI</span><br />
+            <span class="text-gray-900 drop-shadow-2xl">Enterprise AI</span><br />
             <span
-              class="text-white drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
+              class="text-gray-900 drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
             >
               SaaS Starter
             </span>
@@ -47,22 +47,22 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
 
           <!-- Hero Description - Parallax scroll effect -->
           <p
-            class="text-base md:text-xl text-gray-200 leading-relaxed max-w-xl mx-auto animate-fade-in-up animation-delay-200"
+            class="text-base md:text-xl text-gray-700 leading-relaxed max-w-xl mx-auto animate-fade-in-up animation-delay-200"
             style="text-shadow: 0 2px 20px rgba(0,0,0,0.6);"
           >
             Production-ready foundation combining
             <span
-              class="text-purple-300 font-semibold"
+              class="text-purple-600 font-semibold"
               style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
               >vector search</span
             >,
             <span
-              class="text-purple-300 font-semibold"
+              class="text-purple-600 font-semibold"
               style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
               >graph relationships</span
             >, and
             <span
-              class="text-purple-300 font-semibold"
+              class="text-purple-600 font-semibold"
               style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
               >intelligent workflows</span
             >
@@ -84,7 +84,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
                 class="text-lg transition-transform duration-300 group-hover:scale-125"
                 >{{ badge.icon }}</span
               >
-              <span class="text-white font-medium">{{ badge.text }}</span>
+              <span class="text-gray-900 font-medium">{{ badge.text }}</span>
             </div>
             }
           </div>
@@ -96,7 +96,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             <button
               class="group relative px-8 py-4 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600
                            hover:from-purple-600 hover:via-pink-600 hover:to-purple-700
-                           text-white font-semibold shadow-2xl shadow-purple-500/50
+                           text-gray-900 font-semibold shadow-2xl shadow-purple-500/50
                            transition-all duration-300 hover:scale-105 hover:-translate-y-2
                            hover:shadow-purple-500/70 hover:shadow-3xl
                            flex items-center gap-2 overflow-hidden
@@ -113,7 +113,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             <button
               class="group relative px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20
                            backdrop-blur-sm border border-white/20 hover:border-white/40
-                           text-white font-semibold shadow-xl shadow-black/30
+                           text-gray-900 font-semibold shadow-xl shadow-black/30
                            transition-all duration-300 hover:scale-105 hover:-translate-y-2
                            flex items-center gap-2"
               style="transform-style: preserve-3d;"
