@@ -105,11 +105,11 @@ export const SPACE_THEMES: Record<
     name: 'Classic Space',
     description: 'Traditional dark space with white stars',
     background: {
-      type: 'radial',
-      colors: [0x000000, 0x0a0a1a, 0x000000],
+      type: 'linear',
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#ffffff', '#f0f0ff', '#e0e0ff', '#d0d0ff'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.5, max: 2.0 },
       twinkle: true,
       density: 'high',
@@ -122,14 +122,19 @@ export const SPACE_THEMES: Record<
       glowIntensity: 0.8,
     },
     nebula: {
-      colors: ['#1a1a3a', '#2a2a4a', '#1a1a2a'],
-      opacity: 0.4,
+      colors: ['#cccccc', '#aaaaaa', '#888888'],
+      opacity: 0.6,
       flow: true,
     },
     lights: {
-      ambient: { color: 0x404080, intensity: 1.5 },
-      directional: { color: 0xffffff, intensity: 2.5 },
-      point: [{ color: 0xffffff, intensity: 2.0, position: [10, 5, 5] }],
+      ambient: { color: 0x404080, intensity: 0.5 },
+      directional: { color: 0xffffff, intensity: 3.5 },
+      point: [{ color: 0xffffff, intensity: 2.5, position: [10, 5, 5] }],
+    },
+    fog: {
+      enabled: true,
+      color: 0xcccccc,
+      density: 0.008,
     },
   },
 
@@ -140,11 +145,11 @@ export const SPACE_THEMES: Record<
     name: 'Purple Nebula',
     description: 'Deep purple space with violet stars',
     background: {
-      type: 'radial',
-      colors: [0x1a0033, 0x0a001a, 0x000000],
+      type: 'linear',
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#e0c0ff', '#d0b0ff', '#c0a0ff', '#b090ff'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.6, max: 2.2 },
       twinkle: true,
       density: 'medium',
@@ -157,17 +162,22 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.2,
     },
     nebula: {
-      colors: ['#4a1d6b', '#6a2ba7', '#8a3bc7'],
-      opacity: 0.5,
+      colors: ['#d0b0e0', '#c0a0d0', '#b090c0'],
+      opacity: 0.6,
       flow: true,
     },
     lights: {
-      ambient: { color: 0x6a2ba7, intensity: 1.8 },
-      directional: { color: 0xda70d6, intensity: 2.5 },
+      ambient: { color: 0x6a2ba7, intensity: 0.5 },
+      directional: { color: 0xda70d6, intensity: 3.5 },
       point: [
-        { color: 0x8a2be2, intensity: 2.0, position: [-10, 5, 5] },
-        { color: 0xff69b4, intensity: 2.0, position: [10, 5, 5] },
+        { color: 0x8a2be2, intensity: 2.5, position: [-10, 5, 5] },
+        { color: 0xff69b4, intensity: 2.5, position: [10, 5, 5] },
       ],
+    },
+    fog: {
+      enabled: true,
+      color: 0xda70d6,
+      density: 0.01,
     },
   },
 
@@ -178,11 +188,11 @@ export const SPACE_THEMES: Record<
     name: 'Cyan Cosmos',
     description: 'Cool cyan and blue space aesthetic',
     background: {
-      type: 'radial',
-      colors: [0x001a33, 0x000a1a, 0x000000],
+      type: 'linear',
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#c0f0ff', '#b0e0ff', '#a0d0ff', '#90c0ff'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.5, max: 2.0 },
       twinkle: true,
       density: 'medium',
@@ -195,14 +205,19 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.0,
     },
     nebula: {
-      colors: ['#1a3a5a', '#2a4a6a', '#3a5a7a'],
-      opacity: 0.45,
+      colors: ['#c0d0e0', '#b0c0d0', '#a0b0c0'],
+      opacity: 0.6,
       flow: true,
     },
     lights: {
-      ambient: { color: 0x406080, intensity: 1.8 },
-      directional: { color: 0x87ceeb, intensity: 2.5 },
-      point: [{ color: 0x00bfff, intensity: 2.0, position: [0, -5, 8] }],
+      ambient: { color: 0x406080, intensity: 0.5 },
+      directional: { color: 0x87ceeb, intensity: 3.5 },
+      point: [{ color: 0x00bfff, intensity: 2.5, position: [0, -5, 8] }],
+    },
+    fog: {
+      enabled: true,
+      color: 0x87ceeb,
+      density: 0.009,
     },
   },
 
@@ -213,11 +228,11 @@ export const SPACE_THEMES: Record<
     name: 'Warm Sunset',
     description: 'Warm orange and pink space aesthetic',
     background: {
-      type: 'radial',
-      colors: [0x331a00, 0x1a0a00, 0x000000],
+      type: 'linear',
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#ffe0c0', '#ffd0b0', '#ffc0a0', '#ffb090'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.6, max: 2.1 },
       twinkle: true,
       density: 'low',
@@ -230,14 +245,19 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.1,
     },
     nebula: {
-      colors: ['#5a3a1a', '#6a4a2a', '#7a5a3a'],
-      opacity: 0.4,
+      colors: ['#e0d0c0', '#d0c0b0', '#c0b0a0'],
+      opacity: 0.6,
       flow: true,
     },
     lights: {
-      ambient: { color: 0x806040, intensity: 1.8 },
-      directional: { color: 0xff8c69, intensity: 2.5 },
-      point: [{ color: 0xff6347, intensity: 2.0, position: [10, 10, 5] }],
+      ambient: { color: 0x806040, intensity: 0.5 },
+      directional: { color: 0xff8c69, intensity: 3.5 },
+      point: [{ color: 0xff6347, intensity: 2.5, position: [10, 10, 5] }],
+    },
+    fog: {
+      enabled: true,
+      color: 0xff8c69,
+      density: 0.007,
     },
   },
 
@@ -249,10 +269,10 @@ export const SPACE_THEMES: Record<
     description: 'Bright sky blue gradient matching current design',
     background: {
       type: 'linear',
-      colors: [0x87ceeb, 0xffffff, 0x00bfff],
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#6a9bd8', '#5a8bc8', '#4a7bb8', '#3a6ba8'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.8, max: 2.5 },
       twinkle: false,
       density: 'low',
@@ -265,14 +285,19 @@ export const SPACE_THEMES: Record<
       glowIntensity: 0.7,
     },
     nebula: {
-      colors: ['#d0e8ff', '#e0f0ff', '#f0f8ff'],
+      colors: ['#e0e0e0', '#d0d0d0', '#c0c0c0'],
       opacity: 0.3,
       flow: false,
     },
     lights: {
-      ambient: { color: 0xa0c0e0, intensity: 2.5 },
-      directional: { color: 0xffffff, intensity: 3.0 },
-      point: [{ color: 0x87ceeb, intensity: 2.0, position: [10, 10, 10] }],
+      ambient: { color: 0xa0c0e0, intensity: 0.5 },
+      directional: { color: 0xffffff, intensity: 3.5 },
+      point: [{ color: 0x87ceeb, intensity: 2.5, position: [10, 10, 10] }],
+    },
+    fog: {
+      enabled: false,
+      color: 0xffffff,
+      density: 0.008,
     },
   },
 
@@ -283,11 +308,11 @@ export const SPACE_THEMES: Record<
     name: 'Green Aurora',
     description: 'Ethereal green aurora-inspired space',
     background: {
-      type: 'radial',
-      colors: [0x001a0a, 0x000a05, 0x000000],
+      type: 'linear',
+      colors: [0x000000],
     },
     stars: {
-      colors: ['#c0ffe0', '#b0ffd0', '#a0ffc0', '#90ffb0'],
+      colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
       sizes: { min: 0.5, max: 1.9 },
       twinkle: true,
       density: 'medium',
@@ -300,14 +325,19 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.1,
     },
     nebula: {
-      colors: ['#1a4a2a', '#2a5a3a', '#3a6a4a'],
-      opacity: 0.45,
+      colors: ['#c0e0d0', '#b0d0c0', '#a0c0b0'],
+      opacity: 0.6,
       flow: true,
     },
     lights: {
-      ambient: { color: 0x406050, intensity: 1.8 },
-      directional: { color: 0x90ee90, intensity: 2.5 },
-      point: [{ color: 0x32cd32, intensity: 2.0, position: [12, -6, 5] }],
+      ambient: { color: 0x406050, intensity: 0.5 },
+      directional: { color: 0x90ee90, intensity: 3.5 },
+      point: [{ color: 0x32cd32, intensity: 2.5, position: [12, -6, 5] }],
+    },
+    fog: {
+      enabled: true,
+      color: 0x90ee90,
+      density: 0.009,
     },
   },
 };
