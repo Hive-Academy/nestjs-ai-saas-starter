@@ -30,55 +30,71 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         }"
       >
         <div
-          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-6 pointer-events-auto transform-gpu"
+          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title - Compact and punchy -->
+          <!-- Hero Title - Scaled down, better visual weight -->
           <h1
-            class="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight animate-fade-in-up text-white"
+            class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight animate-fade-in-up text-gray-900"
           >
-            NestJS AI SaaS Starter
+            Build Production-Grade AI Applications<br />
+            with TypeScript Patterns You Already Know
           </h1>
 
-          <!-- Hero Description - Concise with key metric -->
+          <!-- Hero Description - Compact, highlight key metric -->
           <p
-            class="text-base sm:text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl mx-auto animate-fade-in-up animation-delay-200"
+            class="text-xs sm:text-sm md:text-base text-gray-700 leading-relaxed max-w-2xl mx-auto animate-fade-in-up animation-delay-200"
           >
-            Production-ready foundation combining vector search, graph
-            relationships, and intelligent workflows
-            <strong class="block mt-2 text-white">90% less code</strong>
+            NestJS AI SaaS Starter:
+            <strong class="text-indigo-600 font-bold">90% less code</strong>, enterprise
+            capabilities out-of-the-box, familiar patterns for vector databases,
+            knowledge graphs, and multi-agent workflows
           </p>
 
-          <!-- Feature Badges - Compact chips like original design -->
-          <div
-            class="flex flex-wrap justify-center gap-3 pt-2 animate-fade-in-up animation-delay-300"
+          <!-- Value Proposition Bullets - Smaller, tighter spacing -->
+          <ul
+            class="space-y-1.5 md:space-y-2 text-[10px] sm:text-xs md:text-sm text-gray-800 max-w-2xl mx-auto animate-fade-in-up animation-delay-400"
           >
-            @for (feature of features; track feature.icon) {
-            <div
-              class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white text-sm font-medium hover:bg-white/20 transition-all"
-            >
-              <span>{{ feature.icon }}</span>
-              <span>{{ feature.label }}</span>
-            </div>
+            @for (bullet of bullets; track bullet) {
+            <li class="flex items-start gap-1.5 md:gap-2">
+              <svg
+                class="w-3.5 h-3.5 md:w-4 md:h-4 text-indigo-600 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2.5"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span class="text-left">{{ bullet }}</span>
+            </li>
             }
-          </div>
+          </ul>
 
-          <!-- CTA Buttons - Styled like original -->
+          <!-- CTA Buttons - Compact, balanced sizing -->
           <div
-            class="flex flex-col sm:flex-row justify-center gap-4 pt-4 animate-fade-in-up animation-delay-500"
+            class="flex flex-col sm:flex-row justify-center gap-2.5 md:gap-3 pt-3 md:pt-4 animate-fade-in-up animation-delay-600"
           >
             <button
-              class="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-semibold
-                           rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+              class="px-5 py-2.5 md:px-6 md:py-3 bg-indigo-600 text-white text-xs md:text-sm font-semibold
+                           rounded-lg shadow-lg hover:bg-indigo-700
+                           hover:shadow-xl hover:scale-105 transition-all duration-300
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                           focus-visible:outline-indigo-600"
             >
-              <span>🚀</span>
-              <span>Explore Live Demo</span>
+              See Complete Workflow Examples
             </button>
             <button
-              class="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/30 text-white text-sm font-semibold
-                           rounded-lg hover:bg-white/20 transition-all duration-300"
+              class="px-5 py-2.5 md:px-6 md:py-3 bg-white text-indigo-600 text-xs md:text-sm font-semibold
+                           rounded-lg border-2 border-indigo-600
+                           hover:bg-indigo-600 hover:text-white transition-all duration-300
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                           focus-visible:outline-indigo-600"
             >
-              <span>📐</span>
-              <span>View Architecture</span>
+              Read Documentation
             </button>
           </div>
         </div>
@@ -121,10 +137,10 @@ export class HeroSectionComponent {
   // Scene graph reference - 3D background only (spheres + cubes)
   readonly heroSceneGraph = HeroSceneGraphComponent;
 
-  // Feature badges - compact chips matching original design
-  readonly features = [
-    { icon: '🔍', label: 'Vector Search' },
-    { icon: '🕸️', label: 'Graph Relationships' },
-    { icon: '🤖', label: 'Multi-Agent Workflows' },
+  // Value proposition bullets from design spec
+  readonly bullets = [
+    'Reduce vector database operations from 50+ lines to 5 with TypeORM-style repositories',
+    'Build multi-agent workflows with decorators, not imperative graph construction',
+    'Get enterprise features (multi-tenancy, monitoring, approvals) without months of infrastructure work',
   ];
 }
