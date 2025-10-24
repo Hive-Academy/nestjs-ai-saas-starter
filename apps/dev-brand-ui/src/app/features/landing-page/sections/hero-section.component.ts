@@ -10,7 +10,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
   imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
     <div
-      class="relative w-full h-screen overflow-hidden bg-white"
+      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-sky-300 via-white to-sky-600"
       style="perspective: 1000px;"
     >
       <!-- 3D Background Scene (spheres + cubes) -->
@@ -30,19 +30,19 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         }"
       >
         <div
-          class="max-w-3xl mx-auto px-8 text-center space-y-6 pointer-events-auto transform-gpu"
+          class="max-w-5xl mx-auto px-6 md:px-8 text-center space-y-4 md:space-y-6 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title - Scroll up and fade out as user scrolls -->
+          <!-- Hero Title - Properly scaled with visual hierarchy -->
           <h1
-            class="text-5xl md:text-7xl font-bold leading-tight animate-fade-in-up text-gray-900"
+            class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight animate-fade-in-up text-gray-900"
           >
             Build Production-Grade AI Applications<br />
             with TypeScript Patterns You Already Know
           </h1>
 
-          <!-- Hero Description - Parallax scroll effect -->
+          <!-- Hero Description - Smaller, more readable -->
           <p
-            class="text-base md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto animate-fade-in-up animation-delay-200"
+            class="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto animate-fade-in-up animation-delay-200"
           >
             NestJS AI SaaS Starter:
             <strong class="text-gray-900">90% less code</strong>, enterprise
@@ -50,14 +50,14 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             knowledge graphs, and multi-agent workflows
           </p>
 
-          <!-- Value Proposition Bullets -->
+          <!-- Value Proposition Bullets - Compact and readable -->
           <ul
-            class="space-y-4 text-base md:text-lg text-gray-900 max-w-2xl mx-auto animate-fade-in-up animation-delay-400"
+            class="space-y-2 md:space-y-3 text-xs sm:text-sm md:text-base text-gray-900 max-w-2xl mx-auto animate-fade-in-up animation-delay-400"
           >
             @for (bullet of bullets; track bullet) {
-            <li class="flex items-start gap-3">
+            <li class="flex items-start gap-2 md:gap-3">
               <svg
-                class="w-6 h-6 text-indigo-600 flex-shrink-0"
+                class="w-4 h-4 md:w-5 md:h-5 text-indigo-600 flex-shrink-0 mt-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -69,17 +69,17 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
                   d="M5 13l4 4L19 7"
                 />
               </svg>
-              <span>{{ bullet }}</span>
+              <span class="text-left">{{ bullet }}</span>
             </li>
             }
           </ul>
 
-          <!-- CTA Buttons - Slowest parallax for depth -->
+          <!-- CTA Buttons - Properly scaled and spaced -->
           <div
-            class="flex flex-col sm:flex-row justify-center gap-4 pt-6 animate-fade-in-up animation-delay-600"
+            class="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 pt-4 md:pt-6 animate-fade-in-up animation-delay-600"
           >
             <button
-              class="px-8 py-4 bg-indigo-600 text-white text-base font-semibold
+              class="px-6 py-3 md:px-8 md:py-4 bg-indigo-600 text-white text-sm md:text-base font-semibold
                            rounded-lg shadow-lg hover:bg-indigo-700
                            hover:shadow-xl hover:scale-105 transition-all duration-300
                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
@@ -88,7 +88,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               See Complete Workflow Examples
             </button>
             <button
-              class="px-8 py-4 bg-white text-indigo-600 text-base font-semibold
+              class="px-6 py-3 md:px-8 md:py-4 bg-white text-indigo-600 text-sm md:text-base font-semibold
                            rounded-lg border-2 border-indigo-600
                            hover:bg-indigo-600 hover:text-white transition-all duration-300
                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
