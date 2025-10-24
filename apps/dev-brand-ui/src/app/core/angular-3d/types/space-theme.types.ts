@@ -58,6 +58,32 @@ export interface SpaceTheme {
       position: [number, number, number];
     }>;
   };
+
+  /**
+   * Atmospheric fog effect (optional)
+   *
+   * Adds depth and atmosphere to the 3D scene through exponential fog.
+   *
+   * @example
+   * ```typescript
+   * // Enable fog with white glow
+   * fog: {
+   *   enabled: true,
+   *   color: 0xcccccc,  // White glow
+   *   density: 0.008     // Subtle fog (recommended: 0.005-0.015)
+   * }
+   *
+   * // Disable fog for clear space
+   * fog: {
+   *   enabled: false
+   * }
+   * ```
+   */
+  fog?: {
+    enabled: boolean;
+    color: number; // Hex color (0xcccccc for white glow)
+    density: number; // 0.005-0.015 range (0.008 recommended)
+  };
 }
 
 /**
