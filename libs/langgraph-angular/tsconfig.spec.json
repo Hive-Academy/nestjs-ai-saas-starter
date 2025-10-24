@@ -5,7 +5,10 @@
     "module": "commonjs",
     "target": "es2016",
     "types": ["jest", "node"],
-    "moduleResolution": "node10"
+    "moduleResolution": "node10",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
   },
   "files": ["src/test-setup.ts"],
   "include": ["jest.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"]
