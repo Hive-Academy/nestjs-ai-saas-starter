@@ -32,12 +32,21 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         <div
           class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title - Scaled down, better visual weight -->
+          <!-- Hero Title - Glowing badge + 3D extruded text -->
           <h1
-            class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight animate-fade-in-up text-gray-900"
+            class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight animate-fade-in-up space-y-3"
           >
-            Build Production-Grade AI Applications<br />
-            with TypeScript Patterns You Already Know
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10
+                     border-2 border-indigo-400/50 rounded-full text-gray-900
+                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
+            >
+              Build Production-Grade AI Applications with
+            </span>
+            <br />
+            <span class="text-3d-extruded text-indigo-600">
+              TypeScript Patterns You Already Know
+            </span>
           </h1>
 
           <!-- Hero Description - Compact, highlight key metric -->
@@ -50,29 +59,42 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             knowledge graphs, and multi-agent workflows
           </p>
 
-          <!-- Value Proposition Bullets - Smaller, tighter spacing -->
-          <ul
-            class="space-y-1.5 md:space-y-2 text-[10px] sm:text-xs md:text-sm text-gray-800 max-w-2xl mx-auto animate-fade-in-up animation-delay-400"
+          <!-- Value Proposition Bullets - Styled cards with gradient borders -->
+          <div
+            class="space-y-2 md:space-y-3 max-w-3xl mx-auto animate-fade-in-up animation-delay-400"
           >
-            @for (bullet of bullets; track bullet) {
-            <li class="flex items-start gap-1.5 md:gap-2">
-              <svg
-                class="w-3.5 h-3.5 md:w-4 md:h-4 text-indigo-600 flex-shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2.5"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span class="text-left">{{ bullet }}</span>
-            </li>
+            @for (bullet of bullets; track bullet; let i = $index) {
+            <div
+              class="relative group px-4 py-3 bg-white/80 backdrop-blur-sm
+                     border-2 border-transparent bg-clip-padding
+                     rounded-xl shadow-md hover:shadow-xl
+                     transition-all duration-300 hover:scale-[1.02]
+                     before:absolute before:inset-0 before:-z-10 before:rounded-xl
+                     before:bg-gradient-to-r before:from-indigo-500 before:via-purple-500 before:to-pink-500
+                     before:p-[2px] before:content-['']"
+              [style.animation-delay]="i * 100 + 'ms'"
+            >
+              <div class="flex items-start gap-3">
+                <svg
+                  class="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span class="text-xs md:text-sm text-gray-800 text-left font-medium">
+                  {{ bullet }}
+                </span>
+              </div>
+            </div>
             }
-          </ul>
+          </div>
 
           <!-- CTA Buttons - Compact, balanced sizing -->
           <div
@@ -114,6 +136,17 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         }
       }
 
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(99, 102, 241, 0.6),
+            0 0 40px rgba(99, 102, 241, 0.3);
+        }
+      }
+
       .animate-fade-in-up {
         animation: fade-in-up 0.8s ease-out forwards;
         opacity: 0;
@@ -129,6 +162,20 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
 
       .animation-delay-600 {
         animation-delay: 0.6s;
+      }
+
+      .animate-pulse-glow {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+
+      .text-3d-extruded {
+        text-shadow: 1px 1px 0px rgba(99, 102, 241, 0.8),
+          2px 2px 0px rgba(99, 102, 241, 0.7),
+          3px 3px 0px rgba(99, 102, 241, 0.6),
+          4px 4px 0px rgba(99, 102, 241, 0.5),
+          5px 5px 0px rgba(99, 102, 241, 0.4),
+          6px 6px 10px rgba(0, 0, 0, 0.2);
+        transform: translateZ(0);
       }
     `,
   ],
