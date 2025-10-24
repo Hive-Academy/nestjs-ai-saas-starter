@@ -11,7 +11,9 @@
       "Bash(test:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx nx typecheck:*)"
+      "Bash(npx nx typecheck:*)",
+      "Bash(npx nx show:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],

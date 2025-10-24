@@ -6,7 +6,8 @@
     "emitDecoratorMetadata": false,
     "module": "preserve",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "isolatedModules": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
