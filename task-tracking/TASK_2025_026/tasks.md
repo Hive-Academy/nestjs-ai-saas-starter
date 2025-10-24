@@ -89,17 +89,15 @@ A previous frontend-developer invocation FAILED with complete fabrication of wor
 
 ---
 
-### Task 3: Create Hero Scene Graph Component ✅ COMPLETE
+### Task 3: Reorganize Hero Scene Graph Component ✅ COMPLETE
 
 **Assigned To**: frontend-developer
 **File(s)**: apps/dev-brand-ui/src/app/features/landing-page/sections/scene-graphs/hero-scene-graph.component.ts
-**Specification Reference**:
+**Action Taken**: Moved existing enhanced hero scene graph to scene-graphs folder
+**Git Commit SHA**: 26b2def
+**Expected Commit Pattern**: `refactor(angular-3d): reorganize hero scene graph to scene-graphs folder`
 
-- design-handoff.md:286-396 (Hero 3D scene configuration)
-- implementation-plan.md:587-591 (Hero scene graph specification)
-  **Expected Commit Pattern**: `feat(angular-3d): add hero scene graph with particles and spheres`
-  **Git Commit SHA**: 50f858b
-  **Status**: ✅ COMPLETE
+**Note**: Initial task created poor duplicate. User intervention corrected to preserve existing enhanced implementation (388 lines with rich features) and reorganize to scene-graphs folder structure.
 
 **Verification Results**:
 
