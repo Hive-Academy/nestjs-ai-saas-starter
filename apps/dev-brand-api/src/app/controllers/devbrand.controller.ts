@@ -195,6 +195,7 @@ export class DevBrandController {
         input: {
           userId,
           githubUsername: dto.githubUsername,
+          executionId,
         },
         executionId,
       });

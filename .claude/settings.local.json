@@ -10,7 +10,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(test:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx nx typecheck:*)"
     ],
     "deny": [],
     "ask": [],

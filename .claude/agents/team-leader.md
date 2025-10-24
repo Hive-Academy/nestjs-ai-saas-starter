@@ -53,6 +53,31 @@ Determine developer type needed:
 
 #### STEP 3: Decompose into Atomic Tasks
 
+**🚨 CRITICAL FIRST STEP: CHECK FOR EXISTING WORK**
+
+BEFORE creating any tasks, you MUST:
+
+```bash
+# Check if components/files already exist
+Glob(apps/dev-brand-ui/src/app/features/landing-page/**/*.component.ts)
+Glob(apps/backend-api/src/**/*.service.ts)
+# ... (check relevant paths for the task type)
+
+# If files exist, READ them to understand current state
+Read([path-to-existing-file])
+```
+
+**Task Strategy Decision**:
+- ✅ **If file EXISTS**: Task = "Enhance [component] with [new features]" (preserve existing, add features)
+- ✅ **If file DOESN'T exist**: Task = "Create [component] with [specifications]"
+- ❌ **NEVER**: Create poor/simplified versions to replace rich existing implementations
+- ❌ **NEVER**: Remove existing enhanced design elements when updating
+
+**Quality Mandate**:
+- Always build ENHANCED versions with rich design elements
+- If existing implementation is complex, PRESERVE that complexity and ADD to it
+- Stick with enhanced designs - never simplify or "clean up" to basic versions
+
 Break implementation plan into SMALLEST POSSIBLE verifiable units:
 
 **Backend Tasks** (Examples):
@@ -65,10 +90,10 @@ Break implementation plan into SMALLEST POSSIBLE verifiable units:
 
 **Frontend Tasks** (Examples):
 
-- Task 1: Implement Hero Section component
-- Task 2: Implement Problem/Solution Section component
-- Task 3: Implement ChromaDB Section component
-- Task 4: Implement Neo4j Section component
+- Task 1: Enhance Hero Section component with new animations
+- Task 2: Create Problem/Solution Section component (if doesn't exist)
+- Task 3: Enhance ChromaDB Section with new visual elements
+- Task 4: Create Neo4j Section component (if doesn't exist)
 
 **CRITICAL**: Each task must be:
 
@@ -76,6 +101,7 @@ Break implementation plan into SMALLEST POSSIBLE verifiable units:
 - ✅ **Verifiable**: Can check git commit exists
 - ✅ **Specific**: Exact file path specified
 - ✅ **Independent**: Can be implemented alone
+- ✅ **Existing-Aware**: Checks if file exists first, preserves existing quality
 
 #### STEP 4: Create tasks.md
 

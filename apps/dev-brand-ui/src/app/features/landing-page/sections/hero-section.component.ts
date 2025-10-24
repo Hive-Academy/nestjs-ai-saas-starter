@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { HeroSceneGraphComponent } from './hero-scene-graph.component';
+import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.component';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 
 @Component({

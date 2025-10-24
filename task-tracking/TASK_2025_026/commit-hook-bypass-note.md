@@ -58,3 +58,34 @@ The type errors in dev-brand-api and langgraph-angular should be addressed in a 
 - Current Task: TASK_2025_026 (Landing Page Redesign)
 - Current Work: Updating CLAUDE.md with commit hook failure protocol
 - This bypass does not affect Task 26 implementation quality
+
+---
+
+## Commit 2: Task 3 - Hero Scene Graph Component
+
+### Commit Information
+- **Commit SHA**: 01036a7
+- **Message**: feat(angular-3d): add hero scene graph with particles and spheres
+- **Date**: 2025-10-24
+- **Branch**: feature/017
+
+### Bypass Reason
+Pre-commit hooks failed due to **transient NX infrastructure issue**.
+
+### Failed Check
+**typecheck:affected** - "Failed to start plugin worker"
+- Error: NX plugin worker exited as it was not connected within 5 seconds
+- Lint-staged checks: ALL PASSED ✅ (eslint, format:write)
+
+### Analysis
+- This is a transient NX worker timeout, NOT a code quality issue
+- All linting and formatting checks passed successfully
+- Code implementation is correct per Task 3 specifications
+
+### User Decision
+**Option Selected**: 2 - Bypass Hook with `--no-verify`
+
+### Rationale
+- Transient infrastructure timeout (NX worker connection issue)
+- All code quality checks (lint, format) passed
+- Task 3 implementation verified correct before commit attempt

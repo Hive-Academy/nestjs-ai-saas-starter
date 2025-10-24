@@ -2,11 +2,21 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 /**
+ * Execution status types
+ */
+export type ExecutionStatusType =
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+/**
  * Workflow execution information returned to consumers
+ * Status is always 'started' when returned from startWorkflowWithStreaming
  */
 export interface WorkflowExecutionInfo {
   executionId: string;
-  status: 'started' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: 'started';
   websocketUrl: string;
   subscriptionInfo: {
     event: string;
@@ -21,19 +31,26 @@ export interface WorkflowExecutionInfo {
 export interface ExecutionStatus {
   executionId: string;
   active: boolean;
+  status: ExecutionStatusType;
   connectedClients: number;
   startTime?: Date;
   lastActivity?: Date;
 }
 
 /**
+ * Workflow interface with streaming capability
+ * Supports AsyncGenerator, AsyncIterableIterator, and AsyncIterable
+ */
+export interface StreamableWorkflow<TInput = any, TOutput = any> {
+  executeWithStreaming(input: TInput): AsyncIterable<TOutput>;
+}
+
+/**
  * Options for starting a workflow with streaming
  */
-export interface StartWorkflowOptions<T> {
-  workflow: {
-    executeWithStreaming: (input: any) => AsyncGenerator<any>;
-  };
-  input: T;
+export interface StartWorkflowOptions<TInput, TOutput = any> {
+  workflow: StreamableWorkflow<TInput, TOutput>;
+  input: TInput;
   executionId: string;
 }
 
@@ -84,7 +101,7 @@ export class WorkflowStreamingOrchestrator {
     {
       startTime: Date;
       lastActivity: Date;
-      status: 'running' | 'completed' | 'failed' | 'cancelled';
+      status: ExecutionStatusType;
     }
   >();
 
@@ -99,11 +116,13 @@ export class WorkflowStreamingOrchestrator {
    * 3. Events are auto-broadcast via EventEmitter2 to WebSocket clients
    * 4. Returns immediately with executionId and WebSocket connection info
    *
+   * @template TInput - Type of the workflow input
+   * @template TOutput - Type of the workflow output events
    * @param options - Workflow, input data, and executionId
    * @returns WorkflowExecutionInfo with connection details
    */
-  async startWorkflowWithStreaming<T>(
-    options: StartWorkflowOptions<T>
+  async startWorkflowWithStreaming<TInput, TOutput = any>(
+    options: StartWorkflowOptions<TInput, TOutput>
   ): Promise<WorkflowExecutionInfo> {
     const { workflow, input, executionId } = options;
 
@@ -149,6 +168,7 @@ export class WorkflowStreamingOrchestrator {
     return {
       executionId,
       active: execution.status === 'running',
+      status: execution.status,
       connectedClients: 0, // Will be populated by WebSocketBridge
       startTime: execution.startTime,
       lastActivity: execution.lastActivity,
@@ -246,13 +266,15 @@ export class WorkflowStreamingOrchestrator {
    * 3. WebSocketBridgeService listens via @OnEvent decorators
    * 4. StreamingWebSocketService broadcasts to connected clients
    *
+   * @template TInput - Type of the workflow input
+   * @template TOutput - Type of the workflow output events
    * @param workflow - Workflow instance with executeWithStreaming method
    * @param input - Input data for workflow
    * @param executionId - Unique execution ID
    */
-  private async consumeWorkflowStream(
-    workflow: any,
-    input: any,
+  private async consumeWorkflowStream<TInput, TOutput>(
+    workflow: StreamableWorkflow<TInput, TOutput>,
+    input: TInput,
     executionId: string
   ): Promise<void> {
     const execution = this.activeExecutions.get(executionId);
@@ -284,7 +306,7 @@ export class WorkflowStreamingOrchestrator {
         // No manual event emission needed here!
 
         this.logger.debug(
-          `Event processed for ${executionId}: ${event?.type || 'unknown'}`
+          `Event processed for ${executionId}: ${(event as any)?.type || 'unknown'}`
         );
       }
 

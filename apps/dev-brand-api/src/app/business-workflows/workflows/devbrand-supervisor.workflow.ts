@@ -5,10 +5,20 @@ import {
   MultiAgentWorkflowBase,
   SupervisorConfig,
 } from '@hive-academy/langgraph-multi-agent';
+import type { StreamableWorkflow } from '@hive-academy/langgraph-streaming';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
+
+/**
+ * DevBrand workflow input type
+ */
+export interface DevBrandWorkflowInput {
+  userId: string;
+  githubUsername: string;
+  executionId?: string;
+}
 
 /**
  * ✨ DevBrand Supervisor Workflow - Clean Multi-Agent Implementation
@@ -108,7 +118,10 @@ Each agent builds on the work of the previous agent.`,
   debug: false,
 })
 @Injectable()
-export class DevBrandSupervisorWorkflow extends MultiAgentWorkflowBase {
+export class DevBrandSupervisorWorkflow
+  extends MultiAgentWorkflowBase
+  implements StreamableWorkflow<DevBrandWorkflowInput, any>
+{
   constructor(private readonly brandMemory: PersonalBrandMemoryService) {
     super();
   }
@@ -217,12 +230,9 @@ Please coordinate the three agents to complete this workflow.`;
    * Execute with streaming support
    *
    * Returns an async iterator for real-time streaming of agent events
+   * Implements StreamableWorkflow interface
    */
-  async *executeWithStreaming(input: {
-    userId: string;
-    githubUsername: string;
-    executionId?: string;
-  }): AsyncIterableIterator<any> {
+  async *executeWithStreaming(input: DevBrandWorkflowInput): AsyncIterable<any> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
 
     const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
