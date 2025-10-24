@@ -13,13 +13,13 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { extend } from 'angular-three';
 import { AmbientLight, DirectionalLight, PointLight } from 'three';
-import { PolyhedronComponent } from '../../../core/angular-3d/components/primitives/polyhedron.component';
-import { CylinderComponent } from '../../../core/angular-3d/components/primitives/cylinder.component';
-import { TorusComponent } from '../../../core/angular-3d/components/primitives/torus.component';
-import { BoxComponent } from '../../../core/angular-3d/components/primitives/box.component';
-import { Text3DComponent } from '../../../core/angular-3d/components/primitives/text-3d.component';
-import { BackgroundCubesComponent } from '../../../core/angular-3d/components/primitives/background-cubes.component';
-import { ParticleSystemComponent } from '../../../core/angular-3d/components/primitives/particle-system.component';
+import { PolyhedronComponent } from '../../../../core/angular-3d/components/primitives/polyhedron.component';
+import { CylinderComponent } from '../../../../core/angular-3d/components/primitives/cylinder.component';
+import { TorusComponent } from '../../../../core/angular-3d/components/primitives/torus.component';
+import { BoxComponent } from '../../../../core/angular-3d/components/primitives/box.component';
+import { Text3DComponent } from '../../../../core/angular-3d/components/primitives/text-3d.component';
+import { BackgroundCubesComponent } from '../../../../core/angular-3d/components/primitives/background-cubes.component';
+import { ParticleSystemComponent } from '../../../../core/angular-3d/components/primitives/particle-system.component';
 
 // Register Three.js lights as Angular Three components
 // TODO: create shared abstractions for these lights to be applied across scenes

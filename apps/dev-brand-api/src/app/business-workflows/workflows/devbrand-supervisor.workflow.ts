@@ -232,7 +232,9 @@ Please coordinate the three agents to complete this workflow.`;
    * Returns an async iterator for real-time streaming of agent events
    * Implements StreamableWorkflow interface
    */
-  async *executeWithStreaming(input: DevBrandWorkflowInput): AsyncIterable<any> {
+  async *executeWithStreaming(
+    input: DevBrandWorkflowInput
+  ): AsyncGenerator<any, void, unknown> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
 
     const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
