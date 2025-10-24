@@ -7,6 +7,7 @@ Rewrite the entire @angular-langgraph.md documentation to be fully generic (Copi
 ## Conversation Summary
 
 **User's Request**:
+
 - Rewrite angular-langgraph.md (1523 lines) to be 100% generic
 - Remove ALL DevBrand-specific code and implementations
 - Target ALL features from original plan without bypassing any details
@@ -14,6 +15,7 @@ Rewrite the entire @angular-langgraph.md documentation to be fully generic (Copi
 - Skip git operations initially (user handles git when ready)
 
 **Critical Requirements**:
+
 1. Target ALL features from the original plan without bypassing any details
 2. Make everything 100% generic - NO specific use-case implementations
 3. Support all features we offer through generic infrastructure
@@ -23,10 +25,12 @@ Rewrite the entire @angular-langgraph.md documentation to be fully generic (Copi
 7. Create separate examples package for domain-specific implementations
 
 **Reference Documents**:
+
 - Original document: angular-langgraph.md (1523 lines)
 - Reference corrections: ANGULAR-LANGGRAPH-CORRECTIONS.md
 
 **Scope Clarification Needed**:
+
 - Consider splitting into multiple tasks vs single comprehensive task
 - Analyze best approach for handling 1523 lines of documentation rewrite
 

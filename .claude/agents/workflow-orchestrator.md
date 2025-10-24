@@ -282,12 +282,14 @@ When team-leader analyzes each task, it considers:
 **INVOKE team-leader after software-architect completes**:
 
 **MODE 1: DECOMPOSITION** (First Invocation)
+
 - Team-leader reads implementation-plan.md (and design specs if UI/UX work)
 - Creates tasks.md with atomic task breakdown
 - Assigns first task to appropriate developer
 - Returns with: "Task 1 assigned to [developer-type]"
 
 **MODE 2: ITERATIVE ASSIGNMENT+VERIFICATION** (After Each Developer Return)
+
 - **First iteration (after MODE 1)**: ASSIGNMENT only - assigns Task 1
 - **Subsequent iterations**: VERIFICATION+ASSIGNMENT cycle
   1. Verifies completed task (git commit, file exists, tasks.md updated)
@@ -297,6 +299,7 @@ When team-leader analyzes each task, it considers:
 - Returns with: "Task N verification: PASSED/FAILED, Task N+1 assigned" OR "All tasks complete, ready for MODE 3"
 
 **MODE 3: COMPLETION** (When All Tasks Complete)
+
 - Team-leader performs final verification
 - All tasks show ✅ COMPLETE status
 - All git commits verified
@@ -547,18 +550,18 @@ Read(task-tracking/registry.md)
 
 **Phase Detection Logic** - Check which documents exist:
 
-| Document Exists                   | Phase Completed                 | Next Action                                                                      |
-| --------------------------------- | ------------------------------- | -------------------------------------------------------------------------------- |
-| ❌ context.md missing             | Task doesn't exist              | ERROR: Invalid TASK_ID                                                           |
-| ✅ context.md only                | Initialized                     | Invoke project-manager                                                           |
-| ✅ task-description.md            | PM complete                     | Ask user to validate (if not done) OR invoke researcher/ui-ux-designer/architect |
-| ✅ visual-design-specification.md | UI/UX Designer complete         | Invoke software-architect (references design specs)                              |
-| ✅ implementation-plan.md         | Architect complete              | Ask user to validate (if not done) OR invoke team-leader (MODE 1)                |
-| ✅ tasks.md (no IN PROGRESS)      | All tasks complete              | Ask user for QA choice                                                           |
-| ✅ tasks.md (has IN PROGRESS)     | Development in progress         | Invoke team-leader (MODE 2 - continue iterative assignment)                      |
-| ✅ test-report.md                 | Tester complete                 | Continue based on user's QA choice                                               |
-| ✅ code-review.md                 | Reviewer complete               | Provide COMPLETE guidance                                                        |
-| ✅ future-enhancements.md         | All done                        | Workflow already complete                                                        |
+| Document Exists                   | Phase Completed         | Next Action                                                                      |
+| --------------------------------- | ----------------------- | -------------------------------------------------------------------------------- |
+| ❌ context.md missing             | Task doesn't exist      | ERROR: Invalid TASK_ID                                                           |
+| ✅ context.md only                | Initialized             | Invoke project-manager                                                           |
+| ✅ task-description.md            | PM complete             | Ask user to validate (if not done) OR invoke researcher/ui-ux-designer/architect |
+| ✅ visual-design-specification.md | UI/UX Designer complete | Invoke software-architect (references design specs)                              |
+| ✅ implementation-plan.md         | Architect complete      | Ask user to validate (if not done) OR invoke team-leader (MODE 1)                |
+| ✅ tasks.md (no IN PROGRESS)      | All tasks complete      | Ask user for QA choice                                                           |
+| ✅ tasks.md (has IN PROGRESS)     | Development in progress | Invoke team-leader (MODE 2 - continue iterative assignment)                      |
+| ✅ test-report.md                 | Tester complete         | Continue based on user's QA choice                                               |
+| ✅ code-review.md                 | Reviewer complete       | Provide COMPLETE guidance                                                        |
+| ✅ future-enhancements.md         | All done                | Workflow already complete                                                        |
 
 #### C. Read Existing Context
 
@@ -612,6 +615,7 @@ Read(task-tracking/$TASK_ID/tasks.md)
 ## Team-Leader Mode Detection
 
 [If tasks.md exists, show detected mode]:
+
 - Current tasks.md status: [X ✅ COMPLETE, Y 🔄 IN PROGRESS, Z ⏸️ PENDING]
 - Detected team-leader mode: [MODE 1 | MODE 2 ASSIGNMENT | MODE 2 VERIFICATION | MODE 3]
 

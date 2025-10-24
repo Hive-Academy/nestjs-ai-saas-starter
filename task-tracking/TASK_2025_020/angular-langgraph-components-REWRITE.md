@@ -49,7 +49,7 @@ The WorkflowVisualizer component displays real-time workflow execution progress 
 
 ### Component Signature
 
-```typescript
+````typescript
 import {
   Component,
   OnInit,
@@ -120,38 +120,38 @@ import type {
       <div class="visualizer-header">
         <ng-content select="[lgVisualizerHeader]"></ng-content>
         @if (!hasHeaderContent) {
-          <div class="default-header">
-            <h2 class="workflow-name">{{ workflowName() }}</h2>
-            <span class="workflow-status" [class]="'status-' + workflowStatus()">
-              {{ workflowStatus() }}
-            </span>
-          </div>
+        <div class="default-header">
+          <h2 class="workflow-name">{{ workflowName() }}</h2>
+          <span class="workflow-status" [class]="'status-' + workflowStatus()">
+            {{ workflowStatus() }}
+          </span>
+        </div>
         }
       </div>
 
       <!-- Agent Display -->
       <div class="agents-container">
         @for (agent of agents(); track agent.id ?? $index) {
-          <div
-            class="agent-wrapper"
-            [attr.data-agent-id]="agent.id"
-            [class.active]="currentAgentId() === agent.id"
-          >
-            <!-- Custom Agent Template or Default -->
-            <ng-container
-              *ngTemplateOutlet="
-                agentDisplayTemplate || defaultAgentTemplate;
-                context: {
-                  $implicit: agent,
-                  index: $index,
-                  isActive: currentAgentId() === agent.id,
-                  isPending: agent.status === 'pending',
-                  isComplete: agent.status === 'completed',
-                  status: agent.status
-                }
-              "
-            ></ng-container>
-          </div>
+        <div
+          class="agent-wrapper"
+          [attr.data-agent-id]="agent.id"
+          [class.active]="currentAgentId() === agent.id"
+        >
+          <!-- Custom Agent Template or Default -->
+          <ng-container
+            *ngTemplateOutlet="
+              agentDisplayTemplate || defaultAgentTemplate;
+              context: {
+                $implicit: agent,
+                index: $index,
+                isActive: currentAgentId() === agent.id,
+                isPending: agent.status === 'pending',
+                isComplete: agent.status === 'completed',
+                status: agent.status
+              }
+            "
+          ></ng-container>
+        </div>
         }
       </div>
 
@@ -159,32 +159,26 @@ import type {
       <div class="status-container">
         <ng-content select="[lgStatusIndicator]"></ng-content>
         @if (!hasStatusContent) {
-          <div class="default-status">
-            <div class="status-badge" [class]="'badge-' + workflowStatus()">
-              @switch (workflowStatus()) {
-                @case ('running') {
-                  <span class="status-icon">⏳</span>
-                  <span>Running</span>
-                }
-                @case ('completed') {
-                  <span class="status-icon">✅</span>
-                  <span>Completed</span>
-                }
-                @case ('failed') {
-                  <span class="status-icon">❌</span>
-                  <span>Failed</span>
-                }
-                @case ('interrupted') {
-                  <span class="status-icon">⏸️</span>
-                  <span>Waiting for Approval</span>
-                }
-                @default {
-                  <span class="status-icon">⏹️</span>
-                  <span>Idle</span>
-                }
-              }
-            </div>
+        <div class="default-status">
+          <div class="status-badge" [class]="'badge-' + workflowStatus()">
+            @switch (workflowStatus()) { @case ('running') {
+            <span class="status-icon">⏳</span>
+            <span>Running</span>
+            } @case ('completed') {
+            <span class="status-icon">✅</span>
+            <span>Completed</span>
+            } @case ('failed') {
+            <span class="status-icon">❌</span>
+            <span>Failed</span>
+            } @case ('interrupted') {
+            <span class="status-icon">⏸️</span>
+            <span>Waiting for Approval</span>
+            } @default {
+            <span class="status-icon">⏹️</span>
+            <span>Idle</span>
+            } }
           </div>
+        </div>
         }
       </div>
 
@@ -203,20 +197,15 @@ import type {
     <ng-template #defaultAgentTemplate let-agent let-index="index" let-status="status">
       <div class="agent-card" [class]="'agent-status-' + status">
         <div class="agent-icon">
-          @switch (status) {
-            @case ('completed') {
-              <span class="icon-success">✅</span>
-            }
-            @case ('running') {
-              <span class="icon-running">⏳</span>
-            }
-            @case ('failed') {
-              <span class="icon-error">❌</span>
-            }
-            @default {
-              <span class="icon-pending">⏸️</span>
-            }
-          }
+          @switch (status) { @case ('completed') {
+          <span class="icon-success">✅</span>
+          } @case ('running') {
+          <span class="icon-running">⏳</span>
+          } @case ('failed') {
+          <span class="icon-error">❌</span>
+          } @default {
+          <span class="icon-pending">⏸️</span>
+          } }
         </div>
         <div class="agent-content">
           <div class="agent-name">{{ agent.name || agent.id }}</div>
@@ -225,173 +214,175 @@ import type {
       </div>
     </ng-template>
   `,
-  styles: [`
-    .lg-workflow-visualizer {
-      display: flex;
-      flex-direction: column;
-      gap: var(--lg-spacing-md, 16px);
-      padding: var(--lg-spacing-md, 16px);
-      background: var(--lg-surface-color, #ffffff);
-      border-radius: var(--lg-border-radius, 8px);
-      box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
-    }
+  styles: [
+    `
+      .lg-workflow-visualizer {
+        display: flex;
+        flex-direction: column;
+        gap: var(--lg-spacing-md, 16px);
+        padding: var(--lg-spacing-md, 16px);
+        background: var(--lg-surface-color, #ffffff);
+        border-radius: var(--lg-border-radius, 8px);
+        box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
+      }
 
-    .visualizer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: var(--lg-spacing-sm, 12px);
-      border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
-    }
+      .visualizer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: var(--lg-spacing-sm, 12px);
+        border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
+      }
 
-    .default-header {
-      display: flex;
-      align-items: center;
-      gap: var(--lg-spacing-md, 16px);
-      width: 100%;
-    }
+      .default-header {
+        display: flex;
+        align-items: center;
+        gap: var(--lg-spacing-md, 16px);
+        width: 100%;
+      }
 
-    .workflow-name {
-      margin: 0;
-      font-size: var(--lg-font-size-lg, 1.5rem);
-      font-weight: var(--lg-font-weight-bold, 600);
-      color: var(--lg-text-primary, #212121);
-    }
+      .workflow-name {
+        margin: 0;
+        font-size: var(--lg-font-size-lg, 1.5rem);
+        font-weight: var(--lg-font-weight-bold, 600);
+        color: var(--lg-text-primary, #212121);
+      }
 
-    .workflow-status {
-      padding: 4px 12px;
-      border-radius: var(--lg-border-radius-sm, 4px);
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      font-weight: var(--lg-font-weight-medium, 500);
-      text-transform: capitalize;
-    }
+      .workflow-status {
+        padding: 4px 12px;
+        border-radius: var(--lg-border-radius-sm, 4px);
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        font-weight: var(--lg-font-weight-medium, 500);
+        text-transform: capitalize;
+      }
 
-    .status-running {
-      background: var(--lg-status-running-bg, #fff3e0);
-      color: var(--lg-status-running-text, #e65100);
-    }
+      .status-running {
+        background: var(--lg-status-running-bg, #fff3e0);
+        color: var(--lg-status-running-text, #e65100);
+      }
 
-    .status-completed {
-      background: var(--lg-status-success-bg, #e8f5e9);
-      color: var(--lg-status-success-text, #2e7d32);
-    }
+      .status-completed {
+        background: var(--lg-status-success-bg, #e8f5e9);
+        color: var(--lg-status-success-text, #2e7d32);
+      }
 
-    .status-failed {
-      background: var(--lg-status-error-bg, #ffebee);
-      color: var(--lg-status-error-text, #c62828);
-    }
+      .status-failed {
+        background: var(--lg-status-error-bg, #ffebee);
+        color: var(--lg-status-error-text, #c62828);
+      }
 
-    .status-interrupted {
-      background: var(--lg-status-warning-bg, #fff9c4);
-      color: var(--lg-status-warning-text, #f57f17);
-    }
+      .status-interrupted {
+        background: var(--lg-status-warning-bg, #fff9c4);
+        color: var(--lg-status-warning-text, #f57f17);
+      }
 
-    .agents-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--lg-spacing-sm, 12px);
-      padding: var(--lg-spacing-md, 16px) 0;
-    }
+      .agents-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--lg-spacing-sm, 12px);
+        padding: var(--lg-spacing-md, 16px) 0;
+      }
 
-    .agent-wrapper {
-      transition: all 0.3s ease;
-    }
+      .agent-wrapper {
+        transition: all 0.3s ease;
+      }
 
-    .agent-wrapper.active {
-      transform: scale(1.05);
-    }
+      .agent-wrapper.active {
+        transform: scale(1.05);
+      }
 
-    .agent-card {
-      display: flex;
-      align-items: center;
-      gap: var(--lg-spacing-sm, 12px);
-      padding: var(--lg-spacing-md, 16px);
-      background: var(--lg-surface-color, #ffffff);
-      border: 1px solid var(--lg-border-color, #e0e0e0);
-      border-radius: var(--lg-border-radius, 8px);
-      transition: all 0.3s ease;
-    }
+      .agent-card {
+        display: flex;
+        align-items: center;
+        gap: var(--lg-spacing-sm, 12px);
+        padding: var(--lg-spacing-md, 16px);
+        background: var(--lg-surface-color, #ffffff);
+        border: 1px solid var(--lg-border-color, #e0e0e0);
+        border-radius: var(--lg-border-radius, 8px);
+        transition: all 0.3s ease;
+      }
 
-    .agent-card:hover {
-      box-shadow: var(--lg-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-    }
+      .agent-card:hover {
+        box-shadow: var(--lg-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+      }
 
-    .agent-status-running {
-      border-color: var(--lg-accent-color, #1976d2);
-      box-shadow: 0 0 0 2px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.2));
-    }
+      .agent-status-running {
+        border-color: var(--lg-accent-color, #1976d2);
+        box-shadow: 0 0 0 2px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.2));
+      }
 
-    .agent-status-completed {
-      border-color: var(--lg-success-color, #388e3c);
-      opacity: 0.8;
-    }
+      .agent-status-completed {
+        border-color: var(--lg-success-color, #388e3c);
+        opacity: 0.8;
+      }
 
-    .agent-status-failed {
-      border-color: var(--lg-error-color, #d32f2f);
-      background: var(--lg-error-bg, #ffebee);
-    }
+      .agent-status-failed {
+        border-color: var(--lg-error-color, #d32f2f);
+        background: var(--lg-error-bg, #ffebee);
+      }
 
-    .agent-icon {
-      font-size: 1.5rem;
-      line-height: 1;
-    }
+      .agent-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+      }
 
-    .agent-content {
-      flex: 1;
-      min-width: 0;
-    }
+      .agent-content {
+        flex: 1;
+        min-width: 0;
+      }
 
-    .agent-name {
-      font-weight: var(--lg-font-weight-medium, 500);
-      color: var(--lg-text-primary, #212121);
-      margin-bottom: 4px;
-    }
+      .agent-name {
+        font-weight: var(--lg-font-weight-medium, 500);
+        color: var(--lg-text-primary, #212121);
+        margin-bottom: 4px;
+      }
 
-    .agent-status-text {
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-text-secondary, #757575);
-      text-transform: capitalize;
-    }
+      .agent-status-text {
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-text-secondary, #757575);
+        text-transform: capitalize;
+      }
 
-    .status-container {
-      display: flex;
-      justify-content: center;
-      padding: var(--lg-spacing-sm, 12px) 0;
-    }
+      .status-container {
+        display: flex;
+        justify-content: center;
+        padding: var(--lg-spacing-sm, 12px) 0;
+      }
 
-    .default-status {
-      width: 100%;
-    }
+      .default-status {
+        width: 100%;
+      }
 
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: var(--lg-border-radius, 8px);
-      font-weight: var(--lg-font-weight-medium, 500);
-    }
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: var(--lg-border-radius, 8px);
+        font-weight: var(--lg-font-weight-medium, 500);
+      }
 
-    .badge-running {
-      background: var(--lg-status-running-bg, #fff3e0);
-      color: var(--lg-status-running-text, #e65100);
-    }
+      .badge-running {
+        background: var(--lg-status-running-bg, #fff3e0);
+        color: var(--lg-status-running-text, #e65100);
+      }
 
-    .badge-completed {
-      background: var(--lg-status-success-bg, #e8f5e9);
-      color: var(--lg-status-success-text, #2e7d32);
-    }
+      .badge-completed {
+        background: var(--lg-status-success-bg, #e8f5e9);
+        color: var(--lg-status-success-text, #2e7d32);
+      }
 
-    .badge-failed {
-      background: var(--lg-status-error-bg, #ffebee);
-      color: var(--lg-status-error-text, #c62828);
-    }
+      .badge-failed {
+        background: var(--lg-status-error-bg, #ffebee);
+        color: var(--lg-status-error-text, #c62828);
+      }
 
-    .timeline-container,
-    .visualizer-footer {
-      margin-top: var(--lg-spacing-sm, 12px);
-    }
-  `]
+      .timeline-container,
+      .visualizer-footer {
+        margin-top: var(--lg-spacing-sm, 12px);
+      }
+    `,
+  ],
 })
 export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements OnInit {
   // Inputs
@@ -459,7 +450,7 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
             event.type === 'run_started' && event.executionId === executionId
         )
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         this.workflowStatus.set('running');
         this.workflowStarted.emit(event.executionId);
       });
@@ -472,7 +463,7 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
             event.type === 'agent_transition' && event.executionId === executionId
         )
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         this.currentAgentId.set(event.toAgent);
         this.updateAgentStatus(event.toAgent, 'running');
         this.updateAgentStatus(event.fromAgent, 'completed');
@@ -487,7 +478,7 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
             event.type === 'state_snapshot' && event.executionId === executionId
         )
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         if (event.agentId) {
           this.currentAgentId.set(event.agentId);
           this.updateAgentStatus(event.agentId, 'running');
@@ -502,7 +493,7 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
             event.type === 'run_finished' && event.executionId === executionId
         )
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         this.workflowStatus.set('completed');
         this.currentAgentId.set(null);
         this.workflowCompleted.emit(event.executionId);
@@ -516,7 +507,7 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
             event.type === 'error' && event.executionId === executionId
         )
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         this.workflowStatus.set('failed');
         this.workflowFailed.emit({
           executionId: event.executionId,
@@ -526,16 +517,14 @@ export class WorkflowVisualizerComponent<TAgent = any, TState = any> implements 
   }
 
   private updateAgentStatus(agentId: string, status: string): void {
-    this.agents.update(agents =>
-      agents.map((agent: any) =>
-        agent.id === agentId ? { ...agent, status } : agent
-      )
+    this.agents.update((agents) =>
+      agents.map((agent: any) => (agent.id === agentId ? { ...agent, status } : agent))
     );
   }
 }
 
 export type WorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'interrupted';
-```
+````
 
 ### Content Projection Slots
 
@@ -664,7 +653,7 @@ import { WorkflowVisualizerComponent } from '@hive-academy/langgraph-angular';
       [executionId]="currentExecution()"
       (workflowCompleted)="onWorkflowComplete($event)"
     />
-  `
+  `,
 })
 export class WorkflowMonitorComponent {
   currentExecution = signal('exec-123');
@@ -728,85 +717,86 @@ interface CustomAgent {
 
       <!-- Custom Footer -->
       <div lgVisualizerFooter class="workflow-controls">
-        <button (click)="pauseWorkflow()" [disabled]="!workflowRunning()">
-          Pause
-        </button>
-        <button (click)="cancelWorkflow()" [disabled]="!workflowRunning()">
-          Cancel
-        </button>
-        <button (click)="restartWorkflow()">
-          Restart
-        </button>
+        <button (click)="pauseWorkflow()" [disabled]="!workflowRunning()">Pause</button>
+        <button (click)="cancelWorkflow()" [disabled]="!workflowRunning()">Cancel</button>
+        <button (click)="restartWorkflow()">Restart</button>
       </div>
     </lg-workflow-visualizer>
   `,
-  styles: [`
-    .agent-card {
-      padding: 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-    }
+  styles: [
+    `
+      .agent-card {
+        padding: 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
 
-    .agent-card.active {
-      border-color: #1976d2;
-      box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
-    }
+      .agent-card.active {
+        border-color: #1976d2;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+      }
 
-    .agent-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
+      .agent-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
 
-    .agent-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-    }
+      .agent-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+      }
 
-    .progress-bar {
-      height: 8px;
-      background: #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 12px 0;
-    }
+      .progress-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 12px 0;
+      }
 
-    .progress-fill {
-      height: 100%;
-      background: #1976d2;
-      transition: width 0.3s ease;
-    }
+      .progress-fill {
+        height: 100%;
+        background: #1976d2;
+        transition: width 0.3s ease;
+      }
 
-    .progress-fill.active {
-      animation: pulse 2s infinite;
-    }
+      .progress-fill.active {
+        animation: pulse 2s infinite;
+      }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
 
-    .status-badge {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-    }
+      .status-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
 
-    .status-running {
-      background: #fff3e0;
-      color: #e65100;
-    }
+      .status-running {
+        background: #fff3e0;
+        color: #e65100;
+      }
 
-    .status-completed {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
-  `]
+      .status-completed {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+    `,
+  ],
 })
 export class CustomWorkflowComponent {
   execution = signal('exec-456');
@@ -868,28 +858,30 @@ import { WorkflowVisualizerComponent } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 24px;
-      padding: 24px;
-    }
+  styles: [
+    `
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+        padding: 24px;
+      }
 
-    .workflow-panel {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+      .workflow-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
 
-    .workflow-panel h2 {
-      margin: 0 0 16px 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #212121;
-    }
-  `]
+      .workflow-panel h2 {
+        margin: 0 0 16px 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #212121;
+      }
+    `,
+  ],
 })
 export class WorkflowDashboardComponent {
   contentExecution = signal('exec-content-123');
@@ -920,7 +912,7 @@ The ApprovalModal component displays HITL (Human-in-the-Loop) approval requests 
 
 ### Component Signature
 
-```typescript
+````typescript
 import {
   Component,
   ChangeDetectionStrategy,
@@ -1001,35 +993,25 @@ import type { InterruptionRequest, InterruptionRequestEvent } from '../models';
         <div class="modal-header">
           <ng-content select="[lgApprovalHeader]"></ng-content>
           @if (!hasHeaderContent) {
-            <div class="default-header">
-              <h3 class="modal-title">
-                @switch (request()?.type) {
-                  @case ('approval') {
-                    <span class="icon">🤔</span>
-                    <span>Approval Required</span>
-                  }
-                  @case ('input') {
-                    <span class="icon">✏️</span>
-                    <span>Input Required</span>
-                  }
-                  @case ('confirmation') {
-                    <span class="icon">⚠️</span>
-                    <span>Confirmation Required</span>
-                  }
-                }
-              </h3>
-              @if (request()?.agentId) {
-                <span class="agent-badge">{{ request()?.agentId }}</span>
-              }
-            </div>
+          <div class="default-header">
+            <h3 class="modal-title">
+              @switch (request()?.type) { @case ('approval') {
+              <span class="icon">🤔</span>
+              <span>Approval Required</span>
+              } @case ('input') {
+              <span class="icon">✏️</span>
+              <span>Input Required</span>
+              } @case ('confirmation') {
+              <span class="icon">⚠️</span>
+              <span>Confirmation Required</span>
+              } }
+            </h3>
+            @if (request()?.agentId) {
+            <span class="agent-badge">{{ request()?.agentId }}</span>
+            }
+          </div>
           }
-          <button
-            class="close-button"
-            (click)="onCancel()"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          <button class="close-button" (click)="onCancel()" aria-label="Close modal">✕</button>
         </div>
 
         <!-- Message -->
@@ -1054,19 +1036,17 @@ import type { InterruptionRequest, InterruptionRequestEvent } from '../models';
 
         <!-- Timeout Indicator -->
         @if (request()?.timeout) {
-          <div class="timeout-indicator">
-            <span class="timeout-icon">⏱️</span>
-            <span class="timeout-text">
-              Timeout: {{ request()!.timeout / 60000 | number:'1.0-0' }} minutes
-            </span>
-          </div>
+        <div class="timeout-indicator">
+          <span class="timeout-icon">⏱️</span>
+          <span class="timeout-text">
+            Timeout: {{ request()!.timeout / 60000 | number : '1.0-0' }} minutes
+          </span>
+        </div>
         }
 
         <!-- Feedback Input -->
         <div class="feedback-section">
-          <label for="approval-feedback" class="feedback-label">
-            Feedback (optional)
-          </label>
+          <label for="approval-feedback" class="feedback-label"> Feedback (optional) </label>
           <textarea
             id="approval-feedback"
             [(ngModel)]="feedback"
@@ -1080,34 +1060,26 @@ import type { InterruptionRequest, InterruptionRequestEvent } from '../models';
         <div class="modal-actions">
           <ng-content select="[lgApprovalActions]"></ng-content>
           @if (!hasActionsContent) {
-            <div class="default-actions">
-              <button
-                class="btn btn-secondary"
-                (click)="onReject()"
-                [disabled]="processing()"
-              >
-                <span class="btn-icon">❌</span>
-                <span>Reject</span>
-              </button>
-              @if (request()?.type === 'approval') {
-                <button
-                  class="btn btn-warning"
-                  (click)="onRequestModification()"
-                  [disabled]="processing()"
-                >
-                  <span class="btn-icon">✏️</span>
-                  <span>Request Changes</span>
-                </button>
-              }
-              <button
-                class="btn btn-primary"
-                (click)="onApprove()"
-                [disabled]="processing()"
-              >
-                <span class="btn-icon">✅</span>
-                <span>Approve</span>
-              </button>
-            </div>
+          <div class="default-actions">
+            <button class="btn btn-secondary" (click)="onReject()" [disabled]="processing()">
+              <span class="btn-icon">❌</span>
+              <span>Reject</span>
+            </button>
+            @if (request()?.type === 'approval') {
+            <button
+              class="btn btn-warning"
+              (click)="onRequestModification()"
+              [disabled]="processing()"
+            >
+              <span class="btn-icon">✏️</span>
+              <span>Request Changes</span>
+            </button>
+            }
+            <button class="btn btn-primary" (click)="onApprove()" [disabled]="processing()">
+              <span class="btn-icon">✅</span>
+              <span>Approve</span>
+            </button>
+          </div>
           }
         </div>
 
@@ -1122,303 +1094,308 @@ import type { InterruptionRequest, InterruptionRequestEvent } from '../models';
     <ng-template #defaultMetadataTemplate let-metadata let-agentId="agentId">
       <div class="default-metadata">
         @if (agentId) {
-          <div class="metadata-field">
-            <strong>Agent:</strong>
-            <span>{{ agentId }}</span>
-          </div>
-        }
-        @if (metadata) {
-          <details class="metadata-details" open>
-            <summary>Approval Data</summary>
-            <pre class="metadata-json">{{ metadata | json }}</pre>
-          </details>
+        <div class="metadata-field">
+          <strong>Agent:</strong>
+          <span>{{ agentId }}</span>
+        </div>
+        } @if (metadata) {
+        <details class="metadata-details" open>
+          <summary>Approval Data</summary>
+          <pre class="metadata-json">{{ metadata | json }}</pre>
+        </details>
         }
       </div>
     </ng-template>
   `,
-  styles: [`
-    .lg-approval-modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: var(--lg-modal-z-index, 1000);
-      animation: fadeIn 0.2s ease;
-    }
+  styles: [
+    `
+      .lg-approval-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: var(--lg-modal-z-index, 1000);
+        animation: fadeIn 0.2s ease;
+      }
 
-    .lg-approval-modal.visible {
-      display: flex;
-    }
+      .lg-approval-modal.visible {
+        display: flex;
+      }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
 
-    .modal-overlay {
-      position: absolute;
-      inset: 0;
-      background: var(--lg-overlay-color, rgba(0, 0, 0, 0.5));
-      backdrop-filter: blur(4px);
-    }
+      .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: var(--lg-overlay-color, rgba(0, 0, 0, 0.5));
+        backdrop-filter: blur(4px);
+      }
 
-    .modal-content {
-      position: relative;
-      background: var(--lg-modal-bg, white);
-      border-radius: var(--lg-border-radius-lg, 12px);
-      padding: var(--lg-spacing-lg, 24px);
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: var(--lg-modal-shadow, 0 20px 60px rgba(0, 0, 0, 0.3));
-      transform: scale(0.9);
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
+      .modal-content {
+        position: relative;
+        background: var(--lg-modal-bg, white);
+        border-radius: var(--lg-border-radius-lg, 12px);
+        padding: var(--lg-spacing-lg, 24px);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--lg-modal-shadow, 0 20px 60px rgba(0, 0, 0, 0.3));
+        transform: scale(0.9);
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
 
-    .modal-content.visible {
-      transform: scale(1);
-      opacity: 1;
-    }
+      .modal-content.visible {
+        transform: scale(1);
+        opacity: 1;
+      }
 
-    .modal-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: var(--lg-spacing-md, 16px);
-      padding-bottom: var(--lg-spacing-md, 16px);
-      border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
-    }
+      .modal-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: var(--lg-spacing-md, 16px);
+        padding-bottom: var(--lg-spacing-md, 16px);
+        border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
+      }
 
-    .default-header {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+      .default-header {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
 
-    .modal-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0;
-      font-size: var(--lg-font-size-xl, 1.5rem);
-      font-weight: var(--lg-font-weight-bold, 600);
-      color: var(--lg-text-primary, #212121);
-    }
+      .modal-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        font-size: var(--lg-font-size-xl, 1.5rem);
+        font-weight: var(--lg-font-weight-bold, 600);
+        color: var(--lg-text-primary, #212121);
+      }
 
-    .icon {
-      font-size: 1.5rem;
-    }
+      .icon {
+        font-size: 1.5rem;
+      }
 
-    .agent-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      background: var(--lg-accent-color-light, #e3f2fd);
-      color: var(--lg-accent-color, #1976d2);
-      border-radius: var(--lg-border-radius-sm, 4px);
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      font-weight: var(--lg-font-weight-medium, 500);
-      font-family: monospace;
-    }
+      .agent-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: var(--lg-accent-color-light, #e3f2fd);
+        color: var(--lg-accent-color, #1976d2);
+        border-radius: var(--lg-border-radius-sm, 4px);
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        font-weight: var(--lg-font-weight-medium, 500);
+        font-family: monospace;
+      }
 
-    .close-button {
-      background: transparent;
-      border: none;
-      padding: 8px;
-      cursor: pointer;
-      font-size: 1.5rem;
-      line-height: 1;
-      color: var(--lg-text-secondary, #757575);
-      transition: color 0.2s ease;
-    }
+      .close-button {
+        background: transparent;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: var(--lg-text-secondary, #757575);
+        transition: color 0.2s ease;
+      }
 
-    .close-button:hover {
-      color: var(--lg-text-primary, #212121);
-    }
+      .close-button:hover {
+        color: var(--lg-text-primary, #212121);
+      }
 
-    .modal-message {
-      margin-bottom: var(--lg-spacing-md, 16px);
-      padding: var(--lg-spacing-md, 16px);
-      background: var(--lg-info-bg, #e3f2fd);
-      border-left: 4px solid var(--lg-info-color, #1976d2);
-      border-radius: var(--lg-border-radius, 8px);
-    }
+      .modal-message {
+        margin-bottom: var(--lg-spacing-md, 16px);
+        padding: var(--lg-spacing-md, 16px);
+        background: var(--lg-info-bg, #e3f2fd);
+        border-left: 4px solid var(--lg-info-color, #1976d2);
+        border-radius: var(--lg-border-radius, 8px);
+      }
 
-    .modal-message p {
-      margin: 0;
-      color: var(--lg-text-primary, #212121);
-      line-height: 1.5;
-    }
+      .modal-message p {
+        margin: 0;
+        color: var(--lg-text-primary, #212121);
+        line-height: 1.5;
+      }
 
-    .modal-body {
-      margin-bottom: var(--lg-spacing-md, 16px);
-    }
+      .modal-body {
+        margin-bottom: var(--lg-spacing-md, 16px);
+      }
 
-    .default-metadata {
-      display: flex;
-      flex-direction: column;
-      gap: var(--lg-spacing-sm, 12px);
-    }
+      .default-metadata {
+        display: flex;
+        flex-direction: column;
+        gap: var(--lg-spacing-sm, 12px);
+      }
 
-    .metadata-field {
-      display: flex;
-      gap: 8px;
-      padding: 8px 12px;
-      background: var(--lg-surface-color, #f5f5f5);
-      border-radius: var(--lg-border-radius, 8px);
-    }
+      .metadata-field {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--lg-surface-color, #f5f5f5);
+        border-radius: var(--lg-border-radius, 8px);
+      }
 
-    .metadata-field strong {
-      color: var(--lg-text-secondary, #757575);
-      min-width: 80px;
-    }
+      .metadata-field strong {
+        color: var(--lg-text-secondary, #757575);
+        min-width: 80px;
+      }
 
-    .metadata-details {
-      border: 1px solid var(--lg-border-color, #e0e0e0);
-      border-radius: var(--lg-border-radius, 8px);
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-surface-color, #f5f5f5);
-    }
+      .metadata-details {
+        border: 1px solid var(--lg-border-color, #e0e0e0);
+        border-radius: var(--lg-border-radius, 8px);
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-surface-color, #f5f5f5);
+      }
 
-    .metadata-details summary {
-      cursor: pointer;
-      font-weight: var(--lg-font-weight-medium, 500);
-      color: var(--lg-text-primary, #212121);
-      margin-bottom: 8px;
-    }
+      .metadata-details summary {
+        cursor: pointer;
+        font-weight: var(--lg-font-weight-medium, 500);
+        color: var(--lg-text-primary, #212121);
+        margin-bottom: 8px;
+      }
 
-    .metadata-json {
-      margin: 0;
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-code-bg, #1e1e1e);
-      color: var(--lg-code-text, #d4d4d4);
-      border-radius: var(--lg-border-radius-sm, 4px);
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
+      .metadata-json {
+        margin: 0;
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-code-bg, #1e1e1e);
+        color: var(--lg-code-text, #d4d4d4);
+        border-radius: var(--lg-border-radius-sm, 4px);
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
 
-    .timeout-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: var(--lg-warning-bg, #fff9c4);
-      border: 1px solid var(--lg-warning-border, #fff176);
-      border-radius: var(--lg-border-radius, 8px);
-      margin-bottom: var(--lg-spacing-md, 16px);
-    }
+      .timeout-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--lg-warning-bg, #fff9c4);
+        border: 1px solid var(--lg-warning-border, #fff176);
+        border-radius: var(--lg-border-radius, 8px);
+        margin-bottom: var(--lg-spacing-md, 16px);
+      }
 
-    .timeout-icon {
-      font-size: 1.25rem;
-    }
+      .timeout-icon {
+        font-size: 1.25rem;
+      }
 
-    .timeout-text {
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-warning-text, #f57f17);
-      font-weight: var(--lg-font-weight-medium, 500);
-    }
+      .timeout-text {
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-warning-text, #f57f17);
+        font-weight: var(--lg-font-weight-medium, 500);
+      }
 
-    .feedback-section {
-      margin-bottom: var(--lg-spacing-md, 16px);
-    }
+      .feedback-section {
+        margin-bottom: var(--lg-spacing-md, 16px);
+      }
 
-    .feedback-label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: var(--lg-font-weight-medium, 500);
-      color: var(--lg-text-primary, #212121);
-    }
+      .feedback-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: var(--lg-font-weight-medium, 500);
+        color: var(--lg-text-primary, #212121);
+      }
 
-    .feedback-input {
-      width: 100%;
-      padding: var(--lg-spacing-sm, 12px);
-      border: 1px solid var(--lg-border-color, #e0e0e0);
-      border-radius: var(--lg-border-radius, 8px);
-      font-family: inherit;
-      font-size: var(--lg-font-size-base, 1rem);
-      resize: vertical;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+      .feedback-input {
+        width: 100%;
+        padding: var(--lg-spacing-sm, 12px);
+        border: 1px solid var(--lg-border-color, #e0e0e0);
+        border-radius: var(--lg-border-radius, 8px);
+        font-family: inherit;
+        font-size: var(--lg-font-size-base, 1rem);
+        resize: vertical;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
 
-    .feedback-input:focus {
-      outline: none;
-      border-color: var(--lg-accent-color, #1976d2);
-      box-shadow: 0 0 0 3px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.1));
-    }
+      .feedback-input:focus {
+        outline: none;
+        border-color: var(--lg-accent-color, #1976d2);
+        box-shadow: 0 0 0 3px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.1));
+      }
 
-    .modal-actions {
-      margin-bottom: var(--lg-spacing-md, 16px);
-    }
+      .modal-actions {
+        margin-bottom: var(--lg-spacing-md, 16px);
+      }
 
-    .default-actions {
-      display: flex;
-      gap: var(--lg-spacing-sm, 12px);
-      justify-content: flex-end;
-    }
+      .default-actions {
+        display: flex;
+        gap: var(--lg-spacing-sm, 12px);
+        justify-content: flex-end;
+      }
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: var(--lg-border-radius, 8px);
-      font-size: var(--lg-font-size-base, 1rem);
-      font-weight: var(--lg-font-weight-medium, 500);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border: none;
+        border-radius: var(--lg-border-radius, 8px);
+        font-size: var(--lg-font-size-base, 1rem);
+        font-weight: var(--lg-font-weight-medium, 500);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
 
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
 
-    .btn-icon {
-      font-size: 1.125rem;
-    }
+      .btn-icon {
+        font-size: 1.125rem;
+      }
 
-    .btn-primary {
-      background: var(--lg-primary-color, #1976d2);
-      color: white;
-    }
+      .btn-primary {
+        background: var(--lg-primary-color, #1976d2);
+        color: white;
+      }
 
-    .btn-primary:hover:not(:disabled) {
-      background: var(--lg-primary-dark, #1565c0);
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
-    }
+      .btn-primary:hover:not(:disabled) {
+        background: var(--lg-primary-dark, #1565c0);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      }
 
-    .btn-secondary {
-      background: var(--lg-error-color, #d32f2f);
-      color: white;
-    }
+      .btn-secondary {
+        background: var(--lg-error-color, #d32f2f);
+        color: white;
+      }
 
-    .btn-secondary:hover:not(:disabled) {
-      background: var(--lg-error-dark, #c62828);
-      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
-    }
+      .btn-secondary:hover:not(:disabled) {
+        background: var(--lg-error-dark, #c62828);
+        box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
+      }
 
-    .btn-warning {
-      background: var(--lg-warning-color, #f57c00);
-      color: white;
-    }
+      .btn-warning {
+        background: var(--lg-warning-color, #f57c00);
+        color: white;
+      }
 
-    .btn-warning:hover:not(:disabled) {
-      background: var(--lg-warning-dark, #ef6c00);
-      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
-    }
+      .btn-warning:hover:not(:disabled) {
+        background: var(--lg-warning-dark, #ef6c00);
+        box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+      }
 
-    .modal-footer {
-      padding-top: var(--lg-spacing-md, 16px);
-      border-top: 1px solid var(--lg-border-color, #e0e0e0);
-    }
-  `]
+      .modal-footer {
+        padding-top: var(--lg-spacing-md, 16px);
+        border-top: 1px solid var(--lg-border-color, #e0e0e0);
+      }
+    `,
+  ],
 })
 export class ApprovalModalComponent<TMetadata = any> {
   // Inputs
@@ -1560,7 +1537,7 @@ export interface ApprovalResponse<TMetadata = any> {
   feedback?: string;
   timestamp: Date;
 }
-```
+````
 
 ### Content Projection Slots
 
@@ -1788,7 +1765,7 @@ The Chat component provides a flexible, generic chat interface for displaying AI
 
 ### Component Signature
 
-```typescript
+````typescript
 import {
   Component,
   ChangeDetectionStrategy,
@@ -1858,93 +1835,92 @@ import type { AGUIEvent, StateSnapshot } from '../models';
       <div class="chat-header">
         <ng-content select="[lgChatHeader]"></ng-content>
         @if (!hasHeaderContent) {
-          <div class="default-header">
-            <h3 class="chat-title">{{ title() }}</h3>
-            @if (subtitle()) {
-              <p class="chat-subtitle">{{ subtitle() }}</p>
-            }
-          </div>
+        <div class="default-header">
+          <h3 class="chat-title">{{ title() }}</h3>
+          @if (subtitle()) {
+          <p class="chat-subtitle">{{ subtitle() }}</p>
+          }
+        </div>
         }
       </div>
 
       <!-- Messages Container -->
       <div #messagesContainer class="chat-messages" [class.scrollable]="autoScroll()">
         @if (messages().length === 0) {
-          <!-- Empty State Slot -->
-          <div class="empty-state">
-            <ng-content select="[lgChatEmpty]"></ng-content>
-            @if (!hasEmptyContent) {
-              <div class="default-empty">
-                <span class="empty-icon">💬</span>
-                <p class="empty-text">{{ emptyMessage() }}</p>
-              </div>
-            }
+        <!-- Empty State Slot -->
+        <div class="empty-state">
+          <ng-content select="[lgChatEmpty]"></ng-content>
+          @if (!hasEmptyContent) {
+          <div class="default-empty">
+            <span class="empty-icon">💬</span>
+            <p class="empty-text">{{ emptyMessage() }}</p>
           </div>
+          }
+        </div>
         } @else {
-          <!-- Message List -->
-          @for (message of messages(); track trackMessage($index, message)) {
-            <div
-              class="message-wrapper"
-              [attr.data-message-index]="$index"
-              [class.first]="$index === 0"
-              [class.last]="$index === messages().length - 1"
-            >
-              <!-- Custom Message Template or Default -->
-              <ng-container
-                *ngTemplateOutlet="
-                  messageTemplate || defaultMessageTemplate;
-                  context: {
-                    $implicit: message,
-                    index: $index,
-                    isFirst: $index === 0,
-                    isLast: $index === messages().length - 1
-                  }
-                "
-              ></ng-container>
-            </div>
-          }
-
-          <!-- Typing Indicator Slot -->
-          @if (isTyping()) {
-            <div class="typing-indicator-wrapper">
-              <ng-content select="[lgChatTyping]"></ng-content>
-              @if (!hasTypingContent) {
-                <div class="default-typing">
-                  <div class="typing-dots">
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                    <span class="dot"></span>
-                  </div>
-                  <span class="typing-text">{{ typingText() }}</span>
-                </div>
+        <!-- Message List -->
+        @for (message of messages(); track trackMessage($index, message)) {
+        <div
+          class="message-wrapper"
+          [attr.data-message-index]="$index"
+          [class.first]="$index === 0"
+          [class.last]="$index === messages().length - 1"
+        >
+          <!-- Custom Message Template or Default -->
+          <ng-container
+            *ngTemplateOutlet="
+              messageTemplate || defaultMessageTemplate;
+              context: {
+                $implicit: message,
+                index: $index,
+                isFirst: $index === 0,
+                isLast: $index === messages().length - 1
               }
-            </div>
-          }
+            "
+          ></ng-container>
+        </div>
         }
+
+        <!-- Typing Indicator Slot -->
+        @if (isTyping()) {
+        <div class="typing-indicator-wrapper">
+          <ng-content select="[lgChatTyping]"></ng-content>
+          @if (!hasTypingContent) {
+          <div class="default-typing">
+            <div class="typing-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <span class="typing-text">{{ typingText() }}</span>
+          </div>
+          }
+        </div>
+        } }
       </div>
 
       <!-- Input Slot -->
       <div class="chat-input">
         <ng-content select="[lgChatInput]"></ng-content>
         @if (!hasInputContent) {
-          <div class="default-input">
-            <input
-              type="text"
-              [(ngModel)]="inputMessage"
-              (keydown.enter)="onSendMessage()"
-              [placeholder]="inputPlaceholder()"
-              [disabled]="isTyping() || disabled()"
-              class="message-input"
-            />
-            <button
-              (click)="onSendMessage()"
-              [disabled]="!inputMessage().trim() || isTyping() || disabled()"
-              class="send-button"
-              aria-label="Send message"
-            >
-              <span class="send-icon">📤</span>
-            </button>
-          </div>
+        <div class="default-input">
+          <input
+            type="text"
+            [(ngModel)]="inputMessage"
+            (keydown.enter)="onSendMessage()"
+            [placeholder]="inputPlaceholder()"
+            [disabled]="isTyping() || disabled()"
+            class="message-input"
+          />
+          <button
+            (click)="onSendMessage()"
+            [disabled]="!inputMessage().trim() || isTyping() || disabled()"
+            class="send-button"
+            aria-label="Send message"
+          >
+            <span class="send-icon">📤</span>
+          </button>
+        </div>
         }
       </div>
 
@@ -1959,371 +1935,374 @@ import type { AGUIEvent, StateSnapshot } from '../models';
       <div class="chat-message" [class]="'message-role-' + (message.role || 'system')">
         <div class="message-avatar">
           @if (message.avatar) {
-            <img [src]="message.avatar" [alt]="message.author || 'Avatar'" />
+          <img [src]="message.avatar" [alt]="message.author || 'Avatar'" />
           } @else {
-            <span class="avatar-placeholder">
-              {{ (message.author || message.role || 'A')[0].toUpperCase() }}
-            </span>
+          <span class="avatar-placeholder">
+            {{ (message.author || message.role || 'A')[0].toUpperCase() }}
+          </span>
           }
         </div>
         <div class="message-content">
           <div class="message-header">
             @if (message.author) {
-              <span class="message-author">{{ message.author }}</span>
-            }
-            @if (message.timestamp) {
-              <span class="message-timestamp">
-                {{ message.timestamp | date:'short' }}
-              </span>
+            <span class="message-author">{{ message.author }}</span>
+            } @if (message.timestamp) {
+            <span class="message-timestamp">
+              {{ message.timestamp | date : 'short' }}
+            </span>
             }
           </div>
           <div class="message-body">{{ message.content || message.text || message }}</div>
           @if (message.metadata) {
-            <details class="message-metadata">
-              <summary>Metadata</summary>
-              <pre>{{ message.metadata | json }}</pre>
-            </details>
+          <details class="message-metadata">
+            <summary>Metadata</summary>
+            <pre>{{ message.metadata | json }}</pre>
+          </details>
           }
         </div>
       </div>
     </ng-template>
   `,
-  styles: [`
-    .lg-chat {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: var(--lg-chat-bg, #ffffff);
-      border-radius: var(--lg-border-radius, 8px);
-      box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
-      overflow: hidden;
-    }
-
-    /* Header */
-    .chat-header {
-      padding: var(--lg-spacing-md, 16px);
-      background: var(--lg-chat-header-bg, #f5f5f5);
-      border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
-    }
-
-    .default-header {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .chat-title {
-      margin: 0;
-      font-size: var(--lg-font-size-lg, 1.25rem);
-      font-weight: var(--lg-font-weight-bold, 600);
-      color: var(--lg-text-primary, #212121);
-    }
-
-    .chat-subtitle {
-      margin: 0;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-text-secondary, #757575);
-    }
-
-    /* Messages Container */
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: var(--lg-spacing-md, 16px);
-      display: flex;
-      flex-direction: column;
-      gap: var(--lg-spacing-sm, 12px);
-    }
-
-    .chat-messages::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .chat-messages::-webkit-scrollbar-track {
-      background: var(--lg-scrollbar-track, #f5f5f5);
-    }
-
-    .chat-messages::-webkit-scrollbar-thumb {
-      background: var(--lg-scrollbar-thumb, #c0c0c0);
-      border-radius: 4px;
-    }
-
-    .chat-messages::-webkit-scrollbar-thumb:hover {
-      background: var(--lg-scrollbar-thumb-hover, #a0a0a0);
-    }
-
-    /* Empty State */
-    .empty-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      min-height: 200px;
-    }
-
-    .default-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--lg-spacing-sm, 12px);
-      color: var(--lg-text-secondary, #757575);
-    }
-
-    .empty-icon {
-      font-size: 3rem;
-      opacity: 0.5;
-    }
-
-    .empty-text {
-      margin: 0;
-      font-size: var(--lg-font-size-base, 1rem);
-    }
-
-    /* Message Wrapper */
-    .message-wrapper {
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
+  styles: [
+    `
+      .lg-chat {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: var(--lg-chat-bg, #ffffff);
+        border-radius: var(--lg-border-radius, 8px);
+        box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
+        overflow: hidden;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+
+      /* Header */
+      .chat-header {
+        padding: var(--lg-spacing-md, 16px);
+        background: var(--lg-chat-header-bg, #f5f5f5);
+        border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
       }
-    }
 
-    /* Default Message */
-    .chat-message {
-      display: flex;
-      gap: var(--lg-spacing-sm, 12px);
-      padding: var(--lg-spacing-sm, 12px);
-      border-radius: var(--lg-border-radius, 8px);
-      transition: background 0.2s ease;
-    }
-
-    .chat-message:hover {
-      background: var(--lg-message-hover-bg, #f9f9f9);
-    }
-
-    .message-role-user {
-      background: var(--lg-message-user-bg, #e3f2fd);
-      border-left: 3px solid var(--lg-accent-color, #1976d2);
-    }
-
-    .message-role-assistant,
-    .message-role-agent {
-      background: var(--lg-message-assistant-bg, #f5f5f5);
-      border-left: 3px solid var(--lg-success-color, #388e3c);
-    }
-
-    .message-role-system {
-      background: var(--lg-message-system-bg, #fff9c4);
-      border-left: 3px solid var(--lg-warning-color, #f57c00);
-    }
-
-    .message-avatar {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-    }
-
-    .message-avatar img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-
-    .avatar-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      background: var(--lg-avatar-bg, #9e9e9e);
-      color: white;
-      border-radius: 50%;
-      font-weight: var(--lg-font-weight-bold, 600);
-      font-size: var(--lg-font-size-lg, 1.25rem);
-    }
-
-    .message-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .message-header {
-      display: flex;
-      align-items: center;
-      gap: var(--lg-spacing-sm, 12px);
-      margin-bottom: 4px;
-    }
-
-    .message-author {
-      font-weight: var(--lg-font-weight-medium, 500);
-      color: var(--lg-text-primary, #212121);
-    }
-
-    .message-timestamp {
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-text-secondary, #757575);
-    }
-
-    .message-body {
-      color: var(--lg-text-primary, #212121);
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-
-    .message-metadata {
-      margin-top: var(--lg-spacing-sm, 12px);
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-code-bg, #1e1e1e);
-      border-radius: var(--lg-border-radius-sm, 4px);
-    }
-
-    .message-metadata summary {
-      cursor: pointer;
-      color: var(--lg-code-text, #d4d4d4);
-      font-size: var(--lg-font-size-sm, 0.875rem);
-    }
-
-    .message-metadata pre {
-      margin: var(--lg-spacing-sm, 12px) 0 0 0;
-      padding: 0;
-      color: var(--lg-code-text, #d4d4d4);
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      overflow-x: auto;
-    }
-
-    /* Typing Indicator */
-    .typing-indicator-wrapper {
-      animation: slideIn 0.3s ease;
-    }
-
-    .default-typing {
-      display: flex;
-      align-items: center;
-      gap: var(--lg-spacing-sm, 12px);
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-typing-bg, #f5f5f5);
-      border-radius: var(--lg-border-radius, 8px);
-      width: fit-content;
-    }
-
-    .typing-dots {
-      display: flex;
-      gap: 4px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      background: var(--lg-accent-color, #1976d2);
-      border-radius: 50%;
-      animation: bounce 1.4s infinite ease-in-out both;
-    }
-
-    .dot:nth-child(1) {
-      animation-delay: -0.32s;
-    }
-
-    .dot:nth-child(2) {
-      animation-delay: -0.16s;
-    }
-
-    @keyframes bounce {
-      0%, 80%, 100% {
-        transform: scale(0);
+      .default-header {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
-      40% {
-        transform: scale(1);
+
+      .chat-title {
+        margin: 0;
+        font-size: var(--lg-font-size-lg, 1.25rem);
+        font-weight: var(--lg-font-weight-bold, 600);
+        color: var(--lg-text-primary, #212121);
       }
-    }
 
-    .typing-text {
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-text-secondary, #757575);
-    }
+      .chat-subtitle {
+        margin: 0;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-text-secondary, #757575);
+      }
 
-    /* Input Area */
-    .chat-input {
-      padding: var(--lg-spacing-md, 16px);
-      background: var(--lg-chat-input-bg, #f5f5f5);
-      border-top: 1px solid var(--lg-border-color, #e0e0e0);
-    }
+      /* Messages Container */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--lg-spacing-md, 16px);
+        display: flex;
+        flex-direction: column;
+        gap: var(--lg-spacing-sm, 12px);
+      }
 
-    .default-input {
-      display: flex;
-      gap: var(--lg-spacing-sm, 12px);
-      align-items: center;
-    }
+      .chat-messages::-webkit-scrollbar {
+        width: 8px;
+      }
 
-    .message-input {
-      flex: 1;
-      padding: var(--lg-spacing-sm, 12px);
-      border: 1px solid var(--lg-border-color, #e0e0e0);
-      border-radius: var(--lg-border-radius, 8px);
-      font-family: inherit;
-      font-size: var(--lg-font-size-base, 1rem);
-      background: var(--lg-input-bg, #ffffff);
-      color: var(--lg-text-primary, #212121);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+      .chat-messages::-webkit-scrollbar-track {
+        background: var(--lg-scrollbar-track, #f5f5f5);
+      }
 
-    .message-input:focus {
-      outline: none;
-      border-color: var(--lg-accent-color, #1976d2);
-      box-shadow: 0 0 0 3px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.1));
-    }
+      .chat-messages::-webkit-scrollbar-thumb {
+        background: var(--lg-scrollbar-thumb, #c0c0c0);
+        border-radius: 4px;
+      }
 
-    .message-input:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+      .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: var(--lg-scrollbar-thumb-hover, #a0a0a0);
+      }
 
-    .send-button {
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-primary-color, #1976d2);
-      color: white;
-      border: none;
-      border-radius: var(--lg-border-radius, 8px);
-      cursor: pointer;
-      font-size: 1.25rem;
-      line-height: 1;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 48px;
-    }
+      /* Empty State */
+      .empty-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 200px;
+      }
 
-    .send-button:hover:not(:disabled) {
-      background: var(--lg-primary-dark, #1565c0);
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
-    }
+      .default-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--lg-spacing-sm, 12px);
+        color: var(--lg-text-secondary, #757575);
+      }
 
-    .send-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+      .empty-icon {
+        font-size: 3rem;
+        opacity: 0.5;
+      }
 
-    .send-icon {
-      display: block;
-    }
+      .empty-text {
+        margin: 0;
+        font-size: var(--lg-font-size-base, 1rem);
+      }
 
-    /* Footer */
-    .chat-footer {
-      padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
-      border-top: 1px solid var(--lg-border-color, #e0e0e0);
-      background: var(--lg-chat-footer-bg, #fafafa);
-    }
-  `]
+      /* Message Wrapper */
+      .message-wrapper {
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Default Message */
+      .chat-message {
+        display: flex;
+        gap: var(--lg-spacing-sm, 12px);
+        padding: var(--lg-spacing-sm, 12px);
+        border-radius: var(--lg-border-radius, 8px);
+        transition: background 0.2s ease;
+      }
+
+      .chat-message:hover {
+        background: var(--lg-message-hover-bg, #f9f9f9);
+      }
+
+      .message-role-user {
+        background: var(--lg-message-user-bg, #e3f2fd);
+        border-left: 3px solid var(--lg-accent-color, #1976d2);
+      }
+
+      .message-role-assistant,
+      .message-role-agent {
+        background: var(--lg-message-assistant-bg, #f5f5f5);
+        border-left: 3px solid var(--lg-success-color, #388e3c);
+      }
+
+      .message-role-system {
+        background: var(--lg-message-system-bg, #fff9c4);
+        border-left: 3px solid var(--lg-warning-color, #f57c00);
+      }
+
+      .message-avatar {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+      }
+
+      .message-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background: var(--lg-avatar-bg, #9e9e9e);
+        color: white;
+        border-radius: 50%;
+        font-weight: var(--lg-font-weight-bold, 600);
+        font-size: var(--lg-font-size-lg, 1.25rem);
+      }
+
+      .message-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .message-header {
+        display: flex;
+        align-items: center;
+        gap: var(--lg-spacing-sm, 12px);
+        margin-bottom: 4px;
+      }
+
+      .message-author {
+        font-weight: var(--lg-font-weight-medium, 500);
+        color: var(--lg-text-primary, #212121);
+      }
+
+      .message-timestamp {
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-text-secondary, #757575);
+      }
+
+      .message-body {
+        color: var(--lg-text-primary, #212121);
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .message-metadata {
+        margin-top: var(--lg-spacing-sm, 12px);
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-code-bg, #1e1e1e);
+        border-radius: var(--lg-border-radius-sm, 4px);
+      }
+
+      .message-metadata summary {
+        cursor: pointer;
+        color: var(--lg-code-text, #d4d4d4);
+        font-size: var(--lg-font-size-sm, 0.875rem);
+      }
+
+      .message-metadata pre {
+        margin: var(--lg-spacing-sm, 12px) 0 0 0;
+        padding: 0;
+        color: var(--lg-code-text, #d4d4d4);
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        overflow-x: auto;
+      }
+
+      /* Typing Indicator */
+      .typing-indicator-wrapper {
+        animation: slideIn 0.3s ease;
+      }
+
+      .default-typing {
+        display: flex;
+        align-items: center;
+        gap: var(--lg-spacing-sm, 12px);
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-typing-bg, #f5f5f5);
+        border-radius: var(--lg-border-radius, 8px);
+        width: fit-content;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 4px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        background: var(--lg-accent-color, #1976d2);
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+      }
+
+      .dot:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+
+      .dot:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+
+      .typing-text {
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-text-secondary, #757575);
+      }
+
+      /* Input Area */
+      .chat-input {
+        padding: var(--lg-spacing-md, 16px);
+        background: var(--lg-chat-input-bg, #f5f5f5);
+        border-top: 1px solid var(--lg-border-color, #e0e0e0);
+      }
+
+      .default-input {
+        display: flex;
+        gap: var(--lg-spacing-sm, 12px);
+        align-items: center;
+      }
+
+      .message-input {
+        flex: 1;
+        padding: var(--lg-spacing-sm, 12px);
+        border: 1px solid var(--lg-border-color, #e0e0e0);
+        border-radius: var(--lg-border-radius, 8px);
+        font-family: inherit;
+        font-size: var(--lg-font-size-base, 1rem);
+        background: var(--lg-input-bg, #ffffff);
+        color: var(--lg-text-primary, #212121);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .message-input:focus {
+        outline: none;
+        border-color: var(--lg-accent-color, #1976d2);
+        box-shadow: 0 0 0 3px var(--lg-accent-color-alpha, rgba(25, 118, 210, 0.1));
+      }
+
+      .message-input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .send-button {
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-primary-color, #1976d2);
+        color: white;
+        border: none;
+        border-radius: var(--lg-border-radius, 8px);
+        cursor: pointer;
+        font-size: 1.25rem;
+        line-height: 1;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+      }
+
+      .send-button:hover:not(:disabled) {
+        background: var(--lg-primary-dark, #1565c0);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      }
+
+      .send-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .send-icon {
+        display: block;
+      }
+
+      /* Footer */
+      .chat-footer {
+        padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
+        border-top: 1px solid var(--lg-border-color, #e0e0e0);
+        background: var(--lg-chat-footer-bg, #fafafa);
+      }
+    `,
+  ],
 })
 export class ChatComponent<TMessage = any> implements OnInit, OnDestroy, AfterViewChecked {
   // Inputs
@@ -2401,12 +2380,11 @@ export class ChatComponent<TMessage = any> implements OnInit, OnDestroy, AfterVi
       .pipe(
         filter(
           (event): event is StateSnapshot<any> =>
-            event.type === 'state_snapshot' &&
-            event.executionId === executionId
+            event.type === 'state_snapshot' && event.executionId === executionId
         ),
         takeUntil(this.destroy$)
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         if (event.state?.messages) {
           const newMessages = event.state.messages as TMessage[];
           this.messageReceived.emit(newMessages[newMessages.length - 1]);
@@ -2458,7 +2436,7 @@ export interface MessageContext<TMessage = any> {
 function defaultTrackBy<T>(index: number, item: T): any {
   return (item as any)?.id ?? (item as any)?.timestamp ?? index;
 }
-```
+````
 
 ### Content Projection Slots
 
@@ -2491,16 +2469,18 @@ Replaces the default chat title and subtitle.
 This is the primary slot for customizing how each message is displayed.
 
 **Context Interface:**
+
 ```typescript
 {
-  $implicit: TMessage;   // The message object
-  index: number;         // Message index
-  isFirst: boolean;      // First message in list
-  isLast: boolean;       // Last message in list
+  $implicit: TMessage; // The message object
+  index: number; // Message index
+  isFirst: boolean; // First message in list
+  isLast: boolean; // Last message in list
 }
 ```
 
 **Example:**
+
 ```typescript
 <lg-chat [messages]="messages()">
   <ng-template lgChatMessage let-message let-index="index" let-isLast="isLast">
@@ -2686,13 +2666,15 @@ interface ChatMessage {
       />
     </div>
   `,
-  styles: [`
-    .chat-container {
-      height: 600px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-  `]
+  styles: [
+    `
+      .chat-container {
+        height: 600px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+    `,
+  ],
 })
 export class BasicChatComponent {
   messages = signal<ChatMessage[]>([
@@ -2700,21 +2682,21 @@ export class BasicChatComponent {
       id: '1',
       role: 'system',
       content: 'Chat session started',
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   ]);
   isTyping = signal(false);
 
   async onSendMessage(content: string): Promise<void> {
     // Add user message
-    this.messages.update(msgs => [
+    this.messages.update((msgs) => [
       ...msgs,
       {
         id: crypto.randomUUID(),
         role: 'user',
         content,
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     ]);
 
     // Simulate AI response
@@ -2723,14 +2705,14 @@ export class BasicChatComponent {
     try {
       const response = await this.callAI(content);
 
-      this.messages.update(msgs => [
+      this.messages.update((msgs) => [
         ...msgs,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
           content: response,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       ]);
     } finally {
       this.isTyping.set(false);
@@ -2739,7 +2721,7 @@ export class BasicChatComponent {
 
   private async callAI(message: string): Promise<string> {
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     return `You said: "${message}". This is a simulated response.`;
   }
 }
@@ -2782,12 +2764,8 @@ interface EnhancedMessage {
           </div>
         </div>
         <div class="header-actions">
-          <button (click)="exportChat()" title="Export chat">
-            💾
-          </button>
-          <button (click)="clearChat()" title="Clear chat">
-            🗑️
-          </button>
+          <button (click)="exportChat()" title="Export chat">💾</button>
+          <button (click)="clearChat()" title="Clear chat">🗑️</button>
         </div>
       </div>
 
@@ -2800,7 +2778,7 @@ interface EnhancedMessage {
         >
           <!-- Avatar (left for assistant, right for user) -->
           @if (message.role === 'assistant') {
-            <img [src]="message.avatar" [alt]="message.author" class="message-avatar" />
+          <img [src]="message.avatar" [alt]="message.author" class="message-avatar" />
           }
 
           <!-- Message Bubble -->
@@ -2808,7 +2786,7 @@ interface EnhancedMessage {
             <!-- Author & Time -->
             <div class="message-meta">
               <span class="author">{{ message.author }}</span>
-              <span class="timestamp">{{ message.timestamp | date:'shortTime' }}</span>
+              <span class="timestamp">{{ message.timestamp | date : 'shortTime' }}</span>
             </div>
 
             <!-- Content -->
@@ -2819,22 +2797,20 @@ interface EnhancedMessage {
             <!-- Footer Info -->
             <div class="message-footer">
               @if (message.agentId) {
-                <span class="agent-badge">{{ message.agentId }}</span>
-              }
-              @if (message.tokens) {
-                <span class="token-info">{{ message.tokens }} tokens</span>
-              }
-              @if (message.sentiment) {
-                <span class="sentiment-badge" [class]="'sentiment-' + message.sentiment">
-                  {{ message.sentiment }}
-                </span>
+              <span class="agent-badge">{{ message.agentId }}</span>
+              } @if (message.tokens) {
+              <span class="token-info">{{ message.tokens }} tokens</span>
+              } @if (message.sentiment) {
+              <span class="sentiment-badge" [class]="'sentiment-' + message.sentiment">
+                {{ message.sentiment }}
+              </span>
               }
             </div>
           </div>
 
           <!-- User Avatar (right side) -->
           @if (message.role === 'user') {
-            <img [src]="message.avatar" [alt]="message.author" class="message-avatar" />
+          <img [src]="message.avatar" [alt]="message.author" class="message-avatar" />
           }
         </div>
       </ng-template>
@@ -2843,9 +2819,7 @@ interface EnhancedMessage {
       <div lgChatTyping class="typing-indicator">
         <img [src]="currentAgent().avatar" class="typing-avatar" />
         <div class="typing-bubble">
-          <div class="typing-dots">
-            <span></span><span></span><span></span>
-          </div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
           <span class="typing-text">{{ currentAgent().name }} is typing...</span>
         </div>
       </div>
@@ -2856,180 +2830,190 @@ interface EnhancedMessage {
           <span>{{ messages().length }} messages</span>
           <span>{{ totalTokens() }} tokens used</span>
         </div>
-        <button (click)="regenerateLast()" [disabled]="!canRegenerate()">
-          🔄 Regenerate
-        </button>
+        <button (click)="regenerateLast()" [disabled]="!canRegenerate()">🔄 Regenerate</button>
       </div>
     </lg-chat>
   `,
-  styles: [`
-    .chat-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-    }
+  styles: [
+    `
+      .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+      }
 
-    .header-info {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
+      .header-info {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
 
-    .agent-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-    }
+      .agent-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+      }
 
-    .agent-status {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      background: #e0e0e0;
-      color: #757575;
-    }
+      .agent-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        background: #e0e0e0;
+        color: #757575;
+      }
 
-    .agent-status.online {
-      background: #4caf50;
-      color: white;
-    }
+      .agent-status.online {
+        background: #4caf50;
+        color: white;
+      }
 
-    .message-row {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
+      .message-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
 
-    .user-row {
-      flex-direction: row-reverse;
-    }
+      .user-row {
+        flex-direction: row-reverse;
+      }
 
-    .message-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+      .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
 
-    .message-bubble {
-      max-width: 70%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      background: #f5f5f5;
-    }
+      .message-bubble {
+        max-width: 70%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        background: #f5f5f5;
+      }
 
-    .bubble-user {
-      background: #1976d2;
-      color: white;
-    }
+      .bubble-user {
+        background: #1976d2;
+        color: white;
+      }
 
-    .bubble-assistant {
-      background: #f5f5f5;
-      color: #212121;
-    }
+      .bubble-assistant {
+        background: #f5f5f5;
+        color: #212121;
+      }
 
-    .message-meta {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-      font-size: 0.875rem;
-    }
+      .message-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        font-size: 0.875rem;
+      }
 
-    .author {
-      font-weight: 500;
-    }
+      .author {
+        font-weight: 500;
+      }
 
-    .timestamp {
-      opacity: 0.7;
-    }
+      .timestamp {
+        opacity: 0.7;
+      }
 
-    .message-text {
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
+      .message-text {
+        line-height: 1.5;
+        margin-bottom: 8px;
+      }
 
-    .message-footer {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-size: 0.75rem;
-    }
+      .message-footer {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 0.75rem;
+      }
 
-    .agent-badge,
-    .token-info,
-    .sentiment-badge {
-      padding: 2px 8px;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.1);
-    }
+      .agent-badge,
+      .token-info,
+      .sentiment-badge {
+        padding: 2px 8px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.1);
+      }
 
-    .sentiment-positive {
-      background: #4caf50;
-      color: white;
-    }
+      .sentiment-positive {
+        background: #4caf50;
+        color: white;
+      }
 
-    .sentiment-negative {
-      background: #f44336;
-      color: white;
-    }
+      .sentiment-negative {
+        background: #f44336;
+        color: white;
+      }
 
-    .typing-indicator {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
+      .typing-indicator {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
 
-    .typing-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-    }
+      .typing-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+      }
 
-    .typing-bubble {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #f5f5f5;
-      border-radius: 16px;
-    }
+      .typing-bubble {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #f5f5f5;
+        border-radius: 16px;
+      }
 
-    .typing-dots {
-      display: flex;
-      gap: 4px;
-    }
+      .typing-dots {
+        display: flex;
+        gap: 4px;
+      }
 
-    .typing-dots span {
-      width: 8px;
-      height: 8px;
-      background: #1976d2;
-      border-radius: 50%;
-      animation: bounce 1.4s infinite ease-in-out both;
-    }
+      .typing-dots span {
+        width: 8px;
+        height: 8px;
+        background: #1976d2;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+      }
 
-    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+      .typing-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      .typing-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
 
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
-    }
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
 
-    .chat-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      .chat-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .stats {
-      display: flex;
-      gap: 16px;
-      font-size: 0.875rem;
-      color: #757575;
-    }
-  `]
+      .stats {
+        display: flex;
+        gap: 16px;
+        font-size: 0.875rem;
+        color: #757575;
+      }
+    `,
+  ],
 })
 export class EnhancedChatComponent {
   messages = signal<EnhancedMessage[]>([]);
@@ -3037,16 +3021,14 @@ export class EnhancedChatComponent {
   agentOnline = signal(true);
   currentAgent = signal({
     name: 'AI Assistant',
-    avatar: '/assets/ai-avatar.png'
+    avatar: '/assets/ai-avatar.png',
   });
 
-  totalTokens = computed(() =>
-    this.messages().reduce((sum, msg) => sum + (msg.tokens || 0), 0)
-  );
+  totalTokens = computed(() => this.messages().reduce((sum, msg) => sum + (msg.tokens || 0), 0));
 
-  canRegenerate = computed(() =>
-    this.messages().length > 0 &&
-    this.messages()[this.messages().length - 1].role === 'assistant'
+  canRegenerate = computed(
+    () =>
+      this.messages().length > 0 && this.messages()[this.messages().length - 1].role === 'assistant'
   );
 
   exportChat(): void {
@@ -3110,31 +3092,27 @@ interface MessageWithFiles {
 
             <!-- File Attachments -->
             @if (message.attachments?.length > 0) {
-              <div class="attachments-grid">
-                @for (file of message.attachments; track file.id) {
-                  <div class="attachment-card">
-                    <div class="file-icon">
-                      {{ getFileIcon(file.type) }}
-                    </div>
-                    <div class="file-info">
-                      <div class="file-name">{{ file.name }}</div>
-                      <div class="file-size">{{ formatFileSize(file.size) }}</div>
-                    </div>
-                    <div class="file-actions">
-                      <a [href]="file.url" download [attr.download]="file.name">
-                        ⬇️
-                      </a>
-                      <button (click)="previewFile(file)">
-                        👁️
-                      </button>
-                    </div>
-                  </div>
-                }
+            <div class="attachments-grid">
+              @for (file of message.attachments; track file.id) {
+              <div class="attachment-card">
+                <div class="file-icon">
+                  {{ getFileIcon(file.type) }}
+                </div>
+                <div class="file-info">
+                  <div class="file-name">{{ file.name }}</div>
+                  <div class="file-size">{{ formatFileSize(file.size) }}</div>
+                </div>
+                <div class="file-actions">
+                  <a [href]="file.url" download [attr.download]="file.name"> ⬇️ </a>
+                  <button (click)="previewFile(file)">👁️</button>
+                </div>
               </div>
+              }
+            </div>
             }
 
             <span class="message-time">
-              {{ message.timestamp | date:'short' }}
+              {{ message.timestamp | date : 'short' }}
             </span>
           </div>
         </div>
@@ -3152,175 +3130,171 @@ interface MessageWithFiles {
 
         <!-- Selected Files Preview -->
         @if (selectedFiles().length > 0) {
-          <div class="selected-files">
-            @for (file of selectedFiles(); track file.name) {
-              <div class="file-chip">
-                <span>{{ file.name }}</span>
-                <button (click)="removeFile(file)">✕</button>
-              </div>
-            }
+        <div class="selected-files">
+          @for (file of selectedFiles(); track file.name) {
+          <div class="file-chip">
+            <span>{{ file.name }}</span>
+            <button (click)="removeFile(file)">✕</button>
           </div>
+          }
+        </div>
         }
 
         <div class="input-controls">
-          <button class="attach-btn" (click)="fileInput.click()">
-            📎
-          </button>
+          <button class="attach-btn" (click)="fileInput.click()">📎</button>
           <textarea
             [(ngModel)]="messageText"
             (keydown.enter)="onEnterPress($event)"
             placeholder="Type a message or attach files..."
             rows="1"
           ></textarea>
-          <button
-            class="send-btn"
-            (click)="sendMessageWithFiles()"
-            [disabled]="!canSend()"
-          >
+          <button class="send-btn" (click)="sendMessageWithFiles()" [disabled]="!canSend()">
             Send
           </button>
         </div>
       </div>
     </lg-chat>
   `,
-  styles: [`
-    .message-with-files {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-    }
+  styles: [
+    `
+      .message-with-files {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
 
-    .role-user {
-      background: #e3f2fd;
-      margin-left: auto;
-      max-width: 70%;
-    }
+      .role-user {
+        background: #e3f2fd;
+        margin-left: auto;
+        max-width: 70%;
+      }
 
-    .role-assistant {
-      background: #f5f5f5;
-      max-width: 70%;
-    }
+      .role-assistant {
+        background: #f5f5f5;
+        max-width: 70%;
+      }
 
-    .attachments-grid {
-      display: grid;
-      gap: 8px;
-      margin-top: 12px;
-    }
+      .attachments-grid {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
 
-    .attachment-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-    }
+      .attachment-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+      }
 
-    .file-icon {
-      font-size: 2rem;
-    }
+      .file-icon {
+        font-size: 2rem;
+      }
 
-    .file-info {
-      flex: 1;
-      min-width: 0;
-    }
+      .file-info {
+        flex: 1;
+        min-width: 0;
+      }
 
-    .file-name {
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+      .file-name {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
-    .file-size {
-      font-size: 0.875rem;
-      color: #757575;
-    }
+      .file-size {
+        font-size: 0.875rem;
+        color: #757575;
+      }
 
-    .file-actions {
-      display: flex;
-      gap: 8px;
-    }
+      .file-actions {
+        display: flex;
+        gap: 8px;
+      }
 
-    .file-actions a,
-    .file-actions button {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 1.25rem;
-      padding: 4px;
-    }
+      .file-actions a,
+      .file-actions button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.25rem;
+        padding: 4px;
+      }
 
-    .file-input-area {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+      .file-input-area {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
 
-    .selected-files {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+      .selected-files {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
 
-    .file-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      background: #e3f2fd;
-      border-radius: 16px;
-      font-size: 0.875rem;
-    }
+      .file-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #e3f2fd;
+        border-radius: 16px;
+        font-size: 0.875rem;
+      }
 
-    .file-chip button {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      line-height: 1;
-    }
+      .file-chip button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+      }
 
-    .input-controls {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-    }
+      .input-controls {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+      }
 
-    .input-controls textarea {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      resize: vertical;
-      min-height: 48px;
-      max-height: 120px;
-    }
+      .input-controls textarea {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        resize: vertical;
+        min-height: 48px;
+        max-height: 120px;
+      }
 
-    .attach-btn,
-    .send-btn {
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.25rem;
-    }
+      .attach-btn,
+      .send-btn {
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.25rem;
+      }
 
-    .attach-btn {
-      background: #f5f5f5;
-    }
+      .attach-btn {
+        background: #f5f5f5;
+      }
 
-    .send-btn {
-      background: #1976d2;
-      color: white;
-    }
+      .send-btn {
+        background: #1976d2;
+        color: white;
+      }
 
-    .send-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  `]
+      .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class FileChatComponent {
   messages = signal<MessageWithFiles[]>([]);
@@ -3328,22 +3302,18 @@ export class FileChatComponent {
   messageText = signal('');
   selectedFiles = signal<File[]>([]);
 
-  canSend = computed(() =>
-    this.messageText().trim().length > 0 || this.selectedFiles().length > 0
-  );
+  canSend = computed(() => this.messageText().trim().length > 0 || this.selectedFiles().length > 0);
 
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files) {
       const files = Array.from(input.files);
-      this.selectedFiles.update(current => [...current, ...files]);
+      this.selectedFiles.update((current) => [...current, ...files]);
     }
   }
 
   removeFile(file: File): void {
-    this.selectedFiles.update(files =>
-      files.filter(f => f !== file)
-    );
+    this.selectedFiles.update((files) => files.filter((f) => f !== file));
   }
 
   async sendMessageWithFiles(): Promise<void> {
@@ -3360,15 +3330,15 @@ export class FileChatComponent {
     }
 
     // Add user message
-    this.messages.update(msgs => [
+    this.messages.update((msgs) => [
       ...msgs,
       {
         id: crypto.randomUUID(),
         role: 'user',
         content: content || 'Sent files',
         timestamp: new Date(),
-        attachments: attachments.length > 0 ? attachments : undefined
-      }
+        attachments: attachments.length > 0 ? attachments : undefined,
+      },
     ]);
 
     // Reset input
@@ -3377,16 +3347,18 @@ export class FileChatComponent {
 
     // Simulate AI response
     this.isTyping.set(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    this.messages.update(msgs => [
+    this.messages.update((msgs) => [
       ...msgs,
       {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `I received your message${attachments.length > 0 ? ` with ${attachments.length} file(s)` : ''}.`,
-        timestamp: new Date()
-      }
+        content: `I received your message${
+          attachments.length > 0 ? ` with ${attachments.length} file(s)` : ''
+        }.`,
+        timestamp: new Date(),
+      },
     ]);
 
     this.isTyping.set(false);
@@ -3394,14 +3366,14 @@ export class FileChatComponent {
 
   private async uploadFile(file: File): Promise<FileAttachment> {
     // Simulate file upload
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return {
       id: crypto.randomUUID(),
       name: file.name,
       type: file.type,
       size: file.size,
-      url: URL.createObjectURL(file)
+      url: URL.createObjectURL(file),
     };
   }
 
@@ -3501,7 +3473,7 @@ The Chat component supports extensive theming via CSS custom properties:
 **Example dark theme:**
 
 ```css
-[data-theme="dark"] {
+[data-theme='dark'] {
   --lg-chat-bg: #1e1e1e;
   --lg-chat-header-bg: #2d2d2d;
   --lg-chat-input-bg: #2d2d2d;
@@ -3543,7 +3515,7 @@ Conditionally renders content based on the current execution state of a workflow
 
 #### Directive Signature
 
-```typescript
+````typescript
 import {
   Directive,
   Input,
@@ -3594,7 +3566,7 @@ import type {
  */
 @Directive({
   selector: '[lgIfWorkflowState]',
-  standalone: true
+  standalone: true,
 })
 export class LgIfWorkflowStateDirective implements OnInit, OnDestroy {
   @Input('lgIfWorkflowState')
@@ -3702,7 +3674,7 @@ export class LgIfWorkflowStateDirective implements OnInit, OnDestroy {
  * Workflow execution states
  */
 export type WorkflowExecutionState = 'idle' | 'running' | 'completed' | 'error' | 'paused';
-```
+````
 
 #### Usage Examples
 
@@ -3732,28 +3704,32 @@ import { LgIfWorkflowStateDirective } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .loading-spinner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 32px;
-    }
+  styles: [
+    `
+      .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 32px;
+      }
 
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid #e0e0e0;
-      border-top-color: #1976d2;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e0e0e0;
+        border-top-color: #1976d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  `]
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    `,
+  ],
 })
 export class WorkflowStatusComponent {
   executionId = signal<string | null>(null);
@@ -3802,49 +3778,51 @@ import { LgIfWorkflowStateDirective } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .success-card {
-      padding: 32px;
-      background: #e8f5e9;
-      border: 2px solid #4caf50;
-      border-radius: 12px;
-      text-align: center;
-    }
+  styles: [
+    `
+      .success-card {
+        padding: 32px;
+        background: #e8f5e9;
+        border: 2px solid #4caf50;
+        border-radius: 12px;
+        text-align: center;
+      }
 
-    .success-icon {
-      font-size: 4rem;
-      display: block;
-      margin-bottom: 16px;
-    }
+      .success-icon {
+        font-size: 4rem;
+        display: block;
+        margin-bottom: 16px;
+      }
 
-    .action-buttons {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 16px;
-    }
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 16px;
+      }
 
-    .progress-card {
-      padding: 24px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
+      .progress-card {
+        padding: 24px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
 
-    .progress-bar {
-      height: 8px;
-      background: #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 16px 0;
-    }
+      .progress-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 16px 0;
+      }
 
-    .progress-fill {
-      height: 100%;
-      background: #1976d2;
-      transition: width 0.3s ease;
-    }
-  `]
+      .progress-fill {
+        height: 100%;
+        background: #1976d2;
+        transition: width 0.3s ease;
+      }
+    `,
+  ],
 })
 export class WorkflowResultComponent {
   executionId = signal<string>('exec-123');
@@ -3888,12 +3866,8 @@ import { LgIfWorkflowStateDirective } from '@hive-academy/langgraph-angular';
             </details>
           </div>
           <div class="alert-actions">
-            <button (click)="retry()" class="btn-retry">
-              🔄 Retry Workflow
-            </button>
-            <button (click)="reportIssue()" class="btn-report">
-              📧 Report Issue
-            </button>
+            <button (click)="retry()" class="btn-retry">🔄 Retry Workflow</button>
+            <button (click)="reportIssue()" class="btn-report">📧 Report Issue</button>
           </div>
         </div>
       </div>
@@ -3908,87 +3882,89 @@ import { LgIfWorkflowStateDirective } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .error-alert {
-      background: #ffebee;
-      border: 2px solid #f44336;
-      border-radius: 12px;
-      padding: 24px;
-    }
+  styles: [
+    `
+      .error-alert {
+        background: #ffebee;
+        border: 2px solid #f44336;
+        border-radius: 12px;
+        padding: 24px;
+      }
 
-    .alert-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
+      .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
 
-    .error-icon {
-      font-size: 3rem;
-    }
+      .error-icon {
+        font-size: 3rem;
+      }
 
-    .alert-header h3 {
-      margin: 0;
-      color: #c62828;
-    }
+      .alert-header h3 {
+        margin: 0;
+        color: #c62828;
+      }
 
-    .error-message {
-      color: #d32f2f;
-      font-weight: 500;
-      margin-bottom: 16px;
-    }
+      .error-message {
+        color: #d32f2f;
+        font-weight: 500;
+        margin-bottom: 16px;
+      }
 
-    .error-details {
-      background: #fafafa;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
+      .error-details {
+        background: #fafafa;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
 
-    .error-details pre {
-      margin: 0;
-      font-size: 0.875rem;
-      overflow-x: auto;
-    }
+      .error-details pre {
+        margin: 0;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
 
-    .alert-actions {
-      display: flex;
-      gap: 12px;
-    }
+      .alert-actions {
+        display: flex;
+        gap: 12px;
+      }
 
-    .btn-retry,
-    .btn-report {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-    }
+      .btn-retry,
+      .btn-report {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+      }
 
-    .btn-retry {
-      background: #1976d2;
-      color: white;
-    }
+      .btn-retry {
+        background: #1976d2;
+        color: white;
+      }
 
-    .btn-report {
-      background: #f5f5f5;
-      color: #212121;
-    }
+      .btn-report {
+        background: #f5f5f5;
+        color: #212121;
+      }
 
-    .paused-alert {
-      background: #fff9c4;
-      border: 2px solid #f57c00;
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-    }
+      .paused-alert {
+        background: #fff9c4;
+        border: 2px solid #f57c00;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+      }
 
-    .paused-icon {
-      font-size: 3rem;
-      display: block;
-      margin-bottom: 12px;
-    }
-  `]
+      .paused-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 12px;
+      }
+    `,
+  ],
 })
 export class WorkflowErrorComponent {
   executionId = signal<string>('exec-123');
@@ -4019,7 +3995,7 @@ Iterates over workflow agents with enhanced template context, including index ut
 
 #### Directive Signature
 
-```typescript
+````typescript
 import {
   Directive,
   Input,
@@ -4063,7 +4039,7 @@ import { WorkflowRegistry } from '../services/workflow-registry.service';
  */
 @Directive({
   selector: '[lgForAgents]',
-  standalone: true
+  standalone: true,
 })
 export class LgForAgentsDirective<TAgent = any> implements OnInit {
   @Input('lgForAgentsOf')
@@ -4106,11 +4082,7 @@ export class LgForAgentsDirective<TAgent = any> implements OnInit {
     });
   }
 
-  private createContext(
-    agent: TAgent,
-    index: number,
-    count: number
-  ): AgentIteratorContext<TAgent> {
+  private createContext(agent: TAgent, index: number, count: number): AgentIteratorContext<TAgent> {
     return {
       $implicit: agent,
       index,
@@ -4118,7 +4090,7 @@ export class LgForAgentsDirective<TAgent = any> implements OnInit {
       first: index === 0,
       last: index === count - 1,
       even: index % 2 === 0,
-      odd: index % 2 !== 0
+      odd: index % 2 !== 0,
     };
   }
 }
@@ -4148,7 +4120,7 @@ export interface AgentIteratorContext<TAgent = any> {
   /** True if odd index */
   odd: boolean;
 }
-```
+````
 
 #### Usage Examples
 
@@ -4180,10 +4152,9 @@ interface WorkflowAgent {
         <div class="agent-header">
           <h3>{{ agent.name }}</h3>
           @if (isFirst) {
-            <span class="badge start">START</span>
-          }
-          @if (isLast) {
-            <span class="badge end">END</span>
+          <span class="badge start">START</span>
+          } @if (isLast) {
+          <span class="badge end">END</span>
           }
         </div>
         <p>{{ agent.description }}</p>
@@ -4193,85 +4164,87 @@ interface WorkflowAgent {
       </div>
     </div>
   `,
-  styles: [`
-    .agent-pipeline {
-      display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      padding: 16px;
-    }
+  styles: [
+    `
+      .agent-pipeline {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding: 16px;
+      }
 
-    .agent-card {
-      min-width: 250px;
-      padding: 16px;
-      background: white;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      position: relative;
-    }
+      .agent-card {
+        min-width: 250px;
+        padding: 16px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        position: relative;
+      }
 
-    .agent-card.first {
-      border-color: #4caf50;
-      box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
-    }
+      .agent-card.first {
+        border-color: #4caf50;
+        box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+      }
 
-    .agent-card.last {
-      border-color: #1976d2;
-      box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
-    }
+      .agent-card.last {
+        border-color: #1976d2;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+      }
 
-    .agent-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
+      .agent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
 
-    .agent-header h3 {
-      margin: 0;
-      font-size: 1.125rem;
-    }
+      .agent-header h3 {
+        margin: 0;
+        font-size: 1.125rem;
+      }
 
-    .badge {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
+      .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
 
-    .badge.start {
-      background: #4caf50;
-      color: white;
-    }
+      .badge.start {
+        background: #4caf50;
+        color: white;
+      }
 
-    .badge.end {
-      background: #1976d2;
-      color: white;
-    }
+      .badge.end {
+        background: #1976d2;
+        color: white;
+      }
 
-    .agent-status {
-      margin-top: 12px;
-      padding: 6px 12px;
-      border-radius: 4px;
-      text-align: center;
-      font-weight: 500;
-    }
+      .agent-status {
+        margin-top: 12px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: 500;
+      }
 
-    .status-active {
-      background: #fff3e0;
-      color: #e65100;
-    }
+      .status-active {
+        background: #fff3e0;
+        color: #e65100;
+      }
 
-    .status-completed {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+      .status-completed {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
 
-    .status-pending {
-      background: #f5f5f5;
-      color: #757575;
-    }
-  `]
+      .status-pending {
+        background: #f5f5f5;
+        color: #757575;
+      }
+    `,
+  ],
 })
 export class AgentPipelineComponent {}
 ```
@@ -4308,87 +4281,89 @@ import { LgForAgentsDirective } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .agent-list {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+  styles: [
+    `
+      .agent-list {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 24px;
+      }
 
-    .agent-list h2 {
-      margin-bottom: 16px;
-    }
+      .agent-list h2 {
+        margin-bottom: 16px;
+      }
 
-    .list-container {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+      .list-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+      }
 
-    .agent-row {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      transition: background 0.2s ease;
-    }
+      .agent-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        transition: background 0.2s ease;
+      }
 
-    .agent-row.even {
-      background: #f9f9f9;
-    }
+      .agent-row.even {
+        background: #f9f9f9;
+      }
 
-    .agent-row:hover {
-      background: #e3f2fd;
-    }
+      .agent-row:hover {
+        background: #e3f2fd;
+      }
 
-    .agent-number {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: #1976d2;
-      color: white;
-      border-radius: 50%;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
+      .agent-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: #1976d2;
+        color: white;
+        border-radius: 50%;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
 
-    .agent-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+      .agent-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
 
-    .agent-type {
-      font-size: 0.875rem;
-      color: #757575;
-    }
+      .agent-type {
+        font-size: 0.875rem;
+        color: #757575;
+      }
 
-    .agent-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+      .agent-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
 
-    .duration {
-      padding: 4px 8px;
-      background: #fff3e0;
-      color: #e65100;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
+      .duration {
+        padding: 4px 8px;
+        background: #fff3e0;
+        color: #e65100;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
 
-    .agent-meta button {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 1.25rem;
-      padding: 4px 8px;
-    }
-  `]
+      .agent-meta button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.25rem;
+        padding: 4px 8px;
+      }
+    `,
+  ],
 })
 export class AgentListComponent {
   configureAgent(agent: any): void {
@@ -4412,7 +4387,12 @@ import { LgForAgentsDirective } from '@hive-academy/langgraph-angular';
       <h2>Workflow Progress</h2>
       <div class="timeline">
         <div
-          *lgForAgents="let agent of workflowId(); let i = index; let isLast = last; let count = count"
+          *lgForAgents="
+            let agent of workflowId();
+            let i = index;
+            let isLast = last;
+            let count = count
+          "
           class="timeline-item"
           [class.completed]="i < currentAgentIndex()"
           [class.active]="i === currentAgentIndex()"
@@ -4421,11 +4401,11 @@ import { LgForAgentsDirective } from '@hive-academy/langgraph-angular';
           <!-- Timeline Node -->
           <div class="timeline-node">
             @if (i < currentAgentIndex()) {
-              <span class="node-icon completed">✅</span>
+            <span class="node-icon completed">✅</span>
             } @else if (i === currentAgentIndex()) {
-              <span class="node-icon active">⏳</span>
+            <span class="node-icon active">⏳</span>
             } @else {
-              <span class="node-icon pending">{{ i + 1 }}</span>
+            <span class="node-icon pending">{{ i + 1 }}</span>
             }
           </div>
 
@@ -4436,155 +4416,159 @@ import { LgForAgentsDirective } from '@hive-academy/langgraph-angular';
             <div class="progress-meta">
               <span class="step-number">Step {{ i + 1 }} of {{ count }}</span>
               @if (i < currentAgentIndex()) {
-                <span class="status-badge completed">Completed</span>
+              <span class="status-badge completed">Completed</span>
               } @else if (i === currentAgentIndex()) {
-                <span class="status-badge active">In Progress</span>
+              <span class="status-badge active">In Progress</span>
               } @else {
-                <span class="status-badge pending">Pending</span>
+              <span class="status-badge pending">Pending</span>
               }
             </div>
           </div>
 
           <!-- Timeline Connector -->
           @if (!isLast) {
-            <div
-              class="timeline-connector"
-              [class.completed]="i < currentAgentIndex()"
-            ></div>
+          <div class="timeline-connector" [class.completed]="i < currentAgentIndex()"></div>
           }
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .progress-tracker {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+  styles: [
+    `
+      .progress-tracker {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 24px;
+      }
 
-    .timeline {
-      position: relative;
-      padding-left: 40px;
-    }
+      .timeline {
+        position: relative;
+        padding-left: 40px;
+      }
 
-    .timeline-item {
-      position: relative;
-      padding-bottom: 40px;
-    }
+      .timeline-item {
+        position: relative;
+        padding-bottom: 40px;
+      }
 
-    .timeline-node {
-      position: absolute;
-      left: -40px;
-      top: 0;
-    }
+      .timeline-node {
+        position: absolute;
+        left: -40px;
+        top: 0;
+      }
 
-    .node-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      font-weight: 600;
-      font-size: 1.125rem;
-    }
+      .node-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-weight: 600;
+        font-size: 1.125rem;
+      }
 
-    .node-icon.completed {
-      background: #4caf50;
-      color: white;
-    }
+      .node-icon.completed {
+        background: #4caf50;
+        color: white;
+      }
 
-    .node-icon.active {
-      background: #1976d2;
-      color: white;
-      animation: pulse 2s infinite;
-    }
+      .node-icon.active {
+        background: #1976d2;
+        color: white;
+        animation: pulse 2s infinite;
+      }
 
-    .node-icon.pending {
-      background: #e0e0e0;
-      color: #757575;
-    }
+      .node-icon.pending {
+        background: #e0e0e0;
+        color: #757575;
+      }
 
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7); }
-      50% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
-    }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
+        }
+        50% {
+          box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
+        }
+      }
 
-    .timeline-content {
-      padding: 16px;
-      background: white;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-    }
+      .timeline-content {
+        padding: 16px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+      }
 
-    .timeline-item.completed .timeline-content {
-      border-color: #4caf50;
-      background: #f1f8f4;
-    }
+      .timeline-item.completed .timeline-content {
+        border-color: #4caf50;
+        background: #f1f8f4;
+      }
 
-    .timeline-item.active .timeline-content {
-      border-color: #1976d2;
-      background: #e3f2fd;
-    }
+      .timeline-item.active .timeline-content {
+        border-color: #1976d2;
+        background: #e3f2fd;
+      }
 
-    .timeline-content h4 {
-      margin: 0 0 8px 0;
-    }
+      .timeline-content h4 {
+        margin: 0 0 8px 0;
+      }
 
-    .timeline-content p {
-      margin: 0 0 12px 0;
-      color: #757575;
-      font-size: 0.875rem;
-    }
+      .timeline-content p {
+        margin: 0 0 12px 0;
+        color: #757575;
+        font-size: 0.875rem;
+      }
 
-    .progress-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-    .step-number {
-      font-size: 0.875rem;
-      color: #757575;
-    }
+      .step-number {
+        font-size: 0.875rem;
+        color: #757575;
+      }
 
-    .status-badge {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
+      .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
 
-    .status-badge.completed {
-      background: #4caf50;
-      color: white;
-    }
+      .status-badge.completed {
+        background: #4caf50;
+        color: white;
+      }
 
-    .status-badge.active {
-      background: #1976d2;
-      color: white;
-    }
+      .status-badge.active {
+        background: #1976d2;
+        color: white;
+      }
 
-    .status-badge.pending {
-      background: #e0e0e0;
-      color: #757575;
-    }
+      .status-badge.pending {
+        background: #e0e0e0;
+        color: #757575;
+      }
 
-    .timeline-connector {
-      position: absolute;
-      left: -20px;
-      top: 50px;
-      width: 2px;
-      height: calc(100% - 50px);
-      background: #e0e0e0;
-    }
+      .timeline-connector {
+        position: absolute;
+        left: -20px;
+        top: 50px;
+        width: 2px;
+        height: calc(100% - 50px);
+        background: #e0e0e0;
+      }
 
-    .timeline-connector.completed {
-      background: #4caf50;
-    }
-  `]
+      .timeline-connector.completed {
+        background: #4caf50;
+      }
+    `,
+  ],
 })
 export class AgentProgressComponent {
   workflowId = signal('content-generation');
@@ -4602,7 +4586,7 @@ Conditionally renders content when a workflow execution is waiting for approval 
 
 #### Directive Signature
 
-```typescript
+````typescript
 import {
   Directive,
   Input,
@@ -4648,7 +4632,7 @@ import type {
  */
 @Directive({
   selector: '[lgIfApprovalPending]',
-  standalone: true
+  standalone: true,
 })
 export class LgIfApprovalPendingDirective implements OnInit, OnDestroy {
   @Input('lgIfApprovalPending')
@@ -4681,7 +4665,7 @@ export class LgIfApprovalPendingDirective implements OnInit, OnDestroy {
         ),
         takeUntil(this.destroy$)
       )
-      .subscribe(event => {
+      .subscribe((event) => {
         this.currentApproval = {
           interruptionId: event.interruptionId,
           executionId: event.executionId,
@@ -4689,7 +4673,7 @@ export class LgIfApprovalPendingDirective implements OnInit, OnDestroy {
           type: event.interruptionType || 'approval',
           message: event.message || 'Approval required',
           data: event.data,
-          timeout: event.timeout
+          timeout: event.timeout,
         };
         this.showApprovalView();
       });
@@ -4716,7 +4700,7 @@ export class LgIfApprovalPendingDirective implements OnInit, OnDestroy {
 
     const context: ApprovalPendingContext = {
       $implicit: this.currentApproval,
-      executionId: this.executionId
+      executionId: this.executionId,
     };
 
     this.viewRef = this.viewContainer.createEmbeddedView(this.templateRef, context);
@@ -4740,7 +4724,7 @@ export interface ApprovalPendingContext {
   /** Execution ID for this approval */
   executionId: string;
 }
-```
+````
 
 #### Usage Examples
 
@@ -4748,7 +4732,10 @@ export interface ApprovalPendingContext {
 
 ```typescript
 import { Component, signal } from '@angular/core';
-import { LgIfApprovalPendingDirective, ApprovalModalComponent } from '@hive-academy/langgraph-angular';
+import {
+  LgIfApprovalPendingDirective,
+  ApprovalModalComponent,
+} from '@hive-academy/langgraph-angular';
 
 @Component({
   selector: 'app-workflow-with-approval',
@@ -4773,18 +4760,20 @@ import { LgIfApprovalPendingDirective, ApprovalModalComponent } from '@hive-acad
       />
     </div>
   `,
-  styles: [`
-    .workflow-container {
-      padding: 24px;
-    }
+  styles: [
+    `
+      .workflow-container {
+        padding: 24px;
+      }
 
-    .workflow-content {
-      padding: 32px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  `]
+      .workflow-content {
+        padding: 32px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    `,
+  ],
 })
 export class WorkflowWithApprovalComponent {
   executionId = signal('exec-123');
@@ -4821,81 +4810,82 @@ import { LgIfApprovalPendingDirective } from '@hive-academy/langgraph-angular';
             <strong>Approval Required</strong>
             <p>{{ approval.agentId || 'Agent' }} is waiting for your approval</p>
           </div>
-          <button (click)="openApprovalModal(approval)" class="badge-action">
-            Review
-          </button>
+          <button (click)="openApprovalModal(approval)" class="badge-action">Review</button>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 24px;
-      background: white;
-      border-bottom: 1px solid #e0e0e0;
-    }
+  styles: [
+    `
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background: white;
+        border-bottom: 1px solid #e0e0e0;
+      }
 
-    .notification-badge {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: #fff3e0;
-      border: 2px solid #f57c00;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
-    }
-
-    .notification-badge.pulse {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
+      .notification-badge {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #fff3e0;
+        border: 2px solid #f57c00;
+        border-radius: 8px;
         box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
       }
-      50% {
-        box-shadow: 0 4px 20px rgba(245, 124, 0, 0.5);
+
+      .notification-badge.pulse {
+        animation: pulse 2s infinite;
       }
-    }
 
-    .badge-icon {
-      font-size: 1.5rem;
-    }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+        }
+        50% {
+          box-shadow: 0 4px 20px rgba(245, 124, 0, 0.5);
+        }
+      }
 
-    .badge-content {
-      flex: 1;
-    }
+      .badge-icon {
+        font-size: 1.5rem;
+      }
 
-    .badge-content strong {
-      display: block;
-      color: #e65100;
-      margin-bottom: 4px;
-    }
+      .badge-content {
+        flex: 1;
+      }
 
-    .badge-content p {
-      margin: 0;
-      font-size: 0.875rem;
-      color: #5d4037;
-    }
+      .badge-content strong {
+        display: block;
+        color: #e65100;
+        margin-bottom: 4px;
+      }
 
-    .badge-action {
-      padding: 8px 16px;
-      background: #f57c00;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-    }
+      .badge-content p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #5d4037;
+      }
 
-    .badge-action:hover {
-      background: #ef6c00;
-    }
-  `]
+      .badge-action {
+        padding: 8px 16px;
+        background: #f57c00;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .badge-action:hover {
+        background: #ef6c00;
+      }
+    `,
+  ],
 })
 export class WorkflowHeaderComponent {
   executionId = signal('exec-123');
@@ -4925,12 +4915,8 @@ import { LgIfApprovalPendingDirective } from '@hive-academy/langgraph-angular';
 
         <!-- Workflow controls -->
         <div class="controls">
-          <button (click)="startWorkflow()" [disabled]="isBlocked()">
-            Start Workflow
-          </button>
-          <button (click)="viewResults()" [disabled]="isBlocked()">
-            View Results
-          </button>
+          <button (click)="startWorkflow()" [disabled]="isBlocked()">Start Workflow</button>
+          <button (click)="viewResults()" [disabled]="isBlocked()">View Results</button>
         </div>
       </div>
 
@@ -4953,12 +4939,8 @@ import { LgIfApprovalPendingDirective } from '@hive-academy/langgraph-angular';
             </div>
           </div>
           <div class="approval-actions">
-            <button (click)="approveRequest(approval)" class="btn-approve">
-              ✅ Approve
-            </button>
-            <button (click)="rejectRequest(approval)" class="btn-reject">
-              ❌ Reject
-            </button>
+            <button (click)="approveRequest(approval)" class="btn-approve">✅ Approve</button>
+            <button (click)="rejectRequest(approval)" class="btn-reject">❌ Reject</button>
           </div>
           <div class="approval-footer">
             <small>The workflow cannot continue until you respond</small>
@@ -4967,153 +4949,155 @@ import { LgIfApprovalPendingDirective } from '@hive-academy/langgraph-angular';
       </div>
     </div>
   `,
-  styles: [`
-    .app-container {
-      position: relative;
-      min-height: 100vh;
-    }
-
-    .main-content {
-      padding: 24px;
-      transition: filter 0.3s ease;
-    }
-
-    .main-content.blocked {
-      filter: blur(4px);
-      pointer-events: none;
-    }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    .controls button {
-      padding: 12px 24px;
-      background: #1976d2;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Approval Overlay */
-    .approval-overlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .overlay-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
-    }
-
-    .approval-card {
-      position: relative;
-      background: white;
-      border-radius: 12px;
-      padding: 32px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
+  styles: [
+    `
+      .app-container {
+        position: relative;
+        min-height: 100vh;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+
+      .main-content {
+        padding: 24px;
+        transition: filter 0.3s ease;
       }
-    }
 
-    .approval-header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
+      .main-content.blocked {
+        filter: blur(4px);
+        pointer-events: none;
+      }
 
-    .approval-icon {
-      font-size: 3rem;
-      display: block;
-      margin-bottom: 12px;
-    }
+      .controls {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
 
-    .approval-header h3 {
-      margin: 0;
-      color: #d32f2f;
-    }
+      .controls button {
+        padding: 12px 24px;
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+      }
 
-    .approval-body {
-      margin-bottom: 24px;
-    }
+      .controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
-    .approval-body p {
-      margin: 8px 0;
-    }
+      /* Approval Overlay */
+      .approval-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
 
-    .approval-data {
-      margin-top: 16px;
-      padding: 12px;
-      background: #f5f5f5;
-      border-radius: 8px;
-    }
+      .overlay-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+      }
 
-    .approval-data pre {
-      margin: 0;
-      font-size: 0.875rem;
-      overflow-x: auto;
-    }
+      .approval-card {
+        position: relative;
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease;
+      }
 
-    .approval-actions {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    .btn-approve,
-    .btn-reject {
-      flex: 1;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 1rem;
-    }
+      .approval-header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
 
-    .btn-approve {
-      background: #4caf50;
-      color: white;
-    }
+      .approval-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 12px;
+      }
 
-    .btn-reject {
-      background: #f44336;
-      color: white;
-    }
+      .approval-header h3 {
+        margin: 0;
+        color: #d32f2f;
+      }
 
-    .approval-footer {
-      text-align: center;
-      color: #757575;
-      padding-top: 16px;
-      border-top: 1px solid #e0e0e0;
-    }
-  `]
+      .approval-body {
+        margin-bottom: 24px;
+      }
+
+      .approval-body p {
+        margin: 8px 0;
+      }
+
+      .approval-data {
+        margin-top: 16px;
+        padding: 12px;
+        background: #f5f5f5;
+        border-radius: 8px;
+      }
+
+      .approval-data pre {
+        margin: 0;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      .approval-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .btn-approve,
+      .btn-reject {
+        flex: 1;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 1rem;
+      }
+
+      .btn-approve {
+        background: #4caf50;
+        color: white;
+      }
+
+      .btn-reject {
+        background: #f44336;
+        color: white;
+      }
+
+      .approval-footer {
+        text-align: center;
+        color: #757575;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+      }
+    `,
+  ],
 })
 export class ApprovalBlockerComponent {
   executionId = signal('exec-123');
@@ -5167,20 +5151,20 @@ export const SimpleTaskWorkflow: WorkflowDefinition<SimpleTaskInput, SimpleTaskO
   inputSchema: z.object({
     task: z.string().min(5, 'Task must be at least 5 characters'),
     priority: z.enum(['low', 'medium', 'high']).default('medium'),
-    userId: z.string().uuid()
+    userId: z.string().uuid(),
   }),
   outputSchema: z.object({
     result: z.string(),
     executionTime: z.number(),
-    status: z.enum(['success', 'failed', 'partial'])
+    status: z.enum(['success', 'failed', 'partial']),
   }),
   metadata: {
     agents: [
       { id: 'analyzer', name: 'Task Analyzer', description: 'Analyzes task complexity' },
       { id: 'executor', name: 'Task Executor', description: 'Executes the task' },
-      { id: 'validator', name: 'Result Validator', description: 'Validates output quality' }
-    ]
-  }
+      { id: 'validator', name: 'Result Validator', description: 'Validates output quality' },
+    ],
+  },
 };
 
 // Type definitions
@@ -5199,18 +5183,14 @@ import {
   LangGraphConnectionService,
   LangGraphProtocolService,
   WorkflowExecution,
-  WorkflowEvent
+  WorkflowEvent,
 } from '@hive-academy/angular-langgraph-components';
 import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-simple-task',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    WorkflowVisualizerComponent
-  ],
+  imports: [CommonModule, FormsModule, WorkflowVisualizerComponent],
   template: `
     <div class="simple-task-container">
       <h2>Simple Task Executor</h2>
@@ -5236,129 +5216,124 @@ import { filter } from 'rxjs/operators';
           </select>
         </label>
 
-        <button
-          (click)="startTask()"
-          [disabled]="!taskInput || isExecuting()"
-          class="btn-primary"
-        >
+        <button (click)="startTask()" [disabled]="!taskInput || isExecuting()" class="btn-primary">
           {{ isExecuting() ? 'Executing...' : 'Start Task' }}
         </button>
       </div>
 
       <!-- Workflow Visualization -->
       @if (execution()) {
-        <lg-workflow-visualizer
-          [workflowId]="'simple-task'"
-          class="workflow-display"
-        />
+      <lg-workflow-visualizer [workflowId]="'simple-task'" class="workflow-display" />
       }
 
       <!-- Execution Status -->
       @if (executionStatus()) {
-        <div class="status-panel" [class.error]="executionStatus() === 'error'">
-          <h3>Status: {{ executionStatus() }}</h3>
-          @if (result()) {
-            <div class="result-display">
-              <p><strong>Result:</strong> {{ result()?.result }}</p>
-              <p><strong>Execution Time:</strong> {{ result()?.executionTime }}ms</p>
-              <p><strong>Status:</strong> {{ result()?.status }}</p>
-            </div>
-          }
+      <div class="status-panel" [class.error]="executionStatus() === 'error'">
+        <h3>Status: {{ executionStatus() }}</h3>
+        @if (result()) {
+        <div class="result-display">
+          <p><strong>Result:</strong> {{ result()?.result }}</p>
+          <p><strong>Execution Time:</strong> {{ result()?.executionTime }}ms</p>
+          <p><strong>Status:</strong> {{ result()?.status }}</p>
         </div>
+        }
+      </div>
       }
 
       <!-- Event Log -->
       @if (events().length > 0) {
-        <div class="event-log">
-          <h3>Event Log</h3>
-          <ul>
-            @for (event of events(); track event.timestamp) {
-              <li>{{ event.timestamp | date:'short' }}: {{ event.type }} - {{ event.data }}</li>
-            }
-          </ul>
-        </div>
+      <div class="event-log">
+        <h3>Event Log</h3>
+        <ul>
+          @for (event of events(); track event.timestamp) {
+          <li>{{ event.timestamp | date : 'short' }}: {{ event.type }} - {{ event.data }}</li>
+          }
+        </ul>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    .simple-task-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+  styles: [
+    `
+      .simple-task-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 24px;
+      }
 
-    .task-form {
-      background: #f5f5f5;
-      padding: 24px;
-      border-radius: 8px;
-      margin-bottom: 24px;
-    }
+      .task-form {
+        background: #f5f5f5;
+        padding: 24px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+      }
 
-    .task-form label {
-      display: block;
-      margin-bottom: 16px;
-    }
+      .task-form label {
+        display: block;
+        margin-bottom: 16px;
+      }
 
-    .task-form input,
-    .task-form select {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
+      .task-form input,
+      .task-form select {
+        width: 100%;
+        padding: 12px;
+        margin-top: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
 
-    .btn-primary {
-      background: #1976d2;
-      color: white;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+      .btn-primary {
+        background: #1976d2;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
 
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
-    .workflow-display {
-      margin: 24px 0;
-    }
+      .workflow-display {
+        margin: 24px 0;
+      }
 
-    .status-panel {
-      background: #e8f5e9;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
+      .status-panel {
+        background: #e8f5e9;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
 
-    .status-panel.error {
-      background: #ffebee;
-    }
+      .status-panel.error {
+        background: #ffebee;
+      }
 
-    .result-display p {
-      margin: 8px 0;
-    }
+      .result-display p {
+        margin: 8px 0;
+      }
 
-    .event-log {
-      background: #fafafa;
-      padding: 16px;
-      border-radius: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
+      .event-log {
+        background: #fafafa;
+        padding: 16px;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
 
-    .event-log ul {
-      list-style: none;
-      padding: 0;
-    }
+      .event-log ul {
+        list-style: none;
+        padding: 0;
+      }
 
-    .event-log li {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
-  `]
+      .event-log li {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+    `,
+  ],
 })
 export class SimpleTaskComponent {
   private connection = inject(LangGraphConnectionService);
@@ -5385,11 +5360,12 @@ export class SimpleTaskComponent {
     const input: SimpleTaskInput = {
       task: this.taskInput,
       priority: this.priority,
-      userId: 'user-123' // In production, get from auth service
+      userId: 'user-123', // In production, get from auth service
     };
 
     // Start workflow execution
-    this.connection.startWorkflow<SimpleTaskInput, SimpleTaskOutput>('simple-task', input)
+    this.connection
+      .startWorkflow<SimpleTaskInput, SimpleTaskOutput>('simple-task', input)
       .subscribe({
         next: (exec) => {
           this.execution.set(exec);
@@ -5398,15 +5374,13 @@ export class SimpleTaskComponent {
         },
         error: (error) => {
           this.handleError(error);
-        }
+        },
       });
   }
 
   private subscribeToEvents(executionId: string): void {
     // Subscribe to workflow events
-    this.protocol.events$.pipe(
-      filter(event => event.executionId === executionId)
-    ).subscribe({
+    this.protocol.events$.pipe(filter((event) => event.executionId === executionId)).subscribe({
       next: (event: WorkflowEvent) => {
         this.addEvent(event.type, event.payload);
 
@@ -5428,7 +5402,7 @@ export class SimpleTaskComponent {
       },
       error: (error) => {
         this.handleError(error);
-      }
+      },
     });
   }
 
@@ -5446,10 +5420,7 @@ export class SimpleTaskComponent {
   }
 
   private addEvent(type: string, data: any): void {
-    this.events.update(events => [
-      ...events,
-      { type, data, timestamp: new Date() }
-    ]);
+    this.events.update((events) => [...events, { type, data, timestamp: new Date() }]);
   }
 }
 ```
@@ -5458,21 +5429,25 @@ export class SimpleTaskComponent {
 
 ```typescript
 import { ApplicationConfig } from '@angular/core';
-import { provideLangGraph, provideLangGraphWorkflow } from '@hive-academy/angular-langgraph-components';
+import {
+  provideLangGraph,
+  provideLangGraphWorkflow,
+} from '@hive-academy/angular-langgraph-components';
 import { SimpleTaskWorkflow } from './workflows/simple-task.workflow';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideLangGraph({
       apiUrl: 'https://api.example.com',
-      enableLogging: true
+      enableLogging: true,
     }),
-    provideLangGraphWorkflow(SimpleTaskWorkflow)
-  ]
+    provideLangGraphWorkflow(SimpleTaskWorkflow),
+  ],
 };
 ```
 
 ---
+
 ## Example 2: Custom Agent Rendering
 
 This example demonstrates custom agent visualization with icons and status badges.
@@ -5497,7 +5472,7 @@ export class CustomRenderWorkflow extends LangGraphWorkflow<string, string> {
   agents: AgentWithIcon[] = [
     { id: 'analyzer', name: 'Analyzer', icon: 'search', status: 'idle' },
     { id: 'processor', name: 'Processor', icon: 'cog', status: 'idle' },
-    { id: 'validator', name: 'Validator', icon: 'check', status: 'idle' }
+    { id: 'validator', name: 'Validator', icon: 'check', status: 'idle' },
   ];
 
   getEndpoint(): string {
@@ -5518,9 +5493,7 @@ export class CustomRenderWorkflow extends LangGraphWorkflow<string, string> {
       <div class="agent-card">
         <i [class]="'icon-' + agent.icon"></i>
         <h3>{{ agent.name }}</h3>
-        <span [class]="'badge badge-' + agent.status">
-          {{ agent.status }}
-        </span>
+        <span [class]="'badge badge-' + agent.status"> {{ agent.status }} </span>
       </div>
     </ng-template>
 
@@ -5528,15 +5501,26 @@ export class CustomRenderWorkflow extends LangGraphWorkflow<string, string> {
     <ng-template lgConnectionLine let-from="from" let-to="to">
       <svg class="connection">
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7"
-                  refX="9" refY="3.5" orient="auto">
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
             <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
           </marker>
         </defs>
-        <line [attr.x1]="from.x" [attr.y1]="from.y"
-              [attr.x2]="to.x" [attr.y2]="to.y"
-              stroke="#3b82f6" stroke-width="2"
-              marker-end="url(#arrowhead)" />
+        <line
+          [attr.x1]="from.x"
+          [attr.y1]="from.y"
+          [attr.x2]="to.x"
+          [attr.y2]="to.y"
+          stroke="#3b82f6"
+          stroke-width="2"
+          marker-end="url(#arrowhead)"
+        />
       </svg>
     </ng-template>
   </lg-workflow-visualizer>
@@ -5554,7 +5538,7 @@ import { WorkflowVisualizerComponent } from '@hive-academy/angular-langgraph-com
   standalone: true,
   imports: [WorkflowVisualizerComponent],
   templateUrl: './custom-render-demo.component.html',
-  styleUrls: ['./custom-render-demo.component.scss']
+  styleUrls: ['./custom-render-demo.component.scss'],
 })
 export class CustomRenderDemoComponent {}
 ```
@@ -5588,10 +5572,22 @@ export class CustomRenderDemoComponent {}
     font-size: 0.75rem;
     font-weight: 600;
 
-    &.badge-idle { background: #e5e7eb; color: #6b7280; }
-    &.badge-active { background: #dbeafe; color: #1e40af; }
-    &.badge-complete { background: #d1fae5; color: #065f46; }
-    &.badge-error { background: #fee2e2; color: #991b1b; }
+    &.badge-idle {
+      background: #e5e7eb;
+      color: #6b7280;
+    }
+    &.badge-active {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    &.badge-complete {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    &.badge-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
   }
 }
 
@@ -5636,51 +5632,45 @@ export class ApprovalWorkflow extends LangGraphWorkflow<string, string> {
   <h2>Approval Management</h2>
 
   @if (pendingApproval(); as approval) {
-    <lg-approval-modal
-      [request]="approval"
-      (approve)="onApprove($event)"
-      (reject)="onReject($event)">
-
-      <!-- Custom metadata display -->
-      <ng-template lgApprovalMetadata let-metadata>
-        <div class="approval-details">
-          <div class="detail-row">
-            <span class="label">Type:</span>
-            <span class="value">{{ metadata.requestType }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Priority:</span>
-            <span [class]="'priority priority-' + metadata.priority">
-              {{ metadata.priority }}
-            </span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Required By:</span>
-            <span class="value">{{ metadata.requiredBy }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Est. Time:</span>
-            <span class="value">{{ metadata.estimatedTime }} min</span>
-          </div>
+  <lg-approval-modal [request]="approval" (approve)="onApprove($event)" (reject)="onReject($event)">
+    <!-- Custom metadata display -->
+    <ng-template lgApprovalMetadata let-metadata>
+      <div class="approval-details">
+        <div class="detail-row">
+          <span class="label">Type:</span>
+          <span class="value">{{ metadata.requestType }}</span>
         </div>
-      </ng-template>
+        <div class="detail-row">
+          <span class="label">Priority:</span>
+          <span [class]="'priority priority-' + metadata.priority"> {{ metadata.priority }} </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Required By:</span>
+          <span class="value">{{ metadata.requiredBy }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Est. Time:</span>
+          <span class="value">{{ metadata.estimatedTime }} min</span>
+        </div>
+      </div>
+    </ng-template>
 
-      <!-- Custom approve button -->
-      <ng-template lgApproveButton let-onClick="onClick">
-        <button class="btn-approve" (click)="onClick()">
-          <i class="icon-check"></i>
-          Approve Request
-        </button>
-      </ng-template>
+    <!-- Custom approve button -->
+    <ng-template lgApproveButton let-onClick="onClick">
+      <button class="btn-approve" (click)="onClick()">
+        <i class="icon-check"></i>
+        Approve Request
+      </button>
+    </ng-template>
 
-      <!-- Custom reject button -->
-      <ng-template lgRejectButton let-onClick="onClick">
-        <button class="btn-reject" (click)="onClick()">
-          <i class="icon-x"></i>
-          Reject Request
-        </button>
-      </ng-template>
-    </lg-approval-modal>
+    <!-- Custom reject button -->
+    <ng-template lgRejectButton let-onClick="onClick">
+      <button class="btn-reject" (click)="onClick()">
+        <i class="icon-x"></i>
+        Reject Request
+      </button>
+    </ng-template>
+  </lg-approval-modal>
   }
 </div>
 ```
@@ -5689,13 +5679,16 @@ export class ApprovalWorkflow extends LangGraphWorkflow<string, string> {
 
 ```typescript
 import { Component, signal } from '@angular/core';
-import { ApprovalModalComponent, InterruptionRequest } from '@hive-academy/angular-langgraph-components';
+import {
+  ApprovalModalComponent,
+  InterruptionRequest,
+} from '@hive-academy/angular-langgraph-components';
 
 @Component({
   selector: 'app-approval-demo',
   standalone: true,
   imports: [ApprovalModalComponent],
-  templateUrl: './approval-demo.component.html'
+  templateUrl: './approval-demo.component.html',
 })
 export class ApprovalDemoComponent {
   pendingApproval = signal<InterruptionRequest | null>(null);
@@ -5725,8 +5718,8 @@ This example demonstrates a streaming chat interface with message templates.
   <lg-chat
     [workflowId]="'chat-assistant'"
     [messages]="messages()"
-    (messageSent)="onMessageSent($event)">
-
+    (messageSent)="onMessageSent($event)"
+  >
     <!-- Custom message display -->
     <ng-template lgChatMessage let-msg let-i="index">
       <div [class]="'message message-' + msg.role">
@@ -5744,7 +5737,8 @@ This example demonstrates a streaming chat interface with message templates.
         <textarea
           #input
           placeholder="Type your message..."
-          (keydown.enter)="!$event.shiftKey && send(input.value)">
+          (keydown.enter)="!$event.shiftKey && send(input.value)"
+        >
         </textarea>
         <button (click)="send(input.value)">
           <i class="icon-send"></i>
@@ -5754,9 +5748,7 @@ This example demonstrates a streaming chat interface with message templates.
 
     <!-- Typing indicator -->
     <ng-template lgTypingIndicator>
-      <div class="typing">
-        <span></span><span></span><span></span>
-      </div>
+      <div class="typing"><span></span><span></span><span></span></div>
     </ng-template>
   </lg-chat>
 </div>
@@ -5773,15 +5765,15 @@ import { DatePipe } from '@angular/common';
   selector: 'app-chat-demo',
   standalone: true,
   imports: [ChatComponent, DatePipe],
-  templateUrl: './chat-demo.component.html'
+  templateUrl: './chat-demo.component.html',
 })
 export class ChatDemoComponent {
   messages = signal<ChatMessage[]>([]);
 
   onMessageSent(message: string): void {
-    this.messages.update(msgs => [
+    this.messages.update((msgs) => [
       ...msgs,
-      { role: 'user', content: message, timestamp: new Date() }
+      { role: 'user', content: message, timestamp: new Date() },
     ]);
   }
 }
@@ -5806,20 +5798,14 @@ This example demonstrates a complete workflow integration with all features.
   </div>
 
   <div class="control-panel">
-    <button (click)="startWorkflow()" [disabled]="isRunning()">
-      Start Workflow
-    </button>
-    <button (click)="pauseWorkflow()" [disabled]="!isRunning()">
-      Pause
-    </button>
-    <button (click)="resumeWorkflow()" [disabled]="!isPaused()">
-      Resume
-    </button>
+    <button (click)="startWorkflow()" [disabled]="isRunning()">Start Workflow</button>
+    <button (click)="pauseWorkflow()" [disabled]="!isRunning()">Pause</button>
+    <button (click)="resumeWorkflow()" [disabled]="!isPaused()">Resume</button>
   </div>
 
   <div class="approval-panel">
     @if (pendingApproval(); as approval) {
-      <lg-approval-modal [request]="approval"></lg-approval-modal>
+    <lg-approval-modal [request]="approval"></lg-approval-modal>
     }
   </div>
 
@@ -5831,11 +5817,11 @@ This example demonstrates a complete workflow integration with all features.
     <h3>Workflow Events</h3>
     <ul>
       @for (event of events(); track event.timestamp) {
-        <li>
-          <span class="time">{{ event.timestamp | date:'HH:mm:ss' }}</span>
-          <span class="type">{{ event.type }}</span>
-          <span class="data">{{ event.data | json }}</span>
-        </li>
+      <li>
+        <span class="time">{{ event.timestamp | date:'HH:mm:ss' }}</span>
+        <span class="type">{{ event.type }}</span>
+        <span class="data">{{ event.data | json }}</span>
+      </li>
       }
     </ul>
   </div>
@@ -5850,21 +5836,15 @@ import {
   WorkflowVisualizerComponent,
   ApprovalModalComponent,
   ChatComponent,
-  LangGraphConnectionService
+  LangGraphConnectionService,
 } from '@hive-academy/angular-langgraph-components';
 import { DatePipe, JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-complete-demo',
   standalone: true,
-  imports: [
-    WorkflowVisualizerComponent,
-    ApprovalModalComponent,
-    ChatComponent,
-    DatePipe,
-    JsonPipe
-  ],
-  templateUrl: './complete-demo.component.html'
+  imports: [WorkflowVisualizerComponent, ApprovalModalComponent, ChatComponent, DatePipe, JsonPipe],
+  templateUrl: './complete-demo.component.html',
 })
 export class CompleteDemoComponent {
   private connection = inject(LangGraphConnectionService);
@@ -5936,21 +5916,23 @@ import { LangGraphConnectionService } from '@hive-academy/angular-langgraph-comp
   template: `
     <div class="generator">
       <form (submit)="generate()">
-        <input [(ngModel)]="topic" placeholder="Topic">
-        <input [(ngModel)]="keywords" placeholder="Keywords (comma-separated)">
-        <input type="number" [(ngModel)]="targetLength" placeholder="Word count">
+        <input [(ngModel)]="topic" placeholder="Topic" />
+        <input [(ngModel)]="keywords" placeholder="Keywords (comma-separated)" />
+        <input type="number" [(ngModel)]="targetLength" placeholder="Word count" />
         <button type="submit">Generate</button>
       </form>
 
       @if (result(); as blog) {
-        <article>
-          <h1>{{ blog.title }}</h1>
-          <p class="meta">{{ blog.metadata.wordCount }} words · {{ blog.metadata.readingTime }} min read</p>
-          <div [innerHTML]="blog.content"></div>
-        </article>
+      <article>
+        <h1>{{ blog.title }}</h1>
+        <p class="meta">
+          {{ blog.metadata.wordCount }} words · {{ blog.metadata.readingTime }} min read
+        </p>
+        <div [innerHTML]="blog.content"></div>
+      </article>
       }
     </div>
-  `
+  `,
 })
 export class BlogGeneratorComponent {
   topic = '';
@@ -5961,12 +5943,13 @@ export class BlogGeneratorComponent {
   generate(): void {
     const input: BlogInput = {
       topic: this.topic,
-      keywords: this.keywords.split(',').map(k => k.trim()),
-      targetLength: this.targetLength
+      keywords: this.keywords.split(',').map((k) => k.trim()),
+      targetLength: this.targetLength,
     };
 
-    this.connection.startWorkflow<BlogInput, BlogOutput>('blog-generation', input)
-      .subscribe(output => this.result.set(output));
+    this.connection
+      .startWorkflow<BlogInput, BlogOutput>('blog-generation', input)
+      .subscribe((output) => this.result.set(output));
   }
 }
 ```
@@ -5987,11 +5970,14 @@ export interface SocialInput {
 }
 
 export interface SocialOutput {
-  posts: Record<string, {
-    content: string;
-    hashtags: string[];
-    characterCount: number;
-  }>;
+  posts: Record<
+    string,
+    {
+      content: string;
+      hashtags: string[];
+      characterCount: number;
+    }
+  >;
 }
 
 export class SocialMediaWorkflow extends LangGraphWorkflow<SocialInput, SocialOutput> {
@@ -6019,25 +6005,23 @@ export class SocialMediaWorkflow extends LangGraphWorkflow<SocialInput, SocialOu
       </select>
 
       <div class="platforms">
-        <label><input type="checkbox" [(ngModel)]="includeTwitter"> Twitter</label>
-        <label><input type="checkbox" [(ngModel)]="includeLinkedIn"> LinkedIn</label>
-        <label><input type="checkbox" [(ngModel)]="includeFacebook"> Facebook</label>
+        <label><input type="checkbox" [(ngModel)]="includeTwitter" /> Twitter</label>
+        <label><input type="checkbox" [(ngModel)]="includeLinkedIn" /> LinkedIn</label>
+        <label><input type="checkbox" [(ngModel)]="includeFacebook" /> Facebook</label>
       </div>
 
       <button (click)="generate()">Generate Posts</button>
 
-      @if (posts(); as result) {
-        @for (post of result | keyvalue; track post.key) {
-          <div class="post-preview">
-            <h3>{{ post.key }}</h3>
-            <p>{{ post.value.content }}</p>
-            <div class="hashtags">{{ post.value.hashtags.join(' ') }}</div>
-            <small>{{ post.value.characterCount }} characters</small>
-          </div>
-        }
-      }
+      @if (posts(); as result) { @for (post of result | keyvalue; track post.key) {
+      <div class="post-preview">
+        <h3>{{ post.key }}</h3>
+        <p>{{ post.value.content }}</p>
+        <div class="hashtags">{{ post.value.hashtags.join(' ') }}</div>
+        <small>{{ post.value.characterCount }} characters</small>
+      </div>
+      } }
     </div>
-  `
+  `,
 })
 export class SocialGeneratorComponent {
   message = '';
@@ -6524,9 +6508,8 @@ Workflow with multiple approval gates.
   <lg-workflow-visualizer [workflowId]="'multi-approval'">
     <ng-template lgAgentDisplay let-agent>
       <div class="agent">
-        {{ agent.name }}
-        @if (agent.requiresApproval) {
-          <span class="approval-badge">Requires Approval</span>
+        {{ agent.name }} @if (agent.requiresApproval) {
+        <span class="approval-badge">Requires Approval</span>
         }
       </div>
     </ng-template>
@@ -6534,14 +6517,15 @@ Workflow with multiple approval gates.
 
   <div class="approval-queue">
     @for (approval of pendingApprovals(); track approval.id) {
-      <lg-approval-modal
-        [request]="approval"
-        (approve)="onApprove(approval.id, $event)"
-        (reject)="onReject(approval.id, $event)">
-        <ng-template lgApprovalMetadata let-metadata>
-          <p>Step {{ metadata.step }} of {{ metadata.totalSteps }}</p>
-        </ng-template>
-      </lg-approval-modal>
+    <lg-approval-modal
+      [request]="approval"
+      (approve)="onApprove(approval.id, $event)"
+      (reject)="onReject(approval.id, $event)"
+    >
+      <ng-template lgApprovalMetadata let-metadata>
+        <p>Step {{ metadata.step }} of {{ metadata.totalSteps }}</p>
+      </ng-template>
+    </lg-approval-modal>
     }
   </div>
 </div>
@@ -6561,21 +6545,20 @@ Execute multiple workflows in parallel.
   template: `
     <div class="parallel">
       @for (workflow of workflows(); track workflow.id) {
-        <div class="workflow-instance">
-          <h3>{{ workflow.name }}</h3>
-          <lg-workflow-visualizer [workflowId]="workflow.id">
-          </lg-workflow-visualizer>
-          <div class="status">{{ workflow.status }}</div>
-        </div>
+      <div class="workflow-instance">
+        <h3>{{ workflow.name }}</h3>
+        <lg-workflow-visualizer [workflowId]="workflow.id"> </lg-workflow-visualizer>
+        <div class="status">{{ workflow.status }}</div>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ParallelWorkflowsComponent {
   workflows = signal([
     { id: 'workflow-1', name: 'Task A', status: 'running' },
     { id: 'workflow-2', name: 'Task B', status: 'pending' },
-    { id: 'workflow-3', name: 'Task C', status: 'complete' }
+    { id: 'workflow-3', name: 'Task C', status: 'complete' },
   ]);
 }
 ```
@@ -6597,12 +6580,10 @@ Handle workflow cancellation gracefully.
       <button (click)="cancel()" [disabled]="!isRunning()">Cancel</button>
 
       @if (cancellationReason(); as reason) {
-        <div class="cancellation-notice">
-          Workflow cancelled: {{ reason }}
-        </div>
+      <div class="cancellation-notice">Workflow cancelled: {{ reason }}</div>
       }
     </div>
-  `
+  `,
 })
 export class CancellableWorkflowComponent {
   isRunning = signal(false);
@@ -6631,14 +6612,14 @@ Implement error recovery and retry logic.
   template: `
     <div>
       @if (error(); as err) {
-        <div class="error">
-          <p>{{ err.message }}</p>
-          <button (click)="retry()">Retry</button>
-          <button (click)="skip()">Skip Step</button>
-        </div>
+      <div class="error">
+        <p>{{ err.message }}</p>
+        <button (click)="retry()">Retry</button>
+        <button (click)="skip()">Skip Step</button>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ErrorRecoveryComponent {
   error = signal<Error | null>(null);
@@ -6647,7 +6628,7 @@ export class ErrorRecoveryComponent {
 
   retry(): void {
     if (this.retryCount() < this.maxRetries) {
-      this.retryCount.update(c => c + 1);
+      this.retryCount.update((c) => c + 1);
       this.error.set(null);
       // Retry logic
     }
@@ -6675,28 +6656,30 @@ Create a custom event processing pipeline.
     <div class="pipeline">
       <div class="events">
         @for (event of processedEvents(); track event.id) {
-          <div class="event" [class.filtered]="event.filtered">
-            <span class="type">{{ event.type }}</span>
-            <span class="stage">{{ event.processingStage }}</span>
-          </div>
+        <div class="event" [class.filtered]="event.filtered">
+          <span class="type">{{ event.type }}</span>
+          <span class="stage">{{ event.processingStage }}</span>
+        </div>
         }
       </div>
     </div>
-  `
+  `,
 })
 export class EventPipelineComponent implements OnInit {
   private protocol = inject(LangGraphProtocol);
   processedEvents = signal<any[]>([]);
 
   ngOnInit(): void {
-    this.protocol.events$.pipe(
-      filter(e => e.type.startsWith('workflow:')),
-      map(e => ({ ...e, processingStage: 'filtered' })),
-      tap(e => console.log('Processing:', e)),
-      map(e => ({ ...e, processingStage: 'processed' }))
-    ).subscribe(event => {
-      this.processedEvents.update(events => [...events, event]);
-    });
+    this.protocol.events$
+      .pipe(
+        filter((e) => e.type.startsWith('workflow:')),
+        map((e) => ({ ...e, processingStage: 'filtered' })),
+        tap((e) => console.log('Processing:', e)),
+        map((e) => ({ ...e, processingStage: 'processed' }))
+      )
+      .subscribe((event) => {
+        this.processedEvents.update((events) => [...events, event]);
+      });
   }
 }
 ```
@@ -6724,9 +6707,7 @@ export interface MessageContext<TMessage = any> {
 
 ```html
 <ng-template lgChatMessage let-msg let-i="index">
-  <div class="message-{{ i }}">
-    {{ msg.content }}
-  </div>
+  <div class="message-{{ i }}">{{ msg.content }}</div>
 </ng-template>
 ```
 
@@ -6872,15 +6853,15 @@ export interface AgentIteratorContext<TAgent = any> {
 **Full Context Variables:**
 
 ```html
-<div *lgForEachAgent="let agent;
+<div
+  *lgForEachAgent="let agent;
                       index as i;
                       count as total;
                       first as isFirst;
                       last as isLast;
-                      even as isEven">
-  <div [class.first]="isFirst" [class.last]="isLast">
-    {{ agent.name }}
-  </div>
+                      even as isEven"
+>
+  <div [class.first]="isFirst" [class.last]="isLast">{{ agent.name }}</div>
 </div>
 ```
 
@@ -6927,12 +6908,7 @@ export interface ButtonContext {
 
 ```html
 <ng-template lgApproveButton let-onClick="onClick" let-disabled="disabled">
-  <button
-    class="custom-approve-btn"
-    (click)="onClick()"
-    [disabled]="disabled">
-    Approve
-  </button>
+  <button class="custom-approve-btn" (click)="onClick()" [disabled]="disabled">Approve</button>
 </ng-template>
 ```
 
@@ -6956,10 +6932,8 @@ export interface SendMessageContext {
 ```html
 <ng-template lgChatInput let-send="send" let-disabled="disabled">
   <div class="chat-input">
-    <input #input type="text" [disabled]="disabled">
-    <button (click)="send(input.value)" [disabled]="disabled">
-      Send
-    </button>
+    <input #input type="text" [disabled]="disabled" />
+    <button (click)="send(input.value)" [disabled]="disabled">Send</button>
   </div>
 </ng-template>
 ```
@@ -6986,18 +6960,21 @@ export interface ConnectionContext {
 **Usage Example:**
 
 ```html
-<ng-template lgConnectionLine
-             let-from="from"
-             let-to="to"
-             let-source="sourceAgent"
-             let-target="targetAgent">
+<ng-template
+  lgConnectionLine
+  let-from="from"
+  let-to="to"
+  let-source="sourceAgent"
+  let-target="targetAgent"
+>
   <svg>
     <line
       [attr.x1]="from.x"
       [attr.y1]="from.y"
       [attr.x2]="to.x"
       [attr.y2]="to.y"
-      [attr.stroke]="getConnectionColor(source, target)" />
+      [attr.stroke]="getConnectionColor(source, target)"
+    />
   </svg>
 </ng-template>
 ```
@@ -7013,6 +6990,7 @@ Version 2.0.0 represents a major refactoring that removes all hardcoded DevBrand
 **Migration Timeline:** Estimated 2-4 hours for typical applications
 
 **Breaking Changes:**
+
 1. All DevBrand-specific code removed
 2. Content projection required for custom UI
 3. WorkflowRegistry registration mandatory
@@ -7026,23 +7004,25 @@ Version 2.0.0 represents a major refactoring that removes all hardcoded DevBrand
 #### 1. Workflow Registration (REQUIRED)
 
 **BEFORE (v1.x):**
+
 ```typescript
 // No registration needed - library had DevBrand workflow hardcoded
 import { LangGraphModule } from '@hive-academy/angular-langgraph-components';
 
 @NgModule({
-  imports: [LangGraphModule]
+  imports: [LangGraphModule],
 })
 export class AppModule {}
 ```
 
 **AFTER (v2.0.0):**
+
 ```typescript
 // MUST register workflows explicitly
 import { ApplicationConfig } from '@angular/core';
 import {
   provideLangGraph,
-  provideLangGraphWorkflow
+  provideLangGraphWorkflow,
 } from '@hive-academy/angular-langgraph-components';
 import { YourWorkflow } from './workflows/your-workflow';
 
@@ -7050,10 +7030,10 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideLangGraph({
       apiUrl: 'https://api.example.com',
-      enableLogging: true
+      enableLogging: true,
     }),
-    provideLangGraphWorkflow(YourWorkflow)
-  ]
+    provideLangGraphWorkflow(YourWorkflow),
+  ],
 };
 ```
 
@@ -7064,12 +7044,14 @@ export const appConfig: ApplicationConfig = {
 #### 2. WorkflowVisualizer Component
 
 **BEFORE (v1.x):**
+
 ```html
 <!-- DevBrand workflow was implicit -->
 <lg-workflow-visualizer></lg-workflow-visualizer>
 ```
 
 **AFTER (v2.0.0):**
+
 ```html
 <!-- MUST specify workflowId -->
 <lg-workflow-visualizer [workflowId]="'your-workflow-id'">
@@ -7090,13 +7072,14 @@ export const appConfig: ApplicationConfig = {
 #### 3. ApprovalModal Component
 
 **BEFORE (v1.x):**
+
 ```html
 <!-- DevBrand metadata structure assumed -->
-<lg-approval-modal [request]="approval()">
-</lg-approval-modal>
+<lg-approval-modal [request]="approval()"> </lg-approval-modal>
 ```
 
 **AFTER (v2.0.0):**
+
 ```html
 <!-- Flexible metadata display via content projection -->
 <lg-approval-modal [request]="approval()">
@@ -7116,12 +7099,14 @@ export const appConfig: ApplicationConfig = {
 #### 4. Chat Component
 
 **BEFORE (v1.x):**
+
 ```html
 <!-- DevBrand message format assumed -->
 <lg-chat [workflowId]="'devbrand'"></lg-chat>
 ```
 
 **AFTER (v2.0.0):**
+
 ```html
 <!-- Custom message rendering -->
 <lg-chat [workflowId]="'your-workflow'" [messages]="messages()">
@@ -7141,23 +7126,26 @@ export const appConfig: ApplicationConfig = {
 #### 5. Connection Service API
 
 **BEFORE (v1.x):**
+
 ```typescript
 // Hardcoded DevBrand input type (GitHub username)
-this.connection.startWorkflow(githubUsername).subscribe(result => {
+this.connection.startWorkflow(githubUsername).subscribe((result) => {
   console.log(result);
 });
 ```
 
 **AFTER (v2.0.0):**
+
 ```typescript
 // Generic input/output with type safety
-this.connection.startWorkflow<YourInput, YourOutput>(
-  'your-workflow-id',
-  { /* your input */ }
-).subscribe(result => {
-  // result is typed as YourOutput
-  console.log(result);
-});
+this.connection
+  .startWorkflow<YourInput, YourOutput>('your-workflow-id', {
+    /* your input */
+  })
+  .subscribe((result) => {
+    // result is typed as YourOutput
+    console.log(result);
+  });
 ```
 
 **Why:** Type-safe, supports any input/output structure.
@@ -7195,7 +7183,7 @@ export class MyWorkflow extends LangGraphWorkflow<MyWorkflowInput, MyWorkflowOut
 
   agents = [
     { id: 'agent-1', name: 'Agent 1', description: 'First agent' },
-    { id: 'agent-2', name: 'Agent 2', description: 'Second agent' }
+    { id: 'agent-2', name: 'Agent 2', description: 'Second agent' },
   ];
 
   getEndpoint(): string {
@@ -7212,7 +7200,7 @@ Update your `app.config.ts`:
 import { ApplicationConfig } from '@angular/core';
 import {
   provideLangGraph,
-  provideLangGraphWorkflow
+  provideLangGraphWorkflow,
 } from '@hive-academy/angular-langgraph-components';
 import { MyWorkflow } from './workflows/my-workflow';
 
@@ -7220,10 +7208,10 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideLangGraph({
       apiUrl: environment.langGraphApiUrl,
-      enableLogging: !environment.production
+      enableLogging: !environment.production,
     }),
-    provideLangGraphWorkflow(MyWorkflow)
-  ]
+    provideLangGraphWorkflow(MyWorkflow),
+  ],
 };
 ```
 
@@ -7304,17 +7292,20 @@ grep -r "devbrand\|DevBrand\|github-analyzer\|brand-strategist" src/
 Use this checklist to track migration progress:
 
 - [ ] **Dependencies Updated**
+
   - [ ] Install v2.0.0
   - [ ] Remove v1.x
   - [ ] Update package-lock.json
 
 - [ ] **Workflow Registration**
+
   - [ ] Create workflow class(es)
   - [ ] Add provideLangGraph() to app.config
   - [ ] Add provideLangGraphWorkflow() for each workflow
   - [ ] Test workflow resolution
 
 - [ ] **Component Updates**
+
   - [ ] Add workflowId to all WorkflowVisualizer instances
   - [ ] Add lgAgentDisplay template to WorkflowVisualizer
   - [ ] Add lgApprovalMetadata template to ApprovalModal
@@ -7322,18 +7313,21 @@ Use this checklist to track migration progress:
   - [ ] Test all content projection slots
 
 - [ ] **Service Updates**
+
   - [ ] Update startWorkflow() calls with generics
   - [ ] Add workflow IDs to all service calls
   - [ ] Update input/output types
   - [ ] Test type safety
 
 - [ ] **Cleanup**
+
   - [ ] Remove DevBrand imports
   - [ ] Remove hardcoded DevBrand values
   - [ ] Remove unused types
   - [ ] Search for remaining references
 
 - [ ] **Testing**
+
   - [ ] Test all workflow executions
   - [ ] Test approval flows
   - [ ] Test chat interactions
@@ -7352,17 +7346,19 @@ Use this checklist to track migration progress:
 #### Issue 1: "Workflow not found"
 
 **Error:**
+
 ```
 Error: Workflow with ID 'my-workflow' not found in registry
 ```
 
 **Solution:**
+
 ```typescript
 // Ensure workflow is registered in app.config.ts
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideLangGraphWorkflow(MyWorkflow) // <-- Add this
-  ]
+    provideLangGraphWorkflow(MyWorkflow), // <-- Add this
+  ],
 };
 ```
 
@@ -7371,11 +7367,13 @@ export const appConfig: ApplicationConfig = {
 #### Issue 2: Template context type errors
 
 **Error:**
+
 ```
 Type 'unknown' is not assignable to type 'MyAgent'
 ```
 
 **Solution:**
+
 ```typescript
 // Add explicit generic type to component
 <lg-workflow-visualizer [workflowId]="'my-workflow'">
@@ -7394,12 +7392,13 @@ Type 'unknown' is not assignable to type 'MyAgent'
 Templates don't render, default UI shows instead.
 
 **Solution:**
+
 ```html
 <!-- WRONG: Missing directive selector -->
 <ng-template agentDisplay let-agent>
-
-<!-- CORRECT: Use proper directive selector -->
-<ng-template lgAgentDisplay let-agent>
+  <!-- CORRECT: Use proper directive selector -->
+  <ng-template lgAgentDisplay let-agent></ng-template
+></ng-template>
 ```
 
 ---
@@ -7410,12 +7409,13 @@ Templates don't render, default UI shows instead.
 Agents array is empty in visualizer.
 
 **Solution:**
+
 ```typescript
 // Ensure workflow defines agents
 export class MyWorkflow extends LangGraphWorkflow<I, O> {
   agents = [
     { id: 'agent-1', name: 'Agent 1' },
-    { id: 'agent-2', name: 'Agent 2' }
+    { id: 'agent-2', name: 'Agent 2' },
   ];
 }
 ```
@@ -7427,6 +7427,7 @@ export class MyWorkflow extends LangGraphWorkflow<I, O> {
 **Symptom:** Components don't render
 
 **Checklist:**
+
 1. Is workflow registered in app.config.ts?
 2. Is workflowId correct?
 3. Are content projection templates using correct selectors?
@@ -7437,6 +7438,7 @@ export class MyWorkflow extends LangGraphWorkflow<I, O> {
 **Symptom:** Type errors in templates
 
 **Checklist:**
+
 1. Is workflow interface defined?
 2. Are generic types specified?
 3. Is TypeScript strict mode enabled?
@@ -7447,6 +7449,7 @@ export class MyWorkflow extends LangGraphWorkflow<I, O> {
 **Symptom:** Approvals not working
 
 **Checklist:**
+
 1. Is lgApprovalMetadata template provided?
 2. Is request object passed correctly?
 3. Are approve/reject handlers connected?
@@ -7465,6 +7468,7 @@ export class MyWorkflow extends LangGraphWorkflow<I, O> {
 **Rollback:** Possible by reverting to v1.x
 
 **Support:**
+
 - GitHub Issues: https://github.com/your-repo/issues
 - Documentation: See TASK_2025_019 for architecture details
 - Examples: See 25 integration examples above
@@ -7484,22 +7488,23 @@ export class MyWorkflow extends LangGraphWorkflow<I, O> {
 
 ### Quality Metrics
 
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| DevBrand References in Library | 0 | 0 | ✅ PASS |
-| Hardcoded Logic Removed | 100% | 100% | ✅ PASS |
-| Content Projection Slots | 14+ | 15 | ✅ PASS |
-| Integration Examples | 25+ | 25 | ✅ PASS |
-| Documentation Lines | 8000+ | 9200+ | ✅ PASS |
-| Acceptance Criteria Met | 65 | 65 | ✅ PASS |
-| Migration Guide Complete | Yes | Yes | ✅ PASS |
-| Type Safety | 100% | 100% | ✅ PASS |
+| Metric                         | Target | Actual | Status  |
+| ------------------------------ | ------ | ------ | ------- |
+| DevBrand References in Library | 0      | 0      | ✅ PASS |
+| Hardcoded Logic Removed        | 100%   | 100%   | ✅ PASS |
+| Content Projection Slots       | 14+    | 15     | ✅ PASS |
+| Integration Examples           | 25+    | 25     | ✅ PASS |
+| Documentation Lines            | 8000+  | 9200+  | ✅ PASS |
+| Acceptance Criteria Met        | 65     | 65     | ✅ PASS |
+| Migration Guide Complete       | Yes    | Yes    | ✅ PASS |
+| Type Safety                    | 100%   | 100%   | ✅ PASS |
 
 ---
 
 ### DevBrand Reference Audit
 
 **Audit Command:**
+
 ```bash
 grep -i "devbrand\|github-analyzer\|brand-strategist\|githubusername" \
   libs/angular-langgraph-components/src/lib/**/*.ts
@@ -7508,6 +7513,7 @@ grep -i "devbrand\|github-analyzer\|brand-strategist\|githubusername" \
 **Result:** 0 matches ✅
 
 **Files Audited:**
+
 - ✅ workflow-visualizer.component.ts - Clean
 - ✅ approval-modal.component.ts - Clean
 - ✅ chat.component.ts - Clean
@@ -7518,6 +7524,7 @@ grep -i "devbrand\|github-analyzer\|brand-strategist\|githubusername" \
 - ✅ All interfaces and types - Clean
 
 **Hardcoded Endpoints Audit:**
+
 ```bash
 grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 ```
@@ -7528,24 +7535,24 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 
 ### Content Projection Validation
 
-| Component | Template Slot | Selector | Implemented | Documented |
-|-----------|---------------|----------|-------------|------------|
-| **WorkflowVisualizer** | Agent Display | lgAgentDisplay | ✅ | ✅ |
-| | Agent Detail | lgAgentDetail | ✅ | ✅ |
-| | Connection Line | lgConnectionLine | ✅ | ✅ |
-| | Workflow Header | lgWorkflowHeader | ✅ | ✅ |
-| | Workflow Footer | lgWorkflowFooter | ✅ | ✅ |
-| **ApprovalModal** | Metadata Display | lgApprovalMetadata | ✅ | ✅ |
-| | Approve Button | lgApproveButton | ✅ | ✅ |
-| | Reject Button | lgRejectButton | ✅ | ✅ |
-| | Modal Header | lgModalHeader | ✅ | ✅ |
-| | Modal Footer | lgModalFooter | ✅ | ✅ |
-| **Chat** | Message Display | lgChatMessage | ✅ | ✅ |
-| | Input Area | lgChatInput | ✅ | ✅ |
-| | Typing Indicator | lgTypingIndicator | ✅ | ✅ |
-| | Empty State | lgChatEmpty | ✅ | ✅ |
-| | Chat Header | lgChatHeader | ✅ | ✅ |
-| **TOTAL** | **15 slots** | | **15/15** | **15/15** |
+| Component              | Template Slot    | Selector           | Implemented | Documented |
+| ---------------------- | ---------------- | ------------------ | ----------- | ---------- |
+| **WorkflowVisualizer** | Agent Display    | lgAgentDisplay     | ✅          | ✅         |
+|                        | Agent Detail     | lgAgentDetail      | ✅          | ✅         |
+|                        | Connection Line  | lgConnectionLine   | ✅          | ✅         |
+|                        | Workflow Header  | lgWorkflowHeader   | ✅          | ✅         |
+|                        | Workflow Footer  | lgWorkflowFooter   | ✅          | ✅         |
+| **ApprovalModal**      | Metadata Display | lgApprovalMetadata | ✅          | ✅         |
+|                        | Approve Button   | lgApproveButton    | ✅          | ✅         |
+|                        | Reject Button    | lgRejectButton     | ✅          | ✅         |
+|                        | Modal Header     | lgModalHeader      | ✅          | ✅         |
+|                        | Modal Footer     | lgModalFooter      | ✅          | ✅         |
+| **Chat**               | Message Display  | lgChatMessage      | ✅          | ✅         |
+|                        | Input Area       | lgChatInput        | ✅          | ✅         |
+|                        | Typing Indicator | lgTypingIndicator  | ✅          | ✅         |
+|                        | Empty State      | lgChatEmpty        | ✅          | ✅         |
+|                        | Chat Header      | lgChatHeader       | ✅          | ✅         |
+| **TOTAL**              | **15 slots**     |                    | **15/15**   | **15/15**  |
 
 **Status:** ✅ All content projection slots implemented and documented
 
@@ -7636,54 +7643,54 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 
 ### Code Quality Metrics
 
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| TypeScript Strict Mode | Enabled | Enabled | ✅ |
-| No 'any' Types | 0 | 0 | ✅ |
-| Generic Type Parameters | Required | Implemented | ✅ |
-| Interface Documentation | 100% | 100% | ✅ |
-| Example Code Quality | High | High | ✅ |
-| Migration Path | Clear | Documented | ✅ |
+| Metric                  | Target   | Actual      | Status |
+| ----------------------- | -------- | ----------- | ------ |
+| TypeScript Strict Mode  | Enabled  | Enabled     | ✅     |
+| No 'any' Types          | 0        | 0           | ✅     |
+| Generic Type Parameters | Required | Implemented | ✅     |
+| Interface Documentation | 100%     | 100%        | ✅     |
+| Example Code Quality    | High     | High        | ✅     |
+| Migration Path          | Clear    | Documented  | ✅     |
 
 ---
 
 ### Documentation Quality
 
-| Section | Lines | Completeness | Status |
-|---------|-------|--------------|--------|
-| API Reference | 1200 | 100% | ✅ |
-| Content Projection | 800 | 100% | ✅ |
-| Structural Directives | 600 | 100% | ✅ |
-| Integration Examples | 4500 | 100% | ✅ |
-| Template Contexts | 900 | 100% | ✅ |
-| Migration Guide | 1100 | 100% | ✅ |
-| Validation Report | 400 | 100% | ✅ |
-| **TOTAL** | **9500+** | **100%** | ✅ |
+| Section               | Lines     | Completeness | Status |
+| --------------------- | --------- | ------------ | ------ |
+| API Reference         | 1200      | 100%         | ✅     |
+| Content Projection    | 800       | 100%         | ✅     |
+| Structural Directives | 600       | 100%         | ✅     |
+| Integration Examples  | 4500      | 100%         | ✅     |
+| Template Contexts     | 900       | 100%         | ✅     |
+| Migration Guide       | 1100      | 100%         | ✅     |
+| Validation Report     | 400       | 100%         | ✅     |
+| **TOTAL**             | **9500+** | **100%**     | ✅     |
 
 ---
 
 ### Test Coverage
 
-| Component | Unit Tests | Integration Tests | E2E Tests | Status |
-|-----------|------------|-------------------|-----------|--------|
-| WorkflowVisualizer | ✅ | ✅ | ✅ | ✅ |
-| ApprovalModal | ✅ | ✅ | ✅ | ✅ |
-| Chat | ✅ | ✅ | ✅ | ✅ |
-| Connection Service | ✅ | ✅ | N/A | ✅ |
-| Protocol Service | ✅ | ✅ | N/A | ✅ |
-| Workflow Registry | ✅ | ✅ | N/A | ✅ |
-| Structural Directives | ✅ | ✅ | ✅ | ✅ |
+| Component             | Unit Tests | Integration Tests | E2E Tests | Status |
+| --------------------- | ---------- | ----------------- | --------- | ------ |
+| WorkflowVisualizer    | ✅         | ✅                | ✅        | ✅     |
+| ApprovalModal         | ✅         | ✅                | ✅        | ✅     |
+| Chat                  | ✅         | ✅                | ✅        | ✅     |
+| Connection Service    | ✅         | ✅                | N/A       | ✅     |
+| Protocol Service      | ✅         | ✅                | N/A       | ✅     |
+| Workflow Registry     | ✅         | ✅                | N/A       | ✅     |
+| Structural Directives | ✅         | ✅                | ✅        | ✅     |
 
 ---
 
 ### Performance Validation
 
-| Metric | Target | Actual | Status |
-|--------|--------|--------|--------|
-| Component Load Time | <50ms | 35ms | ✅ |
-| Content Projection Overhead | <10ms | 5ms | ✅ |
-| Type Inference Speed | <100ms | 60ms | ✅ |
-| Bundle Size Increase | <5KB | 2KB | ✅ |
+| Metric                      | Target | Actual | Status |
+| --------------------------- | ------ | ------ | ------ |
+| Component Load Time         | <50ms  | 35ms   | ✅     |
+| Content Projection Overhead | <10ms  | 5ms    | ✅     |
+| Type Inference Speed        | <100ms | 60ms   | ✅     |
+| Bundle Size Increase        | <5KB   | 2KB    | ✅     |
 
 ---
 
@@ -7702,10 +7709,12 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 ### Cross-Reference Validation
 
 **Related Tasks:**
+
 - ✅ TASK_2025_019: Architecture foundation documented
 - ✅ TASK_2025_020: DevBrand removal complete
 
 **Documentation Links:**
+
 - ✅ All examples reference TASK_2025_019 for architecture
 - ✅ Migration guide references both tasks
 - ✅ API docs cross-reference pattern library
@@ -7717,6 +7726,7 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 **Overall Status:** ✅ COMPLETE
 
 **Quality Gates:**
+
 - ✅ All DevBrand references removed
 - ✅ All acceptance criteria met (65/65)
 - ✅ All content projection slots implemented (15/15)
@@ -7727,6 +7737,7 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 - ✅ Zero breaking bugs
 
 **Deliverables:**
+
 1. ✅ Generic, reusable Angular LangGraph components
 2. ✅ Comprehensive content projection system
 3. ✅ Complete migration guide
@@ -7736,6 +7747,7 @@ grep -r "https://devbrand\|/api/devbrand" libs/angular-langgraph-components/
 7. ✅ Validation report
 
 **Sign-off:**
+
 - ✅ Frontend Developer: Approved
 - ✅ Technical Quality: Validated
 - ✅ Documentation Quality: Validated

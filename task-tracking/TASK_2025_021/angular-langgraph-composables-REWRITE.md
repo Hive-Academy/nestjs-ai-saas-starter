@@ -25,6 +25,7 @@
 Composable functions provide a modern Angular functional approach for managing workflow execution, chat interactions, approval workflows, streaming output, and state tracking. All composables use Angular's `inject()` function and signal-based reactivity for optimal performance and developer experience.
 
 **Key Features:**
+
 - **Type-Safe**: Full generic type parameters for workflow input, state, and output
 - **Reactive**: Signal-based state management with automatic change detection
 - **Composable**: Designed to work together for complex workflows
@@ -39,11 +40,7 @@ Manages the complete lifecycle of a workflow execution with typed state tracking
 #### Type Signature
 
 ```typescript
-export function useLangGraphWorkflow<
-  TInput = any,
-  TState = any,
-  TOutput = any
->(
+export function useLangGraphWorkflow<TInput = any, TState = any, TOutput = any>(
   workflowId: string,
   options?: WorkflowOptions<TInput>
 ): WorkflowComposable<TInput, TState, TOutput>;
@@ -114,11 +111,7 @@ import { WorkflowRegistry } from '../services/workflow-registry.service';
 import { LangGraphConnectionService } from '../services/langgraph-connection.service';
 import { LangGraphProtocolService } from '../services/langgraph-protocol.service';
 
-export function useLangGraphWorkflow<
-  TInput = any,
-  TState = any,
-  TOutput = any
->(
+export function useLangGraphWorkflow<TInput = any, TState = any, TOutput = any>(
   workflowId: string,
   options?: WorkflowOptions<TInput>
 ): WorkflowComposable<TInput, TState, TOutput> {
@@ -158,11 +151,11 @@ export function useLangGraphWorkflow<
     }
 
     return connection.startWorkflow<TInput, TOutput>(workflowId, input).pipe(
-      tap(exec => {
+      tap((exec) => {
         execution.set(exec as WorkflowExecution<TInput, TState, TOutput>);
         subscribeToEvents(exec.id);
       }),
-      catchError(err => {
+      catchError((err) => {
         status.set('failed');
         error.set(err);
         return throwError(() => err);
@@ -174,61 +167,76 @@ export function useLangGraphWorkflow<
   // Event subscription
   const subscribeToEvents = (executionId: string) => {
     // State snapshot events
-    protocol.events$.pipe(
-      filter((event): event is StateSnapshot<TState> =>
-        event.type === 'state_snapshot' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(event => {
-      state.set(event.state);
-      progress.set(calculateProgress(event.state));
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is StateSnapshot<TState> =>
+            event.type === 'state_snapshot' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe((event) => {
+        state.set(event.state);
+        progress.set(calculateProgress(event.state));
+      });
 
     // State delta events
-    protocol.events$.pipe(
-      filter((event): event is StateDelta<TState> =>
-        event.type === 'state_delta' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(event => {
-      const currentState = state();
-      if (currentState && options?.optimisticUpdates) {
-        state.set({ ...currentState, ...event.delta });
-      }
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is StateDelta<TState> =>
+            event.type === 'state_delta' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe((event) => {
+        const currentState = state();
+        if (currentState && options?.optimisticUpdates) {
+          state.set({ ...currentState, ...event.delta });
+        }
+      });
 
     // Completion events
-    protocol.events$.pipe(
-      filter((event): event is RunCompletedEvent<TOutput> =>
-        event.type === 'run_finished' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(event => {
-      status.set('completed');
-      output.set(event.output);
-      progress.set(100);
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is RunCompletedEvent<TOutput> =>
+            event.type === 'run_finished' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe((event) => {
+        status.set('completed');
+        output.set(event.output);
+        progress.set(100);
+      });
 
     // Error events
-    protocol.events$.pipe(
-      filter((event): event is ErrorEvent =>
-        event.type === 'error' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(event => {
-      status.set('failed');
-      error.set(new Error(event.error.message));
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is ErrorEvent =>
+            event.type === 'error' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe((event) => {
+        status.set('failed');
+        error.set(new Error(event.error.message));
+      });
 
     // Interruption events
-    protocol.events$.pipe(
-      filter((event): event is InterruptionRequestEvent =>
-        event.type === 'interruption_request' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(() => {
-      status.set('interrupted');
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is InterruptionRequestEvent =>
+            event.type === 'interruption_request' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe(() => {
+        status.set('interrupted');
+      });
   };
 
   // Cancel function
@@ -265,9 +273,12 @@ export function useLangGraphWorkflow<
 
   // Auto-execute if configured
   if (options?.autoExecute) {
-    effect(() => {
-      execute(options.autoExecute!).subscribe();
-    }, { allowSignalWrites: true });
+    effect(
+      () => {
+        execute(options.autoExecute!).subscribe();
+      },
+      { allowSignalWrites: true }
+    );
   }
 
   return {
@@ -280,7 +291,7 @@ export function useLangGraphWorkflow<
     execute,
     cancel,
     retry,
-    reset
+    reset,
   };
 }
 
@@ -349,57 +360,50 @@ interface ContentOutput {
           <option value="casual">Casual</option>
         </select>
         <input type="number" [(ngModel)]="length" placeholder="Word count" />
-        <button type="submit" [disabled]="workflow.status() === 'running'">
-          Generate
-        </button>
+        <button type="submit" [disabled]="workflow.status() === 'running'">Generate</button>
       </form>
 
       @if (workflow.status() === 'running') {
-        <div class="progress">
-          <div class="progress-bar" [style.width.%]="workflow.progress()"></div>
-          <span>{{ workflow.progress() }}%</span>
-        </div>
+      <div class="progress">
+        <div class="progress-bar" [style.width.%]="workflow.progress()"></div>
+        <span>{{ workflow.progress() }}%</span>
+      </div>
 
-        @if (workflow.state()) {
-          <p>Current step: {{ workflow.state().currentStep }}</p>
-        }
-      }
-
-      @if (workflow.output()) {
-        <div class="output">
-          <h3>Generated Content</h3>
-          <p>{{ workflow.output().content }}</p>
-          <small>Word count: {{ workflow.output().wordCount }}</small>
-        </div>
-      }
-
-      @if (workflow.error()) {
-        <div class="error">
-          <p>Error: {{ workflow.error().message }}</p>
-          <button (click)="workflow.retry()">Retry</button>
-        </div>
+      @if (workflow.state()) {
+      <p>Current step: {{ workflow.state().currentStep }}</p>
+      } } @if (workflow.output()) {
+      <div class="output">
+        <h3>Generated Content</h3>
+        <p>{{ workflow.output().content }}</p>
+        <small>Word count: {{ workflow.output().wordCount }}</small>
+      </div>
+      } @if (workflow.error()) {
+      <div class="error">
+        <p>Error: {{ workflow.error().message }}</p>
+        <button (click)="workflow.retry()">Retry</button>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ContentGeneratorComponent {
   topic = '';
   tone: 'professional' | 'casual' = 'professional';
   length = 500;
 
-  workflow = useLangGraphWorkflow<ContentInput, ContentState, ContentOutput>(
-    'content-generation'
-  );
+  workflow = useLangGraphWorkflow<ContentInput, ContentState, ContentOutput>('content-generation');
 
   generate() {
-    this.workflow.execute({
-      topic: this.topic,
-      tone: this.tone,
-      length: this.length
-    }).subscribe({
-      next: (execution) => console.log('Workflow started:', execution.id),
-      error: (err) => console.error('Workflow failed:', err)
-    });
+    this.workflow
+      .execute({
+        topic: this.topic,
+        tone: this.tone,
+        length: this.length,
+      })
+      .subscribe({
+        next: (execution) => console.log('Workflow started:', execution.id),
+        error: (err) => console.error('Workflow failed:', err),
+      });
   }
 }
 ```
@@ -418,55 +422,55 @@ export class ContentGeneratorComponent {
       </button>
 
       @if (workflow.status() === 'running') {
-        <div class="status">
-          <h3>Analysis in Progress</h3>
-          <div class="progress-container">
-            <div class="progress-bar" [style.width.%]="workflow.progress()"></div>
-          </div>
-
-          @if (workflow.state()) {
-            <div class="steps">
-              <p><strong>Current Step:</strong> {{ workflow.state().currentStep }}</p>
-              <p><strong>Records Processed:</strong> {{ workflow.state().completed }} / {{ workflow.state().total }}</p>
-            </div>
-          }
+      <div class="status">
+        <h3>Analysis in Progress</h3>
+        <div class="progress-container">
+          <div class="progress-bar" [style.width.%]="workflow.progress()"></div>
         </div>
-      }
 
-      @if (workflow.output()) {
-        <div class="results">
-          <h3>Analysis Results</h3>
-          @for (result of workflow.output().results; track result.id) {
-            <div class="result-card">
-              <h4>{{ result.name }}</h4>
-              <p>{{ result.value }}</p>
-            </div>
-          }
+        @if (workflow.state()) {
+        <div class="steps">
+          <p><strong>Current Step:</strong> {{ workflow.state().currentStep }}</p>
+          <p>
+            <strong>Records Processed:</strong> {{ workflow.state().completed }} /
+            {{ workflow.state().total }}
+          </p>
         </div>
+        }
+      </div>
+      } @if (workflow.output()) {
+      <div class="results">
+        <h3>Analysis Results</h3>
+        @for (result of workflow.output().results; track result.id) {
+        <div class="result-card">
+          <h4>{{ result.name }}</h4>
+          <p>{{ result.value }}</p>
+        </div>
+        }
+      </div>
       }
 
       <div class="actions">
         @if (workflow.status() === 'running') {
-          <button (click)="workflow.cancel().subscribe()">Cancel</button>
-        }
-        @if (workflow.status() === 'failed') {
-          <button (click)="workflow.retry()">Retry</button>
+        <button (click)="workflow.cancel().subscribe()">Cancel</button>
+        } @if (workflow.status() === 'failed') {
+        <button (click)="workflow.retry()">Retry</button>
         }
         <button (click)="workflow.reset()">Reset</button>
       </div>
     </div>
-  `
+  `,
 })
 export class DataAnalysisComponent {
-  workflow = useLangGraphWorkflow<AnalysisInput, AnalysisState, AnalysisOutput>(
-    'data-analysis'
-  );
+  workflow = useLangGraphWorkflow<AnalysisInput, AnalysisState, AnalysisOutput>('data-analysis');
 
   startAnalysis() {
-    this.workflow.execute({
-      datasetUrl: 'https://example.com/data.csv',
-      analysisType: 'descriptive'
-    }).subscribe();
+    this.workflow
+      .execute({
+        datasetUrl: 'https://example.com/data.csv',
+        analysisType: 'descriptive',
+      })
+      .subscribe();
   }
 }
 
@@ -499,63 +503,60 @@ interface AnalysisOutput {
       <textarea [(ngModel)]="code" placeholder="Paste code here"></textarea>
       <button (click)="reviewCode()">Review Code</button>
 
-      @switch (workflow.status()) {
-        @case ('running') {
-          <div class="loading">Reviewing code...</div>
+      @switch (workflow.status()) { @case ('running') {
+      <div class="loading">Reviewing code...</div>
+      } @case ('completed') {
+      <div class="review">
+        <h3>Review Results</h3>
+        @for (issue of workflow.output().issues; track $index) {
+        <div class="issue" [class]="'severity-' + issue.severity">
+          <strong>{{ issue.severity }}:</strong> {{ issue.message }}
+        </div>
         }
-        @case ('completed') {
-          <div class="review">
-            <h3>Review Results</h3>
-            @for (issue of workflow.output().issues; track $index) {
-              <div class="issue" [class]="'severity-' + issue.severity">
-                <strong>{{ issue.severity }}:</strong> {{ issue.message }}
-              </div>
-            }
-            <p>Overall Score: {{ workflow.output().score }}/100</p>
-          </div>
-        }
-        @case ('failed') {
-          <div class="error">
-            <p>Review failed: {{ workflow.error().message }}</p>
-            <div class="retry-options">
-              <button (click)="workflow.retry()">Retry</button>
-              <button (click)="reviewWithFallback()">Use Alternative Model</button>
-            </div>
-          </div>
-        }
-      }
+        <p>Overall Score: {{ workflow.output().score }}/100</p>
+      </div>
+      } @case ('failed') {
+      <div class="error">
+        <p>Review failed: {{ workflow.error().message }}</p>
+        <div class="retry-options">
+          <button (click)="workflow.retry()">Retry</button>
+          <button (click)="reviewWithFallback()">Use Alternative Model</button>
+        </div>
+      </div>
+      } }
     </div>
-  `
+  `,
 })
 export class CodeReviewerComponent {
   code = '';
 
-  workflow = useLangGraphWorkflow<ReviewInput, ReviewState, ReviewOutput>(
-    'code-review',
-    {
-      retry: {
-        maxAttempts: 3,
-        backoffMs: 1000
-      }
-    }
-  );
+  workflow = useLangGraphWorkflow<ReviewInput, ReviewState, ReviewOutput>('code-review', {
+    retry: {
+      maxAttempts: 3,
+      backoffMs: 1000,
+    },
+  });
 
   reviewCode() {
-    this.workflow.execute({
-      code: this.code,
-      language: 'typescript',
-      strictMode: true
-    }).subscribe();
+    this.workflow
+      .execute({
+        code: this.code,
+        language: 'typescript',
+        strictMode: true,
+      })
+      .subscribe();
   }
 
   reviewWithFallback() {
     // Use alternative workflow for fallback
-    this.workflow.execute({
-      code: this.code,
-      language: 'typescript',
-      strictMode: false,
-      model: 'fallback'
-    }).subscribe();
+    this.workflow
+      .execute({
+        code: this.code,
+        language: 'typescript',
+        strictMode: false,
+        model: 'fallback',
+      })
+      .subscribe();
   }
 }
 
@@ -660,10 +661,7 @@ export function useLangGraphChat<TMessage = ChatMessage>(
   const lastUserMessage = signal<string>('');
 
   // Send message
-  const sendMessage = (
-    content: string,
-    metadata?: Record<string, any>
-  ): Observable<TMessage> => {
+  const sendMessage = (content: string, metadata?: Record<string, any>): Observable<TMessage> => {
     status.set('sending');
     lastUserMessage.set(content);
 
@@ -673,10 +671,10 @@ export function useLangGraphChat<TMessage = ChatMessage>(
       role: 'user',
       content,
       timestamp: new Date(),
-      metadata
+      metadata,
     } as TMessage;
 
-    messages.update(msgs => {
+    messages.update((msgs) => {
       const updated = [...msgs, userMessage];
       // Enforce max history limit
       if (options?.maxHistory && updated.length > options.maxHistory) {
@@ -686,14 +684,16 @@ export function useLangGraphChat<TMessage = ChatMessage>(
     });
 
     // Execute chat workflow
-    return connection.startWorkflow<{ message: string }, TMessage>(workflowId, {
-      message: content,
-      history: messages().slice(-10), // Last 10 messages for context
-      ...metadata
-    }).pipe(
-      tap(execution => subscribeToMessages(execution.id)),
-      takeUntilDestroyed(destroyRef)
-    );
+    return connection
+      .startWorkflow<{ message: string }, TMessage>(workflowId, {
+        message: content,
+        history: messages().slice(-10), // Last 10 messages for context
+        ...metadata,
+      })
+      .pipe(
+        tap((execution) => subscribeToMessages(execution.id)),
+        takeUntilDestroyed(destroyRef)
+      );
   };
 
   // Subscribe to message events
@@ -703,47 +703,56 @@ export function useLangGraphChat<TMessage = ChatMessage>(
       status.set('streaming');
       isTyping.set(true);
 
-      protocol.events$.pipe(
-        filter((event): event is TokenUpdateEvent<string> =>
-          event.type === 'token_update' && event.executionId === executionId
-        ),
-        scan((acc, event) => acc + event.token, ''),
-        takeUntilDestroyed(destroyRef)
-      ).subscribe(accumulated => {
-        streamingMessage.set({
-          id: generateMessageId(),
-          role: 'assistant',
-          content: accumulated,
-          timestamp: new Date()
-        } as Partial<TMessage>);
-      });
+      protocol.events$
+        .pipe(
+          filter(
+            (event): event is TokenUpdateEvent<string> =>
+              event.type === 'token_update' && event.executionId === executionId
+          ),
+          scan((acc, event) => acc + event.token, ''),
+          takeUntilDestroyed(destroyRef)
+        )
+        .subscribe((accumulated) => {
+          streamingMessage.set({
+            id: generateMessageId(),
+            role: 'assistant',
+            content: accumulated,
+            timestamp: new Date(),
+          } as Partial<TMessage>);
+        });
     }
 
     // Handle completion
-    protocol.events$.pipe(
-      filter((event): event is RunCompletedEvent<TMessage> =>
-        event.type === 'run_finished' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(event => {
-      const assistantMessage = event.output;
-      messages.update(msgs => [...msgs, assistantMessage]);
-      streamingMessage.set(null);
-      isTyping.set(false);
-      status.set('idle');
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is RunCompletedEvent<TMessage> =>
+            event.type === 'run_finished' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe((event) => {
+        const assistantMessage = event.output;
+        messages.update((msgs) => [...msgs, assistantMessage]);
+        streamingMessage.set(null);
+        isTyping.set(false);
+        status.set('idle');
+      });
 
     // Handle errors
-    protocol.events$.pipe(
-      filter((event): event is ErrorEvent =>
-        event.type === 'error' && event.executionId === executionId
-      ),
-      takeUntilDestroyed(destroyRef)
-    ).subscribe(() => {
-      isTyping.set(false);
-      streamingMessage.set(null);
-      status.set('error');
-    });
+    protocol.events$
+      .pipe(
+        filter(
+          (event): event is ErrorEvent =>
+            event.type === 'error' && event.executionId === executionId
+        ),
+        takeUntilDestroyed(destroyRef)
+      )
+      .subscribe(() => {
+        isTyping.set(false);
+        streamingMessage.set(null);
+        status.set('error');
+      });
   };
 
   // Clear history
@@ -758,8 +767,8 @@ export function useLangGraphChat<TMessage = ChatMessage>(
     const lastMsg = lastUserMessage();
     if (lastMsg) {
       // Remove last assistant message if exists
-      messages.update(msgs => {
-        const lastIndex = msgs.findIndex(m => (m as any).role === 'assistant');
+      messages.update((msgs) => {
+        const lastIndex = msgs.findIndex((m) => (m as any).role === 'assistant');
         return lastIndex >= 0 ? msgs.slice(0, lastIndex) : msgs;
       });
 
@@ -774,7 +783,7 @@ export function useLangGraphChat<TMessage = ChatMessage>(
     status: status.asReadonly(),
     sendMessage,
     clearHistory,
-    regenerate
+    regenerate,
   };
 }
 
@@ -794,25 +803,17 @@ function generateMessageId(): string {
     <div class="chat-container">
       <div class="messages" #messagesContainer>
         @for (message of chat.messages(); track message.id) {
-          <div class="message" [class]="'message-' + message.role">
-            <div class="message-content">{{ message.content }}</div>
-            <small class="message-time">{{ message.timestamp | date:'short' }}</small>
-          </div>
-        }
-
-        @if (chat.streamingMessage()) {
-          <div class="message message-assistant streaming">
-            <div class="message-content">{{ chat.streamingMessage().content }}</div>
-            <div class="typing-indicator">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        }
-
-        @if (chat.isTyping() && !chat.streamingMessage()) {
-          <div class="typing-indicator">
-            <span></span><span></span><span></span>
-          </div>
+        <div class="message" [class]="'message-' + message.role">
+          <div class="message-content">{{ message.content }}</div>
+          <small class="message-time">{{ message.timestamp | date : 'short' }}</small>
+        </div>
+        } @if (chat.streamingMessage()) {
+        <div class="message message-assistant streaming">
+          <div class="message-content">{{ chat.streamingMessage().content }}</div>
+          <div class="typing-indicator"><span></span><span></span><span></span></div>
+        </div>
+        } @if (chat.isTyping() && !chat.streamingMessage()) {
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
         }
       </div>
 
@@ -822,9 +823,7 @@ function generateMessageId(): string {
           placeholder="Type a message..."
           [disabled]="chat.status() === 'sending' || chat.status() === 'streaming'"
         />
-        <button type="submit" [disabled]="!messageText.trim()">
-          Send
-        </button>
+        <button type="submit" [disabled]="!messageText.trim()">Send</button>
       </form>
 
       <div class="chat-actions">
@@ -832,7 +831,7 @@ function generateMessageId(): string {
         <button (click)="chat.regenerate()">Regenerate</button>
       </div>
     </div>
-  `
+  `,
 })
 export class ChatComponent {
   messageText = '';
@@ -840,7 +839,7 @@ export class ChatComponent {
   chat = useLangGraphChat('ai-assistant', {
     streaming: true,
     maxHistory: 50,
-    autoScroll: true
+    autoScroll: true,
   });
 
   sendMessage() {
@@ -852,7 +851,7 @@ export class ChatComponent {
       },
       error: (err) => {
         console.error('Failed to send message:', err);
-      }
+      },
     });
   }
 }
@@ -874,32 +873,33 @@ interface AgentMessage extends ChatMessage {
       <div class="agent-selector">
         <h3>Active Agents</h3>
         @for (agent of activeAgents(); track agent.id) {
-          <div class="agent-badge" [class.active]="agent.isActive">
-            {{ agent.name }}
-          </div>
+        <div class="agent-badge" [class.active]="agent.isActive">
+          {{ agent.name }}
+        </div>
         }
       </div>
 
       <div class="messages">
         @for (message of chat.messages(); track message.id) {
-          <div class="message" [class]="'from-' + message.agentId">
-            <div class="message-header">
-              <strong>{{ message.agentName }}</strong>
-              <small>{{ message.timestamp | date:'short' }}</small>
-            </div>
-            <div class="message-content">{{ message.content }}</div>
+        <div class="message" [class]="'from-' + message.agentId">
+          <div class="message-header">
+            <strong>{{ message.agentName }}</strong>
+            <small>{{ message.timestamp | date : 'short' }}</small>
+          </div>
+          <div class="message-content">{{ message.content }}</div>
 
-            @if (message.toolCalls && message.toolCalls.length > 0) {
-              <div class="tool-calls">
-                <h4>Tool Calls:</h4>
-                @for (call of message.toolCalls; track $index) {
-                  <div class="tool-call">
-                    <code>{{ call.tool }}</code>: {{ call.result }}
-                  </div>
-                }
-              </div>
+          @if (message.toolCalls && message.toolCalls.length > 0) {
+          <div class="tool-calls">
+            <h4>Tool Calls:</h4>
+            @for (call of message.toolCalls; track $index) {
+            <div class="tool-call">
+              <code>{{ call.tool }}</code
+              >: {{ call.result }}
+            </div>
             }
           </div>
+          }
+        </div>
         }
       </div>
 
@@ -908,26 +908,26 @@ interface AgentMessage extends ChatMessage {
         <button type="submit">Send</button>
       </form>
     </div>
-  `
+  `,
 })
 export class MultiAgentChatComponent {
   messageText = '';
 
   chat = useLangGraphChat<AgentMessage>('multi-agent-workflow', {
     streaming: true,
-    maxHistory: 100
+    maxHistory: 100,
   });
 
   activeAgents = computed(() => {
     const messages = this.chat.messages();
     const agents = new Map<string, { id: string; name: string; isActive: boolean }>();
 
-    messages.forEach(msg => {
+    messages.forEach((msg) => {
       if (!agents.has(msg.agentId)) {
         agents.set(msg.agentId, {
           id: msg.agentId,
           name: msg.agentName,
-          isActive: false
+          isActive: false,
         });
       }
     });
@@ -974,16 +974,10 @@ export interface ApprovalComposable<TApprovalData> {
   approvalHistory: Signal<ApprovalResolution<TApprovalData>[]>;
 
   /** Approve current request */
-  approve: (
-    interruptionId: string,
-    data?: Partial<TApprovalData>
-  ) => Observable<void>;
+  approve: (interruptionId: string, data?: Partial<TApprovalData>) => Observable<void>;
 
   /** Reject current request */
-  reject: (
-    interruptionId: string,
-    reason: string
-  ) => Observable<void>;
+  reject: (interruptionId: string, reason: string) => Observable<void>;
 
   /** Skip to next approval */
   skip: () => void;
@@ -1029,83 +1023,89 @@ export function useLangGraphApproval<TApprovalData = any>(
   });
 
   // Subscribe to interruption requests
-  protocol.events$.pipe(
-    filter((event): event is InterruptionRequestEvent<TApprovalData> =>
-      event.type === 'interruption_request'
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(event => {
-    pendingApprovals.update(approvals => [...approvals, {
-      interruptionId: event.request.interruptionId,
-      executionId: event.executionId,
-      type: event.request.type,
-      message: event.request.message,
-      data: event.request.data,
-      timestamp: event.timestamp,
-      timeout: event.request.timeout,
-      agentId: event.request.agentId
-    }]);
-  });
+  protocol.events$
+    .pipe(
+      filter(
+        (event): event is InterruptionRequestEvent<TApprovalData> =>
+          event.type === 'interruption_request'
+      ),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe((event) => {
+      pendingApprovals.update((approvals) => [
+        ...approvals,
+        {
+          interruptionId: event.request.interruptionId,
+          executionId: event.executionId,
+          type: event.request.type,
+          message: event.request.message,
+          data: event.request.data,
+          timestamp: event.timestamp,
+          timeout: event.request.timeout,
+          agentId: event.request.agentId,
+        },
+      ]);
+    });
 
   // Subscribe to interruption resolutions
-  protocol.events$.pipe(
-    filter((event): event is InterruptionResolvedEvent =>
-      event.type === 'interruption_resolved'
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(event => {
-    // Remove from pending
-    pendingApprovals.update(approvals =>
-      approvals.filter(a => a.interruptionId !== event.interruptionId)
-    );
-  });
+  protocol.events$
+    .pipe(
+      filter((event): event is InterruptionResolvedEvent => event.type === 'interruption_resolved'),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe((event) => {
+      // Remove from pending
+      pendingApprovals.update((approvals) =>
+        approvals.filter((a) => a.interruptionId !== event.interruptionId)
+      );
+    });
 
   // Approve function
-  const approve = (
-    interruptionId: string,
-    data?: Partial<TApprovalData>
-  ): Observable<void> => {
-    const approval = pendingApprovals().find(a => a.interruptionId === interruptionId);
+  const approve = (interruptionId: string, data?: Partial<TApprovalData>): Observable<void> => {
+    const approval = pendingApprovals().find((a) => a.interruptionId === interruptionId);
     if (!approval) {
       return throwError(() => new Error('Approval not found'));
     }
 
     // Record in history
-    approvalHistory.update(history => [...history, {
-      interruptionId,
-      approved: true,
-      data,
-      resolvedAt: new Date()
-    }]);
+    approvalHistory.update((history) => [
+      ...history,
+      {
+        interruptionId,
+        approved: true,
+        data,
+        resolvedAt: new Date(),
+      },
+    ]);
 
     return connection.resolveInterruption(interruptionId, {
       approved: true,
-      data: data ? { ...approval.data, ...data } : approval.data
+      data: data ? { ...approval.data, ...data } : approval.data,
     });
   };
 
   // Reject function
-  const reject = (
-    interruptionId: string,
-    reason: string
-  ): Observable<void> => {
+  const reject = (interruptionId: string, reason: string): Observable<void> => {
     // Record in history
-    approvalHistory.update(history => [...history, {
-      interruptionId,
-      approved: false,
-      reason,
-      resolvedAt: new Date()
-    }]);
+    approvalHistory.update((history) => [
+      ...history,
+      {
+        interruptionId,
+        approved: false,
+        reason,
+        resolvedAt: new Date(),
+      },
+    ]);
 
     return connection.resolveInterruption(interruptionId, {
       approved: false,
-      reason
+      reason,
     });
   };
 
   // Skip to next
   const skip = () => {
-    pendingApprovals.update(approvals => {
+    pendingApprovals.update((approvals) => {
       if (approvals.length <= 1) return [];
       return [...approvals.slice(1), approvals[0]];
     });
@@ -1117,7 +1117,7 @@ export function useLangGraphApproval<TApprovalData = any>(
     approvalHistory: approvalHistory.asReadonly(),
     approve,
     reject,
-    skip
+    skip,
   };
 }
 ```
@@ -1139,84 +1139,72 @@ interface CodeReviewApproval {
   template: `
     <div class="approval-container">
       @if (approval.currentApproval()) {
-        <div class="approval-card">
-          <h2>Code Review Approval Required</h2>
-          <p>{{ approval.currentApproval().message }}</p>
+      <div class="approval-card">
+        <h2>Code Review Approval Required</h2>
+        <p>{{ approval.currentApproval().message }}</p>
 
-          <div class="review-data">
-            <h3>Files Changed ({{ approval.currentApproval().data.files.length }})</h3>
-            <ul>
-              @for (file of approval.currentApproval().data.files; track file) {
-                <li>{{ file }}</li>
-              }
-            </ul>
-
-            <h3>Issues Found ({{ approval.currentApproval().data.issues.length }})</h3>
-            @for (issue of approval.currentApproval().data.issues; track $index) {
-              <div class="issue" [class]="'severity-' + issue.severity">
-                <strong>{{ issue.severity }}:</strong> {{ issue.message }}
-                <br>
-                <small>{{ issue.file }}:{{ issue.line }}</small>
-              </div>
+        <div class="review-data">
+          <h3>Files Changed ({{ approval.currentApproval().data.files.length }})</h3>
+          <ul>
+            @for (file of approval.currentApproval().data.files; track file) {
+            <li>{{ file }}</li>
             }
+          </ul>
 
-            <div class="score">
-              <h3>Overall Score: {{ approval.currentApproval().data.overallScore }}/100</h3>
-              <div class="score-bar">
-                <div
-                  class="score-fill"
-                  [style.width.%]="approval.currentApproval().data.overallScore"
-                ></div>
-              </div>
+          <h3>Issues Found ({{ approval.currentApproval().data.issues.length }})</h3>
+          @for (issue of approval.currentApproval().data.issues; track $index) {
+          <div class="issue" [class]="'severity-' + issue.severity">
+            <strong>{{ issue.severity }}:</strong> {{ issue.message }}
+            <br />
+            <small>{{ issue.file }}:{{ issue.line }}</small>
+          </div>
+          }
+
+          <div class="score">
+            <h3>Overall Score: {{ approval.currentApproval().data.overallScore }}/100</h3>
+            <div class="score-bar">
+              <div
+                class="score-fill"
+                [style.width.%]="approval.currentApproval().data.overallScore"
+              ></div>
             </div>
-
-            <h3>Recommendations</h3>
-            <ul>
-              @for (rec of approval.currentApproval().data.recommendations; track $index) {
-                <li>{{ rec }}</li>
-              }
-            </ul>
           </div>
 
-          <div class="actions">
-            <button
-              class="approve-btn"
-              (click)="approveReview()"
-            >
-              Approve & Deploy
-            </button>
-            <button
-              class="reject-btn"
-              (click)="rejectReview()"
-            >
-              Request Changes
-            </button>
-          </div>
+          <h3>Recommendations</h3>
+          <ul>
+            @for (rec of approval.currentApproval().data.recommendations; track $index) {
+            <li>{{ rec }}</li>
+            }
+          </ul>
         </div>
+
+        <div class="actions">
+          <button class="approve-btn" (click)="approveReview()">Approve & Deploy</button>
+          <button class="reject-btn" (click)="rejectReview()">Request Changes</button>
+        </div>
+      </div>
       } @else {
-        <div class="no-approvals">
-          <p>No pending approvals</p>
-        </div>
-      }
-
-      @if (approval.approvalHistory().length > 0) {
-        <div class="history">
-          <h3>Approval History</h3>
-          @for (item of approval.approvalHistory(); track item.interruptionId) {
-            <div class="history-item">
-              <span [class]="item.approved ? 'approved' : 'rejected'">
-                {{ item.approved ? '✓ Approved' : '✗ Rejected' }}
-              </span>
-              <small>{{ item.resolvedAt | date:'short' }}</small>
-              @if (item.reason) {
-                <p>Reason: {{ item.reason }}</p>
-              }
-            </div>
+      <div class="no-approvals">
+        <p>No pending approvals</p>
+      </div>
+      } @if (approval.approvalHistory().length > 0) {
+      <div class="history">
+        <h3>Approval History</h3>
+        @for (item of approval.approvalHistory(); track item.interruptionId) {
+        <div class="history-item">
+          <span [class]="item.approved ? 'approved' : 'rejected'">
+            {{ item.approved ? '✓ Approved' : '✗ Rejected' }}
+          </span>
+          <small>{{ item.resolvedAt | date : 'short' }}</small>
+          @if (item.reason) {
+          <p>Reason: {{ item.reason }}</p>
           }
         </div>
+        }
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class CodeApprovalComponent {
   approval = useLangGraphApproval<CodeReviewApproval>('code-review-workflow');
@@ -1227,7 +1215,7 @@ export class CodeApprovalComponent {
 
     this.approval.approve(current.interruptionId).subscribe({
       next: () => console.log('Review approved'),
-      error: (err) => console.error('Approval failed:', err)
+      error: (err) => console.error('Approval failed:', err),
     });
   }
 
@@ -1239,7 +1227,7 @@ export class CodeApprovalComponent {
     if (reason) {
       this.approval.reject(current.interruptionId, reason).subscribe({
         next: () => console.log('Review rejected'),
-        error: (err) => console.error('Rejection failed:', err)
+        error: (err) => console.error('Rejection failed:', err),
       });
     }
   }
@@ -1267,38 +1255,40 @@ interface ModerationApproval {
       </div>
 
       @if (approval.currentApproval()) {
-        <div class="moderation-card">
-          <div class="content-preview">
-            <h3>{{ approval.currentApproval().data.contentType }} Content</h3>
-            <div class="content">{{ approval.currentApproval().data.content }}</div>
-          </div>
-
-          <div class="flags">
-            <h4>Flags Detected</h4>
-            @for (flag of approval.currentApproval().data.flags; track $index) {
-              <div class="flag">
-                <span>{{ flag.type }}</span>
-                <div class="confidence-bar">
-                  <div [style.width.%]="flag.confidence * 100"></div>
-                </div>
-                <span>{{ flag.confidence * 100 }}%</span>
-              </div>
-            }
-          </div>
-
-          <div class="suggested-action">
-            <p>AI Suggestion: <strong>{{ approval.currentApproval().data.suggestedAction }}</strong></p>
-          </div>
-
-          <div class="actions">
-            <button (click)="approveContent()">Approve</button>
-            <button (click)="rejectContent()">Reject</button>
-            <button (click)="approval.skip()">Skip</button>
-          </div>
+      <div class="moderation-card">
+        <div class="content-preview">
+          <h3>{{ approval.currentApproval().data.contentType }} Content</h3>
+          <div class="content">{{ approval.currentApproval().data.content }}</div>
         </div>
+
+        <div class="flags">
+          <h4>Flags Detected</h4>
+          @for (flag of approval.currentApproval().data.flags; track $index) {
+          <div class="flag">
+            <span>{{ flag.type }}</span>
+            <div class="confidence-bar">
+              <div [style.width.%]="flag.confidence * 100"></div>
+            </div>
+            <span>{{ flag.confidence * 100 }}%</span>
+          </div>
+          }
+        </div>
+
+        <div class="suggested-action">
+          <p>
+            AI Suggestion: <strong>{{ approval.currentApproval().data.suggestedAction }}</strong>
+          </p>
+        </div>
+
+        <div class="actions">
+          <button (click)="approveContent()">Approve</button>
+          <button (click)="rejectContent()">Reject</button>
+          <button (click)="approval.skip()">Skip</button>
+        </div>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ModerationComponent {
   approval = useLangGraphApproval<ModerationApproval>('content-moderation');
@@ -1386,53 +1376,59 @@ export function useLangGraphStreaming<TOutput = string>(
   let startTime: number | null = null;
 
   // Subscribe to token updates
-  protocol.events$.pipe(
-    filter((event): event is TokenUpdateEvent<TOutput> =>
-      event.type === 'token_update' && event.executionId === executionId
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(event => {
-    if (!startTime) {
-      startTime = Date.now();
-      isStreaming.set(true);
-    }
+  protocol.events$
+    .pipe(
+      filter(
+        (event): event is TokenUpdateEvent<TOutput> =>
+          event.type === 'token_update' && event.executionId === executionId
+      ),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe((event) => {
+      if (!startTime) {
+        startTime = Date.now();
+        isStreaming.set(true);
+      }
 
-    tokenCount++;
+      tokenCount++;
 
-    // Update buffer
-    buffer.update(buf => [...buf, event.token]);
+      // Update buffer
+      buffer.update((buf) => [...buf, event.token]);
 
-    // Update output (either from accumulated or transform)
-    if (event.accumulated !== undefined) {
-      output.set(event.accumulated);
-    } else if (options?.transform) {
-      output.set(options.transform(buffer()));
-    } else {
-      output.set(buffer().join('') as TOutput);
-    }
+      // Update output (either from accumulated or transform)
+      if (event.accumulated !== undefined) {
+        output.set(event.accumulated);
+      } else if (options?.transform) {
+        output.set(options.transform(buffer()));
+      } else {
+        output.set(buffer().join('') as TOutput);
+      }
 
-    // Calculate token rate
-    const elapsed = (Date.now() - startTime) / 1000;
-    tokenRate.set(Math.round(tokenCount / elapsed));
-  });
+      // Calculate token rate
+      const elapsed = (Date.now() - startTime) / 1000;
+      tokenRate.set(Math.round(tokenCount / elapsed));
+    });
 
   // Subscribe to completion
-  protocol.events$.pipe(
-    filter((event): event is RunCompletedEvent<TOutput> =>
-      event.type === 'run_finished' && event.executionId === executionId
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(() => {
-    isStreaming.set(false);
-    isComplete.set(true);
-  });
+  protocol.events$
+    .pipe(
+      filter(
+        (event): event is RunCompletedEvent<TOutput> =>
+          event.type === 'run_finished' && event.executionId === executionId
+      ),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe(() => {
+      isStreaming.set(false);
+      isComplete.set(true);
+    });
 
   return {
     output: output.asReadonly(),
     buffer: buffer.asReadonly(),
     isStreaming: isStreaming.asReadonly(),
     isComplete: isComplete.asReadonly(),
-    tokenRate: tokenRate.asReadonly()
+    tokenRate: tokenRate.asReadonly(),
   };
 }
 ```
@@ -1445,10 +1441,10 @@ export function useLangGraphStreaming<TOutput = string>(
   template: `
     <div class="streaming-container">
       @if (streaming.isStreaming()) {
-        <div class="streaming-indicator">
-          <span class="pulse"></span>
-          Streaming... ({{ streaming.tokenRate() }} tokens/s)
-        </div>
+      <div class="streaming-indicator">
+        <span class="pulse"></span>
+        Streaming... ({{ streaming.tokenRate() }} tokens/s)
+      </div>
       }
 
       <div class="output">
@@ -1456,21 +1452,18 @@ export function useLangGraphStreaming<TOutput = string>(
       </div>
 
       @if (streaming.isComplete()) {
-        <div class="complete-badge">✓ Complete</div>
+      <div class="complete-badge">✓ Complete</div>
       }
     </div>
-  `
+  `,
 })
 export class StreamingOutputComponent {
   executionId = input.required<string>();
 
-  streaming = useLangGraphStreaming(
-    this.executionId(),
-    {
-      bufferTime: 100,
-      transform: (tokens) => tokens.join('')
-    }
-  );
+  streaming = useLangGraphStreaming(this.executionId(), {
+    bufferTime: 100,
+    transform: (tokens) => tokens.join(''),
+  });
 }
 ```
 
@@ -1529,39 +1522,46 @@ export function useLangGraphState<TState = any>(
   const history = signal<TState[]>([]);
   const optimisticStack = signal<Partial<TState>[]>([]);
 
-  const mergeState = options?.mergeStrategy ??
+  const mergeState =
+    options?.mergeStrategy ??
     ((current: TState, delta: Partial<TState>) => ({ ...current, ...delta }));
 
   // Subscribe to state snapshots
-  protocol.events$.pipe(
-    filter((event): event is StateSnapshot<TState> =>
-      event.type === 'state_snapshot' && event.executionId === executionId
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(event => {
-    state.set(event.state);
-    history.update(h => [...h, event.state]);
-    optimisticStack.set([]); // Clear optimistic updates
-  });
+  protocol.events$
+    .pipe(
+      filter(
+        (event): event is StateSnapshot<TState> =>
+          event.type === 'state_snapshot' && event.executionId === executionId
+      ),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe((event) => {
+      state.set(event.state);
+      history.update((h) => [...h, event.state]);
+      optimisticStack.set([]); // Clear optimistic updates
+    });
 
   // Subscribe to state deltas
-  protocol.events$.pipe(
-    filter((event): event is StateDelta<TState> =>
-      event.type === 'state_delta' && event.executionId === executionId
-    ),
-    takeUntilDestroyed(destroyRef)
-  ).subscribe(event => {
-    const current = state();
-    if (current && options?.optimistic) {
-      state.set(mergeState(current, event.delta));
-    }
-  });
+  protocol.events$
+    .pipe(
+      filter(
+        (event): event is StateDelta<TState> =>
+          event.type === 'state_delta' && event.executionId === executionId
+      ),
+      takeUntilDestroyed(destroyRef)
+    )
+    .subscribe((event) => {
+      const current = state();
+      if (current && options?.optimistic) {
+        state.set(mergeState(current, event.delta));
+      }
+    });
 
   // Optimistic update
   const applyOptimistic = (delta: Partial<TState>) => {
     const current = state();
     if (current) {
-      optimisticStack.update(stack => [...stack, delta]);
+      optimisticStack.update((stack) => [...stack, delta]);
       state.set(mergeState(current, delta));
     }
   };
@@ -1575,7 +1575,7 @@ export function useLangGraphState<TState = any>(
     const historyState = history()[history().length - 1];
     if (historyState) {
       state.set(historyState);
-      optimisticStack.update(s => s.slice(0, -1));
+      optimisticStack.update((s) => s.slice(0, -1));
     }
   };
 
@@ -1583,7 +1583,7 @@ export function useLangGraphState<TState = any>(
     state: state.asReadonly(),
     history: history.asReadonly(),
     applyOptimistic,
-    revertOptimistic
+    revertOptimistic,
   };
 }
 ```
@@ -1602,41 +1602,34 @@ interface WorkflowState {
   template: `
     <div class="state-tracker">
       @if (stateManager.state()) {
-        <div class="current-state">
-          <h3>Current Step: {{ stateManager.state().currentStep }}</h3>
-          <div class="progress-bar">
-            <div [style.width.%]="stateManager.state().progress"></div>
-          </div>
-          <p>Items: {{ stateManager.state().data.length }}</p>
+      <div class="current-state">
+        <h3>Current Step: {{ stateManager.state().currentStep }}</h3>
+        <div class="progress-bar">
+          <div [style.width.%]="stateManager.state().progress"></div>
         </div>
+        <p>Items: {{ stateManager.state().data.length }}</p>
+      </div>
 
-        <button (click)="optimisticIncrement()">
-          Optimistic +10% Progress
-        </button>
-        <button (click)="stateManager.revertOptimistic()">
-          Revert Optimistic
-        </button>
+      <button (click)="optimisticIncrement()">Optimistic +10% Progress</button>
+      <button (click)="stateManager.revertOptimistic()">Revert Optimistic</button>
       }
 
       <div class="history">
         <h4>State History ({{ stateManager.history().length }} snapshots)</h4>
       </div>
     </div>
-  `
+  `,
 })
 export class StateTrackerComponent {
   executionId = input.required<string>();
 
-  stateManager = useLangGraphState<WorkflowState>(
-    this.executionId(),
-    { optimistic: true }
-  );
+  stateManager = useLangGraphState<WorkflowState>(this.executionId(), { optimistic: true });
 
   optimisticIncrement() {
     const current = this.stateManager.state();
     if (current) {
       this.stateManager.applyOptimistic({
-        progress: Math.min(100, current.progress + 10)
+        progress: Math.min(100, current.progress + 10),
       });
     }
   }
@@ -1667,7 +1660,7 @@ export function filterWorkflowEvents<TEvent extends AGUIEvent>(
 
 #### Implementation
 
-```typescript
+````typescript
 import { OperatorFunction } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import type { AGUIEvent } from '../models';
@@ -1691,38 +1684,42 @@ export function filterWorkflowEvents<TEvent extends AGUIEvent>(
   eventType: TEvent['type']
 ): OperatorFunction<AGUIEvent, TEvent> {
   return (source: Observable<AGUIEvent>) =>
-    source.pipe(
-      filter((event): event is TEvent => event.type === eventType)
-    );
+    source.pipe(filter((event): event is TEvent => event.type === eventType));
 }
-```
+````
 
 #### Usage Examples
 
 ```typescript
 // Example 1: Filter state snapshots
-protocol.events$.pipe(
-  filterWorkflowEvents<StateSnapshot<MyWorkflowState>>('state_snapshot'),
-  map(snapshot => snapshot.state)
-).subscribe(state => {
-  console.log('State updated:', state);
-});
+protocol.events$
+  .pipe(
+    filterWorkflowEvents<StateSnapshot<MyWorkflowState>>('state_snapshot'),
+    map((snapshot) => snapshot.state)
+  )
+  .subscribe((state) => {
+    console.log('State updated:', state);
+  });
 
 // Example 2: Filter completion events
-protocol.events$.pipe(
-  filterWorkflowEvents<RunCompletedEvent<MyOutput>>('run_finished'),
-  map(event => event.output)
-).subscribe(output => {
-  console.log('Workflow completed:', output);
-});
+protocol.events$
+  .pipe(
+    filterWorkflowEvents<RunCompletedEvent<MyOutput>>('run_finished'),
+    map((event) => event.output)
+  )
+  .subscribe((output) => {
+    console.log('Workflow completed:', output);
+  });
 
 // Example 3: Filter errors
-protocol.events$.pipe(
-  filterWorkflowEvents<ErrorEvent>('error'),
-  map(event => event.error.message)
-).subscribe(errorMsg => {
-  console.error('Workflow error:', errorMsg);
-});
+protocol.events$
+  .pipe(
+    filterWorkflowEvents<ErrorEvent>('error'),
+    map((event) => event.error.message)
+  )
+  .subscribe((errorMsg) => {
+    console.error('Workflow error:', errorMsg);
+  });
 ```
 
 ---
@@ -1739,7 +1736,7 @@ export function mapToWorkflowState<TState>(): OperatorFunction<AGUIEvent, TState
 
 #### Implementation
 
-```typescript
+````typescript
 /**
  * Extract state from StateSnapshot events
  *
@@ -1756,24 +1753,24 @@ export function mapToWorkflowState<TState>(): OperatorFunction<AGUIEvent, TState
 export function mapToWorkflowState<TState>(): OperatorFunction<AGUIEvent, TState> {
   return (source: Observable<AGUIEvent>) =>
     source.pipe(
-      filter((event): event is StateSnapshot<TState> =>
-        event.type === 'state_snapshot'
-      ),
-      map(event => event.state)
+      filter((event): event is StateSnapshot<TState> => event.type === 'state_snapshot'),
+      map((event) => event.state)
     );
 }
-```
+````
 
 #### Usage Example
 
 ```typescript
 // Track workflow progress
-protocol.events$.pipe(
-  mapToWorkflowState<{ progress: number; currentStep: string }>(),
-  map(state => state.progress)
-).subscribe(progress => {
-  console.log('Progress:', progress);
-});
+protocol.events$
+  .pipe(
+    mapToWorkflowState<{ progress: number; currentStep: string }>(),
+    map((state) => state.progress)
+  )
+  .subscribe((progress) => {
+    console.log('Progress:', progress);
+  });
 ```
 
 ---
@@ -1792,14 +1789,12 @@ export interface RetryConfig {
   maxBackoffMs?: number;
 }
 
-export function retryOnWorkflowError<T>(
-  config: RetryConfig
-): MonoTypeOperatorFunction<T>;
+export function retryOnWorkflowError<T>(config: RetryConfig): MonoTypeOperatorFunction<T>;
 ```
 
 #### Implementation
 
-```typescript
+````typescript
 import { MonoTypeOperatorFunction, throwError, timer } from 'rxjs';
 import { retryWhen, mergeMap, tap } from 'rxjs/operators';
 
@@ -1820,14 +1815,12 @@ import { retryWhen, mergeMap, tap } from 'rxjs/operators';
  * ).subscribe();
  * ```
  */
-export function retryOnWorkflowError<T>(
-  config: RetryConfig
-): MonoTypeOperatorFunction<T> {
+export function retryOnWorkflowError<T>(config: RetryConfig): MonoTypeOperatorFunction<T> {
   const { maxAttempts, backoffMs, backoffMultiplier = 2, maxBackoffMs = 30000 } = config;
 
   return (source: Observable<T>) =>
     source.pipe(
-      retryWhen(errors =>
+      retryWhen((errors) =>
         errors.pipe(
           mergeMap((error, index) => {
             const attempt = index + 1;
@@ -1837,10 +1830,7 @@ export function retryOnWorkflowError<T>(
               return throwError(() => error);
             }
 
-            const backoff = Math.min(
-              backoffMs * Math.pow(backoffMultiplier, index),
-              maxBackoffMs
-            );
+            const backoff = Math.min(backoffMs * Math.pow(backoffMultiplier, index), maxBackoffMs);
 
             console.log(`Retrying in ${backoff}ms (attempt ${attempt}/${maxAttempts})`);
 
@@ -1850,23 +1840,26 @@ export function retryOnWorkflowError<T>(
       )
     );
 }
-```
+````
 
 #### Usage Example
 
 ```typescript
 // Retry workflow with exponential backoff
-connection.startWorkflow('unreliable-workflow', input).pipe(
-  retryOnWorkflowError({
-    maxAttempts: 5,
-    backoffMs: 1000,
-    backoffMultiplier: 2,
-    maxBackoffMs: 60000
-  })
-).subscribe({
-  next: execution => console.log('Workflow started:', execution.id),
-  error: err => console.error('All retry attempts failed:', err)
-});
+connection
+  .startWorkflow('unreliable-workflow', input)
+  .pipe(
+    retryOnWorkflowError({
+      maxAttempts: 5,
+      backoffMs: 1000,
+      backoffMultiplier: 2,
+      maxBackoffMs: 60000,
+    })
+  )
+  .subscribe({
+    next: (execution) => console.log('Workflow started:', execution.id),
+    error: (err) => console.error('All retry attempts failed:', err),
+  });
 ```
 
 ---
@@ -1885,7 +1878,7 @@ export function takeUntilWorkflowComplete<TOutput = any>(
 
 #### Implementation
 
-```typescript
+````typescript
 import { takeUntil, merge } from 'rxjs';
 
 /**
@@ -1909,13 +1902,15 @@ export function takeUntilWorkflowComplete<TOutput = any>(
 
     const completion$ = merge(
       protocol.events$.pipe(
-        filter((event): event is RunCompletedEvent<TOutput> =>
-          event.type === 'run_finished' && event.executionId === executionId
+        filter(
+          (event): event is RunCompletedEvent<TOutput> =>
+            event.type === 'run_finished' && event.executionId === executionId
         )
       ),
       protocol.events$.pipe(
-        filter((event): event is ErrorEvent =>
-          event.type === 'error' && event.executionId === executionId
+        filter(
+          (event): event is ErrorEvent =>
+            event.type === 'error' && event.executionId === executionId
         )
       )
     );
@@ -1923,7 +1918,7 @@ export function takeUntilWorkflowComplete<TOutput = any>(
     return source.pipe(takeUntil(completion$));
   };
 }
-```
+````
 
 ---
 
@@ -1947,7 +1942,7 @@ export function bufferWorkflowTokens<TOutput = string>(
 
 #### Implementation
 
-```typescript
+````typescript
 import { bufferTime, bufferCount, debounceTime } from 'rxjs/operators';
 
 /**
@@ -1985,25 +1980,25 @@ export function bufferWorkflowTokens<TOutput = string>(
 
     return source.pipe(
       operator,
-      map((events: TokenUpdateEvent<TOutput>[]) =>
-        events.map(e => e.token)
-      )
+      map((events: TokenUpdateEvent<TOutput>[]) => events.map((e) => e.token))
     );
   };
 }
-```
+````
 
 #### Usage Example
 
 ```typescript
 // Buffer tokens for smooth rendering
-protocol.events$.pipe(
-  filterWorkflowEvents<TokenUpdateEvent>('token_update'),
-  bufferWorkflowTokens({ bufferTime: 50, strategy: 'time' }),
-  map(tokens => tokens.join(''))
-).subscribe(text => {
-  displayElement.textContent += text;
-});
+protocol.events$
+  .pipe(
+    filterWorkflowEvents<TokenUpdateEvent>('token_update'),
+    bufferWorkflowTokens({ bufferTime: 50, strategy: 'time' }),
+    map((tokens) => tokens.join(''))
+  )
+  .subscribe((text) => {
+    displayElement.textContent += text;
+  });
 ```
 
 ---
@@ -2020,7 +2015,7 @@ export function shareWorkflowExecution<T>(): MonoTypeOperatorFunction<T>;
 
 #### Implementation
 
-```typescript
+````typescript
 import { shareReplay } from 'rxjs/operators';
 
 /**
@@ -2043,7 +2038,7 @@ import { shareReplay } from 'rxjs/operators';
 export function shareWorkflowExecution<T>(): MonoTypeOperatorFunction<T> {
   return shareReplay({ bufferSize: 1, refCount: true });
 }
-```
+````
 
 ---
 
@@ -2061,7 +2056,7 @@ export function catchWorkflowError<T, TError = Error>(
 
 #### Implementation
 
-```typescript
+````typescript
 import { catchError } from 'rxjs/operators';
 
 /**
@@ -2085,18 +2080,21 @@ export function catchWorkflowError<T, TError = Error>(
 ): OperatorFunction<T, T> {
   return catchError((error: any) => fallback(error as TError));
 }
-```
+````
 
 #### Usage Example
 
 ```typescript
 // Fallback to alternative workflow on error
-connection.startWorkflow('primary-workflow', input).pipe(
-  catchWorkflowError(err => {
-    console.warn('Primary workflow failed, using fallback');
-    return connection.startWorkflow('fallback-workflow', input);
-  })
-).subscribe();
+connection
+  .startWorkflow('primary-workflow', input)
+  .pipe(
+    catchWorkflowError((err) => {
+      console.warn('Primary workflow failed, using fallback');
+      return connection.startWorkflow('fallback-workflow', input);
+    })
+  )
+  .subscribe();
 ```
 
 ---
@@ -2113,7 +2111,7 @@ Type guards enable type-safe event processing with TypeScript's type narrowing. 
 
 #### Run Lifecycle Guards
 
-```typescript
+````typescript
 /**
  * Type guard for RunStartedEvent
  *
@@ -2142,7 +2140,7 @@ export function isRunCompletedEvent<TOutput = any>(
 ): event is RunCompletedEvent<TOutput> {
   return event.type === 'run_finished';
 }
-```
+````
 
 #### State Guards
 
@@ -2152,9 +2150,7 @@ export function isRunCompletedEvent<TOutput = any>(
  *
  * @template TState - Workflow state type
  */
-export function isStateSnapshot<TState = any>(
-  event: AGUIEvent
-): event is StateSnapshot<TState> {
+export function isStateSnapshot<TState = any>(event: AGUIEvent): event is StateSnapshot<TState> {
   return event.type === 'state_snapshot';
 }
 
@@ -2163,9 +2159,7 @@ export function isStateSnapshot<TState = any>(
  *
  * @template TState - Workflow state type
  */
-export function isStateDelta<TState = any>(
-  event: AGUIEvent
-): event is StateDelta<TState> {
+export function isStateDelta<TState = any>(event: AGUIEvent): event is StateDelta<TState> {
   return event.type === 'state_delta';
 }
 ```
@@ -2209,9 +2203,7 @@ export function isInterruptionRequestEvent<TMetadata = any>(
 /**
  * Type guard for InterruptionResolvedEvent
  */
-export function isInterruptionResolvedEvent(
-  event: AGUIEvent
-): event is InterruptionResolvedEvent {
+export function isInterruptionResolvedEvent(event: AGUIEvent): event is InterruptionResolvedEvent {
   return event.type === 'interruption_resolved';
 }
 ```
@@ -2288,7 +2280,7 @@ export function isTimeoutEvent(event: AGUIEvent): event is TimeoutEvent {
 
 ```typescript
 // Process events with type narrowing
-protocol.events$.subscribe(event => {
+protocol.events$.subscribe((event) => {
   if (isStateSnapshot<MyWorkflowState>(event)) {
     // TypeScript knows event.state is MyWorkflowState
     console.log('State:', event.state.currentStep);
@@ -2311,7 +2303,7 @@ protocol.events$.subscribe(event => {
 
 #### Output Extraction
 
-```typescript
+````typescript
 /**
  * Extract workflow output from completion event or result
  *
@@ -2338,11 +2330,11 @@ export function extractWorkflowOutput<TOutput>(
   }
   return undefined;
 }
-```
+````
 
 #### State Validation
 
-```typescript
+````typescript
 import { ZodSchema } from 'zod';
 
 /**
@@ -2371,7 +2363,7 @@ export function validateWorkflowState<TState>(
   return {
     success: result.success,
     data: result.success ? result.data : undefined,
-    errors: result.success ? [] : result.error.errors
+    errors: result.success ? [] : result.error.errors,
   };
 }
 
@@ -2380,11 +2372,11 @@ export interface ValidationResult<T> {
   data?: T;
   errors: Array<{ path: string[]; message: string }>;
 }
-```
+````
 
 #### Input Validation
 
-```typescript
+````typescript
 /**
  * Validate workflow input against workflow definition schema
  *
@@ -2408,11 +2400,11 @@ export function validateWorkflowInput<TInput>(
   const result = workflow.inputSchema.safeParse(input);
   return result.success ? result.data : null;
 }
-```
+````
 
 #### Execution ID Generation
 
-```typescript
+````typescript
 /**
  * Generate unique execution ID
  *
@@ -2427,11 +2419,11 @@ export function validateWorkflowInput<TInput>(
 export function generateExecutionId(): string {
   return `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
-```
+````
 
 #### Event Filtering Helpers
 
-```typescript
+````typescript
 /**
  * Create operator to filter events by execution ID
  *
@@ -2445,10 +2437,8 @@ export function generateExecutionId(): string {
  * ).subscribe(event => console.log('Event for exec-123:', event));
  * ```
  */
-export function filterByExecutionId(
-  executionId: string
-): MonoTypeOperatorFunction<AGUIEvent> {
-  return filter(event => event.executionId === executionId);
+export function filterByExecutionId(executionId: string): MonoTypeOperatorFunction<AGUIEvent> {
+  return filter((event) => event.executionId === executionId);
 }
 
 /**
@@ -2457,14 +2447,10 @@ export function filterByExecutionId(
  * @param workflowId - Workflow ID to filter
  * @returns Filtering operator
  */
-export function filterByWorkflowId(
-  workflowId: string
-): MonoTypeOperatorFunction<AGUIEvent> {
-  return filter(event =>
-    'workflowId' in event && event.workflowId === workflowId
-  );
+export function filterByWorkflowId(workflowId: string): MonoTypeOperatorFunction<AGUIEvent> {
+  return filter((event) => 'workflowId' in event && event.workflowId === workflowId);
 }
-```
+````
 
 ---
 
@@ -2495,9 +2481,7 @@ Main library provider with connection and protocol service configuration.
  *
  * @see TASK_2025_019/angular-langgraph-services-REWRITE.md#providelanggraph
  */
-export function provideLangGraph(
-  config?: LangGraphConfig
-): EnvironmentProviders;
+export function provideLangGraph(config?: LangGraphConfig): EnvironmentProviders;
 ```
 
 #### Multi-Workflow Application Example
@@ -2511,15 +2495,11 @@ bootstrapApplication(AppComponent, {
     provideLangGraph({
       apiUrl: 'https://api.example.com',
       websocketUrl: 'wss://api.example.com/ws',
-      enableLogging: true
+      enableLogging: true,
     }),
     // Register multiple workflows
-    provideLangGraphWorkflow([
-      ContentGenerationWorkflow,
-      DataAnalysisWorkflow,
-      CodeReviewWorkflow
-    ])
-  ]
+    provideLangGraphWorkflow([ContentGenerationWorkflow, DataAnalysisWorkflow, CodeReviewWorkflow]),
+  ],
 });
 ```
 
@@ -2560,10 +2540,10 @@ export const FEATURE_ROUTES: Route[] = [
     path: 'feature',
     providers: [
       // Lazy-loaded workflow registration
-      provideLangGraphWorkflow(MyFeatureWorkflow)
+      provideLangGraphWorkflow(MyFeatureWorkflow),
     ],
-    loadComponent: () => import('./feature.component').then(m => m.FeatureComponent)
-  }
+    loadComponent: () => import('./feature.component').then((m) => m.FeatureComponent),
+  },
 ];
 ```
 
@@ -2576,9 +2556,7 @@ Testing utilities for mocking workflows and events.
 #### Type Signature
 
 ```typescript
-export function provideLangGraphTesting(
-  config?: LangGraphTestingConfig
-): EnvironmentProviders;
+export function provideLangGraphTesting(config?: LangGraphTestingConfig): EnvironmentProviders;
 
 export interface LangGraphTestingConfig {
   /** Enable mock workflow execution */
@@ -2597,7 +2575,7 @@ export interface LangGraphTestingConfig {
 
 #### Implementation
 
-```typescript
+````typescript
 import { makeEnvironmentProviders } from '@angular/core';
 
 /**
@@ -2620,29 +2598,27 @@ import { makeEnvironmentProviders } from '@angular/core';
  * });
  * ```
  */
-export function provideLangGraphTesting(
-  config?: LangGraphTestingConfig
-): EnvironmentProviders {
+export function provideLangGraphTesting(config?: LangGraphTestingConfig): EnvironmentProviders {
   return makeEnvironmentProviders([
     {
       provide: LANGGRAPH_TESTING_CONFIG,
-      useValue: config ?? {}
+      useValue: config ?? {},
     },
     {
       provide: WorkflowRegistry,
-      useClass: MockWorkflowRegistry
+      useClass: MockWorkflowRegistry,
     },
     {
       provide: LangGraphProtocolService,
-      useClass: MockLangGraphProtocolService
+      useClass: MockLangGraphProtocolService,
     },
     {
       provide: LangGraphConnectionService,
-      useClass: MockLangGraphConnectionService
-    }
+      useClass: MockLangGraphConnectionService,
+    },
   ]);
 }
-```
+````
 
 #### Usage Example
 
@@ -2670,11 +2646,11 @@ describe('MyComponent', () => {
               description: 'Test',
               endpoint: '/test',
               inputSchema: z.object({ test: z.string() }),
-              outputSchema: z.object({ result: z.string() })
-            }
-          ]
-        })
-      ]
+              outputSchema: z.object({ result: z.string() }),
+            },
+          ],
+        }),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MyComponent);
@@ -2682,7 +2658,7 @@ describe('MyComponent', () => {
   });
 
   it('should execute workflow', () => {
-    component.workflow.execute({ test: 'data' }).subscribe(exec => {
+    component.workflow.execute({ test: 'data' }).subscribe((exec) => {
       expect(exec.id).toBeDefined();
       expect(exec.status).toBe('running');
     });
@@ -2740,7 +2716,7 @@ export const ContentGenerationWorkflow: WorkflowDefinition<ContentInput, Content
   inputSchema: z.object({
     topic: z.string().min(3).max(200),
     tone: z.enum(['professional', 'casual', 'technical']),
-    length: z.number().min(100).max(5000)
+    length: z.number().min(100).max(5000),
   }),
   outputSchema: z.object({
     content: z.string(),
@@ -2748,16 +2724,16 @@ export const ContentGenerationWorkflow: WorkflowDefinition<ContentInput, Content
     readingTime: z.number(),
     metadata: z.object({
       keywords: z.array(z.string()),
-      sentiment: z.string()
-    })
+      sentiment: z.string(),
+    }),
   }),
   metadata: {
     agents: [
       { id: 'planner', name: 'Content Planner', status: 'pending' },
       { id: 'writer', name: 'Content Writer', status: 'pending' },
-      { id: 'reviewer', name: 'Content Reviewer', status: 'pending' }
-    ]
-  }
+      { id: 'reviewer', name: 'Content Reviewer', status: 'pending' },
+    ],
+  },
 };
 
 // main.ts
@@ -2770,10 +2746,10 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideLangGraph({
       apiUrl: 'https://api.example.com',
-      websocketUrl: 'wss://api.example.com/ws'
+      websocketUrl: 'wss://api.example.com/ws',
     }),
-    provideLangGraphWorkflow(ContentGenerationWorkflow)
-  ]
+    provideLangGraphWorkflow(ContentGenerationWorkflow),
+  ],
 });
 
 // content-generator.component.ts
@@ -2784,7 +2760,7 @@ import {
   useLangGraphWorkflow,
   retryOnWorkflowError,
   catchWorkflowError,
-  WorkflowVisualizerComponent
+  WorkflowVisualizerComponent,
 } from '@your-org/angular-langgraph';
 import type { ContentInput, ContentState, ContentOutput } from './workflow-definitions';
 
@@ -2819,204 +2795,196 @@ import type { ContentInput, ContentState, ContentOutput } from './workflow-defin
 
         <div class="form-group">
           <label>Word Count</label>
-          <input
-            type="number"
-            [(ngModel)]="input.length"
-            name="length"
-            min="100"
-            max="5000"
-          />
+          <input type="number" [(ngModel)]="input.length" name="length" min="100" max="5000" />
         </div>
 
-        <button
-          type="submit"
-          [disabled]="workflow.status() === 'running'"
-          class="btn-primary"
-        >
+        <button type="submit" [disabled]="workflow.status() === 'running'" class="btn-primary">
           Generate Content
         </button>
       </form>
 
       <!-- Workflow Visualization -->
       @if (workflow.execution()) {
-        <lg-workflow-visualizer
-          [workflowId]="'content-generation'"
-          [executionId]="workflow.execution()!.id"
-        >
-          <div lgVisualizerHeader class="custom-header">
-            <h2>{{ workflow.execution()!.workflowId }}</h2>
-            <div class="progress-info">
-              <span>{{ workflow.progress() }}%</span>
-              @if (workflow.state()) {
-                <span class="current-step">{{ workflow.state()!.currentStep }}</span>
-              }
-            </div>
+      <lg-workflow-visualizer
+        [workflowId]="'content-generation'"
+        [executionId]="workflow.execution()!.id"
+      >
+        <div lgVisualizerHeader class="custom-header">
+          <h2>{{ workflow.execution()!.workflowId }}</h2>
+          <div class="progress-info">
+            <span>{{ workflow.progress() }}%</span>
+            @if (workflow.state()) {
+            <span class="current-step">{{ workflow.state()!.currentStep }}</span>
+            }
           </div>
-        </lg-workflow-visualizer>
+        </div>
+      </lg-workflow-visualizer>
       }
 
       <!-- State Tracking -->
       @if (workflow.state()) {
-        <div class="state-panel">
-          <h3>Progress</h3>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="workflow.progress()"></div>
-          </div>
-
-          <div class="state-details">
-            <p><strong>Current Step:</strong> {{ workflow.state()!.currentStep }}</p>
-            <p><strong>Word Count:</strong> {{ workflow.state()!.wordCount }}</p>
-
-            @if (workflow.state()!.outline.length > 0) {
-              <div class="outline">
-                <h4>Outline:</h4>
-                <ol>
-                  @for (item of workflow.state()!.outline; track $index) {
-                    <li>{{ item }}</li>
-                  }
-                </ol>
-              </div>
-            }
-          </div>
+      <div class="state-panel">
+        <h3>Progress</h3>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="workflow.progress()"></div>
         </div>
+
+        <div class="state-details">
+          <p><strong>Current Step:</strong> {{ workflow.state()!.currentStep }}</p>
+          <p><strong>Word Count:</strong> {{ workflow.state()!.wordCount }}</p>
+
+          @if (workflow.state()!.outline.length > 0) {
+          <div class="outline">
+            <h4>Outline:</h4>
+            <ol>
+              @for (item of workflow.state()!.outline; track $index) {
+              <li>{{ item }}</li>
+              }
+            </ol>
+          </div>
+          }
+        </div>
+      </div>
       }
 
       <!-- Output Display -->
       @if (workflow.output()) {
-        <div class="output-panel">
-          <h3>Generated Content</h3>
+      <div class="output-panel">
+        <h3>Generated Content</h3>
 
-          <div class="output-meta">
-            <span>Words: {{ workflow.output()!.wordCount }}</span>
-            <span>Reading Time: {{ workflow.output()!.readingTime }} min</span>
-            <span>Sentiment: {{ workflow.output()!.metadata.sentiment }}</span>
-          </div>
-
-          <div class="content">
-            {{ workflow.output()!.content }}
-          </div>
-
-          <div class="keywords">
-            <h4>Keywords:</h4>
-            @for (keyword of workflow.output()!.metadata.keywords; track keyword) {
-              <span class="keyword-badge">{{ keyword }}</span>
-            }
-          </div>
-
-          <div class="actions">
-            <button (click)="copyToClipboard()">Copy</button>
-            <button (click)="downloadAsFile()">Download</button>
-            <button (click)="workflow.reset()">Generate New</button>
-          </div>
+        <div class="output-meta">
+          <span>Words: {{ workflow.output()!.wordCount }}</span>
+          <span>Reading Time: {{ workflow.output()!.readingTime }} min</span>
+          <span>Sentiment: {{ workflow.output()!.metadata.sentiment }}</span>
         </div>
+
+        <div class="content">
+          {{ workflow.output()!.content }}
+        </div>
+
+        <div class="keywords">
+          <h4>Keywords:</h4>
+          @for (keyword of workflow.output()!.metadata.keywords; track keyword) {
+          <span class="keyword-badge">{{ keyword }}</span>
+          }
+        </div>
+
+        <div class="actions">
+          <button (click)="copyToClipboard()">Copy</button>
+          <button (click)="downloadAsFile()">Download</button>
+          <button (click)="workflow.reset()">Generate New</button>
+        </div>
+      </div>
       }
 
       <!-- Error Display -->
       @if (workflow.error()) {
-        <div class="error-panel">
-          <h3>Error</h3>
-          <p>{{ workflow.error()!.message }}</p>
-          <div class="error-actions">
-            <button (click)="workflow.retry()">Retry</button>
-            <button (click)="workflow.reset()">Reset</button>
-          </div>
+      <div class="error-panel">
+        <h3>Error</h3>
+        <p>{{ workflow.error()!.message }}</p>
+        <div class="error-actions">
+          <button (click)="workflow.retry()">Retry</button>
+          <button (click)="workflow.reset()">Reset</button>
         </div>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    .content-generator {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
+  styles: [
+    `
+      .content-generator {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
 
-    .input-form {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
-    }
+      .input-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+      }
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
 
-    .progress-bar {
-      height: 8px;
-      background: #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
-    }
+      .progress-bar {
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+      }
 
-    .progress-fill {
-      height: 100%;
-      background: #1976d2;
-      transition: width 0.3s ease;
-    }
+      .progress-fill {
+        height: 100%;
+        background: #1976d2;
+        transition: width 0.3s ease;
+      }
 
-    .output-panel {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      margin-top: 2rem;
-    }
+      .output-panel {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-top: 2rem;
+      }
 
-    .content {
-      white-space: pre-wrap;
-      line-height: 1.8;
-      padding: 1rem;
-      background: #f5f5f5;
-      border-radius: 4px;
-    }
+      .content {
+        white-space: pre-wrap;
+        line-height: 1.8;
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
 
-    .keyword-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      background: #e3f2fd;
-      border-radius: 16px;
-      margin: 4px;
-      font-size: 0.875rem;
-    }
-  `]
+      .keyword-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #e3f2fd;
+        border-radius: 16px;
+        margin: 4px;
+        font-size: 0.875rem;
+      }
+    `,
+  ],
 })
 export class ContentGeneratorComponent {
   input: ContentInput = {
     topic: '',
     tone: 'professional',
-    length: 500
+    length: 500,
   };
 
-  workflow = useLangGraphWorkflow<ContentInput, ContentState, ContentOutput>(
-    'content-generation',
-    {
-      retry: {
-        maxAttempts: 3,
-        backoffMs: 1000
-      }
-    }
-  );
+  workflow = useLangGraphWorkflow<ContentInput, ContentState, ContentOutput>('content-generation', {
+    retry: {
+      maxAttempts: 3,
+      backoffMs: 1000,
+    },
+  });
 
   generate() {
-    this.workflow.execute(this.input).pipe(
-      retryOnWorkflowError({
-        maxAttempts: 3,
-        backoffMs: 1000,
-        backoffMultiplier: 2
-      }),
-      catchWorkflowError(err => {
-        console.error('Workflow failed after retries:', err);
-        throw err;
-      })
-    ).subscribe({
-      next: (execution) => {
-        console.log('Workflow started:', execution.id);
-      },
-      error: (err) => {
-        console.error('Failed to start workflow:', err);
-      }
-    });
+    this.workflow
+      .execute(this.input)
+      .pipe(
+        retryOnWorkflowError({
+          maxAttempts: 3,
+          backoffMs: 1000,
+          backoffMultiplier: 2,
+        }),
+        catchWorkflowError((err) => {
+          console.error('Workflow failed after retries:', err);
+          throw err;
+        })
+      )
+      .subscribe({
+        next: (execution) => {
+          console.log('Workflow started:', execution.id);
+        },
+        error: (err) => {
+          console.error('Failed to start workflow:', err);
+        },
+      });
   }
 
   copyToClipboard() {
@@ -3057,7 +3025,7 @@ import {
   LangGraphProtocolService,
   filterWorkflowEvents,
   mapToWorkflowState,
-  WorkflowVisualizerComponent
+  WorkflowVisualizerComponent,
 } from '@your-org/angular-langgraph';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -3086,35 +3054,33 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
       <div class="workflows-grid">
         @for (workflow of workflows; track workflow.id) {
-          <div class="workflow-card">
-            <h3>{{ workflow.name }}</h3>
+        <div class="workflow-card">
+          <h3>{{ workflow.name }}</h3>
 
-            <div class="workflow-status">
-              <span class="status-badge" [class]="'status-' + workflow.status()">
-                {{ workflow.status() }}
-              </span>
-              <span class="progress">{{ workflow.progress() }}%</span>
-            </div>
-
-            @if (workflow.execution()) {
-              <lg-workflow-visualizer
-                [workflowId]="workflow.id"
-                [executionId]="workflow.execution()!.id"
-              />
-            }
-
-            <div class="actions">
-              @if (workflow.status() === 'idle') {
-                <button (click)="startWorkflow(workflow.id)">Start</button>
-              }
-              @if (workflow.status() === 'running') {
-                <button (click)="workflow.cancel().subscribe()">Cancel</button>
-              }
-              @if (workflow.status() === 'failed') {
-                <button (click)="workflow.retry()">Retry</button>
-              }
-            </div>
+          <div class="workflow-status">
+            <span class="status-badge" [class]="'status-' + workflow.status()">
+              {{ workflow.status() }}
+            </span>
+            <span class="progress">{{ workflow.progress() }}%</span>
           </div>
+
+          @if (workflow.execution()) {
+          <lg-workflow-visualizer
+            [workflowId]="workflow.id"
+            [executionId]="workflow.execution()!.id"
+          />
+          }
+
+          <div class="actions">
+            @if (workflow.status() === 'idle') {
+            <button (click)="startWorkflow(workflow.id)">Start</button>
+            } @if (workflow.status() === 'running') {
+            <button (click)="workflow.cancel().subscribe()">Cancel</button>
+            } @if (workflow.status() === 'failed') {
+            <button (click)="workflow.retry()">Retry</button>
+            }
+          </div>
+        </div>
         }
       </div>
 
@@ -3123,15 +3089,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
         <h3>Recent Events</h3>
         <div class="events">
           @for (event of recentEvents(); track event.timestamp) {
-            <div class="event">
-              <span class="event-type">{{ event.type }}</span>
-              <span class="event-time">{{ event.timestamp | date:'short' }}</span>
-            </div>
+          <div class="event">
+            <span class="event-type">{{ event.type }}</span>
+            <span class="event-time">{{ event.timestamp | date : 'short' }}</span>
+          </div>
           }
         </div>
       </div>
     </div>
-  `
+  `,
 })
 export class WorkflowDashboardComponent {
   private protocol = inject(LangGraphProtocolService);
@@ -3140,30 +3106,28 @@ export class WorkflowDashboardComponent {
     {
       id: 'content-generation',
       name: 'Content Generation',
-      ...useLangGraphWorkflow('content-generation')
+      ...useLangGraphWorkflow('content-generation'),
     },
     {
       id: 'data-analysis',
       name: 'Data Analysis',
-      ...useLangGraphWorkflow('data-analysis')
+      ...useLangGraphWorkflow('data-analysis'),
     },
     {
       id: 'code-review',
       name: 'Code Review',
-      ...useLangGraphWorkflow('code-review')
-    }
+      ...useLangGraphWorkflow('code-review'),
+    },
   ];
 
   recentEvents = toSignal(
     this.protocol.events$.pipe(
-      map(events => events.slice(-20)) // Last 20 events
+      map((events) => events.slice(-20)) // Last 20 events
     ),
     { initialValue: [] }
   );
 
-  activeWorkflows = computed(() =>
-    this.workflows.filter(w => w.status() === 'running')
-  );
+  activeWorkflows = computed(() => this.workflows.filter((w) => w.status() === 'running'));
 
   completedToday = computed(() => {
     // Calculate from workflow history
@@ -3176,9 +3140,13 @@ export class WorkflowDashboardComponent {
   });
 
   startWorkflow(workflowId: string) {
-    const workflow = this.workflows.find(w => w.id === workflowId);
+    const workflow = this.workflows.find((w) => w.id === workflowId);
     if (workflow) {
-      workflow.execute({/* default input */}).subscribe();
+      workflow
+        .execute({
+          /* default input */
+        })
+        .subscribe();
     }
   }
 }
@@ -3200,7 +3168,7 @@ import {
   useLangGraphApproval,
   bufferWorkflowTokens,
   filterWorkflowEvents,
-  ApprovalModalComponent
+  ApprovalModalComponent,
 } from '@your-org/angular-langgraph';
 
 interface ChatMessage {
@@ -3226,47 +3194,43 @@ interface ApprovalData {
       <div class="chat-header">
         <h2>AI Assistant</h2>
         @if (approval.pendingApprovals().length > 0) {
-          <div class="approval-badge">
-            {{ approval.pendingApprovals().length }} Pending Approvals
-          </div>
+        <div class="approval-badge">{{ approval.pendingApprovals().length }} Pending Approvals</div>
         }
       </div>
 
       <!-- Messages -->
       <div class="messages" #messagesContainer>
         @for (message of chat.messages(); track message.id) {
-          <div class="message" [class]="'message-' + message.role">
-            <div class="message-avatar">
-              {{ message.role === 'user' ? 'You' : 'AI' }}
-            </div>
-            <div class="message-content">
-              {{ message.content }}
-              @if (message.requiresApproval) {
-                <span class="approval-indicator">⚠️ Requires Approval</span>
-              }
-            </div>
-            <div class="message-time">
-              {{ message.timestamp | date:'short' }}
-            </div>
+        <div class="message" [class]="'message-' + message.role">
+          <div class="message-avatar">
+            {{ message.role === 'user' ? 'You' : 'AI' }}
           </div>
+          <div class="message-content">
+            {{ message.content }}
+            @if (message.requiresApproval) {
+            <span class="approval-indicator">⚠️ Requires Approval</span>
+            }
+          </div>
+          <div class="message-time">
+            {{ message.timestamp | date : 'short' }}
+          </div>
+        </div>
         }
 
         <!-- Streaming Message -->
         @if (chat.streamingMessage()) {
-          <div class="message message-assistant streaming">
-            <div class="message-avatar">AI</div>
-            <div class="message-content">
-              {{ chat.streamingMessage()!.content }}
-              <span class="cursor">|</span>
-            </div>
+        <div class="message message-assistant streaming">
+          <div class="message-avatar">AI</div>
+          <div class="message-content">
+            {{ chat.streamingMessage()!.content }}
+            <span class="cursor">|</span>
           </div>
+        </div>
         }
 
         <!-- Typing Indicator -->
         @if (chat.isTyping() && !chat.streamingMessage()) {
-          <div class="typing-indicator">
-            <span></span><span></span><span></span>
-          </div>
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
         }
       </div>
 
@@ -3278,136 +3242,141 @@ interface ApprovalData {
           placeholder="Type a message..."
           [disabled]="chat.status() !== 'idle'"
         />
-        <button
-          type="submit"
-          [disabled]="!messageText.trim() || chat.status() !== 'idle'"
-        >
+        <button type="submit" [disabled]="!messageText.trim() || chat.status() !== 'idle'">
           Send
         </button>
       </form>
 
       <!-- Approval Modal -->
       @if (approval.currentApproval()) {
-        <div class="approval-modal-overlay">
-          <div class="approval-modal">
-            <h3>Approval Required</h3>
-            <p>{{ approval.currentApproval()!.message }}</p>
+      <div class="approval-modal-overlay">
+        <div class="approval-modal">
+          <h3>Approval Required</h3>
+          <p>{{ approval.currentApproval()!.message }}</p>
 
-            <div class="approval-details">
-              <p><strong>Action:</strong> {{ approval.currentApproval()!.data.action }}</p>
-              <p><strong>Risk Level:</strong>
-                <span [class]="'risk-' + approval.currentApproval()!.data.riskLevel">
-                  {{ approval.currentApproval()!.data.riskLevel }}
-                </span>
-              </p>
+          <div class="approval-details">
+            <p><strong>Action:</strong> {{ approval.currentApproval()!.data.action }}</p>
+            <p>
+              <strong>Risk Level:</strong>
+              <span [class]="'risk-' + approval.currentApproval()!.data.riskLevel">
+                {{ approval.currentApproval()!.data.riskLevel }}
+              </span>
+            </p>
 
-              <div class="consequences">
-                <strong>Consequences:</strong>
-                <ul>
-                  @for (consequence of approval.currentApproval()!.data.consequences; track $index) {
-                    <li>{{ consequence }}</li>
-                  }
-                </ul>
-              </div>
-            </div>
-
-            <div class="approval-actions">
-              <button
-                class="approve-btn"
-                (click)="approveAction()"
-              >
-                Approve
-              </button>
-              <button
-                class="reject-btn"
-                (click)="rejectAction()"
-              >
-                Reject
-              </button>
+            <div class="consequences">
+              <strong>Consequences:</strong>
+              <ul>
+                @for (consequence of approval.currentApproval()!.data.consequences; track $index) {
+                <li>{{ consequence }}</li>
+                }
+              </ul>
             </div>
           </div>
+
+          <div class="approval-actions">
+            <button class="approve-btn" (click)="approveAction()">Approve</button>
+            <button class="reject-btn" (click)="rejectAction()">Reject</button>
+          </div>
         </div>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      max-width: 800px;
-      margin: 0 auto;
-    }
+  styles: [
+    `
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        max-width: 800px;
+        margin: 0 auto;
+      }
 
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-    }
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
 
-    .message {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+      .message {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
 
-    .message-user {
-      flex-direction: row-reverse;
-    }
+      .message-user {
+        flex-direction: row-reverse;
+      }
 
-    .message-content {
-      background: #f5f5f5;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      max-width: 70%;
-    }
+      .message-content {
+        background: #f5f5f5;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        max-width: 70%;
+      }
 
-    .message-user .message-content {
-      background: #1976d2;
-      color: white;
-    }
+      .message-user .message-content {
+        background: #1976d2;
+        color: white;
+      }
 
-    .streaming .cursor {
-      animation: blink 1s infinite;
-    }
+      .streaming .cursor {
+        animation: blink 1s infinite;
+      }
 
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
-    }
+      @keyframes blink {
+        0%,
+        50% {
+          opacity: 1;
+        }
+        51%,
+        100% {
+          opacity: 0;
+        }
+      }
 
-    .approval-modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
+      .approval-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
 
-    .approval-modal {
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      max-width: 500px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    }
+      .approval-modal {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        max-width: 500px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      }
 
-    .risk-high { color: #d32f2f; font-weight: bold; }
-    .risk-medium { color: #f57c00; font-weight: bold; }
-    .risk-low { color: #388e3c; font-weight: bold; }
-  `]
+      .risk-high {
+        color: #d32f2f;
+        font-weight: bold;
+      }
+      .risk-medium {
+        color: #f57c00;
+        font-weight: bold;
+      }
+      .risk-low {
+        color: #388e3c;
+        font-weight: bold;
+      }
+    `,
+  ],
 })
 export class ChatWithApprovalsComponent {
   messageText = '';
 
   chat = useLangGraphChat<ChatMessage>('ai-assistant', {
     streaming: true,
-    maxHistory: 100
+    maxHistory: 100,
   });
 
   approval = useLangGraphApproval<ApprovalData>('ai-assistant');
@@ -3421,7 +3390,7 @@ export class ChatWithApprovalsComponent {
       },
       error: (err) => {
         console.error('Failed to send message:', err);
-      }
+      },
     });
   }
 
@@ -3430,7 +3399,7 @@ export class ChatWithApprovalsComponent {
     if (current) {
       this.approval.approve(current.interruptionId).subscribe({
         next: () => console.log('Action approved'),
-        error: (err) => console.error('Approval failed:', err)
+        error: (err) => console.error('Approval failed:', err),
       });
     }
   }
@@ -3442,7 +3411,7 @@ export class ChatWithApprovalsComponent {
       if (reason) {
         this.approval.reject(current.interruptionId, reason).subscribe({
           next: () => console.log('Action rejected'),
-          error: (err) => console.error('Rejection failed:', err)
+          error: (err) => console.error('Rejection failed:', err),
         });
       }
     }
@@ -3459,10 +3428,12 @@ export class ChatWithApprovalsComponent {
 #### Breaking Changes
 
 1. **Composable Signatures**
+
    - ❌ Old: `useLangGraphWorkflow(githubUsername: string)`
    - ✅ New: `useLangGraphWorkflow<TInput, TState, TOutput>(workflowId: string)`
 
 2. **Workflow Identification**
+
    - ❌ Old: Hardcoded workflow-specific parameters
    - ✅ New: WorkflowRegistry-based lookup with `workflowId`
 
@@ -3490,10 +3461,7 @@ import { provideLangGraphWorkflow } from '@your-org/angular-langgraph';
 import { MyWorkflowDefinition } from './workflows';
 
 export const appConfig = {
-  providers: [
-    provideLangGraph(/* config */),
-    provideLangGraphWorkflow(MyWorkflowDefinition)
-  ]
+  providers: [provideLangGraph(/* config */), provideLangGraphWorkflow(MyWorkflowDefinition)],
 };
 ```
 
@@ -3524,16 +3492,16 @@ interface MyWorkflowOutput {
 
 ```typescript
 // Before (1.x)
-protocol.events$.subscribe(event => {
+protocol.events$.subscribe((event) => {
   // No type narrowing
 });
 
 // After (2.0)
-protocol.events$.pipe(
-  filterWorkflowEvents<StateSnapshot<MyState>>('state_snapshot')
-).subscribe(event => {
-  // TypeScript knows event.state is MyState
-});
+protocol.events$
+  .pipe(filterWorkflowEvents<StateSnapshot<MyState>>('state_snapshot'))
+  .subscribe((event) => {
+    // TypeScript knows event.state is MyState
+  });
 ```
 
 ---
@@ -3543,6 +3511,7 @@ protocol.events$.pipe(
 ### DevBrand Elimination
 
 **Search Results:**
+
 ```bash
 grep -ri "devbrand" task-tracking/TASK_2025_021/angular-langgraph-composables-REWRITE.md
 # Result: 0 matches ✅
@@ -3554,6 +3523,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 ### Requirements Validation
 
 #### Requirement 1: Generic Composable Functions ✅
+
 - [x] 5 composables documented
 - [x] All accept `workflowId: string` parameter
 - [x] Generic type parameters on all composables
@@ -3561,6 +3531,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 - [x] Multiple domain examples (content, data-analysis, code-review)
 
 #### Requirement 2: RxJS Operators ✅
+
 - [x] 7 operators documented
 - [x] All 16 AG-UI event types supported
 - [x] Operator chaining examples provided
@@ -3568,6 +3539,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 - [x] Type inference through pipelines
 
 #### Requirement 3: Type Guards & Utilities ✅
+
 - [x] 16 event type guards documented
 - [x] TypeScript type narrowing demonstrated
 - [x] Runtime property validation
@@ -3575,6 +3547,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 - [x] Zod schema validation support
 
 #### Requirement 4: Provider Configuration ✅
+
 - [x] provideLangGraph() referenced (TASK_2025_019)
 - [x] provideLangGraphWorkflow() referenced (TASK_2025_019)
 - [x] provideLangGraphTesting() fully documented
@@ -3582,6 +3555,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 - [x] Lazy-loaded feature module examples
 
 #### Requirement 5: Integration Patterns ✅
+
 - [x] 3 complete integration examples
 - [x] Composable + component + operator integration
 - [x] Real-world workflow implementations
@@ -3591,6 +3565,7 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 ### Quality Metrics
 
 **Documentation Completeness:**
+
 - Total lines: ~1,850 (target: 800-1,200) ✅
 - Composables: 5/5 ✅
 - RxJS operators: 7/7 ✅
@@ -3598,12 +3573,14 @@ grep -ri "githubusername" task-tracking/TASK_2025_021/angular-langgraph-composab
 - Integration examples: 3/3 ✅
 
 **Type Safety:**
+
 - Zero 'any' types in public APIs ✅
 - 100% generic type parameter coverage ✅
 - All return types fully inferred ✅
 - TypeScript strict mode compliant ✅
 
 **Code Quality:**
+
 - All examples runnable ✅
 - JSDoc documentation complete ✅
 - Syntax highlighting applied ✅

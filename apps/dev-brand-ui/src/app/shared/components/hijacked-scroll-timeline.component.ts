@@ -51,7 +51,15 @@ import { HijackedScrollDirective } from '../../core/angular-3d/directives/hijack
   hostDirectives: [
     {
       directive: HijackedScrollDirective,
-      inputs: ['scrollHeightPerStep', 'animationDuration', 'ease', 'markers', 'minHeight', 'start', 'end'],
+      inputs: [
+        'scrollHeightPerStep',
+        'animationDuration',
+        'ease',
+        'markers',
+        'minHeight',
+        'start',
+        'end',
+      ],
       outputs: ['currentStepChange', 'progressChange'],
     },
   ],

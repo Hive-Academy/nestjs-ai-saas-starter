@@ -13,6 +13,7 @@
 **Objective**: Implement 11 library landing page sections following the proven ChromaDB pattern
 
 **Deliverables**:
+
 - 11 standalone Angular components (100% pattern match to ChromaDB)
 - 44 AI-generated images integrated (language: 'image')
 - Smooth scroll animations with GSAP ScrollTrigger
@@ -51,6 +52,7 @@ grep -r "DecorativePatternComponent" apps/dev-brand-ui/src/app/shared/components
 ```
 
 **Evidence Verification**:
+
 - [ ] All directives verified in codebase (lines cited in architecture-design.md)
 - [ ] All components verified in codebase
 - [ ] ChromaDB component read and understood (500 lines)
@@ -89,11 +91,13 @@ grep -r "DecorativePatternComponent" apps/dev-brand-ui/src/app/shared/components
 **Actions**:
 
 1. Navigate to sections directory:
+
 ```bash
 cd apps/dev-brand-ui/src/app/features/landing-page/sections/
 ```
 
 2. Copy ChromaDB component as template:
+
 ```bash
 cp chromadb-section.component.ts {library}-section.component.ts
 
@@ -104,6 +108,7 @@ cp chromadb-section.component.ts neo4j-section.component.ts
 3. Open new file and perform find/replace:
 
 **Find/Replace Operations**:
+
 ```
 Find: "ChromadbSectionComponent"
 Replace: "{Library}SectionComponent" (e.g., "Neo4jSectionComponent")
@@ -116,6 +121,7 @@ Replace: "{Library} Section" (e.g., "Neo4j Section")
 ```
 
 4. Update JSDoc comment block (lines 10-30):
+
 ```typescript
 /**
  * {Library} Section - {Primary Purpose from content-mapping.md}
@@ -139,6 +145,7 @@ Replace: "{Library} Section" (e.g., "Neo4j Section")
 ```
 
 **Validation**:
+
 - [ ] File created with correct name
 - [ ] Component selector correct
 - [ ] Class name correct
@@ -165,6 +172,7 @@ Replace: "{Library} Section" (e.g., "Neo4j Section")
 ```
 
 **Layer Badge Mapping** (from content-mapping.md):
+
 - Neo4j: "DATA FOUNDATION LAYER" (database icon)
 - LangGraph Core: "CORE FOUNDATION" (cube icon)
 - Memory/Workflow-Engine/Streaming: "ORCHESTRATION LAYER" (brain/cogs/stream icon)
@@ -212,6 +220,7 @@ Replace: "{Library} Section" (e.g., "Neo4j Section")
 ```
 
 **Example (Neo4j)**:
+
 ```typescript
 <div class="text-4xl font-bold text-indigo-600 mb-2">7 Decorators</div>
 <div class="text-sm text-gray-500 uppercase tracking-wide">CRUD System</div>
@@ -227,6 +236,7 @@ Replace: "{Library} Section" (e.g., "Neo4j Section")
 ```
 
 **Validation**:
+
 - [ ] Layer badge shows correct category
 - [ ] Library name in headline
 - [ ] Subtitle and tagline match content-mapping.md
@@ -295,6 +305,7 @@ readonly codeTimeline = signal<TimelineStep[]>([
 4. **Populate Steps 2, 3, 4**:
 
 Repeat process for remaining 3 steps:
+
 - **Step 2**: layout 'right', image path `..._step_2.png`
 - **Step 3**: layout 'left', image path `..._step_3.png`
 - **Step 4**: layout 'right', image path `..._step_4.png`
@@ -302,6 +313,7 @@ Repeat process for remaining 3 steps:
 **Critical**: Copy descriptions and notes EXACTLY from content-mapping.md (do not paraphrase)
 
 **Validation**:
+
 - [ ] 4 steps defined
 - [ ] Each step has unique id
 - [ ] Step numbers: 1, 2, 3, 4
@@ -341,6 +353,7 @@ readonly integrations = signal([
 3. **Populate 3 Integration Cards**:
 
 **Example (Neo4j)**:
+
 ```typescript
 readonly integrations = signal([
   {
@@ -362,6 +375,7 @@ readonly integrations = signal([
 ```
 
 **Validation**:
+
 - [ ] 3 integration cards defined
 - [ ] Emoji icons assigned
 - [ ] Module names correct
@@ -414,12 +428,14 @@ readonly integrations = signal([
 **Reference**: task-description.md - {Library} decorative pattern requirements
 
 **Example (Neo4j from task-description.md lines 49-54)**:
+
 - Step 1: 'network-nodes' (right side, purple-400)
 - Step 2: 'circuit-board' (left side, indigo-400)
 - Step 3: 'data-flow' (right side, purple-300)
 - Step 4: 'gradient-blob' (left side, indigo-300)
 
 **Available Patterns**:
+
 - 'data-flow'
 - 'network-nodes'
 - 'circuit-board'
@@ -427,6 +443,7 @@ readonly integrations = signal([
 - 'vector-arrows'
 
 **Validation**:
+
 - [ ] Step 1 pattern assigned (from task-description.md)
 - [ ] Step 2 pattern assigned, opposite position
 - [ ] Step 3 pattern assigned, opposite position
@@ -440,16 +457,19 @@ readonly integrations = signal([
 **Visual Validation**:
 
 1. Start dev server:
+
 ```bash
 npx nx serve dev-brand-ui
 ```
 
 2. Navigate to section:
+
 ```
 http://localhost:4200/#section-{library}
 ```
 
 3. Visual checklist:
+
 - [ ] Sticky header displays correctly at top
 - [ ] 3 metrics show library-specific values
 - [ ] Layer badge shows correct category
@@ -491,6 +511,7 @@ npx nx build dev-brand-ui
 **Animation Validation**:
 
 Scroll through section and verify:
+
 - [ ] Text slides from correct direction
 - [ ] Images slide from opposite direction (parallax)
 - [ ] Decorative patterns animate smoothly
@@ -504,23 +525,16 @@ Scroll through section and verify:
 ### Recommended Order (Complexity-Based)
 
 **Batch 1 - Foundational (Start Here)**:
+
 1. **Neo4j** (45 min) - Database layer, establishes pattern confidence
 2. **LangGraph Core** (50 min) - Foundation layer, core concepts
 3. **Memory** (50 min) - Hybrid storage, integration examples
 
-**Batch 2 - Orchestration (Mid Complexity)**:
-4. **Workflow Engine** (55 min) - Central hub, complex architecture
-5. **Streaming** (50 min) - Real-time concepts
-6. **Multi-Agent** (55 min) - Collaborative AI
+**Batch 2 - Orchestration (Mid Complexity)**: 4. **Workflow Engine** (55 min) - Central hub, complex architecture 5. **Streaming** (50 min) - Real-time concepts 6. **Multi-Agent** (55 min) - Collaborative AI
 
-**Batch 3 - Agent Coordination (Similar Patterns)**:
-7. **HITL** (50 min) - Human approval workflows
-8. **Functional API** (50 min) - Decorator-driven development
+**Batch 3 - Agent Coordination (Similar Patterns)**: 7. **HITL** (50 min) - Human approval workflows 8. **Functional API** (50 min) - Decorator-driven development
 
-**Batch 4 - Production Layer (Enterprise Features)**:
-9. **Checkpoint** (50 min) - State persistence
-10. **Monitoring** (50 min) - Observability
-11. **Platform** (55 min) - Cloud deployment
+**Batch 4 - Production Layer (Enterprise Features)**: 9. **Checkpoint** (50 min) - State persistence 10. **Monitoring** (50 min) - Observability 11. **Platform** (55 min) - Cloud deployment
 
 ---
 
@@ -537,11 +551,13 @@ Scroll through section and verify:
 **Implementation Steps**:
 
 1. **Scaffold** (5 min):
+
    - Copy chromadb-section.component.ts → neo4j-section.component.ts
    - Replace "Chromadb" → "Neo4j"
    - Replace "chromadb" → "neo4j"
 
 2. **Sticky Header** (10 min):
+
    - Layer badge: "DATA FOUNDATION LAYER"
    - Headline: "Neo4j"
    - Subtitle: "Enterprise-grade graph relationships for AI knowledge graphs"
@@ -553,10 +569,12 @@ Scroll through section and verify:
    - Hero pattern: 'network-nodes'
 
 3. **Timeline Steps** (20 min):
+
    - Copy 4 steps from content-mapping.md lines 39-120
    - Verify image paths: neo4j_step_1.png, neo4j_step_2.png, neo4j_step_3.png, neo4j_step_4.png
 
 4. **Integration Cards** (5 min):
+
    - Copy 3 cards from content-mapping.md lines 115-122
 
 5. **Decorative Patterns** (5 min):
@@ -580,11 +598,13 @@ Scroll through section and verify:
 **Implementation Steps**:
 
 1. **Scaffold** (5 min):
+
    - Copy chromadb-section.component.ts → langgraph-core-section.component.ts
    - Replace "Chromadb" → "LanggraphCore"
    - Replace "chromadb" → "langgraph-core"
 
 2. **Sticky Header** (10 min):
+
    - Layer badge: "CORE FOUNDATION"
    - Headline: "LangGraph Core"
    - Subtitle: "Type-safe foundation for all LangGraph workflows"
@@ -596,12 +616,15 @@ Scroll through section and verify:
    - Hero pattern: 'data-flow'
 
 3. **Timeline Steps** (20 min):
+
    - Copy 4 steps from content-mapping.md lines 147-210
 
 4. **Integration Cards** (5 min):
+
    - Copy 3 cards from content-mapping.md lines 206-217
 
 5. **Decorative Patterns** (5 min):
+
    - Assign from task-description.md requirements
 
 6. **Validation** (10 min)
@@ -629,12 +652,14 @@ Scroll through section and verify:
 ### Per-Component Checklist
 
 **Component Structure**:
+
 - [ ] File named correctly (`{library}-section.component.ts`)
 - [ ] Component selector correct (`app-{library}-section`)
 - [ ] All imports present (CommonModule, directives, components)
 - [ ] Signals defined (ecosystemOpacity, codeTimeline, integrations)
 
 **Sticky Header**:
+
 - [ ] Layer badge shows correct category
 - [ ] Library name in headline
 - [ ] Subtitle matches content-mapping.md
@@ -643,6 +668,7 @@ Scroll through section and verify:
 - [ ] Hero decorative pattern unique per library
 
 **Timeline Steps**:
+
 - [ ] 4 steps defined in codeTimeline signal
 - [ ] Each step has unique id
 - [ ] Step numbers 1-4
@@ -654,12 +680,14 @@ Scroll through section and verify:
 - [ ] 4 bullet notes per step (10-15 words each, exact match)
 
 **Integration Cards**:
+
 - [ ] 3 integration cards defined in integrations signal
 - [ ] Emoji icons assigned
 - [ ] Module names correct
 - [ ] Descriptions 8-12 words (exact match)
 
 **Decorative Patterns**:
+
 - [ ] Step 1: Pattern assigned (from task-description.md)
 - [ ] Step 2: Pattern assigned, opposite position
 - [ ] Step 3: Pattern assigned, opposite position
@@ -667,6 +695,7 @@ Scroll through section and verify:
 - [ ] Colors: purple-400, indigo-400, purple-300, indigo-300
 
 **Animations**:
+
 - [ ] Sticky header: start 'top top', end '+=4000', scrub 0.5
 - [ ] Text: start 'top 80%', end 'top 30%', scrub 1
 - [ ] Images: start 'top 75%', end 'top 25%', scrub 1
@@ -674,6 +703,7 @@ Scroll through section and verify:
 - [ ] Integration cards: fade in after 500ms
 
 **TypeScript Quality**:
+
 - [ ] Zero `any` types
 - [ ] All signals properly typed
 - [ ] TimelineStep interface satisfied
@@ -687,6 +717,7 @@ Scroll through section and verify:
 ### Before Marking Task Complete
 
 **Component Files**:
+
 - [ ] neo4j-section.component.ts
 - [ ] langgraph-core-section.component.ts
 - [ ] langgraph-memory-section.component.ts
@@ -700,6 +731,7 @@ Scroll through section and verify:
 - [ ] langgraph-platform-section.component.ts
 
 **Code Quality**:
+
 - [ ] All components pass TypeScript compilation
 - [ ] All components pass ESLint
 - [ ] All components formatted with Prettier
@@ -707,6 +739,7 @@ Scroll through section and verify:
 - [ ] Zero console warnings in browser
 
 **Visual Quality**:
+
 - [ ] All sticky headers display correctly
 - [ ] All metrics display library-specific values
 - [ ] All timeline steps display with correct data
@@ -715,17 +748,20 @@ Scroll through section and verify:
 - [ ] No visual glitches or layout issues
 
 **Performance**:
+
 - [ ] Scroll animations run at 60 FPS (desktop)
 - [ ] Image lazy loading works
 - [ ] No layout shift during scroll
 - [ ] Lighthouse performance score > 90
 
 **Content Accuracy**:
+
 - [ ] All content matches content-mapping.md exactly
 - [ ] All metrics match library-analysis.md
 - [ ] All integration points match library-analysis.md
 
 **Build Validation**:
+
 - [ ] Production build succeeds
 - [ ] No build warnings
 - [ ] Bundle size < 15KB gzipped per component (check with webpack-bundle-analyzer if needed)
@@ -741,6 +777,7 @@ Scroll through section and verify:
 **Error**: `Property 'notes' is missing in type`
 
 **Solution**: Verify TimelineStep interface includes all fields:
+
 ```typescript
 interface TimelineStep {
   id: string;
@@ -759,6 +796,7 @@ interface TimelineStep {
 **Error**: 404 for image paths
 
 **Solution**: Images are AI-generated and may not exist yet. This is expected. Use placeholder display:
+
 ```typescript
 @if (step.language === 'image') {
   <!-- Image will load once generated -->
@@ -775,6 +813,7 @@ interface TimelineStep {
 **Error**: ScrollTrigger animations not triggering
 
 **Solution**: Check GSAP imports and ScrollTrigger registration:
+
 ```typescript
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -789,6 +828,7 @@ Ensure `ScrollAnimationDirective` is imported in component.
 **Error**: `<app-decorative-pattern>` not rendering
 
 **Solution**: Verify `DecorativePatternComponent` import:
+
 ```typescript
 import { DecorativePatternComponent } from '../../../shared/components/decorative-patterns.component';
 
@@ -804,6 +844,7 @@ imports: [
 **Error**: Header or integration cards not staying in view
 
 **Solution**: Check ScrollTrigger pin configuration:
+
 ```typescript
 // Sticky header should have:
 scrollAnimation [scrollConfig]="{
@@ -863,6 +904,7 @@ scrollAnimation [scrollConfig]="{
 ### Definition of Done
 
 **Technical Completion**:
+
 - [x] All 11 components implemented
 - [x] All components follow ChromaDB pattern exactly
 - [x] Zero TypeScript errors
@@ -870,6 +912,7 @@ scrollAnimation [scrollConfig]="{
 - [x] Production build succeeds
 
 **Visual Completion**:
+
 - [x] All sticky headers display correctly
 - [x] All metrics show library-specific values
 - [x] All timeline steps display with correct content
@@ -877,11 +920,13 @@ scrollAnimation [scrollConfig]="{
 - [x] All scroll animations work smoothly
 
 **Content Completion**:
+
 - [x] All content matches content-mapping.md
 - [x] All metrics match library-analysis.md
 - [x] All integration points accurate
 
 **Performance Completion**:
+
 - [x] 60 FPS scroll animations (desktop)
 - [x] 30 FPS scroll animations (mobile)
 - [x] Lighthouse score > 90
@@ -896,6 +941,7 @@ scrollAnimation [scrollConfig]="{
 **Task**: Implement 11 library landing page sections following ChromaDB pattern
 
 **Complexity**: MEDIUM-HIGH
+
 - Pattern replication is straightforward
 - Content extraction from content-mapping.md is mechanical
 - 11 components = significant volume but repetitive
@@ -904,6 +950,7 @@ scrollAnimation [scrollConfig]="{
 **Estimated Time**: 8-10 hours (45-55 minutes per component × 11)
 
 **Skills Required**:
+
 - Angular 19 standalone components (required)
 - Signal-based reactivity (required)
 - GSAP ScrollTrigger (helpful but pattern is provided)
@@ -911,6 +958,7 @@ scrollAnimation [scrollConfig]="{
 - TypeScript strict mode (required)
 
 **Critical Success Factors**:
+
 1. **Follow ChromaDB pattern EXACTLY** - Zero deviation
 2. **Copy content from content-mapping.md EXACTLY** - No paraphrasing
 3. **Verify all imports before use** - Grep for existence
@@ -918,6 +966,7 @@ scrollAnimation [scrollConfig]="{
 5. **Read all reference documents first** - architecture-design.md, content-mapping.md, task-description.md
 
 **Implementation Approach**:
+
 - Implement 1 component completely (Neo4j)
 - Validate pattern understanding
 - Implement remaining 10 using optimized workflow

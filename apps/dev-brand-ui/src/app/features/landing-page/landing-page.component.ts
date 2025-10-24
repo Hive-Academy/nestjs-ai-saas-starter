@@ -13,11 +13,7 @@ import { ChromadbSectionComponent } from './sections/chromadb-section.component'
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    HeroSectionComponent,
-    ChromadbSectionComponent,
-  ],
+  imports: [CommonModule, HeroSectionComponent, ChromadbSectionComponent],
   template: ` <div
     class="w-full min-h-screen bg-white opacity-0 transition-opacity duration-700 ease-in-out relative"
     [class.opacity-100]="isLoaded()"
@@ -151,10 +147,7 @@ export class LandingPageComponent implements AfterViewInit {
   // Component state
   readonly isLoaded = signal(false);
   readonly loadingProgress = signal(0);
-  readonly sections = signal([
-    'hero',
-    'chromadb',
-  ]);
+  readonly sections = signal(['hero', 'chromadb']);
 
   ngAfterViewInit(): void {
     // Simple, immediate loading - no complex observables

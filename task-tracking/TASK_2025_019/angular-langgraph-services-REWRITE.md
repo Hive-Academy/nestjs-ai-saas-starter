@@ -31,7 +31,7 @@ The Angular LangGraph library provides comprehensive TypeScript models for build
 
 Defines a workflow that can be executed via the LangGraph library.
 
-```typescript
+````typescript
 import { ZodSchema } from 'zod';
 
 /**
@@ -86,13 +86,13 @@ export interface WorkflowDefinition<TInput = any, TOutput = any> {
   /** Extensible metadata for custom workflow properties */
   metadata?: Record<string, any>;
 }
-```
+````
 
 #### WorkflowExecution<TInput, TState, TOutput>
 
 Tracks the execution of a workflow with typed input, state, and output.
 
-```typescript
+````typescript
 /**
  * Generic workflow execution tracking interface
  *
@@ -129,11 +129,7 @@ Tracks the execution of a workflow with typed input, state, and output.
  * };
  * ```
  */
-export interface WorkflowExecution<
-  TInput = any,
-  TState = any,
-  TOutput = any
-> {
+export interface WorkflowExecution<TInput = any, TState = any, TOutput = any> {
   /** Unique execution identifier */
   id: string;
 
@@ -162,13 +158,8 @@ export interface WorkflowExecution<
   metadata?: Record<string, any>;
 }
 
-export type WorkflowStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'interrupted';
-```
+export type WorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'interrupted';
+````
 
 #### WorkflowResult<TOutput>
 
@@ -245,7 +236,7 @@ export enum AGUIEventType {
   TOOL_RESULT = 'tool_result',
   AGENT_TRANSITION = 'agent_transition',
   VALIDATION_ERROR = 'validation_error',
-  TIMEOUT = 'timeout'
+  TIMEOUT = 'timeout',
 }
 ```
 
@@ -270,7 +261,7 @@ export interface RunStartedEvent {
 
 Emitted for incremental output token streaming.
 
-```typescript
+````typescript
 /**
  * Event emitted for incremental token updates during streaming
  *
@@ -292,13 +283,13 @@ export interface TokenUpdateEvent<TOutput = string> {
   agentId?: string;
   timestamp: Date;
 }
-```
+````
 
 #### StateSnapshot<TState>
 
 Complete state snapshot event.
 
-```typescript
+````typescript
 /**
  * Complete state snapshot event
  *
@@ -329,13 +320,13 @@ export interface StateSnapshot<TState = any> {
   timestamp: Date;
   agentId?: string;
 }
-```
+````
 
 #### StateDelta<TState>
 
 Incremental state update event.
 
-```typescript
+````typescript
 /**
  * Incremental state update event (partial state changes)
  *
@@ -359,13 +350,13 @@ export interface StateDelta<TState = any> {
   delta: Partial<TState>;
   timestamp: Date;
 }
-```
+````
 
 #### InterruptionRequestEvent<TApprovalData>
 
 HITL (Human-in-the-Loop) approval request event.
 
-```typescript
+````typescript
 /**
  * HITL interruption request event
  *
@@ -418,7 +409,7 @@ export interface InterruptionRequest<TApprovalData = any> {
   /** Agent requesting approval */
   agentId?: string;
 }
-```
+````
 
 #### RunCompletedEvent<TOutput>
 
@@ -507,7 +498,7 @@ export interface AgentTransitionEvent {
 
 Core configuration for the LangGraph library.
 
-```typescript
+````typescript
 /**
  * LangGraph library configuration
  *
@@ -553,7 +544,7 @@ export interface LangGraphConfig {
   /** Enable debug logging */
   enableLogging?: boolean;
 }
-```
+````
 
 #### WorkflowRegistration<TInput, TOutput>
 
@@ -573,7 +564,7 @@ export type WorkflowRegistration<TInput, TOutput> = WorkflowDefinition<TInput, T
 
 Helper types for extracting types from workflow definitions.
 
-```typescript
+````typescript
 /**
  * Extract input type from WorkflowDefinition
  *
@@ -595,7 +586,7 @@ export type WorkflowInput<T> = T extends WorkflowDefinition<infer I, any> ? I : 
  * ```
  */
 export type WorkflowOutput<T> = T extends WorkflowDefinition<any, infer O> ? O : never;
-```
+````
 
 ---
 
@@ -615,7 +606,7 @@ The `WorkflowRegistry` is the **foundational architectural component** that enab
 
 ### Implementation
 
-```typescript
+````typescript
 import { Injectable, Inject, Optional, InjectionToken } from '@angular/core';
 import { WorkflowDefinition } from '../models';
 
@@ -623,13 +614,10 @@ import { WorkflowDefinition } from '../models';
  * Injection token for workflow definitions
  * Uses Angular's multi-provider pattern to collect all workflows from application config
  */
-export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>(
-  'LANGGRAPH_WORKFLOWS',
-  {
-    providedIn: 'root',
-    factory: () => [], // Default: empty array if no workflows registered
-  }
-);
+export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>('LANGGRAPH_WORKFLOWS', {
+  providedIn: 'root',
+  factory: () => [], // Default: empty array if no workflows registered
+});
 
 /**
  * Centralized workflow registry for managing workflow definitions
@@ -659,11 +647,9 @@ export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>(
 export class WorkflowRegistry {
   private readonly workflowMap = new Map<string, WorkflowDefinition<any, any>>();
 
-  constructor(
-    @Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []
-  ) {
+  constructor(@Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []) {
     // Populate registry once during service initialization
-    workflows.forEach(workflow => {
+    workflows.forEach((workflow) => {
       if (this.workflowMap.has(workflow.id)) {
         console.warn(
           `[WorkflowRegistry] Duplicate workflow ID: ${workflow.id}. Later registration will overwrite.`
@@ -697,9 +683,7 @@ export class WorkflowRegistry {
    * registry.register(dynamicWorkflow);
    * ```
    */
-  register<TInput = any, TOutput = any>(
-    workflow: WorkflowDefinition<TInput, TOutput>
-  ): void {
+  register<TInput = any, TOutput = any>(workflow: WorkflowDefinition<TInput, TOutput>): void {
     if (this.workflowMap.has(workflow.id)) {
       throw new Error(
         `Workflow with ID '${workflow.id}' is already registered. Use unregister() first to replace.`
@@ -723,9 +707,7 @@ export class WorkflowRegistry {
    * }
    * ```
    */
-  get<TInput = any, TOutput = any>(
-    id: string
-  ): WorkflowDefinition<TInput, TOutput> | undefined {
+  get<TInput = any, TOutput = any>(id: string): WorkflowDefinition<TInput, TOutput> | undefined {
     return this.workflowMap.get(id) as WorkflowDefinition<TInput, TOutput> | undefined;
   }
 
@@ -747,9 +729,7 @@ export class WorkflowRegistry {
    * }
    * ```
    */
-  getOrThrow<TInput = any, TOutput = any>(
-    id: string
-  ): WorkflowDefinition<TInput, TOutput> {
+  getOrThrow<TInput = any, TOutput = any>(id: string): WorkflowDefinition<TInput, TOutput> {
     const workflow = this.get<TInput, TOutput>(id);
     if (!workflow) {
       throw new Error(
@@ -840,7 +820,7 @@ export class WorkflowRegistry {
     this.workflowMap.clear();
   }
 }
-```
+````
 
 ### Usage Examples
 
@@ -857,23 +837,19 @@ import { WorkflowRegistry } from '@hive-academy/langgraph-angular';
       <h2>Available Workflows</h2>
 
       @for (workflow of availableWorkflows(); track workflow.id) {
-        <button
-          class="workflow-button"
-          (click)="selectWorkflow(workflow.id)">
-          <h3>{{ workflow.name }}</h3>
-          <p>{{ workflow.description }}</p>
-        </button>
-      }
-
-      @if (selectedWorkflow(); as workflow) {
-        <div class="workflow-details">
-          <h3>{{ workflow.name }}</h3>
-          <p><strong>Endpoint:</strong> {{ workflow.endpoint }}</p>
-          <p><strong>Description:</strong> {{ workflow.description }}</p>
-        </div>
+      <button class="workflow-button" (click)="selectWorkflow(workflow.id)">
+        <h3>{{ workflow.name }}</h3>
+        <p>{{ workflow.description }}</p>
+      </button>
+      } @if (selectedWorkflow(); as workflow) {
+      <div class="workflow-details">
+        <h3>{{ workflow.name }}</h3>
+        <p><strong>Endpoint:</strong> {{ workflow.endpoint }}</p>
+        <p><strong>Description:</strong> {{ workflow.description }}</p>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class WorkflowSelectorComponent {
   private registry = inject(WorkflowRegistry);
@@ -925,8 +901,8 @@ export class DynamicWorkflowService {
       metadata: {
         ...config.metadata,
         loadedAt: new Date(),
-        source: 'plugin'
-      }
+        source: 'plugin',
+      },
     };
 
     // Register dynamically
@@ -970,7 +946,7 @@ interface ContentGenOutput {
 
 @Component({
   selector: 'app-content-generator',
-  template: `...`
+  template: `...`,
 })
 export class ContentGeneratorComponent {
   private registry = inject(WorkflowRegistry);
@@ -987,22 +963,20 @@ export class ContentGeneratorComponent {
     }
 
     // TypeScript validates that input matches ContentGenInput type
-    this.connection
-      .startWorkflow<ContentGenInput, ContentGenOutput>(workflow.id, input)
-      .subscribe({
-        next: (execution) => {
-          console.log('Workflow started:', execution.id);
+    this.connection.startWorkflow<ContentGenInput, ContentGenOutput>(workflow.id, input).subscribe({
+      next: (execution) => {
+        console.log('Workflow started:', execution.id);
 
-          // Subscribe to completion
-          this.connection.on<ContentGenOutput>('run_finished').subscribe(event => {
-            if (event.executionId === execution.id) {
-              // TypeScript knows event.data is ContentGenOutput
-              this.result.set(event.data);
-            }
-          });
-        },
-        error: (err) => console.error('Workflow failed:', err)
-      });
+        // Subscribe to completion
+        this.connection.on<ContentGenOutput>('run_finished').subscribe((event) => {
+          if (event.executionId === execution.id) {
+            // TypeScript knows event.data is ContentGenOutput
+            this.result.set(event.data);
+          }
+        });
+      },
+      error: (err) => console.error('Workflow failed:', err),
+    });
   }
 }
 ```
@@ -1052,7 +1026,7 @@ Core configuration provider for the LangGraph library.
 #### Signature
 
 ```typescript
-export function provideLangGraph(config: LangGraphConfig): EnvironmentProviders
+export function provideLangGraph(config: LangGraphConfig): EnvironmentProviders;
 ```
 
 #### Parameters
@@ -1069,12 +1043,8 @@ export function provideLangGraph(config: LangGraphConfig): EnvironmentProviders
 
 #### Implementation
 
-```typescript
-import {
-  EnvironmentProviders,
-  makeEnvironmentProviders,
-  InjectionToken,
-} from '@angular/core';
+````typescript
+import { EnvironmentProviders, makeEnvironmentProviders, InjectionToken } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import {
   LangGraphConnectionService,
@@ -1085,9 +1055,7 @@ import {
 } from '../services';
 import { LangGraphConfig } from '../models';
 
-export const LANGGRAPH_CONFIG = new InjectionToken<LangGraphConfig>(
-  'LANGGRAPH_CONFIG'
-);
+export const LANGGRAPH_CONFIG = new InjectionToken<LangGraphConfig>('LANGGRAPH_CONFIG');
 
 /**
  * Provides core LangGraph services and configuration
@@ -1145,7 +1113,7 @@ export function provideLangGraph(config: LangGraphConfig): EnvironmentProviders 
     provideHttpClient(),
   ]);
 }
-```
+````
 
 #### Usage Example
 
@@ -1182,7 +1150,7 @@ Register a single workflow definition.
 ```typescript
 export function provideLangGraphWorkflow<TInput, TOutput>(
   workflow: WorkflowDefinition<TInput, TOutput>
-): Provider
+): Provider;
 ```
 
 #### Parameters
@@ -1191,7 +1159,7 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
 
 #### Implementation
 
-```typescript
+````typescript
 /**
  * Register a single workflow definition
  *
@@ -1223,7 +1191,7 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
     useValue: workflow,
   };
 }
-```
+````
 
 #### Usage Example
 
@@ -1252,9 +1220,7 @@ Register multiple workflows at once (batch registration).
 #### Signature
 
 ```typescript
-export function provideLangGraphWorkflows(
-  workflows: WorkflowDefinition<any, any>[]
-): Provider[]
+export function provideLangGraphWorkflows(workflows: WorkflowDefinition<any, any>[]): Provider[];
 ```
 
 #### Parameters
@@ -1263,7 +1229,7 @@ export function provideLangGraphWorkflows(
 
 #### Implementation
 
-```typescript
+````typescript
 /**
  * Register multiple workflows at once
  *
@@ -1293,16 +1259,14 @@ export function provideLangGraphWorkflows(
  * };
  * ```
  */
-export function provideLangGraphWorkflows(
-  workflows: WorkflowDefinition<any, any>[]
-) {
-  return workflows.map(workflow => ({
+export function provideLangGraphWorkflows(workflows: WorkflowDefinition<any, any>[]) {
+  return workflows.map((workflow) => ({
     provide: LANGGRAPH_WORKFLOWS,
     multi: true,
     useValue: workflow,
   }));
 }
-```
+````
 
 #### Usage Example
 
@@ -1388,7 +1352,7 @@ Handles HTTP and WebSocket connections to LangGraph workflows with type-safe wor
 
 ### Service Implementation
 
-```typescript
+````typescript
 import { Injectable, inject, signal, computed, DestroyRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
@@ -1478,10 +1442,7 @@ export class LangGraphConnectionService {
     const endpoint = `${this.config.apiUrl}${workflow.endpoint}`;
 
     // Execute workflow via REST API
-    return this.http.post<WorkflowExecution<TInput, any, TOutput>>(
-      endpoint,
-      validationResult.data
-    );
+    return this.http.post<WorkflowExecution<TInput, any, TOutput>>(endpoint, validationResult.data);
   }
 
   /**
@@ -1500,7 +1461,8 @@ export class LangGraphConnectionService {
    * ```
    */
   connect(): Observable<WebSocketMessage> {
-    const wsUrl = (this.config.websocketUrl || this.config.apiUrl.replace('http', 'ws')) + '/streaming';
+    const wsUrl =
+      (this.config.websocketUrl || this.config.apiUrl.replace('http', 'ws')) + '/streaming';
 
     this.socket$ = webSocket<WebSocketMessage>({
       url: wsUrl,
@@ -1667,7 +1629,7 @@ export class LangGraphConnectionService {
     this.connectionState.set('disconnected');
   }
 }
-```
+````
 
 ### Usage Examples
 
@@ -1694,25 +1656,23 @@ interface AnalysisOutput {
       <h2>Data Analysis</h2>
 
       @if (execution(); as exec) {
-        <div class="status">
-          <p>Status: {{ exec.status }}</p>
-          <p>Execution ID: {{ exec.id }}</p>
-        </div>
-      }
-
-      @if (result(); as output) {
-        <div class="results">
-          <h3>Analysis Complete</h3>
-          <pre>{{ output.results | json }}</pre>
-          <ul>
-            @for (insight of output.insights; track $index) {
-              <li>{{ insight }}</li>
-            }
-          </ul>
-        </div>
+      <div class="status">
+        <p>Status: {{ exec.status }}</p>
+        <p>Execution ID: {{ exec.id }}</p>
+      </div>
+      } @if (result(); as output) {
+      <div class="results">
+        <h3>Analysis Complete</h3>
+        <pre>{{ output.results | json }}</pre>
+        <ul>
+          @for (insight of output.insights; track $index) {
+          <li>{{ insight }}</li>
+          }
+        </ul>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class DataAnalyzerComponent {
   private connection = inject(LangGraphConnectionService);
@@ -1723,24 +1683,21 @@ export class DataAnalyzerComponent {
   analyzeDataset(url: string, type: 'descriptive' | 'predictive'): void {
     const input: AnalysisInput = { datasetUrl: url, analysisType: type };
 
-    this.connection
-      .startWorkflow<AnalysisInput, AnalysisOutput>('data-analysis', input)
-      .subscribe({
-        next: (exec) => {
-          this.execution.set(exec);
+    this.connection.startWorkflow<AnalysisInput, AnalysisOutput>('data-analysis', input).subscribe({
+      next: (exec) => {
+        this.execution.set(exec);
 
-          // Subscribe to completion event
-          this.connection.on<RunCompletedEvent<AnalysisOutput>>('run_finished')
-            .subscribe(event => {
-              if (event.executionId === exec.id) {
-                this.result.set(event.output);
-              }
-            });
-        },
-        error: (err) => {
-          console.error('Analysis failed:', err);
-        }
-      });
+        // Subscribe to completion event
+        this.connection.on<RunCompletedEvent<AnalysisOutput>>('run_finished').subscribe((event) => {
+          if (event.executionId === exec.id) {
+            this.result.set(event.output);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Analysis failed:', err);
+      },
+    });
   }
 }
 ```
@@ -1763,11 +1720,11 @@ import { scan } from 'rxjs/operators';
       <div class="content-output">
         {{ accumulatedContent() }}
         @if (isGenerating()) {
-          <span class="cursor">|</span>
+        <span class="cursor">|</span>
         }
       </div>
     </div>
-  `
+  `,
 })
 export class StreamingContentComponent {
   private connection = inject(LangGraphConnectionService);
@@ -1781,26 +1738,22 @@ export class StreamingContentComponent {
 
     const input = { topic: 'TypeScript Generics', tone: 'technical', length: 500 };
 
-    this.connection
-      .startWorkflow('content-generation', input)
-      .subscribe(execution => {
-        // Stream tokens as they arrive
-        this.connection
-          .on<TokenUpdateEvent>('token_update')
-          .pipe(
-            scan((acc, event) => acc + event.token, '')
-          )
-          .subscribe(accumulated => {
-            this.accumulatedContent.set(accumulated);
-          });
-
-        // Handle completion
-        this.connection.on('run_finished').subscribe(event => {
-          if (event.executionId === execution.id) {
-            this.isGenerating.set(false);
-          }
+    this.connection.startWorkflow('content-generation', input).subscribe((execution) => {
+      // Stream tokens as they arrive
+      this.connection
+        .on<TokenUpdateEvent>('token_update')
+        .pipe(scan((acc, event) => acc + event.token, ''))
+        .subscribe((accumulated) => {
+          this.accumulatedContent.set(accumulated);
         });
+
+      // Handle completion
+      this.connection.on('run_finished').subscribe((event) => {
+        if (event.executionId === execution.id) {
+          this.isGenerating.set(false);
+        }
       });
+    });
   }
 }
 ```
@@ -1813,7 +1766,7 @@ import { LangGraphConnectionService } from '@hive-academy/langgraph-angular';
 
 @Component({
   selector: 'app-workflow-executor',
-  template: `...`
+  template: `...`,
 })
 export class WorkflowExecutorComponent {
   private connection = inject(LangGraphConnectionService);
@@ -1824,25 +1777,23 @@ export class WorkflowExecutorComponent {
     this.errorMessage.set(null);
 
     try {
-      this.connection
-        .startWorkflow(workflowId, input)
-        .subscribe({
-          next: (execution) => {
-            console.log('Workflow started successfully:', execution.id);
-          },
-          error: (err) => {
-            // Handle different error types
-            if (err.message.includes('Input validation failed')) {
-              this.errorMessage.set('Invalid input data. Please check your input and try again.');
-            } else if (err.message.includes('not found')) {
-              this.errorMessage.set(`Workflow '${workflowId}' is not registered.`);
-            } else {
-              this.errorMessage.set('An unexpected error occurred. Please try again.');
-            }
-
-            console.error('Workflow execution error:', err);
+      this.connection.startWorkflow(workflowId, input).subscribe({
+        next: (execution) => {
+          console.log('Workflow started successfully:', execution.id);
+        },
+        error: (err) => {
+          // Handle different error types
+          if (err.message.includes('Input validation failed')) {
+            this.errorMessage.set('Invalid input data. Please check your input and try again.');
+          } else if (err.message.includes('not found')) {
+            this.errorMessage.set(`Workflow '${workflowId}' is not registered.`);
+          } else {
+            this.errorMessage.set('An unexpected error occurred. Please try again.');
           }
-        });
+
+          console.error('Workflow execution error:', err);
+        },
+      });
     } catch (err) {
       // Catch synchronous errors (e.g., workflow not found in registry)
       this.errorMessage.set(err.message);
@@ -1863,28 +1814,28 @@ The Protocol Service handles all 16 AG-UI event types with zero workflow-specifi
 
 ### Supported Event Types (16 Total)
 
-| Event Type | Generic Types | Description |
-|------------|---------------|-------------|
-| `run_started` | - | Workflow execution initiated |
-| `run_finished` | `<TOutput>` | Workflow completed successfully |
-| `stream_update` | `<TData>` | Incremental content stream |
-| `token_update` | `<TOutput>` | Individual output token |
-| `state_snapshot` | `<TState>` | Complete state snapshot |
-| `state_delta` | `<TState>` | Incremental state update |
-| `interruption_request` | `<TApprovalData>` | HITL approval request |
-| `interruption_resolved` | `<TApprovalData>` | HITL approval completed |
-| `tool_call_start` | - | Tool invocation started |
-| `tool_call_args` | `<TArgs>` | Tool arguments provided |
-| `tool_call_end` | `<TResult>` | Tool invocation completed |
-| `tool_result` | `<TResult>` | Tool execution result |
-| `agent_transition` | - | Workflow step transition |
-| `error` | - | Execution error occurred |
-| `validation_error` | `<TError>` | Input validation failed |
-| `timeout` | - | Execution timeout reached |
+| Event Type              | Generic Types     | Description                     |
+| ----------------------- | ----------------- | ------------------------------- |
+| `run_started`           | -                 | Workflow execution initiated    |
+| `run_finished`          | `<TOutput>`       | Workflow completed successfully |
+| `stream_update`         | `<TData>`         | Incremental content stream      |
+| `token_update`          | `<TOutput>`       | Individual output token         |
+| `state_snapshot`        | `<TState>`        | Complete state snapshot         |
+| `state_delta`           | `<TState>`        | Incremental state update        |
+| `interruption_request`  | `<TApprovalData>` | HITL approval request           |
+| `interruption_resolved` | `<TApprovalData>` | HITL approval completed         |
+| `tool_call_start`       | -                 | Tool invocation started         |
+| `tool_call_args`        | `<TArgs>`         | Tool arguments provided         |
+| `tool_call_end`         | `<TResult>`       | Tool invocation completed       |
+| `tool_result`           | `<TResult>`       | Tool execution result           |
+| `agent_transition`      | -                 | Workflow step transition        |
+| `error`                 | -                 | Execution error occurred        |
+| `validation_error`      | `<TError>`        | Input validation failed         |
+| `timeout`               | -                 | Execution timeout reached       |
 
 ### Service Implementation
 
-```typescript
+````typescript
 import { Injectable, inject } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -1928,7 +1879,7 @@ export class LangGraphProtocolService {
 
   constructor() {
     // Forward all connection messages to events stream
-    this.connection.connect().subscribe(message => {
+    this.connection.connect().subscribe((message) => {
       this.eventsSubject$.next({
         type: message.type,
         data: message.data,
@@ -1979,12 +1930,12 @@ export class LangGraphProtocolService {
    */
   getEvents<T>(eventType: string): Observable<T> {
     return this.events$.pipe(
-      filter(event => event.type === eventType),
-      map(event => event.data as T)
+      filter((event) => event.type === eventType),
+      map((event) => event.data as T)
     );
   }
 }
-```
+````
 
 ### Event Handling Examples
 
@@ -2009,14 +1960,14 @@ interface WorkflowState {
       <h2>Workflow State</h2>
 
       @if (currentState(); as state) {
-        <div class="state-info">
-          <p><strong>Current Agent:</strong> {{ state.currentAgent }}</p>
-          <p><strong>Progress:</strong> {{ state.progress }}%</p>
-          <p><strong>Results Count:</strong> {{ state.results.length }}</p>
-        </div>
+      <div class="state-info">
+        <p><strong>Current Agent:</strong> {{ state.currentAgent }}</p>
+        <p><strong>Progress:</strong> {{ state.progress }}%</p>
+        <p><strong>Results Count:</strong> {{ state.results.length }}</p>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class WorkflowMonitorComponent {
   private protocol = inject(LangGraphProtocolService);
@@ -2025,29 +1976,27 @@ export class WorkflowMonitorComponent {
 
   ngOnInit(): void {
     // Type-safe state snapshot handling
-    this.protocol.events$.pipe(
-      filter((event): event is StateSnapshot<WorkflowState> =>
-        event.type === 'state_snapshot'
+    this.protocol.events$
+      .pipe(
+        filter((event): event is StateSnapshot<WorkflowState> => event.type === 'state_snapshot')
       )
-    ).subscribe(snapshot => {
-      // TypeScript knows snapshot.state is WorkflowState
-      this.currentState.set(snapshot.state);
-      console.log('Agent:', snapshot.state.currentAgent);
-      console.log('Progress:', snapshot.state.progress);
-    });
+      .subscribe((snapshot) => {
+        // TypeScript knows snapshot.state is WorkflowState
+        this.currentState.set(snapshot.state);
+        console.log('Agent:', snapshot.state.currentAgent);
+        console.log('Progress:', snapshot.state.progress);
+      });
 
     // Type-safe state delta handling
-    this.protocol.events$.pipe(
-      filter((event): event is StateDelta<WorkflowState> =>
-        event.type === 'state_delta'
-      )
-    ).subscribe(delta => {
-      const current = this.currentState();
-      if (current) {
-        // Apply delta to current state
-        this.currentState.set({ ...current, ...delta.delta });
-      }
-    });
+    this.protocol.events$
+      .pipe(filter((event): event is StateDelta<WorkflowState> => event.type === 'state_delta'))
+      .subscribe((delta) => {
+        const current = this.currentState();
+        if (current) {
+          // Apply delta to current state
+          this.currentState.set({ ...current, ...delta.delta });
+        }
+      });
   }
 }
 ```
@@ -2077,32 +2026,32 @@ interface CodeReviewApproval {
   template: `
     <div class="approval">
       @if (pendingApproval(); as approval) {
-        <div class="approval-card">
-          <h3>{{ approval.request.message }}</h3>
+      <div class="approval-card">
+        <h3>{{ approval.request.message }}</h3>
 
-          <div class="approval-data">
-            <p><strong>Files Reviewed:</strong> {{ approval.request.data.files.length }}</p>
-            <p><strong>Issues Found:</strong> {{ approval.request.data.issues.length }}</p>
-            <p><strong>Overall Score:</strong> {{ approval.request.data.overallScore }}/100</p>
+        <div class="approval-data">
+          <p><strong>Files Reviewed:</strong> {{ approval.request.data.files.length }}</p>
+          <p><strong>Issues Found:</strong> {{ approval.request.data.issues.length }}</p>
+          <p><strong>Overall Score:</strong> {{ approval.request.data.overallScore }}/100</p>
 
-            <h4>Issues:</h4>
-            <ul>
-              @for (issue of approval.request.data.issues; track $index) {
-                <li [class]="'severity-' + issue.severity">
-                  <strong>{{ issue.file }}:{{ issue.line }}</strong> - {{ issue.message }}
-                </li>
-              }
-            </ul>
-          </div>
-
-          <div class="approval-actions">
-            <button (click)="approve(approval.request.data)">Approve</button>
-            <button (click)="reject(approval.request.data)">Reject</button>
-          </div>
+          <h4>Issues:</h4>
+          <ul>
+            @for (issue of approval.request.data.issues; track $index) {
+            <li [class]="'severity-' + issue.severity">
+              <strong>{{ issue.file }}:{{ issue.line }}</strong> - {{ issue.message }}
+            </li>
+            }
+          </ul>
         </div>
+
+        <div class="approval-actions">
+          <button (click)="approve(approval.request.data)">Approve</button>
+          <button (click)="reject(approval.request.data)">Reject</button>
+        </div>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ApprovalHandlerComponent {
   private protocol = inject(LangGraphProtocolService);
@@ -2112,43 +2061,52 @@ export class ApprovalHandlerComponent {
 
   ngOnInit(): void {
     // Type-safe approval request handling
-    this.protocol.events$.pipe(
-      filter((event): event is InterruptionRequestEvent<CodeReviewApproval> =>
-        event.type === 'interruption_request'
+    this.protocol.events$
+      .pipe(
+        filter(
+          (event): event is InterruptionRequestEvent<CodeReviewApproval> =>
+            event.type === 'interruption_request'
+        )
       )
-    ).subscribe(event => {
-      // TypeScript knows event.request.data is CodeReviewApproval
-      this.pendingApproval.set(event);
+      .subscribe((event) => {
+        // TypeScript knows event.request.data is CodeReviewApproval
+        this.pendingApproval.set(event);
 
-      const { files, issues, overallScore } = event.request.data;
-      console.log(`Code review: ${files.length} files, ${issues.length} issues, score: ${overallScore}`);
-    });
+        const { files, issues, overallScore } = event.request.data;
+        console.log(
+          `Code review: ${files.length} files, ${issues.length} issues, score: ${overallScore}`
+        );
+      });
   }
 
   approve(data: CodeReviewApproval): void {
     const approval = this.pendingApproval();
     if (!approval) return;
 
-    this.http.post('/hitl/approve', {
-      interruptionId: approval.request.interruptionId,
-      decision: 'approved',
-      feedback: `Approved code review with score ${data.overallScore}`
-    }).subscribe(() => {
-      this.pendingApproval.set(null);
-    });
+    this.http
+      .post('/hitl/approve', {
+        interruptionId: approval.request.interruptionId,
+        decision: 'approved',
+        feedback: `Approved code review with score ${data.overallScore}`,
+      })
+      .subscribe(() => {
+        this.pendingApproval.set(null);
+      });
   }
 
   reject(data: CodeReviewApproval): void {
     const approval = this.pendingApproval();
     if (!approval) return;
 
-    this.http.post('/hitl/approve', {
-      interruptionId: approval.request.interruptionId,
-      decision: 'rejected',
-      feedback: `Rejected: ${data.issues.length} issues need resolution`
-    }).subscribe(() => {
-      this.pendingApproval.set(null);
-    });
+    this.http
+      .post('/hitl/approve', {
+        interruptionId: approval.request.interruptionId,
+        decision: 'rejected',
+        feedback: `Rejected: ${data.issues.length} issues need resolution`,
+      })
+      .subscribe(() => {
+        this.pendingApproval.set(null);
+      });
   }
 }
 ```
@@ -2177,18 +2135,18 @@ interface ContentOutput {
       <div class="content">
         {{ accumulatedContent() }}
         @if (isStreaming()) {
-          <span class="cursor">▋</span>
+        <span class="cursor">▋</span>
         }
       </div>
 
       @if (finalOutput(); as output) {
-        <div class="metadata">
-          <p>Words: {{ output.metadata.wordCount }}</p>
-          <p>Reading Time: {{ output.metadata.readingTime }} min</p>
-        </div>
+      <div class="metadata">
+        <p>Words: {{ output.metadata.wordCount }}</p>
+        <p>Reading Time: {{ output.metadata.readingTime }} min</p>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ContentStreamerComponent {
   private protocol = inject(LangGraphProtocolService);
@@ -2199,25 +2157,25 @@ export class ContentStreamerComponent {
 
   ngOnInit(): void {
     // Stream individual tokens
-    this.protocol.events$.pipe(
-      filter((event): event is TokenUpdateEvent<string> =>
-        event.type === 'token_update'
-      ),
-      scan((acc, event) => acc + event.token, '')
-    ).subscribe(accumulated => {
-      this.accumulatedContent.set(accumulated);
-      this.isStreaming.set(true);
-    });
+    this.protocol.events$
+      .pipe(
+        filter((event): event is TokenUpdateEvent<string> => event.type === 'token_update'),
+        scan((acc, event) => acc + event.token, '')
+      )
+      .subscribe((accumulated) => {
+        this.accumulatedContent.set(accumulated);
+        this.isStreaming.set(true);
+      });
 
     // Handle completion
-    this.protocol.events$.pipe(
-      filter((event): event is RunCompletedEvent<ContentOutput> =>
-        event.type === 'run_finished'
+    this.protocol.events$
+      .pipe(
+        filter((event): event is RunCompletedEvent<ContentOutput> => event.type === 'run_finished')
       )
-    ).subscribe(event => {
-      this.finalOutput.set(event.output);
-      this.isStreaming.set(false);
-    });
+      .subscribe((event) => {
+        this.finalOutput.set(event.output);
+        this.isStreaming.set(false);
+      });
   }
 }
 ```
@@ -2234,19 +2192,19 @@ import { filter } from 'rxjs/operators';
   template: `
     <div class="error-monitor">
       @if (latestError(); as error) {
-        <div class="error-alert">
-          <h3>⚠️ Error Occurred</h3>
-          <p><strong>Message:</strong> {{ error.error.message }}</p>
-          <p><strong>Code:</strong> {{ error.error.code }}</p>
-          <p><strong>Execution:</strong> {{ error.executionId }}</p>
-          @if (error.agentId) {
-            <p><strong>Agent:</strong> {{ error.agentId }}</p>
-          }
-          <button (click)="clearError()">Dismiss</button>
-        </div>
+      <div class="error-alert">
+        <h3>⚠️ Error Occurred</h3>
+        <p><strong>Message:</strong> {{ error.error.message }}</p>
+        <p><strong>Code:</strong> {{ error.error.code }}</p>
+        <p><strong>Execution:</strong> {{ error.executionId }}</p>
+        @if (error.agentId) {
+        <p><strong>Agent:</strong> {{ error.agentId }}</p>
+        }
+        <button (click)="clearError()">Dismiss</button>
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class ErrorMonitorComponent {
   private protocol = inject(LangGraphProtocolService);
@@ -2254,12 +2212,12 @@ export class ErrorMonitorComponent {
   latestError = signal<ErrorEvent | null>(null);
 
   ngOnInit(): void {
-    this.protocol.events$.pipe(
-      filter((event): event is ErrorEvent => event.type === 'error')
-    ).subscribe(errorEvent => {
-      this.latestError.set(errorEvent);
-      console.error('Workflow error:', errorEvent.error);
-    });
+    this.protocol.events$
+      .pipe(filter((event): event is ErrorEvent => event.type === 'error'))
+      .subscribe((errorEvent) => {
+        this.latestError.set(errorEvent);
+        console.error('Workflow error:', errorEvent.error);
+      });
   }
 
   clearError(): void {
@@ -2276,18 +2234,14 @@ Helper functions for type-safe event filtering:
 /**
  * Type guard for state snapshot events
  */
-export function isStateSnapshot<TState>(
-  event: AGUIEvent<any>
-): event is StateSnapshot<TState> {
+export function isStateSnapshot<TState>(event: AGUIEvent<any>): event is StateSnapshot<TState> {
   return event.type === 'state_snapshot';
 }
 
 /**
  * Type guard for token update events
  */
-export function isTokenUpdate<TOutput>(
-  event: AGUIEvent<any>
-): event is TokenUpdateEvent<TOutput> {
+export function isTokenUpdate<TOutput>(event: AGUIEvent<any>): event is TokenUpdateEvent<TOutput> {
   return event.type === 'token_update';
 }
 
@@ -2301,9 +2255,7 @@ export function isInterruptionRequest<TApprovalData>(
 }
 
 // Usage with type guards
-protocol.events$.pipe(
-  filter(isStateSnapshot<MyState>)
-).subscribe(snapshot => {
+protocol.events$.pipe(filter(isStateSnapshot<MyState>)).subscribe((snapshot) => {
   // TypeScript knows snapshot is StateSnapshot<MyState>
   console.log(snapshot.state);
 });
@@ -2353,10 +2305,7 @@ export type ContentGenInput = z.infer<typeof ContentGenInputSchema>;
 export type ContentGenOutput = z.infer<typeof ContentGenOutputSchema>;
 
 // 3. Define workflow with full type safety
-export const contentGenerationWorkflow: WorkflowDefinition<
-  ContentGenInput,
-  ContentGenOutput
-> = {
+export const contentGenerationWorkflow: WorkflowDefinition<ContentGenInput, ContentGenOutput> = {
   id: 'content-generation',
   name: 'AI Content Generator',
   description: 'Generate blog posts and articles with AI-powered writing assistance',
@@ -2392,27 +2341,28 @@ const DataAnalysisInputSchema = z.object({
 
 const DataAnalysisOutputSchema = z.object({
   results: z.record(z.any()),
-  visualizations: z.array(z.object({
-    type: z.enum(['bar', 'line', 'pie', 'scatter', 'heatmap']),
-    data: z.any(),
-    title: z.string(),
-    description: z.string().optional(),
-  })),
+  visualizations: z.array(
+    z.object({
+      type: z.enum(['bar', 'line', 'pie', 'scatter', 'heatmap']),
+      data: z.any(),
+      title: z.string(),
+      description: z.string().optional(),
+    })
+  ),
   insights: z.array(z.string()),
-  statistics: z.object({
-    rowCount: z.number(),
-    columnCount: z.number(),
-    missingValues: z.number(),
-  }).optional(),
+  statistics: z
+    .object({
+      rowCount: z.number(),
+      columnCount: z.number(),
+      missingValues: z.number(),
+    })
+    .optional(),
 });
 
 export type DataAnalysisInput = z.infer<typeof DataAnalysisInputSchema>;
 export type DataAnalysisOutput = z.infer<typeof DataAnalysisOutputSchema>;
 
-export const dataAnalysisWorkflow: WorkflowDefinition<
-  DataAnalysisInput,
-  DataAnalysisOutput
-> = {
+export const dataAnalysisWorkflow: WorkflowDefinition<DataAnalysisInput, DataAnalysisOutput> = {
   id: 'data-analysis',
   name: 'Data Analysis Workflow',
   description: 'Analyze datasets and generate insights with visualizations',
@@ -2441,23 +2391,25 @@ const CodeReviewInputSchema = z.object({
   repositoryUrl: z.string().url(),
   branch: z.string().default('main'),
   files: z.array(z.string()).optional(),
-  checkTypes: z.array(
-    z.enum(['security', 'performance', 'best-practices', 'style', 'duplication'])
-  ).min(1, 'At least one check type required'),
+  checkTypes: z
+    .array(z.enum(['security', 'performance', 'best-practices', 'style', 'duplication']))
+    .min(1, 'At least one check type required'),
   excludePatterns: z.array(z.string()).optional(),
 });
 
 const CodeReviewOutputSchema = z.object({
   overallScore: z.number().min(0).max(100),
-  issues: z.array(z.object({
-    severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
-    category: z.string(),
-    file: z.string(),
-    line: z.number(),
-    message: z.string(),
-    suggestion: z.string().optional(),
-    codeSnippet: z.string().optional(),
-  })),
+  issues: z.array(
+    z.object({
+      severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
+      category: z.string(),
+      file: z.string(),
+      line: z.number(),
+      message: z.string(),
+      suggestion: z.string().optional(),
+      codeSnippet: z.string().optional(),
+    })
+  ),
   summary: z.string(),
   statistics: z.object({
     filesAnalyzed: z.number(),
@@ -2472,10 +2424,7 @@ const CodeReviewOutputSchema = z.object({
 export type CodeReviewInput = z.infer<typeof CodeReviewInputSchema>;
 export type CodeReviewOutput = z.infer<typeof CodeReviewOutputSchema>;
 
-export const codeReviewWorkflow: WorkflowDefinition<
-  CodeReviewInput,
-  CodeReviewOutput
-> = {
+export const codeReviewWorkflow: WorkflowDefinition<CodeReviewInput, CodeReviewOutput> = {
   id: 'code-review',
   name: 'AI Code Review',
   description: 'Automated code review with security and best practices analysis',
@@ -2546,151 +2495,148 @@ import { filter, scan } from 'rxjs/operators';
 
         <div class="form-group">
           <label>Length (words)</label>
-          <input
-            type="number"
-            [(ngModel)]="length"
-            name="length"
-            min="100"
-            max="5000"
-            required
-          />
+          <input type="number" [(ngModel)]="length" name="length" min="100" max="5000" required />
         </div>
 
         <button type="submit" [disabled]="isGenerating()">
           @if (isGenerating()) {
-            <span>⏳ Generating...</span>
+          <span>⏳ Generating...</span>
           } @else {
-            <span>✨ Generate Content</span>
+          <span>✨ Generate Content</span>
           }
         </button>
       </form>
 
       @if (streamingContent()) {
-        <div class="streaming-output">
-          <h2>Generated Content</h2>
-          <div class="content">
-            {{ streamingContent() }}
-            @if (isGenerating()) {
-              <span class="cursor">|</span>
-            }
-          </div>
-        </div>
-      }
-
-      @if (finalResult(); as result) {
-        <div class="result">
-          <h2>Content Metadata</h2>
-          <div class="metadata">
-            <p><strong>Words:</strong> {{ result.metadata.wordCount }}</p>
-            <p><strong>Reading Time:</strong> {{ result.metadata.readingTime }} min</p>
-            <p><strong>SEO Score:</strong> {{ result.metadata.seoScore }}/100</p>
-          </div>
-
-          @if (result.suggestions; as suggestions) {
-            <div class="suggestions">
-              <h3>Suggestions</h3>
-              <ul>
-                @for (suggestion of suggestions; track $index) {
-                  <li>{{ suggestion }}</li>
-                }
-              </ul>
-            </div>
+      <div class="streaming-output">
+        <h2>Generated Content</h2>
+        <div class="content">
+          {{ streamingContent() }}
+          @if (isGenerating()) {
+          <span class="cursor">|</span>
           }
         </div>
-      }
-
-      @if (errorMessage(); as error) {
-        <div class="error">
-          <p>{{ error }}</p>
+      </div>
+      } @if (finalResult(); as result) {
+      <div class="result">
+        <h2>Content Metadata</h2>
+        <div class="metadata">
+          <p><strong>Words:</strong> {{ result.metadata.wordCount }}</p>
+          <p><strong>Reading Time:</strong> {{ result.metadata.readingTime }} min</p>
+          <p><strong>SEO Score:</strong> {{ result.metadata.seoScore }}/100</p>
         </div>
+
+        @if (result.suggestions; as suggestions) {
+        <div class="suggestions">
+          <h3>Suggestions</h3>
+          <ul>
+            @for (suggestion of suggestions; track $index) {
+            <li>{{ suggestion }}</li>
+            }
+          </ul>
+        </div>
+        }
+      </div>
+      } @if (errorMessage(); as error) {
+      <div class="error">
+        <p>{{ error }}</p>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    .content-generator {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
-    }
+  styles: [
+    `
+      .content-generator {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+      }
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
 
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
 
-    input, select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
+      input,
+      select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
 
-    button {
-      width: 100%;
-      padding: 1rem;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
+      button {
+        width: 100%;
+        padding: 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
 
-    button:hover:not(:disabled) {
-      background: #0056b3;
-    }
+      button:hover:not(:disabled) {
+        background: #0056b3;
+      }
 
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
 
-    .streaming-output {
-      margin-top: 2rem;
-      padding: 1.5rem;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
+      .streaming-output {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
 
-    .content {
-      white-space: pre-wrap;
-      line-height: 1.6;
-      font-family: Georgia, serif;
-    }
+      .content {
+        white-space: pre-wrap;
+        line-height: 1.6;
+        font-family: Georgia, serif;
+      }
 
-    .cursor {
-      animation: blink 1s step-end infinite;
-    }
+      .cursor {
+        animation: blink 1s step-end infinite;
+      }
 
-    @keyframes blink {
-      from, to { opacity: 1; }
-      50% { opacity: 0; }
-    }
+      @keyframes blink {
+        from,
+        to {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
 
-    .metadata {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
+      .metadata {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
 
-    .error {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      border-radius: 4px;
-    }
-  `]
+      .error {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+      }
+    `,
+  ],
 })
 export class ContentGeneratorComponent {
   private connection = inject(LangGraphConnectionService);
@@ -2733,10 +2679,7 @@ export class ContentGeneratorComponent {
 
     try {
       this.connection
-        .startWorkflow<ContentGenInput, ContentGenOutput>(
-          'content-generation',
-          input
-        )
+        .startWorkflow<ContentGenInput, ContentGenOutput>('content-generation', input)
         .subscribe({
           next: (execution) => {
             this.currentExecutionId.set(execution.id);
@@ -2746,7 +2689,7 @@ export class ContentGeneratorComponent {
             this.isGenerating.set(false);
             this.errorMessage.set(err.message);
             console.error('Workflow execution failed:', err);
-          }
+          },
         });
     } catch (err) {
       this.isGenerating.set(false);
@@ -2755,37 +2698,41 @@ export class ContentGeneratorComponent {
   }
 
   private setupTokenStreaming(): void {
-    this.protocol.events$.pipe(
-      filter((event): event is TokenUpdateEvent<string> =>
-        event.type === 'token_update'
-      ),
-      filter(event => event.executionId === this.currentExecutionId()),
-      scan((acc, event) => acc + event.token, '')
-    ).subscribe(accumulated => {
-      this.streamingContent.set(accumulated);
-    });
+    this.protocol.events$
+      .pipe(
+        filter((event): event is TokenUpdateEvent<string> => event.type === 'token_update'),
+        filter((event) => event.executionId === this.currentExecutionId()),
+        scan((acc, event) => acc + event.token, '')
+      )
+      .subscribe((accumulated) => {
+        this.streamingContent.set(accumulated);
+      });
   }
 
   private setupCompletionHandler(): void {
-    this.protocol.events$.pipe(
-      filter((event): event is RunCompletedEvent<ContentGenOutput> =>
-        event.type === 'run_finished'
-      ),
-      filter(event => event.executionId === this.currentExecutionId())
-    ).subscribe(event => {
-      this.finalResult.set(event.output);
-      this.isGenerating.set(false);
-    });
+    this.protocol.events$
+      .pipe(
+        filter(
+          (event): event is RunCompletedEvent<ContentGenOutput> => event.type === 'run_finished'
+        ),
+        filter((event) => event.executionId === this.currentExecutionId())
+      )
+      .subscribe((event) => {
+        this.finalResult.set(event.output);
+        this.isGenerating.set(false);
+      });
   }
 
   private setupErrorHandler(): void {
-    this.protocol.events$.pipe(
-      filter((event): event is ErrorEvent => event.type === 'error'),
-      filter(event => event.executionId === this.currentExecutionId())
-    ).subscribe(event => {
-      this.errorMessage.set(event.error.message);
-      this.isGenerating.set(false);
-    });
+    this.protocol.events$
+      .pipe(
+        filter((event): event is ErrorEvent => event.type === 'error'),
+        filter((event) => event.executionId === this.currentExecutionId())
+      )
+      .subscribe((event) => {
+        this.errorMessage.set(event.error.message);
+        this.isGenerating.set(false);
+      });
   }
 }
 ```
@@ -2875,15 +2822,15 @@ import {
 
       <div class="timeline">
         @for (event of events(); track $index) {
-          <div class="event" [class]="'event-' + event.type">
-            <strong>{{ event.type }}</strong>
-            <p>{{ event.message }}</p>
-            <small>{{ event.timestamp | date:'medium' }}</small>
-          </div>
+        <div class="event" [class]="'event-' + event.type">
+          <strong>{{ event.type }}</strong>
+          <p>{{ event.message }}</p>
+          <small>{{ event.timestamp | date : 'medium' }}</small>
+        </div>
         }
       </div>
     </div>
-  `
+  `,
 })
 export class WorkflowLifecycleComponent {
   private connection = inject(LangGraphConnectionService);
@@ -2896,7 +2843,7 @@ export class WorkflowLifecycleComponent {
     this.connection.connect().subscribe();
 
     // Monitor all events
-    this.protocol.events$.subscribe(event => {
+    this.protocol.events$.subscribe((event) => {
       this.addEvent(event.type, `Event received: ${JSON.stringify(event.data).substring(0, 100)}`);
     });
   }
@@ -2908,7 +2855,7 @@ export class WorkflowLifecycleComponent {
     const input = {
       topic: 'LangGraph Workflows',
       tone: 'technical' as const,
-      length: 500
+      length: 500,
     };
 
     try {
@@ -2926,30 +2873,33 @@ export class WorkflowLifecycleComponent {
       this.addEvent('subscribed', `Subscribed to execution: ${execution.id}`);
 
       // 3. Monitor token streaming
-      this.protocol.events$.pipe(
-        filter(event => event.type === 'token_update' && event.executionId === execution.id)
-      ).subscribe(event => {
-        this.addEvent('token', `Received token: "${event.data.token}"`);
-      });
+      this.protocol.events$
+        .pipe(
+          filter((event) => event.type === 'token_update' && event.executionId === execution.id)
+        )
+        .subscribe((event) => {
+          this.addEvent('token', `Received token: "${event.data.token}"`);
+        });
 
       // 4. Wait for completion
-      const result = await this.protocol.events$.pipe(
-        filter(event => event.type === 'run_finished' && event.executionId === execution.id),
-        take(1)
-      ).toPromise();
+      const result = await this.protocol.events$
+        .pipe(
+          filter((event) => event.type === 'run_finished' && event.executionId === execution.id),
+          take(1)
+        )
+        .toPromise();
 
-      this.addEvent('completed', `Workflow completed with output length: ${result.data.content.length}`);
-
+      this.addEvent(
+        'completed',
+        `Workflow completed with output length: ${result.data.content.length}`
+      );
     } catch (error) {
       this.addEvent('error', `Workflow failed: ${error.message}`);
     }
   }
 
   private addEvent(type: string, message: string): void {
-    this.events.update(events => [
-      ...events,
-      { type, message, timestamp: new Date() }
-    ]);
+    this.events.update((events) => [...events, { type, message, timestamp: new Date() }]);
   }
 }
 ```
@@ -2965,6 +2915,7 @@ The 2.0.0 release is a **major rewrite** with intentional breaking changes to en
 #### 1. Connection Service API Changes
 
 **❌ Before (1.x - DevBrand-specific):**
+
 ```typescript
 // Hardcoded endpoint
 startWorkflow(githubUsername: string, userId?: string): Observable<WorkflowExecution> {
@@ -2979,6 +2930,7 @@ connection.startWorkflow('octocat', 'user-123').subscribe(...);
 ```
 
 **✅ After (2.x - Generic):**
+
 ```typescript
 // Dynamic endpoint from registry
 startWorkflow<TInput, TOutput>(
@@ -3000,16 +2952,16 @@ connection.startWorkflow<ContentInput, ContentOutput>(
 #### 2. Workflow Registration Required
 
 **❌ Before (1.x):**
+
 ```typescript
 // No registration needed - hardcoded DevBrand workflow
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideLangGraph({ apiUrl: 'http://localhost:3000' })
-  ]
+  providers: [provideLangGraph({ apiUrl: 'http://localhost:3000' })],
 };
 ```
 
 **✅ After (2.x):**
+
 ```typescript
 // Must register workflows explicitly
 import { contentGenerationWorkflow } from './workflows/content-generation';
@@ -3018,13 +2970,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideLangGraph({ apiUrl: 'http://localhost:3000' }),
     provideLangGraphWorkflow(contentGenerationWorkflow), // Required!
-  ]
+  ],
 };
 ```
 
 #### 3. Type Parameters Required
 
 **❌ Before (1.x):**
+
 ```typescript
 // Loosely typed
 const execution: WorkflowExecution = await connection.startWorkflow('octocat');
@@ -3032,6 +2985,7 @@ execution.result; // Type: any
 ```
 
 **✅ After (2.x):**
+
 ```typescript
 // Strongly typed
 const execution = await connection.startWorkflow<ContentInput, ContentOutput>(
@@ -3044,12 +2998,14 @@ execution.output; // Type: ContentOutput | undefined
 #### 4. Endpoint Configuration
 
 **❌ Before (1.x):**
+
 ```typescript
 // Hardcoded in service
-POST /devbrand/execute
+POST / devbrand / execute;
 ```
 
 **✅ After (2.x):**
+
 ```typescript
 // Configured in workflow definition
 const workflow: WorkflowDefinition = {
@@ -3082,7 +3038,7 @@ export const myWorkflow: WorkflowDefinition<MyInput, MyOutput> = {
   }),
   outputSchema: z.object({
     // Define output schema
-  })
+  }),
 };
 ```
 
@@ -3093,7 +3049,7 @@ Update application config to register workflows.
 ```typescript
 // Before (1.x)
 export const appConfig: ApplicationConfig = {
-  providers: [provideLangGraph({ apiUrl: 'http://localhost:3000' })]
+  providers: [provideLangGraph({ apiUrl: 'http://localhost:3000' })],
 };
 
 // After (2.x)
@@ -3103,7 +3059,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideLangGraph({ apiUrl: 'http://localhost:3000' }),
     provideLangGraphWorkflow(myWorkflow), // Add workflow registration
-  ]
+  ],
 };
 ```
 
@@ -3140,18 +3096,16 @@ Use type guards for type-safe event filtering.
 
 ```typescript
 // Before (1.x)
-connection.on('run_finished').subscribe(event => {
+connection.on('run_finished').subscribe((event) => {
   const result = event.data; // Type: any
 });
 
 // After (2.x)
-protocol.events$.pipe(
-  filter((event): event is RunCompletedEvent<MyOutput> =>
-    event.type === 'run_finished'
-  )
-).subscribe(event => {
-  const result = event.output; // Type: MyOutput
-});
+protocol.events$
+  .pipe(filter((event): event is RunCompletedEvent<MyOutput> => event.type === 'run_finished'))
+  .subscribe((event) => {
+    const result = event.output; // Type: MyOutput
+  });
 ```
 
 ### Example Migration
@@ -3204,17 +3158,17 @@ export class MyWorkflowComponent {
 
 ### Compatibility Matrix
 
-| Feature | 1.x | 2.x | Compatible? |
-|---------|-----|-----|-------------|
-| Hardcoded endpoints | ✅ | ❌ | ❌ No |
-| Dynamic workflow registration | ❌ | ✅ | ❌ No |
-| Generic type parameters | ❌ | ✅ | ❌ No |
-| Zod validation | ❌ | ✅ | ❌ No |
-| WorkflowRegistry | ❌ | ✅ | ❌ No |
-| Multi-workflow support | ❌ | ✅ | ❌ No |
-| All 16 AG-UI events | ✅ | ✅ | ✅ Yes |
-| WebSocket streaming | ✅ | ✅ | ✅ Yes |
-| HITL approvals | ✅ | ✅ | ✅ Yes |
+| Feature                       | 1.x | 2.x | Compatible? |
+| ----------------------------- | --- | --- | ----------- |
+| Hardcoded endpoints           | ✅  | ❌  | ❌ No       |
+| Dynamic workflow registration | ❌  | ✅  | ❌ No       |
+| Generic type parameters       | ❌  | ✅  | ❌ No       |
+| Zod validation                | ❌  | ✅  | ❌ No       |
+| WorkflowRegistry              | ❌  | ✅  | ❌ No       |
+| Multi-workflow support        | ❌  | ✅  | ❌ No       |
+| All 16 AG-UI events           | ✅  | ✅  | ✅ Yes      |
+| WebSocket streaming           | ✅  | ✅  | ✅ Yes      |
+| HITL approvals                | ✅  | ✅  | ✅ Yes      |
 
 ### Migration Checklist
 
@@ -3238,6 +3192,7 @@ export class MyWorkflowComponent {
 All DevBrand-specific references have been removed from the rewritten documentation.
 
 **Search Results:**
+
 - `devbrand` occurrences: 0
 - `DevBrand` occurrences: 0
 - `githubUsername` occurrences: 0 (in public API)
@@ -3249,6 +3204,7 @@ All DevBrand-specific references have been removed from the rewritten documentat
 All hardcoded endpoints have been replaced with registry-based dynamic resolution.
 
 **Search Results:**
+
 - `/devbrand/execute` occurrences: 0
 - Hardcoded URL patterns: 0
 - All endpoints now configured in `WorkflowDefinition.endpoint`
@@ -3258,6 +3214,7 @@ All hardcoded endpoints have been replaced with registry-based dynamic resolutio
 No `any` types in public API documentation (except default generic parameters).
 
 **Search Results:**
+
 - Public methods with `any` return types: 0
 - Untyped function parameters: 0
 - All service methods have proper generic signatures
@@ -3265,28 +3222,33 @@ No `any` types in public API documentation (except default generic parameters).
 ### Code Example Count: **10+** ✅
 
 **Placeholder Workflows:** 3
+
 - ✅ Content Generation Workflow
 - ✅ Data Analysis Workflow
 - ✅ Code Review Workflow
 
 **Connection Service Examples:** 3
+
 - ✅ Basic workflow execution
 - ✅ Real-time token streaming
 - ✅ Error handling and validation
 
 **Event Handling Examples:** 4
+
 - ✅ Type-safe state updates
 - ✅ Generic HITL approval
 - ✅ Output streaming
 - ✅ Error event handling
 
 **Complete Component Examples:** 2
+
 - ✅ ContentGeneratorComponent (350+ lines)
 - ✅ WorkflowLifecycleComponent
 
 ### Acceptance Criteria Validation
 
 **Requirement 1: Generic LangGraphConnectionService** (10 criteria)
+
 - ✅ Zero hardcoded endpoints eliminated
 - ✅ Dynamic endpoint pattern from WorkflowRegistry
 - ✅ WebSocket path supports dynamic workflow IDs
@@ -3299,6 +3261,7 @@ No `any` types in public API documentation (except default generic parameters).
 - ✅ Error handling examples
 
 **Requirement 2: WorkflowRegistry Pattern** (8 criteria)
+
 - ✅ `register<TInput, TOutput>()` method
 - ✅ `get()` returns type-safe definition
 - ✅ `list()` returns all workflows
@@ -3309,6 +3272,7 @@ No `any` types in public API documentation (except default generic parameters).
 - ✅ O(1) lookup performance documented
 
 **Requirement 3: Generic Protocol Service** (6 criteria)
+
 - ✅ Zero workflow-specific logic
 - ✅ Generic `TState` parameter for state events
 - ✅ Custom approval types supported
@@ -3317,12 +3281,14 @@ No `any` types in public API documentation (except default generic parameters).
 - ✅ All 16 AG-UI event types supported
 
 **Requirement 4: Generic TypeScript Models** (4 criteria)
+
 - ✅ Generic type parameters for input/state/output
 - ✅ DevBrand metadata replaced with `Record<string, any>`
 - ✅ `WorkflowExecution<TInput, TState, TOutput>` interface
 - ✅ Zod schema integration patterns shown
 
 **Requirement 5: Configuration Interfaces** (2 criteria)
+
 - ✅ `provideLangGraph(config)` documented
 - ✅ `provideLangGraphWorkflow()` multi-workflow registration
 - ✅ Complete application setup examples

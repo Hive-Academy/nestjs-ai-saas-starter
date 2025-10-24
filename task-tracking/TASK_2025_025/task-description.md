@@ -19,6 +19,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN researcher analyzes DevBrandController THEN SHALL document all HTTP endpoints with:
+
    - Request DTOs (ExecuteDevBrandDto structure)
    - Response DTOs (ExecuteDevBrandResponseDto structure)
    - HTTP methods, paths, and status codes
@@ -26,6 +27,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Authentication requirements (if any)
 
 2. WHEN researcher examines execute endpoint THEN SHALL extract:
+
    - Required fields (githubUsername)
    - Optional fields (userId)
    - Validation rules
@@ -45,6 +47,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN researcher analyzes StreamingWebSocketService THEN SHALL document:
+
    - WebSocket server endpoint (ws://localhost:8080/streaming)
    - Connection protocol (Socket.io with transports configuration)
    - Connection lifecycle (connect, subscribe, disconnect)
@@ -52,6 +55,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - CORS configuration and requirements
 
 2. WHEN researcher examines WebSocketBridgeService THEN SHALL extract:
+
    - Client registration process
    - Execution subscription mechanism (subscribe_execution event)
    - Room-based streaming capabilities
@@ -72,6 +76,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN researcher analyzes DevBrandSupervisorWorkflow THEN SHALL document:
+
    - Workflow topology (SUPERVISOR pattern)
    - Network ID and configuration
    - Streaming enablement (streaming: true)
@@ -79,6 +84,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Execution methods (execute vs executeWithStreaming)
 
 2. WHEN researcher examines the 3 worker agents THEN SHALL extract for EACH agent:
+
    - Agent name and identifier
    - Agent role and capabilities
    - Input requirements and output structure
@@ -100,6 +106,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN researcher analyzes tool implementations THEN SHALL document for EACH tool:
+
    - Tool name and identifier
    - Input schema and parameters
    - Output structure
@@ -107,6 +114,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Execution patterns (sync vs async)
 
 2. WHEN researcher examines GitHub integration tools THEN SHALL extract:
+
    - GitHub API interaction patterns
    - Repository analysis mechanisms
    - Achievement extraction logic
@@ -125,6 +133,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN researcher analyzes StreamEventType enumeration THEN SHALL document ALL event types:
+
    - EVENTS - workflow state changes
    - TOKEN - LLM token streaming
    - PROGRESS - progress updates
@@ -132,6 +141,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Additional types from constants.ts
 
 2. WHEN researcher examines StreamUpdate interface THEN SHALL extract:
+
    - type field (StreamEventType)
    - data field structure for each event type
    - metadata field structure (StreamMetadata)
@@ -158,6 +168,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing REST service THEN SHALL provide:
+
    - executeWorkflow(githubUsername, userId?) method
    - Type-safe request/response DTOs
    - Error handling with typed error responses
@@ -165,6 +176,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Observable-based API (RxJS)
 
 2. WHEN implementing WebSocket service THEN SHALL provide:
+
    - connect() method with automatic reconnection
    - disconnect() method with cleanup
    - subscribeToExecution(executionId) method
@@ -186,6 +198,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing workflow trigger component THEN SHALL provide:
+
    - GitHub username input field with validation
    - User ID input field (optional)
    - Execute button with loading state
@@ -194,6 +207,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - WebSocket connection instructions display
 
 2. WHEN workflow execution starts THEN SHALL display:
+
    - Execution ID prominently
    - Current connection status
    - Timestamp of execution start
@@ -211,6 +225,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing streaming visualization THEN SHALL display:
+
    - Real-time event feed with auto-scroll
    - Event type badges (EVENTS, TOKEN, PROGRESS, MILESTONE)
    - Event timestamps with millisecond precision
@@ -219,6 +234,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Raw event data in expandable sections
 
 2. WHEN receiving TOKEN events THEN SHALL visualize:
+
    - Character-by-character token accumulation
    - Token buffer visualization
    - Token count and throughput metrics
@@ -237,6 +253,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing agent monitoring THEN SHALL display for EACH agent:
+
    - Agent name and status (idle, active, completed)
    - Current execution phase
    - Start and end timestamps
@@ -244,6 +261,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Output summary
 
 2. WHEN supervisor routes to agent THEN SHALL visualize:
+
    - Routing decision event
    - Agent transition animation
    - Routing reason from supervisor LLM
@@ -262,6 +280,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing tool call tracking THEN SHALL display:
+
    - Tool name and invocation timestamp
    - Agent that invoked the tool
    - Tool input parameters (formatted JSON)
@@ -270,6 +289,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Execution duration
 
 2. WHEN tool is invoked THEN SHALL visualize:
+
    - Tool invocation event in timeline
    - Parameter validation results
    - Async execution indicator
@@ -287,6 +307,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 #### Acceptance Criteria
 
 1. WHEN implementing event logger THEN SHALL provide:
+
    - Chronological event list with pagination
    - Event type filters (checkbox filters for each type)
    - Node ID filters
@@ -295,6 +316,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
    - Clear log button
 
 2. WHEN displaying events THEN SHALL show:
+
    - Event index number
    - Timestamp (absolute and relative)
    - Event type with color coding
@@ -386,18 +408,21 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Primary Stakeholders
 
 **Frontend Development Team**
+
 - **Needs**: Clear integration patterns, type-safe APIs, comprehensive examples
 - **Pain Points**: Uncertainty about event types, streaming patterns, error handling
 - **Success Criteria**: Complete POC demonstrating all integration patterns
 - **Involvement**: Hands-on implementation, code review, pattern validation
 
 **Backend Development Team**
+
 - **Needs**: Validation of API design, identification of missing features
 - **Pain Points**: Uncertainty about frontend requirements, edge cases
 - **Success Criteria**: Zero backend modifications required for POC
 - **Involvement**: API documentation review, troubleshooting support
 
 **Library Architecture Team**
+
 - **Needs**: Real-world usage patterns, performance metrics, API design validation
 - **Pain Points**: Theoretical design without real-world validation
 - **Success Criteria**: POC serves as complete specification for langgraph-angular library
@@ -406,30 +431,33 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Secondary Stakeholders
 
 **QA/Testing Team**
+
 - **Needs**: Reproducible test scenarios, error case validation
 - **Success Criteria**: All error scenarios documented with reproduction steps
 - **Involvement**: POC testing, bug reporting, edge case discovery
 
 **DevOps Team**
+
 - **Needs**: WebSocket infrastructure validation, connection pooling patterns
 - **Success Criteria**: No production WebSocket infrastructure changes needed
 - **Involvement**: Infrastructure readiness validation
 
 **Product Management**
+
 - **Needs**: Risk reduction for library development timeline
 - **Success Criteria**: POC reduces library development risk by validating patterns
 - **Involvement**: Milestone tracking, timeline validation
 
 ### Stakeholder Impact Matrix
 
-| Stakeholder               | Impact Level | Involvement       | Success Criteria                                      |
-|---------------------------|--------------|-------------------|-------------------------------------------------------|
-| Frontend Dev Team         | High         | Implementation    | Complete working POC with all patterns validated      |
-| Backend Dev Team          | Medium       | Support           | Zero API modifications required                       |
-| Library Architecture Team | High         | Code Review       | POC serves as library specification                   |
-| QA Team                   | Medium       | Testing           | All error scenarios documented                        |
-| DevOps                    | Low          | Validation        | WebSocket infrastructure validated                    |
-| Product Management        | Medium       | Milestone Tracking| 70% risk reduction for library development            |
+| Stakeholder               | Impact Level | Involvement        | Success Criteria                                 |
+| ------------------------- | ------------ | ------------------ | ------------------------------------------------ |
+| Frontend Dev Team         | High         | Implementation     | Complete working POC with all patterns validated |
+| Backend Dev Team          | Medium       | Support            | Zero API modifications required                  |
+| Library Architecture Team | High         | Code Review        | POC serves as library specification              |
+| QA Team                   | Medium       | Testing            | All error scenarios documented                   |
+| DevOps                    | Low          | Validation         | WebSocket infrastructure validated               |
+| Product Management        | Medium       | Milestone Tracking | 70% risk reduction for library development       |
 
 ---
 
@@ -438,6 +466,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Technical Risks
 
 **Risk 1: WebSocket Connection Stability**
+
 - **Probability**: Medium
 - **Impact**: High
 - **Description**: WebSocket connections may drop during long-running workflows, causing event loss
@@ -445,6 +474,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Fallback to polling if WebSocket consistently fails, display warning to user
 
 **Risk 2: Event Type Discovery Incompleteness**
+
 - **Probability**: Medium
 - **Impact**: Medium
 - **Description**: Backend may emit event types not documented in StreamEventType enum
@@ -452,6 +482,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Add generic event handler for unknown types, update documentation
 
 **Risk 3: Real-time Performance Degradation**
+
 - **Probability**: Medium
 - **Impact**: High
 - **Description**: High-frequency token streaming may cause UI blocking and frame drops
@@ -459,6 +490,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Add performance mode toggle to reduce UI updates, implement event batching
 
 **Risk 4: Type Safety Violations**
+
 - **Probability**: Low
 - **Impact**: Critical
 - **Description**: Event data structures may not match TypeScript interfaces
@@ -466,6 +498,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Add runtime type guards, graceful degradation for malformed events
 
 **Risk 5: Complex Node ID Parsing**
+
 - **Probability**: Medium
 - **Impact**: Medium
 - **Description**: Canonical node ID structure (domain/phase/activity/detail) may have edge cases
@@ -475,6 +508,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Integration Risks
 
 **Risk 6: Backend API Changes**
+
 - **Probability**: Low
 - **Impact**: High
 - **Description**: dev-brand-api may change endpoints or DTOs during POC development
@@ -482,6 +516,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Abstract API layer to minimize change impact
 
 **Risk 7: CORS Configuration Issues**
+
 - **Probability**: Medium
 - **Impact**: Medium
 - **Description**: WebSocket CORS configuration may block frontend connections
@@ -491,6 +526,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Development Risks
 
 **Risk 8: Scope Creep**
+
 - **Probability**: High
 - **Impact**: Medium
 - **Description**: POC may expand beyond validation scope to include features
@@ -498,6 +534,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - **Contingency**: Create separate task for additional features
 
 **Risk 9: Time Estimation Accuracy**
+
 - **Probability**: Medium
 - **Impact**: Medium
 - **Description**: Complex integration may take longer than estimated
@@ -506,17 +543,17 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 
 ### Risk Matrix
 
-| Risk                          | Probability | Impact   | Score | Mitigation Strategy                                    |
-|-------------------------------|-------------|----------|-------|--------------------------------------------------------|
-| WebSocket Connection Stability| Medium      | High     | 8     | Auto-reconnection + sequence number gap detection      |
-| Event Type Incompleteness     | Medium      | Medium   | 6     | Catch-all handler + comprehensive testing              |
-| Performance Degradation       | Medium      | High     | 8     | Virtual scrolling + web workers + debouncing           |
-| Type Safety Violations        | Low         | Critical | 9     | Runtime validation with zod + error boundaries         |
-| Node ID Parsing Complexity    | Medium      | Medium   | 6     | Use parseNodeId utility + fallback to raw display      |
-| Backend API Changes           | Low         | High     | 7     | Version pinning + regular backend sync                 |
-| CORS Issues                   | Medium      | Medium   | 6     | Verify config + test from frontend origin              |
-| Scope Creep                   | High        | Medium   | 7     | Strict requirements + reject additions                 |
-| Time Estimation               | Medium      | Medium   | 6     | Break down tasks + track velocity                      |
+| Risk                           | Probability | Impact   | Score | Mitigation Strategy                               |
+| ------------------------------ | ----------- | -------- | ----- | ------------------------------------------------- |
+| WebSocket Connection Stability | Medium      | High     | 8     | Auto-reconnection + sequence number gap detection |
+| Event Type Incompleteness      | Medium      | Medium   | 6     | Catch-all handler + comprehensive testing         |
+| Performance Degradation        | Medium      | High     | 8     | Virtual scrolling + web workers + debouncing      |
+| Type Safety Violations         | Low         | Critical | 9     | Runtime validation with zod + error boundaries    |
+| Node ID Parsing Complexity     | Medium      | Medium   | 6     | Use parseNodeId utility + fallback to raw display |
+| Backend API Changes            | Low         | High     | 7     | Version pinning + regular backend sync            |
+| CORS Issues                    | Medium      | Medium   | 6     | Verify config + test from frontend origin         |
+| Scope Creep                    | High        | Medium   | 7     | Strict requirements + reject additions            |
+| Time Estimation                | Medium      | Medium   | 6     | Break down tasks + track velocity                 |
 
 ---
 
@@ -525,6 +562,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### External Dependencies
 
 **Backend Services**
+
 - dev-brand-api running on localhost:3000
 - WebSocket server on localhost:8080
 - Neo4j database for HITL storage
@@ -532,6 +570,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 - Redis for caching (if used)
 
 **NPM Packages**
+
 - @angular/core ^18.0.0
 - @angular/common ^18.0.0
 - rxjs ^7.8.0
@@ -542,12 +581,14 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Internal Dependencies
 
 **Existing Code to Reuse**
+
 - Environment configuration (environment.ts)
 - HTTP interceptors (if available)
 - Error handling utilities
 - Logging utilities
 
 **Backend Type Definitions (if available)**
+
 - ExecuteDevBrandDto
 - ExecuteDevBrandResponseDto
 - StreamUpdate interface
@@ -761,6 +802,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 ### Recommended Implementation Order
 
 **Phase A (Research & Analysis) - 4-6 hours**
+
 1. REST API endpoint analysis (1 hour)
 2. WebSocket architecture analysis (1 hour)
 3. LangGraph workflow & agent analysis (1.5 hours)
@@ -769,6 +811,7 @@ This document specifies requirements for a proof-of-concept (POC) integration in
 6. Documentation compilation and backend review (1 hour)
 
 **Phase B (Implementation) - 16-20 hours**
+
 1. Project setup and service architecture (2 hours)
 2. REST service implementation with DTOs (2 hours)
 3. WebSocket service with reconnection logic (3 hours)

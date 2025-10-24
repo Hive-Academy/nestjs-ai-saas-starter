@@ -7,6 +7,7 @@
 TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive rewrite, building directly on TASK_2025_019's generic infrastructure (WorkflowRegistry, provider system, and 16 generic AG-UI event types). This task transforms ALL Angular components and directives from DevBrand-specific implementations into 100% generic, content-projection-based UI components.
 
 **Value Proposition**:
+
 - **Component Reusability**: Enable developers to use library components for ANY AI workflow domain without modification
 - **Content Projection Excellence**: Every customizable UI area exposed as slot-based templates
 - **Type-Safe Templates**: Template contexts fully typed with workflow generics
@@ -30,11 +31,13 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 3. **Component-Registry Integration**: Do components need new integration patterns with WorkflowRegistry?
 
 **If Patterns Suffice (SKIP ARCHITECT)**:
+
 - Proceed directly to frontend-developer
 - Reuse TASK_2025_018 content projection patterns
 - Apply WorkflowRegistry integration from TASK_2025_019
 
 **If New Patterns Needed (INVOKE ARCHITECT)**:
+
 - Novel component composition approaches
 - Complex template context requirements
 - Advanced content projection scenarios
@@ -54,6 +57,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 **File**: `angular-langgraph.md`
 **Lines**: 734-748 (WorkflowVisualizer implementation)
 **Current Issues**:
+
 - Line 739-743: Hardcoded agent array with DevBrand agents (`github-analyzer`, `brand-strategist`, `content-creator`)
 - Line 631: Hardcoded title: `title = input('DevBrand Workflow')`
 
@@ -81,6 +85,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 **File**: `angular-langgraph.md`
 **Lines**: 762-844 (ApprovalModal implementation)
 **Current Issues**:
+
 - Lines 781-795: Hardcoded `@switch` statement for DevBrand agent metadata display:
   - `github-code-analyzer` with achievementCount, repositoriesAnalyzed, confidenceScore
   - `personal-brand-strategist` with strategyType, brandScore
@@ -132,6 +137,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 #### Directive Requirements
 
 1. **lgIfWorkflowState Directive**:
+
    ```typescript
    <div *lgIfWorkflowState="'running'; let state">
      <p>Current Agent: {{ state.currentAgent }}</p>
@@ -139,6 +145,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
    ```
 
 2. **lgForAgents Directive**:
+
    ```typescript
    <div *lgForAgents="let agent; workflow: myWorkflow">
      <agent-card [agent]="agent" />
@@ -174,11 +181,13 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 #### Example Categories
 
 1. **Content Generation Workflow Example**:
+
    - Workflow: Blog post generation (outline → draft → revision)
    - Components: Chat + WorkflowVisualizer + ApprovalModal
    - Demonstrates: Multi-stage workflow with HITL approvals
 
 2. **Data Analysis Workflow Example**:
+
    - Workflow: CSV upload → analysis → visualization
    - Components: WorkflowVisualizer + custom chart components
    - Demonstrates: Streaming progress updates, custom agent display
@@ -215,6 +224,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 #### Template Context Interfaces
 
 1. **MessageContext<TMessage>**:
+
    ```typescript
    interface MessageContext<TMessage = Message> {
      $implicit: TMessage;
@@ -228,6 +238,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
    ```
 
 2. **AgentContext<TAgent>**:
+
    ```typescript
    interface AgentContext<TAgent = AgentInfo> {
      $implicit: TAgent;
@@ -304,25 +315,25 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 
 ### Hardcoded Strings to Remove
 
-| Line | Current Code | Replacement Strategy |
-|------|--------------|---------------------|
-| 220 | `POST /devbrand/execute` | **Already fixed in TASK_2025_019** - uses `workflow.endpoint` |
-| 222 | `${this.config.apiUrl}/devbrand/execute` | **Already fixed in TASK_2025_019** |
-| 631 | `title = input('DevBrand Workflow')` | `title = input.required<string>()` |
-| 740 | `{ id: 'github-analyzer', name: 'GitHub Analyzer', status: 'pending' }` | Remove - source from WorkflowRegistry metadata |
-| 741 | `{ id: 'brand-strategist', name: 'Brand Strategist', status: 'pending' }` | Remove - source from WorkflowRegistry metadata |
-| 742 | `{ id: 'content-creator', name: 'Content Creator', status: 'pending' }` | Remove - source from WorkflowRegistry metadata |
-| 781 | `@case ('github-code-analyzer')` | Remove entire switch - replace with content projection |
-| 785 | `@case ('personal-brand-strategist')` | Remove - replace with content projection |
-| 788 | `@case ('content-creator')` | Remove - replace with content projection |
-| 1142 | `// devbrand-workflow.component.ts` | Move to examples package (TASK_2025_022) |
-| 1148 | `selector: 'app-devbrand-workflow'` | Move to examples package |
-| 1153 | `<h1>DevBrand AI Assistant</h1>` | Move to examples package |
-| 1175 | `export class DevBrandWorkflowComponent` | Move to examples package |
-| 1193 | `// devbrand-simple.component.ts` | Move to examples package |
-| 1198 | `selector: 'app-devbrand-simple'` | Move to examples package |
-| 1210 | `🚀 Start DevBrand Workflow` | Move to examples package |
-| 1277 | `export class DevBrandSimpleComponent` | Move to examples package |
+| Line | Current Code                                                              | Replacement Strategy                                          |
+| ---- | ------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 220  | `POST /devbrand/execute`                                                  | **Already fixed in TASK_2025_019** - uses `workflow.endpoint` |
+| 222  | `${this.config.apiUrl}/devbrand/execute`                                  | **Already fixed in TASK_2025_019**                            |
+| 631  | `title = input('DevBrand Workflow')`                                      | `title = input.required<string>()`                            |
+| 740  | `{ id: 'github-analyzer', name: 'GitHub Analyzer', status: 'pending' }`   | Remove - source from WorkflowRegistry metadata                |
+| 741  | `{ id: 'brand-strategist', name: 'Brand Strategist', status: 'pending' }` | Remove - source from WorkflowRegistry metadata                |
+| 742  | `{ id: 'content-creator', name: 'Content Creator', status: 'pending' }`   | Remove - source from WorkflowRegistry metadata                |
+| 781  | `@case ('github-code-analyzer')`                                          | Remove entire switch - replace with content projection        |
+| 785  | `@case ('personal-brand-strategist')`                                     | Remove - replace with content projection                      |
+| 788  | `@case ('content-creator')`                                               | Remove - replace with content projection                      |
+| 1142 | `// devbrand-workflow.component.ts`                                       | Move to examples package (TASK_2025_022)                      |
+| 1148 | `selector: 'app-devbrand-workflow'`                                       | Move to examples package                                      |
+| 1153 | `<h1>DevBrand AI Assistant</h1>`                                          | Move to examples package                                      |
+| 1175 | `export class DevBrandWorkflowComponent`                                  | Move to examples package                                      |
+| 1193 | `// devbrand-simple.component.ts`                                         | Move to examples package                                      |
+| 1198 | `selector: 'app-devbrand-simple'`                                         | Move to examples package                                      |
+| 1210 | `🚀 Start DevBrand Workflow`                                              | Move to examples package                                      |
+| 1277 | `export class DevBrandSimpleComponent`                                    | Move to examples package                                      |
 
 **Total DevBrand References**: 17 instances requiring removal/relocation
 
@@ -334,32 +345,32 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 
 ### WorkflowVisualizer Component Slots
 
-| Slot Selector | Purpose | Context Type | Default Behavior |
-|--------------|---------|--------------|------------------|
-| `[lgWorkflowHeader]` | Custom header area | `WorkflowContext<TState>` | Shows workflow name |
-| `[lgAgentDisplay]` | Agent rendering | `AgentContext<TAgent>` | Generic agent card |
-| `[lgStatusIndicator]` | Status display | `StatusContext` | Status badge |
-| `[lgEventTimeline]` | Event history | `EventContext[]` | Event list |
-| `[lgWorkflowFooter]` | Custom footer area | `WorkflowContext<TState>` | Empty |
+| Slot Selector         | Purpose            | Context Type              | Default Behavior    |
+| --------------------- | ------------------ | ------------------------- | ------------------- |
+| `[lgWorkflowHeader]`  | Custom header area | `WorkflowContext<TState>` | Shows workflow name |
+| `[lgAgentDisplay]`    | Agent rendering    | `AgentContext<TAgent>`    | Generic agent card  |
+| `[lgStatusIndicator]` | Status display     | `StatusContext`           | Status badge        |
+| `[lgEventTimeline]`   | Event history      | `EventContext[]`          | Event list          |
+| `[lgWorkflowFooter]`  | Custom footer area | `WorkflowContext<TState>` | Empty               |
 
 ### ApprovalModal Component Slots
 
-| Slot Selector | Purpose | Context Type | Default Behavior |
-|--------------|---------|--------------|------------------|
-| `[lgApprovalHeader]` | Modal header | `ApprovalContext<TMetadata>` | Standard header |
-| `[lgApprovalMetadata]` | Metadata display | `ApprovalMetadataContext<TMetadata>` | JSON expansion panel |
-| `[lgApprovalActions]` | Action buttons | `ApprovalContext<TMetadata>` | Approve/Reject buttons |
-| `[lgApprovalFooter]` | Modal footer | `ApprovalContext<TMetadata>` | Timeout indicator |
+| Slot Selector          | Purpose          | Context Type                         | Default Behavior       |
+| ---------------------- | ---------------- | ------------------------------------ | ---------------------- |
+| `[lgApprovalHeader]`   | Modal header     | `ApprovalContext<TMetadata>`         | Standard header        |
+| `[lgApprovalMetadata]` | Metadata display | `ApprovalMetadataContext<TMetadata>` | JSON expansion panel   |
+| `[lgApprovalActions]`  | Action buttons   | `ApprovalContext<TMetadata>`         | Approve/Reject buttons |
+| `[lgApprovalFooter]`   | Modal footer     | `ApprovalContext<TMetadata>`         | Timeout indicator      |
 
 ### Chat Component Slots
 
-| Slot Selector | Purpose | Context Type | Default Behavior |
-|--------------|---------|--------------|------------------|
-| `[lgChatHeader]` | Chat header | `ChatContext<TMessage>` | Empty |
-| `[lgChatInput]` | Input area | `ChatInputContext` | Text input + send button |
-| `[lgChatFooter]` | Chat footer | `ChatContext<TMessage>` | Empty |
-| `[lgChatEmpty]` | Empty state | `ChatContext<TMessage>` | "No messages" text |
-| `[lgChatTyping]` | Typing indicator | `TypingContext` | Animated dots |
+| Slot Selector    | Purpose          | Context Type            | Default Behavior         |
+| ---------------- | ---------------- | ----------------------- | ------------------------ |
+| `[lgChatHeader]` | Chat header      | `ChatContext<TMessage>` | Empty                    |
+| `[lgChatInput]`  | Input area       | `ChatInputContext`      | Text input + send button |
+| `[lgChatFooter]` | Chat footer      | `ChatContext<TMessage>` | Empty                    |
+| `[lgChatEmpty]`  | Empty state      | `ChatContext<TMessage>` | "No messages" text       |
+| `[lgChatTyping]` | Typing indicator | `TypingContext`         | Animated dots            |
 
 ---
 
@@ -368,11 +379,13 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 ### Required Service Integrations
 
 1. **WorkflowRegistry Integration**:
+
    - All components SHALL inject `WorkflowRegistry` service
    - Agent metadata SHALL be sourced from `workflow.metadata.agents`
    - Workflow display names SHALL come from `workflow.name`
 
 2. **LangGraphConnectionService Integration**:
+
    - Components SHALL use connection service for state subscriptions
    - WebSocket reconnection SHALL be handled by service, not components
    - Component state SHALL update reactively via Angular signals
@@ -385,6 +398,7 @@ TASK_2025_020 is the **second phase** of the angular-langgraph.md comprehensive 
 ### Type System Integration
 
 1. **Generic Type Flow**:
+
    ```typescript
    WorkflowDefinition<TInput, TOutput>
      ↓ (flows into)
@@ -532,11 +546,13 @@ Before delegating to frontend-developer, verify:
 **Recommended Agent**: frontend-developer
 
 **Rationale**:
+
 - **Skip software-architect**: Existing patterns from TASK_2025_018 (content projection) and TASK_2025_019 (WorkflowRegistry) provide complete architectural foundation
 - **Implementation-Focused Task**: Applying approved patterns to component documentation
 - **No Novel Patterns Required**: All content projection slots, template contexts, and registry integration patterns already established
 
 **Next Steps**:
+
 1. frontend-developer reads this requirements document
 2. frontend-developer reads TASK_2025_019 output (angular-langgraph-services-REWRITE.md)
 3. frontend-developer rewrites component sections with content projection patterns
@@ -545,6 +561,7 @@ Before delegating to frontend-developer, verify:
 6. frontend-developer creates validation report against 30+ acceptance criteria
 
 **Success Criteria for Delegation**:
+
 - All 17 DevBrand references eliminated or moved to examples
 - All components converted to content projection architecture
 - All template contexts fully typed with generics

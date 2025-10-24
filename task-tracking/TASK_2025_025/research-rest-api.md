@@ -40,10 +40,10 @@ export class ExecuteDevBrandDto {
 
 ### Fields
 
-| Field | Type | Required | Validation | Example | Description |
-|-------|------|----------|------------|---------|-------------|
-| `githubUsername` | string | Yes | `@IsString()` | "johnsmith" | GitHub username to analyze |
-| `userId` | string | No | `@IsString()`, `@IsOptional()` | "user-123" | User ID for personalization |
+| Field            | Type   | Required | Validation                     | Example     | Description                 |
+| ---------------- | ------ | -------- | ------------------------------ | ----------- | --------------------------- |
+| `githubUsername` | string | Yes      | `@IsString()`                  | "johnsmith" | GitHub username to analyze  |
+| `userId`         | string | No       | `@IsString()`, `@IsOptional()` | "user-123"  | User ID for personalization |
 
 ### Validation Rules
 
@@ -74,13 +74,13 @@ export class ExecuteDevBrandResponseDto {
 
 ### Fields
 
-| Field | Type | Example | Description |
-|-------|------|---------|-------------|
-| `executionId` | string | "devbrand-1697456789" | Unique execution ID for this workflow |
-| `status` | 'started' | "started" | Workflow status (always 'started' for success) |
-| `message` | string | "Workflow started successfully..." | Human-readable message |
-| `websocketUrl` | string | "ws://localhost:8080/streaming" | WebSocket URL for real-time updates |
-| `websocketInstructions` | object | {...} | WebSocket integration instructions |
+| Field                   | Type      | Example                            | Description                                    |
+| ----------------------- | --------- | ---------------------------------- | ---------------------------------------------- |
+| `executionId`           | string    | "devbrand-1697456789"              | Unique execution ID for this workflow          |
+| `status`                | 'started' | "started"                          | Workflow status (always 'started' for success) |
+| `message`               | string    | "Workflow started successfully..." | Human-readable message                         |
+| `websocketUrl`          | string    | "ws://localhost:8080/streaming"    | WebSocket URL for real-time updates            |
+| `websocketInstructions` | object    | {...}                              | WebSocket integration instructions             |
 
 ### WebSocket Instructions Object
 
@@ -130,6 +130,7 @@ if (!dto.githubUsername) {
 ```
 
 **Error Format**:
+
 ```json
 {
   "statusCode": 400,
@@ -159,6 +160,7 @@ WorkflowStreamService → EventEmitter2 → WebSocketBridgeService → Streaming
 ```
 
 **Event Patterns** (line 243-247):
+
 - `workflow.stream.${executionId}`
 - `workflow.token.${executionId}`
 - `workflow.progress.${executionId}`
@@ -178,8 +180,8 @@ const response = await fetch('http://localhost:3000/devbrand/execute', {
   },
   body: JSON.stringify({
     githubUsername: 'octocat',
-    userId: 'user-123'
-  })
+    userId: 'user-123',
+  }),
 });
 
 const data: ExecuteDevBrandResponseDto = await response.json();
@@ -199,7 +201,7 @@ const { executionId, websocketUrl } = data;
 import { io } from 'socket.io-client';
 
 const socket = io(websocketUrl, {
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
 });
 
 socket.emit('subscribe_execution', { executionId });
@@ -238,7 +240,12 @@ export class ExecuteDevBrandResponseDto {
   sessionId!: string;
   status!: 'queued' | 'running' | 'completed' | 'failed' | 'interrupted';
   results?: {
-    achievements: Array<{ id: string; description: string; technologies: string[]; impact: string }>;
+    achievements: Array<{
+      id: string;
+      description: string;
+      technologies: string[];
+      impact: string;
+    }>;
     strategy: { positioning: string; targetAudience: string; uniqueValue: string };
     content: { linkedin: string; devto: string };
     confidence: number;

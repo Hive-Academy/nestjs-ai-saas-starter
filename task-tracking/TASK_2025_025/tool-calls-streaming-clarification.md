@@ -23,16 +23,19 @@
 **Key Services**:
 
 1. **WorkflowStreamService** (`libs/langgraph-modules/workflow-engine/src/lib/streaming/workflow-stream.service.ts`)
+
    - Manages workflow execution streaming
    - Emits events via EventEmitter2
    - Handles token streaming, progress, milestones
 
 2. **WebSocketBridgeService** (`libs/langgraph-modules/streaming/src/lib/services/websocket-bridge.service.ts`)
+
    - **THE CRITICAL SERVICE** that bridges EventEmitter2 → WebSocket
    - Listens to events and broadcasts to frontend
    - Manages client connections and subscriptions
 
 3. **StreamEventType Enum** (`libs/langgraph-modules/streaming/src/lib/constants.ts:8-40`)
+
    ```typescript
    export enum StreamEventType {
      // Workflow lifecycle
@@ -96,7 +99,7 @@ Frontend receives StreamUpdate
 3. **@OnEvent('client.milestone')** (line 508)
 4. **@OnEvent('tokens.aggregated')** (line 532)
 5. **@OnEvent('token.batch.processed')** (line 560)
-6. **@OnEvent('workflow.stream.*')** (line 589)
+6. **@OnEvent('workflow.stream.\*')** (line 589)
 
 **CRITICAL OBSERVATION**: ❌ **NO @OnEvent handlers for tool calls**
 
@@ -111,6 +114,7 @@ Grep: eventEmitter.emit.*tool
 ```
 
 **Results**:
+
 ```typescript
 // libs/langgraph-modules/multi-agent/src/lib/workflow/workflow-instance.service.ts:426
 this.eventEmitter.emit('workflow.tool.registered', { ... });
@@ -120,6 +124,7 @@ this.eventEmitter.emit('workflow.tool.removed', { ... });
 ```
 
 **Analysis**:
+
 - ✅ Tool registration/removal events ARE emitted
 - ❌ Tool execution (start/end) events NOT emitted
 - **These events are for tool lifecycle management, NOT execution tracking**
@@ -141,6 +146,7 @@ if (response.tool_calls && response.tool_calls.length > 0) {
 ```
 
 **Analysis**:
+
 - ✅ `tool_calls` property EXISTS in LLM responses
 - ✅ Agent nodes process `tool_calls` for routing
 - ❌ NO events emitted when tools are called
@@ -172,8 +178,8 @@ response.tool_calls = [
   {
     name: 'github-analyzer',
     args: { username: 'testuser' },
-    id: 'call_abc123'
-  }
+    id: 'call_abc123',
+  },
 ];
 ```
 
@@ -205,6 +211,7 @@ if (response.tool_calls && response.tool_calls.length > 0) {
 ```
 
 **Observation**:
+
 - Tool calls are logged to console via `this.logger.debug`
 - NO events emitted via EventEmitter2
 - Tool call data is processed but NOT streamed
@@ -224,14 +231,14 @@ if (response.tool_calls && response.tool_calls.length > 0) {
 
 ### What IS Streamed Currently
 
-| Event Type        | Status | Implementation                        |
-|-------------------|--------|---------------------------------------|
-| Workflow lifecycle| ✅ Yes | WORKFLOW_START, WORKFLOW_END         |
-| Node execution    | ✅ Yes | NODE_START, NODE_END, NODE_COMPLETE  |
-| Token streaming   | ✅ Yes | TOKEN event type                     |
-| Progress updates  | ✅ Yes | PROGRESS, MILESTONE                  |
-| Messages          | ✅ Yes | MESSAGES (includes tool_calls array) |
-| **Tool calls**    | ❌ No  | **Only logged, not streamed**        |
+| Event Type         | Status | Implementation                       |
+| ------------------ | ------ | ------------------------------------ |
+| Workflow lifecycle | ✅ Yes | WORKFLOW_START, WORKFLOW_END         |
+| Node execution     | ✅ Yes | NODE_START, NODE_END, NODE_COMPLETE  |
+| Token streaming    | ✅ Yes | TOKEN event type                     |
+| Progress updates   | ✅ Yes | PROGRESS, MILESTONE                  |
+| Messages           | ✅ Yes | MESSAGES (includes tool_calls array) |
+| **Tool calls**     | ❌ No  | **Only logged, not streamed**        |
 
 ### Critical Discovery: MESSAGES Mode Contains Tool Calls
 
@@ -244,12 +251,12 @@ if ('messages' in chunk && Array.isArray(chunk.messages)) {
     const tokenConfig = this.getTokenStreamConfig(executionId, nodeId);
 
     if (tokenConfig?.enabled && message.content) {
-      yield* this.streamMessageTokens(executionId, nodeId, message, tokenConfig);
+      yield * this.streamMessageTokens(executionId, nodeId, message, tokenConfig);
     } else {
       // Stream regular message
       yield this.createUpdate(
         StreamEventType.MESSAGES,
-        message,  // ← This INCLUDES tool_calls property if present
+        message, // ← This INCLUDES tool_calls property if present
         executionId,
         { nodeId }
       );
@@ -286,7 +293,7 @@ socket.on('stream_update', (event: StreamUpdate) => {
 
     if (message.tool_calls && message.tool_calls.length > 0) {
       // Tool calls are embedded in the message
-      message.tool_calls.forEach(toolCall => {
+      message.tool_calls.forEach((toolCall) => {
         console.log(`Tool called: ${toolCall.name}`, toolCall.args);
         // Update UI with tool call information
       });
@@ -296,11 +303,13 @@ socket.on('stream_update', (event: StreamUpdate) => {
 ```
 
 **Pros**:
+
 - ✅ Standard LangChain pattern
 - ✅ Already implemented (no backend changes)
 - ✅ Follows official LangGraph documentation
 
 **Cons**:
+
 - ⚠️ Requires frontend to parse message structure
 - ⚠️ Tool execution timing not explicit (need to infer from message sequence)
 - ⚠️ No separate TOOL_START/TOOL_END events
@@ -358,11 +367,13 @@ handleToolStart(data: any): void {
 ```
 
 **Pros**:
+
 - ✅ Explicit tool call lifecycle events
 - ✅ Easier frontend tracking (no parsing needed)
 - ✅ Matches user mental model (separate tool events)
 
 **Cons**:
+
 - ⚠️ Requires backend modifications
 - ⚠️ Deviates from standard LangChain MESSAGES pattern
 - ⚠️ More complex event management
@@ -376,6 +387,7 @@ handleToolStart(data: any): void {
 **Recommended Approach**: **Option A - Parse MESSAGES Events**
 
 **Rationale**:
+
 1. ✅ Zero backend changes needed
 2. ✅ Follows LangChain/LangGraph official patterns
 3. ✅ Tool call data IS already streaming (embedded in messages)
@@ -403,10 +415,12 @@ handleToolStart(data: any): void {
 **Recommended Approach**: **Both Options**
 
 **Provide dual interface**:
+
 1. **MESSAGES parsing utility** (standard LangChain way)
 2. **Optional backend enhancement guide** (for projects that want explicit tool events)
 
 **Benefits**:
+
 - Flexibility for library consumers
 - Works with standard backends out of the box
 - Enhanced experience available for those who implement it
@@ -418,6 +432,7 @@ handleToolStart(data: any): void {
 ### Frontend Services (Revised)
 
 **1. DevBrandWebSocketService**
+
 ```typescript
 socket.on('stream_update', (event: StreamUpdate) => {
   if (event.type === StreamEventType.MESSAGES) {
@@ -433,6 +448,7 @@ socket.on('stream_update', (event: StreamUpdate) => {
 ```
 
 **2. DevBrandWorkflowStateService**
+
 ```typescript
 private toolCalls$ = new BehaviorSubject<ToolCallInfo[]>([]);
 
@@ -453,6 +469,7 @@ handleToolCalls(toolCalls: ToolCall[], metadata: any): void {
 ```
 
 **3. ToolCallTrackerComponent**
+
 ```typescript
 @Component({
   template: `
@@ -495,11 +512,11 @@ handleToolCalls(toolCalls: ToolCall[], metadata: any): void {
 
 ### Updated Recommendation Matrix
 
-| Approach                    | Effort | Standards Compliance | Backend Changes | Frontend Parsing |
-|-----------------------------|--------|---------------------|-----------------|------------------|
-| **A: Parse MESSAGES**       | Low    | ✅ **Best**         | None            | Required         |
-| **B: Add TOOL_* enum**      | Medium | Partial             | Required        | None             |
-| **C: Enhance TraceProvider**| N/A    | ❌ **Wrong module** | Wrong direction | N/A              |
+| Approach                     | Effort | Standards Compliance | Backend Changes | Frontend Parsing |
+| ---------------------------- | ------ | -------------------- | --------------- | ---------------- |
+| **A: Parse MESSAGES**        | Low    | ✅ **Best**          | None            | Required         |
+| **B: Add TOOL\_\* enum**     | Medium | Partial              | Required        | None             |
+| **C: Enhance TraceProvider** | N/A    | ❌ **Wrong module**  | Wrong direction | N/A              |
 
 ---
 
@@ -531,14 +548,17 @@ handleToolCalls(toolCalls: ToolCall[], metadata: any): void {
 ## References
 
 **Correct Modules**:
+
 - Streaming: `@hive-academy/langgraph-streaming`
 - WebSocket Bridge: `libs/langgraph-modules/streaming/src/lib/services/websocket-bridge.service.ts`
 - Workflow Stream: `libs/langgraph-modules/workflow-engine/src/lib/streaming/workflow-stream.service.ts`
 
 **Incorrect Module** (for tool streaming):
+
 - ❌ Monitoring: `@hive-academy/langgraph-monitoring` (for Datadog/New Relic, not frontend streaming)
 
 **LangChain Documentation**:
+
 - https://langchain-ai.github.io/langgraph/how-tos/streaming/
 - https://js.langchain.com/docs/how_to/tool_stream_events/
 

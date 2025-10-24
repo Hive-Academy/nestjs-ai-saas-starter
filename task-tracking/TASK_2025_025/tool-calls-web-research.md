@@ -39,6 +39,7 @@ LangGraph supports **5 streaming modes**:
 When streaming with `mode="updates"`, tool calls generate distinct events:
 
 1. **AI Message with tool call requests** - LLM decides to use a tool
+
    ```json
    {
      "type": "ai_message",
@@ -50,6 +51,7 @@ When streaming with `mode="updates"`, tool calls generate distinct events:
    ```
 
 2. **Tool Message with execution result** - Tool executes and returns result
+
    ```json
    {
      "type": "tool_message",
@@ -87,6 +89,7 @@ LangChain JS `streamEvents()` method emits:
 ### Event Structure Example
 
 **on_chat_model_end with tool calls**:
+
 ```javascript
 {
   event: 'on_chat_model_end',
@@ -116,9 +119,9 @@ LangChain JS `streamEvents()` method emits:
 
 ```typescript
 interface ToolCall {
-  name: string;        // Tool identifier (e.g., 'github-analyzer')
-  args: object;        // Parameters matching tool schema
-  id: string;          // Unique ID for correlating results (e.g., 'call_1')
+  name: string; // Tool identifier (e.g., 'github-analyzer')
+  args: object; // Parameters matching tool schema
+  id: string; // Unique ID for correlating results (e.g., 'call_1')
 }
 ```
 
@@ -127,7 +130,7 @@ interface ToolCall {
 ```typescript
 interface ToolMessage {
   type: 'tool';
-  content: string;      // Tool execution result (often JSON stringified)
+  content: string; // Tool execution result (often JSON stringified)
   tool_call_id: string; // References original ToolCall.id
 }
 ```
@@ -159,11 +162,7 @@ During streaming, tool calls build progressively via **`ToolCallChunk`**:
 
 ```typescript
 export class TraceProvider extends BaseCallbackHandler {
-  override async handleToolStart(
-    tool: any,
-    input: string,
-    runId: string
-  ): Promise<void> {
+  override async handleToolStart(tool: any, input: string, runId: string): Promise<void> {
     this.logger.debug(`Tool Start - Run ID: ${runId}, Tool: ${tool.name}`);
     // ❌ ONLY logs to console
     // ❌ Does NOT emit event to EventEmitter2
@@ -183,6 +182,7 @@ export class TraceProvider extends BaseCallbackHandler {
 ```
 
 **Analysis**:
+
 - ✅ LangChain callbacks **ARE** implemented
 - ✅ Tool lifecycle events **ARE** tracked
 - ❌ Events **ARE NOT** emitted via EventEmitter2
@@ -219,11 +219,7 @@ export class TraceProvider extends BaseCallbackHandler {
     super();
   }
 
-  override async handleToolStart(
-    tool: any,
-    input: string,
-    runId: string
-  ): Promise<void> {
+  override async handleToolStart(tool: any, input: string, runId: string): Promise<void> {
     this.logger.debug(`Tool Start - Run ID: ${runId}, Tool: ${tool.name}`);
 
     // ✅ ADD: Emit event for streaming
@@ -365,9 +361,9 @@ this.eventEmitter.emit('stream.update', {
             name: 'github-analyzer',
             args: { username: 'testuser' },
             id: 'call_abc123',
-          }
+          },
         ],
-      }
+      },
     ],
   },
   metadata: { nodeId, timestamp, sequenceNumber },
@@ -382,7 +378,7 @@ this.eventEmitter.emit('stream.update', {
         type: 'tool',
         content: '{ "repos": 42, "stars": 1234 }',
         tool_call_id: 'call_abc123',
-      }
+      },
     ],
   },
   metadata: { nodeId, timestamp, sequenceNumber },
@@ -390,12 +386,14 @@ this.eventEmitter.emit('stream.update', {
 ```
 
 **Pros**:
+
 - ✅ Standard LangChain pattern
 - ✅ Already using MESSAGES event type
 - ✅ Frontend can parse `tool_calls` array from messages
 - ✅ No new event types needed
 
 **Cons**:
+
 - ⚠️ Requires agents to emit AIMessage with tool_calls
 - ⚠️ More complex frontend parsing
 
@@ -403,11 +401,11 @@ this.eventEmitter.emit('stream.update', {
 
 ## Part 6: Recommendation Matrix
 
-| Approach | Effort | Standards Compliance | Backend Changes | Frontend Impact |
-|----------|--------|---------------------|-----------------|-----------------|
-| **A: Enhance TraceProvider** | Medium | Partial | Add EventEmitter2 to TraceProvider | Add tool event handlers |
-| **B: Add TOOL_* to StreamEventType** | Low | Good | Enum + event emission | Straightforward parsing |
-| **C: Stream MESSAGES with tool_calls** | High | ✅ **Best** | Agent-level changes | Parse tool_calls from messages |
+| Approach                               | Effort | Standards Compliance | Backend Changes                    | Frontend Impact                |
+| -------------------------------------- | ------ | -------------------- | ---------------------------------- | ------------------------------ |
+| **A: Enhance TraceProvider**           | Medium | Partial              | Add EventEmitter2 to TraceProvider | Add tool event handlers        |
+| **B: Add TOOL\_\* to StreamEventType** | Low    | Good                 | Enum + event emission              | Straightforward parsing        |
+| **C: Stream MESSAGES with tool_calls** | High   | ✅ **Best**          | Agent-level changes                | Parse tool_calls from messages |
 
 ---
 
@@ -418,6 +416,7 @@ this.eventEmitter.emit('stream.update', {
 **Recommended Approach**: **Option A (Enhance TraceProvider) + Use CUSTOM event type**
 
 **Rationale**:
+
 1. ✅ Minimal backend changes (single file: trace.provider.ts)
 2. ✅ No enum modifications (uses existing CUSTOM type)
 3. ✅ Fast implementation (2-3 hours backend, 2 hours frontend)
@@ -427,18 +426,21 @@ this.eventEmitter.emit('stream.update', {
 **Implementation Steps**:
 
 **Backend (2-3 hours)**:
+
 1. Inject EventEmitter2 into TraceProvider constructor
 2. Emit 'tool.start', 'tool.end', 'tool.error' events from callbacks
 3. Add WebSocketBridge listeners for tool events
 4. Broadcast as CUSTOM stream updates
 
 **Frontend (2 hours)**:
+
 1. Listen for CUSTOM stream updates with eventType: 'tool_start'/'tool_end'
 2. Track tool calls in DevBrandWorkflowStateService
 3. Display in ToolCallTrackerComponent
 4. Show tool timeline in EventStreamComponent
 
 **Testing (1 hour)**:
+
 1. Run dev-brand workflow
 2. Verify tool events stream to frontend
 3. Validate tool call timeline accuracy
@@ -450,15 +452,18 @@ this.eventEmitter.emit('stream.update', {
 **Recommended for Production Library**:
 
 1. **Implement Option C**: Stream MESSAGES with tool_calls array
+
    - Fully compliant with LangChain standards
    - Best developer experience
    - Standard frontend parsing patterns
 
 2. **Add streamEvents() Integration**:
+
    - Implement `.streamEvents()` API in workflow execution
-   - Emit full LangChain event suite (on_chat_model_*, on_tool_*, on_chain_*)
+   - Emit full LangChain event suite (on*chat_model*_, on*tool*_, on*chain*\*)
 
 3. **Progressive Tool Call Chunks**:
+
    - Stream ToolCallChunk objects during LLM generation
    - Frontend displays "thinking: calling github-analyzer..." before full call
 
@@ -482,12 +487,14 @@ this.eventEmitter.emit('stream.update', {
 ### Recommendations
 
 **For POC (TASK_2025_025)**:
+
 - Enhance TraceProvider to emit tool events (Option A)
 - Use CUSTOM StreamEventType for tool tracking
 - Frontend tracks tool calls from CUSTOM events
 - **Estimated Effort**: 4-5 hours total (backend + frontend)
 
 **For Production Library (@hive-academy/langgraph-angular)**:
+
 - Implement Option C (MESSAGES with tool_calls)
 - Add streamEvents() API integration
 - Progressive ToolCallChunk streaming
@@ -496,6 +503,7 @@ this.eventEmitter.emit('stream.update', {
 ### Updated Architecture Decision
 
 **APPROVED APPROACH**: Hybrid Strategy
+
 1. **POC**: Quick TraceProvider enhancement (validates concept)
 2. **Library**: Full LangChain MESSAGES integration (production-grade)
 
@@ -504,15 +512,18 @@ this.eventEmitter.emit('stream.update', {
 ## References
 
 **LangChain/LangGraph Documentation**:
+
 - https://langchain-ai.github.io/langgraph/how-tos/streaming/
 - https://js.langchain.com/docs/how_to/tool_stream_events/
 - https://docs.langchain.com/oss/javascript/langchain/models#tool-calling
 - https://langchain-ai.github.io/langgraph/concepts/streaming/
 
 **Codebase Evidence**:
+
 - `libs/langgraph-modules/monitoring/src/lib/providers/trace.provider.ts:46-59`
 - `libs/langgraph-modules/streaming/src/lib/constants.ts:8-40`
 
 **Web Search**:
+
 - Query: "LangGraph tool calls streaming events 2025"
 - Date: 2025-01-23

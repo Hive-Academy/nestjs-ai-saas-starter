@@ -14,13 +14,13 @@
 
 #### Server Details
 
-| Property | Value | Configuration Source |
-|----------|-------|---------------------|
-| **Protocol** | Socket.io | Line 108: `new Server(this.httpServer, {...})` |
-| **Port** | 8080 (configurable) | Line 121: `this.config.websocket?.port \|\| 8080` |
-| **Endpoint** | ws://localhost:8080/streaming | Default namespace: '/streaming' |
-| **Transports** | ['websocket', 'polling'] | Line 111 |
-| **CORS** | { origin: true, credentials: true } | Line 109 |
+| Property       | Value                               | Configuration Source                              |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| **Protocol**   | Socket.io                           | Line 108: `new Server(this.httpServer, {...})`    |
+| **Port**       | 8080 (configurable)                 | Line 121: `this.config.websocket?.port \|\| 8080` |
+| **Endpoint**   | ws://localhost:8080/streaming       | Default namespace: '/streaming'                   |
+| **Transports** | ['websocket', 'polling']            | Line 111                                          |
+| **CORS**       | { origin: true, credentials: true } | Line 109                                          |
 
 #### Configuration Interface
 
@@ -78,19 +78,19 @@ this.server.on('connection', (socket: Socket) => {
 
 ```typescript
 interface WebSocketConnection {
-  id: string;                    // Generated UUID
-  socket: Socket;                // Socket.io socket instance
+  id: string; // Generated UUID
+  socket: Socket; // Socket.io socket instance
   metadata: {
-    ip: string;                  // socket.handshake.address
-    userAgent?: string;          // socket.handshake.headers['user-agent']
+    ip: string; // socket.handshake.address
+    userAgent?: string; // socket.handshake.headers['user-agent']
     connectedAt: Date;
     lastActivity: Date;
     userId?: string;
   };
   subscriptions: {
-    executionIds: Set<string>;   // Execution subscriptions
-    eventTypes: Set<string>;     // Event type filters
-    rooms: Set<string>;          // Room memberships
+    executionIds: Set<string>; // Execution subscriptions
+    eventTypes: Set<string>; // Event type filters
+    rooms: Set<string>; // Room memberships
   };
   state: 'connecting' | 'connected' | 'disconnected';
 }
@@ -118,7 +118,7 @@ socket.emit('connection_status', {
 
 ```typescript
 socket.emit('subscribe_execution', {
-  executionId: 'devbrand-1697456789'
+  executionId: 'devbrand-1697456789',
 });
 ```
 
@@ -374,14 +374,14 @@ private getNodeSequence(executionId: string, nodeId: string): number {
 
 ### Message Types
 
-| Message | Handler | Description |
-|---------|---------|-------------|
+| Message               | Handler                    | Description                   |
+| --------------------- | -------------------------- | ----------------------------- |
 | `subscribe_execution` | `handleSubscribeExecution` | Subscribe to execution stream |
-| `ping` | Inline handler | Heartbeat check |
-| `get_status` | `handleGetStatus` | Get connection status |
-| `interrupt_agent` | `handleInterruptAgent` | User interruption request |
-| `inject_input` | `handleInjectInput` | User input injection |
-| `disconnect` | `handleDisconnect` | Client disconnection |
+| `ping`                | Inline handler             | Heartbeat check               |
+| `get_status`          | `handleGetStatus`          | Get connection status         |
+| `interrupt_agent`     | `handleInterruptAgent`     | User interruption request     |
+| `inject_input`        | `handleInjectInput`        | User input injection          |
+| `disconnect`          | `handleDisconnect`         | Client disconnection          |
 
 ### Status Request
 
@@ -538,11 +538,11 @@ socket.emit('error', {
 
 ### WebSocket Events
 
-| Event | Trigger | Payload |
-|-------|---------|---------|
-| `error` | Any WebSocket error | `{ message: string }` |
-| `connection_status` | Successful connection | `{ connectionId, status, serverTime }` |
-| `subscription_confirmed` | Successful subscription | `{ type, executionId, timestamp }` |
+| Event                    | Trigger                 | Payload                                |
+| ------------------------ | ----------------------- | -------------------------------------- |
+| `error`                  | Any WebSocket error     | `{ message: string }`                  |
+| `connection_status`      | Successful connection   | `{ connectionId, status, serverTime }` |
+| `subscription_confirmed` | Successful subscription | `{ type, executionId, timestamp }`     |
 
 ---
 

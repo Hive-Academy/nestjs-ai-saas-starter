@@ -34,26 +34,28 @@ import { WORKFLOW_NAME, InputType, OutputType } from '../../shared/workflows/...
 
       <!-- Loading State -->
       @if (loading()) {
-        <div class="status-loading">Loading...</div>
+      <div class="status-loading">Loading...</div>
       }
 
       <!-- Result Display -->
       @if (result()) {
-        <div class="result-section">
-          <pre>{{ result() | json }}</pre>
-        </div>
+      <div class="result-section">
+        <pre>{{ result() | json }}</pre>
+      </div>
       }
 
       <!-- Error Display -->
       @if (error()) {
-        <div class="error-section">
-          <p>{{ error() }}</p>
-          <button (click)="execute()">Retry</button>
-        </div>
+      <div class="error-section">
+        <p>{{ error() }}</p>
+        <button (click)="execute()">Retry</button>
+      </div>
       }
     </div>
   `,
-  styles: [/* Copy from simple-execution.component.ts */]
+  styles: [
+    /* Copy from simple-execution.component.ts */
+  ],
 })
 export class ExampleComponent {
   workflow = WORKFLOW_NAME;
@@ -68,18 +70,16 @@ export class ExampleComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.mockExecution
-      .mockExecution<OutputType>(this.workflow.id, input)
-      .subscribe({
-        next: (output) => {
-          this.result.set(output);
-          this.loading.set(false);
-        },
-        error: (err) => {
-          this.error.set(err.message);
-          this.loading.set(false);
-        }
-      });
+    this.mockExecution.mockExecution<OutputType>(this.workflow.id, input).subscribe({
+      next: (output) => {
+        this.result.set(output);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set(err.message);
+        this.loading.set(false);
+      },
+    });
   }
 }
 ```
@@ -93,12 +93,14 @@ export class ExampleComponent {
 **File**: `basic/custom-rendering/custom-rendering.component.ts`
 
 **Key Features**:
+
 - Import WorkflowVisualizer (when implemented)
 - Use content projection slots
 - Custom agent card template
 - Template context typing
 
 **Template**:
+
 ```typescript
 // Similar to Simple Execution but with WorkflowVisualizer component
 // Add <lg-workflow-visualizer> with custom templates
@@ -110,12 +112,14 @@ export class ExampleComponent {
 **File**: `basic/approval-handling/approval-handling.component.ts`
 
 **Key Features**:
+
 - Import ApprovalModal (when implemented)
 - useLangGraphApproval composable
 - Custom approval metadata display
 - Approve/reject buttons
 
 **Template**:
+
 ```typescript
 // Similar to Simple Execution
 // Add approval modal handling
@@ -128,12 +132,14 @@ export class ExampleComponent {
 **File**: `basic/chat-interface/chat-interface.component.ts`
 
 **Key Features**:
+
 - Import Chat component (when implemented)
 - useLangGraphChat composable
 - Message streaming
 - Chat history display
 
 **Template**:
+
 ```typescript
 // Chat-based UI instead of execute button
 // Message list with scrolling
@@ -146,12 +152,14 @@ export class ExampleComponent {
 **File**: `basic/complete-lifecycle/complete-lifecycle.component.ts`
 
 **Key Features**:
+
 - Event timeline visualization
 - All 16 AG-UI event types
 - State snapshot display
 - Event filtering
 
 **Template**:
+
 ```typescript
 // Add events array signal
 // Display event timeline
@@ -173,7 +181,7 @@ export class ExampleComponent {
 input = {
   topic: '',
   platforms: ['linkedin', 'twitter', 'facebook'],
-  callToAction: ''
+  callToAction: '',
 };
 
 // Display tabs for each platform
@@ -191,7 +199,7 @@ input = {
 input = {
   templateType: 'welcome',
   variables: { name: '', company: '' },
-  tone: 'friendly'
+  tone: 'friendly',
 };
 
 // Template type dropdown
@@ -210,7 +218,7 @@ input = {
   productName: '',
   features: [],
   benefits: [],
-  targetMarket: ''
+  targetMarket: '',
 };
 
 // Add/remove feature inputs
@@ -229,7 +237,7 @@ input = {
   campaignType: 'awareness',
   targetAudience: '',
   keyMessage: '',
-  tone: 'professional'
+  tone: 'professional',
 };
 
 // Display multiple variants
@@ -286,7 +294,7 @@ onFileSelect(event: any): void {
 ```typescript
 input = {
   dataset: [],
-  analysisTypes: ['correlation', 'distribution', 'outliers']
+  analysisTypes: ['correlation', 'distribution', 'outliers'],
 };
 
 // Analysis type checkboxes
@@ -321,8 +329,8 @@ input = {
   options: {
     format: 'pdf',
     includeCharts: true,
-    includeRawData: false
-  }
+    includeRawData: false,
+  },
 };
 
 // Template selection
@@ -489,19 +497,19 @@ describe('ExampleComponent', () => {
 
   beforeEach(async () => {
     const mockService = {
-      mockExecution: jest.fn()
+      mockExecution: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [ExampleComponent],
-      providers: [
-        { provide: MockExecutionService, useValue: mockService }
-      ]
+      providers: [{ provide: MockExecutionService, useValue: mockService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExampleComponent);
     component = fixture.componentInstance;
-    mockExecutionService = TestBed.inject(MockExecutionService) as jest.Mocked<MockExecutionService>;
+    mockExecutionService = TestBed.inject(
+      MockExecutionService
+    ) as jest.Mocked<MockExecutionService>;
     fixture.detectChanges();
   });
 
@@ -510,7 +518,9 @@ describe('ExampleComponent', () => {
   });
 
   it('should execute workflow when button clicked', fakeAsync(() => {
-    const mockResult = { /* mock data */ };
+    const mockResult = {
+      /* mock data */
+    };
     mockExecutionService.mockExecution.mockReturnValue(of(mockResult));
 
     component.execute();
@@ -523,9 +533,7 @@ describe('ExampleComponent', () => {
   }));
 
   it('should handle errors gracefully', fakeAsync(() => {
-    mockExecutionService.mockExecution.mockReturnValue(
-      throwError(() => new Error('Test error'))
-    );
+    mockExecutionService.mockExecution.mockReturnValue(throwError(() => new Error('Test error')));
 
     component.execute();
     tick(1000);
@@ -540,7 +548,7 @@ describe('ExampleComponent', () => {
 
 ## README Template
 
-```markdown
+````markdown
 # Example Name
 
 ## Overview
@@ -575,7 +583,7 @@ Brief description of what this example demonstrates.
 ## Next Steps
 
 Suggestions for related examples to explore next.
-```
+````
 
 ---
 
@@ -628,17 +636,21 @@ Add to `examples.routes.ts`:
 ## Priority Implementation Order
 
 ### Phase 1 (Critical)
+
 1. Complete all Basic Integration examples (4 remaining)
 2. Add navigation component routing
 
 ### Phase 2 (High Priority)
+
 3. Content Generation examples (4 remaining)
 4. Data Analysis examples (5 total)
 
 ### Phase 3 (Medium Priority)
+
 5. Code Review examples (5 total)
 
 ### Phase 4 (Nice to Have)
+
 6. Advanced Patterns examples (5 total)
 
 ---

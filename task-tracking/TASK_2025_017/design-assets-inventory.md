@@ -68,13 +68,13 @@
 
 - Canvas size: Full section width (responsive, height: 600px)
 - Camera: OrthographicCamera for clean isometric view
-    - Position: [0, 0, 800]
-    - LookAt: [0, 0, 0]
-    - Zoom: Auto-adjust based on screen width
+  - Position: [0, 0, 800]
+  - LookAt: [0, 0, 0]
+  - Zoom: Auto-adjust based on screen width
 - Renderer: WebGL with antialiasing, alpha: true (transparent background)
 - Lighting:
-    - AmbientLight: 0xFFFFFF intensity 0.6
-    - DirectionalLight: 0xFFFFFF intensity 0.4 from [500, 500, 500]
+  - AmbientLight: 0xFFFFFF intensity 0.6
+  - DirectionalLight: 0xFFFFFF intensity 0.4 from [500, 500, 500]
 - Background: Transparent (section background shows through)
 
 **Overall Layout**:
@@ -131,9 +131,9 @@
 - Borders: EdgeGeometry + LineBasicMaterial({ color: 0xBFDBFE, linewidth: 2 })
 - Text Labels: "ChromaDB", "Neo4j", "Time-Travel" (24px, 0x1A1A1A)
 - Animations: Staggered `float3d` (delays: 0ms, 200ms, 400ms)
-    - Box 1: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 0 }"`
-    - Box 2: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 200 }"`
-    - Box 3: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 400 }"`
+  - Box 1: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 0 }"`
+  - Box 2: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 200 }"`
+  - Box 3: `[floatConfig]="{ height: 0.2, speed: 4200, delay: 400 }"`
 
 **Layer 3 - ORCHESTRATION LAYER**:
 
@@ -145,9 +145,9 @@
 - Borders: EdgeGeometry + LineBasicMaterial({ color: 0xA7F3D0, linewidth: 2 })
 - Text Labels: "Workflow-Engine", "Streaming", "Memory" (24px)
 - Animations: Staggered `float3d` (delays: 100ms, 300ms, 500ms)
-    - Box 1: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 100 }"`
-    - Box 2: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 300 }"`
-    - Box 3: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 500 }"`
+  - Box 1: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 100 }"`
+  - Box 2: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 300 }"`
+  - Box 3: `[floatConfig]="{ height: 0.25, speed: 4000, delay: 500 }"`
 
 **Layer 4 - AGENT SYSTEMS**:
 
@@ -159,9 +159,9 @@
 - Borders: EdgeGeometry + LineBasicMaterial({ color: 0xE9D5FF, linewidth: 2 })
 - Text Labels: "Multi-Agent", "HITL", "Functional-API" (24px)
 - Animations: Staggered `float3d` (delays: 200ms, 400ms, 600ms)
-    - Box 1: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 200 }"`
-    - Box 2: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 400 }"`
-    - Box 3: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 600 }"`
+  - Box 1: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 200 }"`
+  - Box 2: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 400 }"`
+  - Box 3: `[floatConfig]="{ height: 0.3, speed: 3800, delay: 600 }"`
 
 **Layer 5 - PRODUCTION LAYER (Top)**:
 
@@ -173,24 +173,24 @@
 - Borders: EdgeGeometry + LineBasicMaterial({ color: 0xFDBB8E, linewidth: 2 })
 - Text Labels: "Checkpoint", "Monitoring", "Platform" (24px)
 - Animations: Staggered `float3d` (delays: 300ms, 500ms, 700ms)
-    - Box 1: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 300 }"`
-    - Box 2: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 500 }"`
-    - Box 3: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 700 }"`
+  - Box 1: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 300 }"`
+  - Box 2: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 500 }"`
+  - Box 3: `[floatConfig]="{ height: 0.35, speed: 3600, delay: 700 }"`
 
 **Connecting Arrows**:
 
 **Vertical Arrows** (Layer-to-layer connections):
 
 - Geometry: CylinderGeometry for shaft (radius: 2, height: calculated, radialSegments: 8)
-    - ConeGeometry for arrowhead (radius: 6, height: 15, radialSegments: 8)
+  - ConeGeometry for arrowhead (radius: 6, height: 15, radialSegments: 8)
 - Material: MeshBasicMaterial({ color: 0x6366F1 }) - Indigo arrows
 - Positions: Calculate based on layer positions
-    - Core → Data: From [0, -240, 0] to [0, -210, 0]
-    - Data → Orchestration: From [0, -90, 0] to [0, -60, 0]
-    - Orchestration → Agent: From [0, 60, 0] to [0, 90, 0]
-    - Agent → Production: From [0, 210, 0] to [0, 240, 0]
+  - Core → Data: From [0, -240, 0] to [0, -210, 0]
+  - Data → Orchestration: From [0, -90, 0] to [0, -60, 0]
+  - Orchestration → Agent: From [0, 60, 0] to [0, 90, 0]
+  - Agent → Production: From [0, 210, 0] to [0, 240, 0]
 - Animation: Pulsing glow effect on hover (optional)
-    - Use `glow3d` directive with `[glowConfig]="{ color: 0x6366F1, intensity: 0.2, scale: 1.2 }"`
+  - Use `glow3d` directive with `[glowConfig]="{ color: 0x6366F1, intensity: 0.2, scale: 1.2 }"`
 
 **Horizontal Arrows** (Integration within layers - optional):
 
@@ -277,7 +277,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
       [scrollConfig]="{ animation: 'fadeIn', start: 'top 80%', duration: 1.5 }"
       performance3d
     />
-  `
+  `,
 })
 export class Architecture3DSceneComponent {
   // Scene graph defined separately
@@ -310,7 +310,7 @@ export class Architecture3DSceneComponent {
 
     <!-- Vertical arrows (simplified) -->
     <!-- ... arrow geometry ... -->
-  `
+  `,
 })
 class ArchitectureSceneGraphComponent {}
 ```
@@ -493,6 +493,7 @@ class ArchitectureSceneGraphComponent {}
 **3D Elements**:
 
 1. **Laptop/Screen Mesh (Center)**:
+
    - Geometry: BoxGeometry(4, 3, 0.2) for screen + BoxGeometry(5, 0.3, 3) for keyboard
    - Material: MeshStandardMaterial({ color: 0xE5E7EB, metalness: 0.3, roughness: 0.7 })
    - Position: [0, 0, 0] (center stage)
@@ -500,6 +501,7 @@ class ArchitectureSceneGraphComponent {}
    - Animation: `float3d` with `[floatConfig]="{ height: 0.1, speed: 3000 }"`
 
 2. **Floating Document Meshes (4-6 documents)**:
+
    - Geometry: BoxGeometry(0.6, 0.8, 0.05) each (book-like)
    - Material: MeshStandardMaterial({ color: 0xDBEAFE, metalness: 0.1, roughness: 0.9 })
    - Positions: Circular arrangement around laptop at radius 5
@@ -511,6 +513,7 @@ class ArchitectureSceneGraphComponent {}
    - Animations: Each with `float3d` + `rotation` (slow spin)
 
 3. **Search Connection Lines (Vector search visualization)**:
+
    - Geometry: Line geometry connecting laptop to each document
    - Material: LineBasicMaterial({ color: 0x6366F1, linewidth: 2, transparent: true, opacity: 0.6 })
    - Animation: Pulsing opacity (0.3 → 0.9 → 0.3) using GSAP timeline
@@ -550,6 +553,7 @@ class ArchitectureSceneGraphComponent {}
 **3D Elements**:
 
 1. **Agent Spheres (3-4 agents)**:
+
    - Geometry: SphereGeometry(0.8, 32, 32) each
    - Material: MeshStandardMaterial with gradient (indigo shades: 0x6366F1, 0x8B5CF6, 0xA855F7, 0xC084FC)
    - Positions: Circular arrangement at radius 6
@@ -561,6 +565,7 @@ class ArchitectureSceneGraphComponent {}
    - Glow Effect: `glow3d` with `[glowConfig]="{ color: 0x6366F1, intensity: 0.3, scale: 1.3 }"`
 
 2. **Central Knowledge Base (Large sphere with particles)**:
+
    - Geometry: SphereGeometry(2, 32, 32)
    - Material: MeshStandardMaterial({ color: 0xEEF2FF, metalness: 0.2, roughness: 0.6, emissive: 0x6366F1, emissiveIntensity: 0.1 })
    - Position: [0, 0, 0] (center)
@@ -568,6 +573,7 @@ class ArchitectureSceneGraphComponent {}
    - Animation: Slow rotation + pulsing scale (1.0 → 1.05 → 1.0)
 
 3. **Thought Bubbles (Communication visualization)**:
+
    - Geometry: SphereGeometry(0.2, 16, 16) - small spheres
    - Material: MeshBasicMaterial({ color: 0xFFFBEB, transparent: true, opacity: 0.8 })
    - Animation: Move from agent to knowledge base along curved path (using GSAP MotionPathPlugin)
@@ -633,12 +639,12 @@ class ArchitectureSceneGraphComponent {}
 
 **Decision Matrix for Use Cases**:
 
-| Use Case | Implementation | Reason |
-|----------|---------------|--------|
-| Enterprise RAG System | ⚡ Angular-3D | Complex retrieval visualization, benefits from interactivity |
-| Multi-Agent Research | ⚡ Angular-3D | Dynamic collaboration, benefits from 3D depth |
-| Customer Service Automation | 🎨 Static Image | Simple linear flow, 2D sufficient |
-| Content Generation Pipeline | 🎨 Static Image | Sequential process, 2D sufficient |
+| Use Case                    | Implementation  | Reason                                                       |
+| --------------------------- | --------------- | ------------------------------------------------------------ |
+| Enterprise RAG System       | ⚡ Angular-3D   | Complex retrieval visualization, benefits from interactivity |
+| Multi-Agent Research        | ⚡ Angular-3D   | Dynamic collaboration, benefits from 3D depth                |
+| Customer Service Automation | 🎨 Static Image | Simple linear flow, 2D sufficient                            |
+| Content Generation Pipeline | 🎨 Static Image | Sequential process, 2D sufficient                            |
 
 **AI Prompt for Static Images** (DALL-E/Midjourney):
 

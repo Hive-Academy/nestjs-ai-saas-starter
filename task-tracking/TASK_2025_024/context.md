@@ -23,6 +23,7 @@ Create landing page sections for 11 remaining libraries (Neo4j + 10 LangGraph mo
 Comprehensive library analysis available at: `task-tracking/TASK_2025_017/library-analysis.md`
 
 Each library has detailed:
+
 - Business value proposition
 - Key technical capabilities
 - Integration points
@@ -33,6 +34,7 @@ Each library has detailed:
 ## Design Pattern Reference
 
 The ChromaDB section (already implemented in TASK_2025_017) serves as the reference pattern:
+
 - Sticky header with 3 key metrics
 - 4-step business value timeline with scroll animations
 - Independent text/image scroll animations (text faster, images slower)

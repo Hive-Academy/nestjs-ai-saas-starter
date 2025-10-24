@@ -8,6 +8,7 @@
 **Value Proposition**: Transform technical library documentation into compelling visual narratives that drive developer adoption, showcase integration capabilities, and demonstrate real-world business value for enterprise AI applications.
 
 **Target Audience**:
+
 - Enterprise architects evaluating AI infrastructure
 - Full-stack developers building AI-powered SaaS
 - Technical decision-makers assessing RAG/multi-agent systems
@@ -24,11 +25,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Neo4j section THEN sticky header SHALL display library name, layer badge "DATA FOUNDATION LAYER", and 3 key metrics:
+
    - "7 Decorators": Revolutionary CRUD system metric
    - "100+ Connections": Concurrent connection pooling metric
    - "1000+ Nodes/sec": Graph traversal performance metric
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear with independent scroll animations:
+
    - **Step 1 - "Model Complex Relationships"**: Revolutionary 7-decorator Entity CRUD (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity) with 90% less code, AI-generated image showing graph visualization
    - **Step 2 - "Enterprise Security Built-In"**: 5-decorator security layer (Safe, Authorize, ValidateInput, AuditLog, RateLimit, EncryptSensitive) with type-safe query builder, AI-generated image showing security layers
    - **Step 3 - "Graph Algorithms for AI"**: Centrality, community detection, shortest path algorithms for knowledge graphs and relationship analysis, AI-generated image showing algorithm visualization
@@ -40,6 +43,7 @@
    AND scroll speed for images SHALL be 0.95 (slower parallax effect)
 
 4. WHEN timeline completes THEN sticky bottom integration cards SHALL display 3 ecosystem connections:
+
    - Memory Module: "Graph storage for relationship tracking"
    - Multi-Agent: "Agent coordination and relationship modeling"
    - Workflow Engine: "Workflow relationship analysis"
@@ -61,11 +65,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to LangGraph Core section THEN sticky header SHALL display library name, layer badge "CORE FOUNDATION", and 3 key metrics:
+
    - "17 Fields": WorkflowState interface completeness
    - "Zero `any`": Type safety guarantee
    - "10+ Modules": Foundation for ecosystem
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Zero-Overhead Type Safety"**: WorkflowState interface with 17 core fields, comprehensive state structure for all workflows, AI-generated image showing TypeScript interface
    - **Step 2 - "Intelligent State Management"**: State annotations with custom reducers, LangGraph-compatible WorkflowStateAnnotation, AI-generated image showing state flow
    - **Step 3 - "Sophisticated Command Patterns"**: Control flow commands (goto, update, end, error, retry, skip, stop) for workflow orchestration, AI-generated image showing command graph
@@ -87,11 +93,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Memory Module section THEN sticky header SHALL display library name, layer badge "ORCHESTRATION LAYER", and 3 key metrics:
+
    - "Hybrid Storage": Vector + Graph combined
    - "Semantic Search": Automatic embedding generation
    - "User Patterns": HITL approval learning
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Long-Term Memory for AI"**: Hybrid storage combining ChromaDB vector search + Neo4j graph relationships for comprehensive context, AI-generated image showing memory architecture
    - **Step 2 - "Automatic Context Retrieval"**: Semantic memory with automatic embedding generation and similarity search, AI-generated image showing context retrieval
    - **Step 3 - "Multi-Agent Memory Sharing"**: Shared knowledge base across agents with conversation flow analysis, AI-generated image showing agent collaboration
@@ -113,11 +121,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Workflow Engine section THEN sticky header SHALL display library name, layer badge "ORCHESTRATION LAYER", and 3 key metrics:
+
    - "Single Registry": Agents + tools + workflows
    - "Embedded Streaming": No circular dependencies
    - "5min Cache": Compilation optimization
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Central Coordination Hub"**: CentralRegistryService as single source of truth for agents, tools, workflows, AI-generated image showing registry architecture
    - **Step 2 - "Embedded Streaming Services"**: WorkflowStreamService, WorkflowStreamOrchestrator, TokenProcessingService embedded (no circular deps), AI-generated image showing service embedding
    - **Step 3 - "Automatic Decorator Extraction"**: MetadataProcessorService extracts @Workflow, @Node, @Edge decorators automatically, AI-generated image showing decorator processing
@@ -139,11 +149,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Streaming Module section THEN sticky header SHALL display library name, layer badge "ORCHESTRATION LAYER", and 3 key metrics:
+
    - "Token-Level": Individual token streaming
    - "WebSocket": Real-time bidirectional
    - "SSE": Lightweight HTTP streaming
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "ChatGPT-Like Streaming"**: Token-level streaming with @StreamToken decorator for real-time user feedback, AI-generated image showing streaming interface
    - **Step 2 - "WebSocket Support"**: Real-time bidirectional communication for production deployments, AI-generated image showing WebSocket architecture
    - **Step 3 - "Multi-Level Streams"**: Node-level, workflow-level, and token-level streaming decorators (@StreamEvent, @StreamProgress), AI-generated image showing stream levels
@@ -165,11 +177,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Multi-Agent section THEN sticky header SHALL display library name, layer badge "AGENT COORDINATION", and 3 key metrics:
+
    - "@Agent": Automatic registration decorator
    - "Auto Memory": Context enhancement
    - "Multi-LLM": OpenAI + Anthropic + Google
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Collaborative AI Teams"**: @Agent decorator with automatic registration and NodeFactoryService coordination, AI-generated image showing agent team
    - **Step 2 - "Automatic Memory Context"**: Memory enhancement before/after agent execution via @Optional injection, AI-generated image showing memory flow
    - **Step 3 - "Supervisor-Worker Patterns"**: Hierarchical agent coordination with tool integration and execution, AI-generated image showing supervisor hierarchy
@@ -191,11 +205,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to HITL section THEN sticky header SHALL display library name, layer badge "AGENT COORDINATION", and 3 key metrics:
+
    - "Confidence": 0.8 threshold routing
    - "Pattern Learning": ML from approvals
    - "Safety": Enterprise oversight
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Human Approval Workflows"**: HumanApprovalService for requesting/processing approval workflows, AI-generated image showing approval flow
    - **Step 2 - "Confidence-Based Routing"**: Auto-approve above threshold (0.8), request below with intelligent routing, AI-generated image showing routing logic
    - **Step 3 - "Continuous Learning"**: Memory storage (@Inject IMemoryAdapter) for approval patterns and ML improvements, AI-generated image showing learning cycle
@@ -217,11 +233,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Functional-API section THEN sticky header SHALL display library name, layer badge "AGENT COORDINATION", and 3 key metrics:
+
    - "@Workflow": Declarative definition
    - "Zero Config": Automatic graph construction
    - "Type-Safe": Full composition support
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Decorator-Driven Development"**: @Workflow, @Node, @Edge, @Task decorators for NestJS-style workflows, AI-generated image showing decorator usage
    - **Step 2 - "Zero Boilerplate Graphs"**: Automatic metadata extraction by MetadataProcessorService eliminates manual graph construction, AI-generated image showing auto-construction
    - **Step 3 - "Full Dependency Injection"**: Complete NestJS DI support with @Optional memory/streaming injection, AI-generated image showing DI flow
@@ -243,11 +261,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Checkpoint section THEN sticky header SHALL display library name, layer badge "PRODUCTION LAYER", and 3 key metrics:
+
    - "Auto Save": After each node
    - "Redis/PG": Production backends
    - "Time-Travel": Version management
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Workflow State Persistence"**: ICheckpointAdapter interface with Redis/PostgreSQL production-ready backends, AI-generated image showing persistence architecture
    - **Step 2 - "Automatic Recovery"**: Resume workflows from last checkpoint after failures or restarts, AI-generated image showing recovery flow
    - **Step 3 - "Time-Travel Debugging"**: State versioning with version management for audit trails and debugging, AI-generated image showing version history
@@ -269,11 +289,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Monitoring section THEN sticky header SHALL display library name, layer badge "PRODUCTION LAYER", and 3 key metrics:
+
    - "Prometheus": Standard metrics format
    - "Performance": Bottleneck detection
    - "Health": Real-time monitoring
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "Production Observability"**: Prometheus integration with standard metrics format for enterprise monitoring, AI-generated image showing metrics dashboard
    - **Step 2 - "Workflow Performance"**: Execution time, node duration, error rates tracking for optimization, AI-generated image showing performance graphs
    - **Step 3 - "Bottleneck Detection"**: Performance profiling identifies slow nodes and optimization opportunities, AI-generated image showing bottleneck analysis
@@ -295,11 +317,13 @@
 #### Acceptance Criteria
 
 1. WHEN user scrolls to Platform section THEN sticky header SHALL display library name, layer badge "PRODUCTION LAYER", and 3 key metrics:
+
    - "Cloud Deploy": Managed infrastructure
    - "Auto-Scale": Cloud-based scaling
    - "Remote": Cloud monitoring/debugging
 
 2. WHEN user scrolls through timeline THEN 4 business value steps SHALL appear:
+
    - **Step 1 - "LangGraph Cloud Deployment"**: Deploy compiled workflows to LangGraph Cloud with managed infrastructure, AI-generated image showing cloud deployment
    - **Step 2 - "Managed Infrastructure"**: Cloud-based monitoring, debugging, and checkpoint storage without DevOps overhead, AI-generated image showing managed services
    - **Step 3 - "Auto-Scaling Workflows"**: Cloud-based scaling management handles traffic spikes automatically, AI-generated image showing auto-scaling
@@ -358,7 +382,7 @@
 ### Content Requirements
 
 - **Source of Truth**: task-tracking/TASK_2025_017/library-analysis.md for business value content
-- **Code Examples**: Real code from libs/*/CLAUDE.md files (if applicable)
+- **Code Examples**: Real code from libs/\*/CLAUDE.md files (if applicable)
 - **Content Accuracy**: All metrics, capabilities, integration points must match library-analysis.md
 - **Tone**: Professional, developer-focused, benefit-oriented (not feature-list)
 - **Length**:
@@ -496,7 +520,7 @@
 
 - **Library Analysis**: task-tracking/TASK_2025_017/library-analysis.md (business value content)
 - **Visual Design Spec**: task-tracking/TASK_2025_017/visual-design-specification.md (design system)
-- **Library Documentation**: libs/*/CLAUDE.md files (technical capabilities)
+- **Library Documentation**: libs/\*/CLAUDE.md files (technical capabilities)
 
 ### Asset Dependencies
 
@@ -529,14 +553,14 @@
 - Signal-based reactivity (no RxJS Observables for local state)
 - Inline templates and styles (no external HTML/CSS files)
 - Zero `any` types (TypeScript strict mode)
-- Import aliases: Use @hive-academy/* paths (no relative imports across libs)
+- Import aliases: Use @hive-academy/\* paths (no relative imports across libs)
 
 ### Content Constraints
 
 - Business value content MUST match library-analysis.md exactly
 - Metrics MUST be accurate per library specifications
 - Integration cards MUST reflect actual library dependencies
-- Code examples (if shown) MUST be real code from libs/*/CLAUDE.md
+- Code examples (if shown) MUST be real code from libs/\*/CLAUDE.md
 
 ### Performance Constraints
 
@@ -560,24 +584,28 @@
 ### Technical Risks
 
 **Risk**: GSAP ScrollTrigger performance degradation with 11 sections (44 timeline steps total)
+
 - **Probability**: Medium
 - **Impact**: High
 - **Mitigation**: Implement lazy initialization of ScrollTrigger instances, use will-change CSS, optimize GSAP scrub values
 - **Contingency**: Reduce scroll animation complexity, implement viewport-based activation
 
 **Risk**: Image asset file sizes exceed performance budget (44 images × 500KB = 22MB unoptimized)
+
 - **Probability**: High
 - **Impact**: Critical
 - **Mitigation**: Aggressive PNG optimization with ImageOptim, WebP conversion with fallbacks, CDN compression
 - **Contingency**: Reduce image resolution to 1280x720, implement progressive JPEG for complex images
 
 **Risk**: TypeScript compilation errors due to signal-based state management complexity
+
 - **Probability**: Low
 - **Impact**: Medium
 - **Mitigation**: Follow ChromaDB component pattern exactly, comprehensive type definitions
 - **Contingency**: Use explicit type annotations, extract complex types to shared interfaces
 
 **Risk**: Scroll animation jank on mobile devices (30 FPS target vs 60 FPS desktop)
+
 - **Probability**: Medium
 - **Impact**: High
 - **Mitigation**: Reduce animation complexity on mobile, use CSS transforms only, GPU acceleration
@@ -586,18 +614,21 @@
 ### Business Risks
 
 **Risk**: AI-generated images don't accurately represent library concepts
+
 - **Probability**: Medium
 - **Impact**: High
 - **Mitigation**: Detailed Canva prompts based on library-analysis.md, stakeholder review before implementation
 - **Contingency**: Use abstract gradient designs, icon-based visualizations, diagram illustrations
 
 **Risk**: Content doesn't resonate with target developer audience
+
 - **Probability**: Low
 - **Impact**: High
 - **Mitigation**: Use library-analysis.md as authoritative content source, developer-focused benefit statements
 - **Contingency**: A/B test content variations, gather developer feedback via surveys
 
 **Risk**: Development timeline exceeds estimate (XL effort for 11 sections)
+
 - **Probability**: Medium
 - **Impact**: Medium
 - **Mitigation**: Component template generation script, bulk Canva image generation, parallel asset creation
@@ -606,18 +637,21 @@
 ### Integration Risks
 
 **Risk**: Inconsistent design between TASK_2025_017 ChromaDB section and new sections
+
 - **Probability**: Low
 - **Impact**: High
 - **Mitigation**: Use ChromadbSectionComponent as exact template, visual design checklist per section
 - **Contingency**: Refactor ChromaDB section if design improvements discovered
 
 **Risk**: Landing page performance degradation with 12 total sections (ChromaDB + 11 new)
+
 - **Probability**: High
 - **Impact**: Critical
 - **Mitigation**: Virtual scrolling for sections, lazy component initialization, intersection observer triggers
 - **Contingency**: Split landing page into multiple routes (Database libs, LangGraph libs), lazy route loading
 
 **Risk**: Canva image generation quota exceeded (44 images needed)
+
 - **Probability**: Low
 - **Impact**: Medium
 - **Mitigation**: Generate images in batches, use Canva Pro account with unlimited generations

@@ -17,6 +17,7 @@ The Angular LangGraph library has undergone a complete architectural transformat
 ### Project Context
 
 **Completed Dependencies**:
+
 - ✅ TASK_2025_019: Core Services & Models Rewrite (3,366 lines)
 - ✅ TASK_2025_020: Components & Directives Rewrite (7,748 lines)
 - ✅ TASK_2025_021: Composables & Providers Rewrite (3,630 lines)
@@ -24,6 +25,7 @@ The Angular LangGraph library has undergone a complete architectural transformat
 - **Total Source Content**: 17,511 lines across 4 documents
 
 **Output Target**:
+
 - Single consolidated file: `angular-langgraph.md`
 - Estimated size: 18,000-25,000 lines
 - Location: Project root or designated documentation directory
@@ -50,6 +52,7 @@ The Angular LangGraph library has undergone a complete architectural transformat
 Source Documents → Consolidated Sections:
 
 TASK_2025_019 (Services & Models):
+
 - TypeScript Models & Interfaces → Part 2: Core Services & Models
 - WorkflowRegistry Service → Part 2: Core Services & Models
 - Provider Functions → Part 2: Core Services & Models
@@ -58,6 +61,7 @@ TASK_2025_019 (Services & Models):
 - Migration Guide → Part 6: Migration & Breaking Changes
 
 TASK_2025_020 (Components & Directives):
+
 - WorkflowVisualizer Component → Part 3: Components & Directives
 - ApprovalModal Component → Part 3: Components & Directives
 - Chat Component → Part 3: Components & Directives
@@ -66,6 +70,7 @@ TASK_2025_020 (Components & Directives):
 - Migration Guide → Part 6: Migration & Breaking Changes
 
 TASK_2025_021 (Composables & Providers):
+
 - Composable Functions → Part 4: Composables & Providers
 - RxJS Operators → Part 4: Composables & Providers
 - Type Guards & Utilities → Part 4: Composables & Providers
@@ -73,6 +78,7 @@ TASK_2025_021 (Composables & Providers):
 - Migration Guide → Part 6: Migration & Breaking Changes
 
 TASK_2025_022 (Examples Package):
+
 - Basic Integration Examples → Part 5: Examples & Patterns
 - Content Generation Examples → Part 5: Examples & Patterns
 - Data Analysis Examples → Part 5: Examples & Patterns
@@ -107,6 +113,7 @@ TASK_2025_022 (Examples Package):
 ## Table of Contents
 
 ### Quick Reference
+
 - [Installation](#installation)
 - [Quick Start Guide](#quick-start-guide)
 - [API Reference](#api-reference)
@@ -115,6 +122,7 @@ TASK_2025_022 (Examples Package):
 - [Troubleshooting](#troubleshooting)
 
 ### Part 1: Getting Started
+
 1.1. [Introduction](#introduction)
 1.2. [Installation & Setup](#installation--setup)
 1.3. [Quick Start Tutorial](#quick-start-tutorial)
@@ -122,17 +130,19 @@ TASK_2025_022 (Examples Package):
 1.5. [Architecture Overview](#architecture-overview)
 
 ### Part 2: Core Services & Models
+
 2.1. [TypeScript Models & Interfaces](#typescript-models--interfaces)
-    2.1.1. WorkflowDefinition
-    2.1.2. WorkflowExecution
-    2.1.3. StateSnapshot
-    2.1.4. AGUIEvent Types
+2.1.1. WorkflowDefinition
+2.1.2. WorkflowExecution
+2.1.3. StateSnapshot
+2.1.4. AGUIEvent Types
 2.2. [WorkflowRegistry Service](#workflowregistry-service)
 2.3. [Provider Functions](#provider-functions)
 2.4. [LangGraphConnectionService](#langgraphconnectionservice)
 2.5. [LangGraphProtocolService](#langgraphprotocolservice)
 
 ### Part 3: Components & Directives
+
 3.1. [WorkflowVisualizer Component](#workflowvisualizer-component)
 3.2. [ApprovalModal Component](#approvalmodal-component)
 3.3. [Chat Component](#chat-component)
@@ -140,16 +150,18 @@ TASK_2025_022 (Examples Package):
 3.5. [Template Context Types](#template-context-types)
 
 ### Part 4: Composables & Providers
+
 4.1. [Composable Functions](#composable-functions)
-    4.1.1. useLangGraphWorkflow
-    4.1.2. useLangGraphChat
-    4.1.3. useLangGraphApproval
-    4.1.4. useLangGraphStreaming
+4.1.1. useLangGraphWorkflow
+4.1.2. useLangGraphChat
+4.1.3. useLangGraphApproval
+4.1.4. useLangGraphStreaming
 4.2. [RxJS Operators](#rxjs-operators)
 4.3. [Type Guards & Utilities](#type-guards--utilities)
 4.4. [Provider Configuration](#provider-configuration)
 
 ### Part 5: Examples & Patterns
+
 5.1. [Basic Integration Examples](#basic-integration-examples)
 5.2. [Content Generation Examples](#content-generation-examples)
 5.3. [Data Analysis Examples](#data-analysis-examples)
@@ -157,12 +169,14 @@ TASK_2025_022 (Examples Package):
 5.5. [Advanced Patterns Examples](#advanced-patterns-examples)
 
 ### Part 6: Migration & Breaking Changes
+
 6.1. [v1.x → v2.0.0 Migration Guide](#migration-guide)
 6.2. [Breaking Changes Summary](#breaking-changes-summary)
 6.3. [Deprecation Timeline](#deprecation-timeline)
 6.4. [Migration FAQ](#migration-faq)
 
 ### Appendix
+
 A. [Complete API Reference](#api-reference)
 B. [Troubleshooting Guide](#troubleshooting)
 C. [Performance Optimization](#performance-guide)
@@ -186,7 +200,7 @@ E. [Version History](#version-history)
 
 **Migration Guide Structure**:
 
-```markdown
+````markdown
 ## Migration Guide: v1.x → v2.0.0
 
 ### Overview
@@ -202,6 +216,7 @@ The 2.0.0 release represents a complete architectural rewrite from DevBrand-spec
 #### 1. Core Services & Models (TASK_2025_019)
 
 **WorkflowDefinition Interface**:
+
 - REMOVED: DevBrand-specific `agentTypes` array
 - ADDED: Generic type parameters `<TInput, TOutput>`
 - MIGRATION: Define workflow without agent types
@@ -211,7 +226,7 @@ The 2.0.0 release represents a complete architectural rewrite from DevBrand-spec
 const workflow: WorkflowDefinition = {
   id: 'review-workflow',
   agentTypes: ['reviewer', 'approver', 'publisher'],
-  endpoint: '/workflows/review/execute'
+  endpoint: '/workflows/review/execute',
 };
 
 // ✅ v2.0.0 - Generic
@@ -219,15 +234,17 @@ const workflow: WorkflowDefinition<ReviewInput, ReviewOutput> = {
   id: 'review-workflow',
   endpoint: '/workflows/review/execute',
   inputSchema: ReviewInputSchema,
-  outputSchema: ReviewOutputSchema
+  outputSchema: ReviewOutputSchema,
 };
 ```
+````
 
 [Continue with all breaking changes from all four tasks...]
 
 #### 2. Components & Directives (TASK_2025_020)
 
 **WorkflowVisualizer Component**:
+
 - REMOVED: Hardcoded DevBrand agent rendering
 - ADDED: Content projection for custom agent display
 - MIGRATION: Provide custom agent template via `lgAgentDisplay` directive
@@ -237,6 +254,7 @@ const workflow: WorkflowDefinition<ReviewInput, ReviewOutput> = {
 #### 3. Composables & Providers (TASK_2025_021)
 
 **useLangGraphWorkflow**:
+
 - REMOVED: DevBrand-specific options
 - ADDED: Generic type parameters
 - MIGRATION: Specify workflow types explicitly
@@ -246,6 +264,7 @@ const workflow: WorkflowDefinition<ReviewInput, ReviewOutput> = {
 #### 4. Examples Package (TASK_2025_022)
 
 **Example Structure**:
+
 - REMOVED: All DevBrand examples
 - ADDED: 25 generic workflow examples
 - MIGRATION: Adapt patterns to your domain
@@ -272,7 +291,8 @@ const workflow: WorkflowDefinition<ReviewInput, ReviewOutput> = {
 **Solution**: Explicitly provide type parameters to WorkflowDefinition, WorkflowExecution, and composables
 
 [Continue with issues from all validation reports...]
-```
+
+````
 
 ---
 
@@ -321,7 +341,7 @@ const workflow: WorkflowDefinition<ReviewInput, ReviewOutput> = {
 See [WorkflowRegistry Service](#workflowregistry-service) for details.
 See [Migration Guide](#migration-guide) for upgrade instructions.
 See [Example 5.1](#basic-integration-examples) for implementation.
-```
+````
 
 ---
 
@@ -339,18 +359,24 @@ See [Example 5.1](#basic-integration-examples) for implementation.
 
 **Formatting Standards**:
 
-```markdown
+````markdown
 # H1: Document Title (ONE per document)
+
 ## H2: Major Sections (Table of Contents Level 1)
+
 ### H3: Subsections (Table of Contents Level 2)
+
 #### H4: API Methods/Components (Not in TOC)
 
 Code Blocks:
-```typescript  // Always specify language
+
+```typescript // Always specify language
 // Code here
 ```
+````
 
 Type Signatures:
+
 ```typescript
 export interface InterfaceName<TGeneric> {
   /** JSDoc comment */
@@ -359,6 +385,7 @@ export interface InterfaceName<TGeneric> {
 ```
 
 Examples:
+
 1. Overview paragraph
 2. Code block
 3. Explanation/notes
@@ -366,8 +393,9 @@ Examples:
 Tables:
 | Column 1 | Column 2 | Column 3 |
 |----------|----------|----------|
-| Value    | Value    | Value    |
-```
+| Value | Value | Value |
+
+````
 
 ---
 
@@ -396,7 +424,7 @@ Tables:
 - v1.x examples showing old DevBrand implementation
 - Clearly marked as "deprecated" or "v1.x only"
 - Contrasted with v2.0.0 generic equivalent
-```
+````
 
 ---
 
@@ -439,12 +467,14 @@ Tables:
 #### End Users (Library Developers)
 
 **Needs**:
+
 - Clear, comprehensive documentation
 - Working code examples
 - Migration guidance from v1.x
 - API reference for TypeScript types
 
 **Success Criteria**:
+
 - Developer onboarding time < 2 hours for basic integration
 - 90%+ of questions answered by documentation
 - Zero critical documentation bugs reported in first month
@@ -452,12 +482,14 @@ Tables:
 #### Library Maintainers
 
 **Needs**:
+
 - Single source of truth
 - Easy to update and version
 - Clear section ownership
 - Validation automation
 
 **Success Criteria**:
+
 - Documentation update time < 30 minutes per section
 - Zero merge conflicts in documentation updates
 - Automated link validation in CI/CD
@@ -465,12 +497,14 @@ Tables:
 #### Project Management
 
 **Needs**:
+
 - Documentation completion milestone
 - Clear deliverable scope
 - Quality metrics
 - Risk mitigation
 
 **Success Criteria**:
+
 - Task completion within estimated timeframe (6-8 hours)
 - Zero post-consolidation corrections required
 - All quality gates passed on first review
@@ -543,14 +577,14 @@ Tables:
 
 ### Risk Matrix
 
-| Risk                        | Probability | Impact   | Score | Mitigation Priority |
-|-----------------------------|-------------|----------|-------|---------------------|
-| Content Merge Conflicts     | Medium      | High     | 6     | High                |
-| Broken Internal Links       | High        | Medium   | 6     | High                |
-| Code Example Staleness      | Low         | Critical | 7     | Critical            |
-| Migration Guide Incomplete  | Medium      | High     | 6     | High                |
-| Documentation Quality       | Low         | High     | 5     | Medium              |
-| Developer Availability      | Low         | Medium   | 3     | Low                 |
+| Risk                       | Probability | Impact   | Score | Mitigation Priority |
+| -------------------------- | ----------- | -------- | ----- | ------------------- |
+| Content Merge Conflicts    | Medium      | High     | 6     | High                |
+| Broken Internal Links      | High        | Medium   | 6     | High                |
+| Code Example Staleness     | Low         | Critical | 7     | Critical            |
+| Migration Guide Incomplete | Medium      | High     | 6     | High                |
+| Documentation Quality      | Low         | High     | 5     | Medium              |
+| Developer Availability     | Low         | Medium   | 3     | Low                 |
 
 ---
 
@@ -734,6 +768,7 @@ Tables:
 **Strategy**: Merge all four migration guides into single comprehensive guide
 
 **Approach**:
+
 - Create top-level migration overview
 - Organize breaking changes by category (Services, Components, Composables, Examples)
 - Merge checklists into unified checklist
@@ -744,6 +779,7 @@ Tables:
 **Strategy**: Include type definitions in first usage, reference thereafter
 
 **Approach**:
+
 - Define WorkflowDefinition in Part 2 (first usage)
 - Reference with link in Parts 3, 4, 5
 - Do not duplicate full type signatures
@@ -753,6 +789,7 @@ Tables:
 **Strategy**: Single installation section in Part 1 only
 
 **Approach**:
+
 - Consolidate all installation variations
 - Remove installation references from other sections
 - Add "Prerequisites" subsection if needed
@@ -762,6 +799,7 @@ Tables:
 **Strategy**: Preserve unique examples, merge duplicates
 
 **Approach**:
+
 - If same example appears in multiple docs, keep most complete version
 - If examples demonstrate different aspects, keep both and cross-reference
 - Add clarifying comments to distinguish similar examples

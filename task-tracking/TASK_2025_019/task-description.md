@@ -7,6 +7,7 @@
 TASK_2025_019 represents the foundational phase of transforming the Angular LangGraph integration library from a hardcoded DevBrand-specific implementation to a fully generic, workflow-agnostic infrastructure. This task establishes the architectural patterns that enable unlimited workflow types through the WorkflowRegistry pattern.
 
 **Current State**: The angular-langgraph.md documentation contains hardcoded DevBrand-specific implementations in core services:
+
 - Hardcoded REST endpoint: `POST /devbrand/execute` (line 222)
 - Hardcoded component titles: `title = input('DevBrand Workflow')` (line 631)
 - DevBrand-specific component examples (lines 1142-1277)
@@ -15,6 +16,7 @@ TASK_2025_019 represents the foundational phase of transforming the Angular Lang
 **Target State**: Generic infrastructure enabling developers to register custom workflows without modifying library code, matching the extensibility model of CopilotKit (React) but for Angular.
 
 **Value Proposition**:
+
 - **Market Differentiation**: Position as Angular's answer to CopilotKit
 - **Developer Productivity**: Enable custom AI workflows in <50 lines of code
 - **Architectural Excellence**: Type-safe, Observable-based, production-ready patterns
@@ -23,6 +25,7 @@ TASK_2025_019 represents the foundational phase of transforming the Angular Lang
 ### Parent Task Context
 
 This task is the **first of 5 sequential sub-tasks** coordinated by TASK_2025_018 (Meta-Plan). Success here unblocks:
+
 - TASK_2025_020: Components & Directives Rewrite (depends on WorkflowRegistry)
 - TASK_2025_021: Composables & Providers Rewrite (depends on generic models)
 - TASK_2025_022: Examples Package Creation (depends on all infrastructure)
@@ -31,6 +34,7 @@ This task is the **first of 5 sequential sub-tasks** coordinated by TASK_2025_01
 ### Scope Definition
 
 **IN SCOPE**:
+
 - Documentation rewrite of core services (LangGraphConnectionService, LangGraphProtocolService)
 - WorkflowRegistry pattern design and documentation
 - Generic TypeScript model interfaces
@@ -38,6 +42,7 @@ This task is the **first of 5 sequential sub-tasks** coordinated by TASK_2025_01
 - Code examples using placeholder workflow names
 
 **OUT OF SCOPE**:
+
 - Implementation code changes (future work)
 - Component genericization (TASK_2025_020)
 - Composable function rewrite (TASK_2025_021)
@@ -62,6 +67,7 @@ This task is the **first of 5 sequential sub-tasks** coordinated by TASK_2025_01
 6. WHEN developer calls `startWorkflow()` THEN method signature SHALL accept `workflowId: string` parameter
 
 **Technical Specification**:
+
 ```typescript
 // Current (DevBrand-specific)
 startWorkflow(githubUsername: string, userId?: string): Observable<WorkflowExecution>
@@ -89,16 +95,17 @@ startWorkflow<TInput, TOutput>(
 6. WHEN documentation shows examples THEN examples SHALL demonstrate multi-workflow registration scenarios
 
 **Technical Specification**:
+
 ```typescript
 export interface WorkflowDefinition<TInput = any, TOutput = any> {
-  id: string;                           // Unique workflow identifier
-  name: string;                         // Human-readable name
-  description: string;                  // Workflow purpose
-  endpoint: string;                     // REST endpoint (e.g., '/workflows/content-gen/execute')
-  websocketPath?: string;               // Optional WebSocket path override
-  inputSchema: ZodSchema<TInput>;       // Input validation schema
-  outputSchema?: ZodSchema<TOutput>;    // Optional output validation
-  metadata?: Record<string, any>;       // Extensible metadata
+  id: string; // Unique workflow identifier
+  name: string; // Human-readable name
+  description: string; // Workflow purpose
+  endpoint: string; // REST endpoint (e.g., '/workflows/content-gen/execute')
+  websocketPath?: string; // Optional WebSocket path override
+  inputSchema: ZodSchema<TInput>; // Input validation schema
+  outputSchema?: ZodSchema<TOutput>; // Optional output validation
+  metadata?: Record<string, any>; // Extensible metadata
 }
 
 export interface WorkflowRegistry {
@@ -111,6 +118,7 @@ export interface WorkflowRegistry {
 ```
 
 **Design Considerations**:
+
 - **Singleton vs Injectable**: Document as Angular service (injectable) for DI integration
 - **Validation Strategy**: Validate workflow IDs on registration (no duplicates)
 - **Error Handling**: Define error types for missing workflows, invalid schemas
@@ -131,6 +139,7 @@ export interface WorkflowRegistry {
 5. WHEN developer extends protocol THEN extension SHALL not require modifying service code
 
 **Technical Specification**:
+
 ```typescript
 // Current (DevBrand-specific approval logic)
 private processApprovalRequest(data: any): ProcessedEvent<any>
@@ -142,6 +151,7 @@ private processInterruptionRequest<TApprovalData>(
 ```
 
 **Event Type Preservation**:
+
 - All 16 AG-UI event types MUST remain supported
 - Generic type parameters applied to: `STATE_SNAPSHOT`, `STATE_DELTA`, `INTERRUPTION_REQUEST`
 - Event handlers MUST NOT contain workflow-specific conditional logic
@@ -161,13 +171,10 @@ private processInterruptionRequest<TApprovalData>(
 5. WHEN schema validation used THEN documentation SHALL show Zod schema integration patterns
 
 **Technical Specification**:
+
 ```typescript
 // Generic workflow execution interface
-export interface WorkflowExecution<
-  TInput = any,
-  TState = any,
-  TOutput = any
-> {
+export interface WorkflowExecution<TInput = any, TState = any, TOutput = any> {
   id: string;
   workflowId: string;
   status: WorkflowStatus;
@@ -199,6 +206,7 @@ export interface InterruptionRequest<TApprovalData = any> {
 ```
 
 **DevBrand-Specific Removals**:
+
 - Remove: `brandData: BrandData` field from models
 - Remove: `githubUsername: string` from workflow input
 - Remove: DevBrand-specific enum values
@@ -219,17 +227,18 @@ export interface InterruptionRequest<TApprovalData = any> {
 5. WHEN multi-workflow scenario documented THEN example SHALL show 3+ workflows registered
 
 **Technical Specification**:
+
 ```typescript
 export interface LangGraphConfig {
-  apiUrl: string;                       // REST API base URL
-  websocketUrl: string;                 // WebSocket server URL
-  authToken?: string;                   // Optional JWT token
+  apiUrl: string; // REST API base URL
+  websocketUrl: string; // WebSocket server URL
+  authToken?: string; // Optional JWT token
   reconnection?: {
     enabled: boolean;
     maxAttempts?: number;
     backoffStrategy?: 'linear' | 'exponential';
   };
-  defaultWorkflowId?: string;           // Fallback workflow
+  defaultWorkflowId?: string; // Fallback workflow
 }
 
 // Provider function
@@ -256,6 +265,7 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
 ```
 
 **Bootstrap Integration Example**:
+
 ```typescript
 // app.config.ts
 export const appConfig: ApplicationConfig = {
@@ -317,16 +327,19 @@ export const appConfig: ApplicationConfig = {
 ### Primary Stakeholders
 
 **End Users (Angular Developers)**:
+
 - **Needs**: Simple API, clear examples, type safety
 - **Pain Points**: Current hardcoded implementation limits reusability
 - **Success Criteria**: Can register custom workflow in <50 lines
 
 **Business Owners (Hive Academy Product Team)**:
+
 - **Needs**: Market differentiation, developer adoption, extensibility
 - **Pain Points**: Library locked to DevBrand use case
 - **Success Criteria**: Library positioned as Angular's CopilotKit alternative
 
 **Development Team (Implementation Team)**:
+
 - **Needs**: Clear requirements, feasible architecture, testable design
 - **Pain Points**: Unclear generic type strategy
 - **Success Criteria**: WorkflowRegistry design approved by architect
@@ -334,26 +347,29 @@ export const appConfig: ApplicationConfig = {
 ### Secondary Stakeholders
 
 **Operations Team**:
+
 - **Involvement**: None (documentation-only task)
 - **Impact Level**: Low
 
 **Support Team**:
+
 - **Needs**: Documentation for troubleshooting
 - **Success Criteria**: Migration guide addresses common issues
 
 **Compliance/Security**:
+
 - **Needs**: Input validation, secure authentication patterns
 - **Success Criteria**: Zod schema validation documented
 
 ### Stakeholder Impact Matrix
 
-| Stakeholder       | Impact Level | Involvement        | Success Criteria                              |
-|-------------------|--------------|--------------------|--------------------------------------------- |
-| Angular Developers| High         | Testing/Feedback   | Custom workflow registration <50 lines       |
-| Product Team      | High         | Requirements       | Library as generic as CopilotKit             |
-| Dev Team          | High         | Implementation     | WorkflowRegistry design feasible             |
-| Architect         | Critical     | Design Review      | Type safety propagation validated            |
-| QA/Testers        | Medium       | Example Validation | All code examples compile successfully       |
+| Stakeholder        | Impact Level | Involvement        | Success Criteria                       |
+| ------------------ | ------------ | ------------------ | -------------------------------------- |
+| Angular Developers | High         | Testing/Feedback   | Custom workflow registration <50 lines |
+| Product Team       | High         | Requirements       | Library as generic as CopilotKit       |
+| Dev Team           | High         | Implementation     | WorkflowRegistry design feasible       |
+| Architect          | Critical     | Design Review      | Type safety propagation validated      |
+| QA/Testers         | Medium       | Example Validation | All code examples compile successfully |
 
 ---
 
@@ -448,13 +464,16 @@ export const appConfig: ApplicationConfig = {
 ## Dependencies & Constraints
 
 ### External Dependencies
+
 - **None**: Self-contained documentation rewrite
 
 ### Internal Dependencies
+
 - **Blocks**: TASK_2025_020, TASK_2025_021, TASK_2025_022 (all depend on WorkflowRegistry pattern)
 - **Depends On**: None (first task in sequence)
 
 ### Constraints
+
 1. **Scope Limitation**: Documentation rewrite ONLY - no implementation code changes
 2. **Feature Preservation**: All 16 AG-UI event types MUST remain supported
 3. **Backward Compatibility**: ZERO backward compatibility (intentional breaking change)
@@ -462,6 +481,7 @@ export const appConfig: ApplicationConfig = {
 5. **Type Safety**: NO 'any' types in public API documentation
 
 ### Assumptions
+
 1. WorkflowRegistry pattern is architecturally sound (subject to architect validation)
 2. RxJS Observables support generic type propagation
 3. Zod schema validation is sufficient for input validation
@@ -540,17 +560,20 @@ After documentation rewrite, verify:
 ### Recommended Workflow
 
 **Phase 0: Requirements Validation** (Complete)
+
 - project-manager: Requirements creation
 - business-analyst: SMART criteria validation
 - **Checkpoint**: Requirements approved
 
 **Phase 1: Architecture Design** (Next)
+
 - software-architect: WorkflowRegistry design review
 - software-architect: Type parameter propagation strategy
 - software-architect: Configuration interface validation
 - **Checkpoint**: Architecture approved
 
 **Phase 2: Documentation Implementation** (After architect approval)
+
 - Developer: Rewrite connection service documentation
 - Developer: Document WorkflowRegistry interface + implementation
 - Developer: Rewrite protocol service documentation
@@ -559,12 +582,14 @@ After documentation rewrite, verify:
 - **Checkpoint**: Draft documentation complete
 
 **Phase 3: Validation** (After implementation)
+
 - senior-tester: Validate code examples compile
 - senior-tester: Verify all 16 event types covered
 - code-reviewer: Quality check documentation
 - **Checkpoint**: Validation complete
 
 **Phase 4: Completion** (Final)
+
 - modernization-detector: Identify future enhancement opportunities
 - project-manager: Create completion report
 - **Checkpoint**: Task complete, unblocks TASK_2025_020
@@ -580,6 +605,7 @@ After documentation rewrite, verify:
 **NEXT AGENT**: software-architect
 
 **Delegation Rationale**:
+
 - WorkflowRegistry pattern requires architectural design review
 - Generic type parameter strategy needs validation
 - Configuration interface design impacts developer experience
@@ -587,6 +613,7 @@ After documentation rewrite, verify:
 - Type safety propagation through Observables needs expert review
 
 **Success Criteria for Architect**:
+
 - WorkflowRegistry design approved as feasible
 - Type parameter propagation strategy validated
 - Configuration interfaces approved
@@ -594,6 +621,7 @@ After documentation rewrite, verify:
 - No architectural red flags identified
 
 **Deliverables Expected from Architect**:
+
 1. WorkflowRegistry implementation pattern (singleton vs service)
 2. Type parameter propagation guidelines
 3. Configuration interface recommendations
@@ -624,10 +652,7 @@ interface ContentGenOutput {
   metadata: { wordCount: number; readingTime: number };
 }
 
-export const contentGenerationWorkflow: WorkflowDefinition<
-  ContentGenInput,
-  ContentGenOutput
-> = {
+export const contentGenerationWorkflow: WorkflowDefinition<ContentGenInput, ContentGenOutput> = {
   id: 'content-generation',
   name: 'AI Content Generator',
   description: 'Generate blog posts and articles',

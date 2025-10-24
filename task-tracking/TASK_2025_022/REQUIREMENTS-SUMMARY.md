@@ -21,6 +21,7 @@
 **Decision**: Proceed directly to frontend-developer
 
 **Rationale**:
+
 - All architectural patterns established in TASK_2025_019/020/021
 - This is pure implementation applying existing patterns
 - No novel architecture needed
@@ -121,6 +122,7 @@ apps/dev-brand-ui/src/app/examples/
 ```
 
 **Each Example Folder**:
+
 - `example-name.component.ts` - Component implementation
 - `example-name.workflow.ts` - Workflow definition
 - `example-name.component.spec.ts` - Unit tests
@@ -133,6 +135,7 @@ apps/dev-brand-ui/src/app/examples/
 ### From TASK_2025_019 (Core Services)
 
 **MUST Use**:
+
 - WorkflowRegistry for workflow lookups
 - LangGraphConnectionService for execution
 - provideLangGraph/provideLangGraphWorkflow for configuration
@@ -141,6 +144,7 @@ apps/dev-brand-ui/src/app/examples/
 ### From TASK_2025_020 (Components)
 
 **MUST Use**:
+
 - WorkflowVisualizer component
 - ApprovalModal component
 - Chat component
@@ -149,6 +153,7 @@ apps/dev-brand-ui/src/app/examples/
 ### From TASK_2025_021 (Composables)
 
 **MUST Use**:
+
 - useLangGraphWorkflow composable
 - useLangGraphChat composable
 - useLangGraphApproval composable
@@ -242,12 +247,14 @@ apps/dev-brand-ui/src/app/examples/
 **Next Agent**: frontend-developer
 
 **Why frontend-developer**:
+
 - Task is pure Angular implementation
 - Requires component, routing, testing expertise
 - No architectural decisions needed
 - All patterns established in predecessor tasks
 
 **Why NOT software-architect**:
+
 - No novel architectural patterns required
 - Examples follow established patterns
 - Low complexity, low risk
@@ -259,18 +266,18 @@ apps/dev-brand-ui/src/app/examples/
 
 **Total**: 10-12 hours
 
-| Phase | Hours |
-|-------|-------|
-| Shared utilities & mock data | 1.0 |
-| Basic integration examples (5) | 2.5 |
-| Content generation examples (5) | 2.5 |
-| Data analysis examples (5) | 2.0 |
-| Code review examples (5) | 2.0 |
-| Advanced patterns examples (5) | 2.5 |
-| Navigation & routing | 1.0 |
-| Testing infrastructure | 1.5 |
-| Documentation polish | 1.0 |
-| Validation & quality checks | 0.5 |
+| Phase                           | Hours |
+| ------------------------------- | ----- |
+| Shared utilities & mock data    | 1.0   |
+| Basic integration examples (5)  | 2.5   |
+| Content generation examples (5) | 2.5   |
+| Data analysis examples (5)      | 2.0   |
+| Code review examples (5)        | 2.0   |
+| Advanced patterns examples (5)  | 2.5   |
+| Navigation & routing            | 1.0   |
+| Testing infrastructure          | 1.5   |
+| Documentation polish            | 1.0   |
+| Validation & quality checks     | 0.5   |
 
 ---
 

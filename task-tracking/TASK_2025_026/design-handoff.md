@@ -1,4 +1,5 @@
 # Design Handoff - TASK_2025_026
+
 ## Developer Implementation Guide for Landing Page Redesign
 
 **Handoff Date**: 2025-10-23
@@ -63,14 +64,15 @@ module.exports = {
 
         // 3D Glow accents (optional - for 3D effects)
         'glow-accent': '#A1FF4F',
-        'glow-dark': '#0A0E11'
-      }
-    }
-  }
+        'glow-dark': '#0A0E11',
+      },
+    },
+  },
 };
 ```
 
 **Contrast Validation** (All verified WCAG 2.1 AA):
+
 - ✅ `#1A1A1A` on `#FFFFFF`: 16.5:1 (AAA)
 - ✅ `#23272F` on `#FFFFFF`: 15.3:1 (AAA)
 - ✅ `#71717A` on `#FFFFFF`: 5.8:1 (AA)
@@ -84,28 +86,28 @@ module.exports = {
   theme: {
     extend: {
       fontSize: {
-        'display': '72px',  // Hero headlines only
-        'section': '60px'   // Major section headlines
+        display: '72px', // Hero headlines only
+        section: '60px', // Major section headlines
       },
       fontFamily: {
-        sans: ['Inter', 'Manrope', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
-      }
-    }
-  }
+        sans: ['Inter', 'Manrope', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
+    },
+  },
 };
 ```
 
 **Typography Usage Table**:
 
-| Element | Tailwind Class | Desktop Size | Mobile Size |
-|---------|----------------|--------------|-------------|
-| Hero Headline | `text-5xl md:text-7xl` | 72px | 40px |
-| Section Headline | `text-4xl md:text-6xl` | 60px | 36px |
-| Subsection | `text-3xl md:text-4xl` | 40px | 28px |
-| Card Title | `text-xl md:text-2xl` | 28px | 24px |
-| Body Large | `text-lg md:text-xl` | 20px | 18px |
-| Body Base | `text-base` | 18px | 16px |
-| Small | `text-sm` | 14px | 14px |
+| Element          | Tailwind Class         | Desktop Size | Mobile Size |
+| ---------------- | ---------------------- | ------------ | ----------- |
+| Hero Headline    | `text-5xl md:text-7xl` | 72px         | 40px        |
+| Section Headline | `text-4xl md:text-6xl` | 60px         | 36px        |
+| Subsection       | `text-3xl md:text-4xl` | 40px         | 28px        |
+| Card Title       | `text-xl md:text-2xl`  | 28px         | 24px        |
+| Body Large       | `text-lg md:text-xl`   | 20px         | 18px        |
+| Body Base        | `text-base`            | 18px         | 16px        |
+| Small            | `text-sm`              | 14px         | 14px        |
 
 ### Spacing (8px Grid System)
 
@@ -115,24 +117,24 @@ module.exports = {
   theme: {
     extend: {
       spacing: {
-        '128': '128px' // For py-32 (massive section padding)
-      }
-    }
-  }
+        '128': '128px', // For py-32 (massive section padding)
+      },
+    },
+  },
 };
 ```
 
 **Spacing Usage Table**:
 
-| Context | Tailwind Class | Value | Usage |
-|---------|----------------|-------|-------|
-| Section Vertical | `py-32` | 128px | Between major sections |
-| Subsection Vertical | `py-20` | 80px | Internal section spacing |
-| Card Internal | `p-8` | 32px | Inside cards |
-| Element Margin | `mb-6` | 24px | Between elements |
-| Container Horizontal | `px-16 md:px-8` | 64px desktop, 32px mobile | Container padding |
-| Grid Gap Large | `gap-8` | 32px | Between cards (2-3 columns) |
-| Grid Gap Medium | `gap-6` | 24px | Between cards (4 columns) |
+| Context              | Tailwind Class  | Value                     | Usage                       |
+| -------------------- | --------------- | ------------------------- | --------------------------- |
+| Section Vertical     | `py-32`         | 128px                     | Between major sections      |
+| Subsection Vertical  | `py-20`         | 80px                      | Internal section spacing    |
+| Card Internal        | `p-8`           | 32px                      | Inside cards                |
+| Element Margin       | `mb-6`          | 24px                      | Between elements            |
+| Container Horizontal | `px-16 md:px-8` | 64px desktop, 32px mobile | Container padding           |
+| Grid Gap Large       | `gap-8`         | 32px                      | Between cards (2-3 columns) |
+| Grid Gap Medium      | `gap-6`         | 24px                      | Between cards (4 columns)   |
 
 ### Shadows & Elevation
 
@@ -142,12 +144,12 @@ module.exports = {
   theme: {
     extend: {
       boxShadow: {
-        'card': '0 4px 32px rgba(0, 0, 0, 0.04)',
+        card: '0 4px 32px rgba(0, 0, 0, 0.04)',
         'card-hover': '0 8px 48px rgba(0, 0, 0, 0.08)',
-        'button-hover': '0 8px 24px rgba(99, 102, 241, 0.3)'
-      }
-    }
-  }
+        'button-hover': '0 8px 24px rgba(99, 102, 241, 0.3)',
+      },
+    },
+  },
 };
 ```
 
@@ -159,11 +161,11 @@ module.exports = {
   theme: {
     extend: {
       borderRadius: {
-        'card': '16px',   // For cards and containers
-        'button': '8px'   // For buttons and inputs
-      }
-    }
-  }
+        card: '16px', // For cards and containers
+        button: '8px', // For buttons and inputs
+      },
+    },
+  },
 };
 ```
 
@@ -175,10 +177,10 @@ module.exports = {
   theme: {
     extend: {
       scale: {
-        '102': '1.02' // Subtle card hover scale
-      }
-    }
-  }
+        '102': '1.02', // Subtle card hover scale
+      },
+    },
+  },
 };
 ```
 
@@ -211,7 +213,7 @@ import { ParticleSystemComponent } from '@app/core/angular-3d/components/primiti
     Glow3dDirective,
     Performance3dDirective,
     FloatingSphereComponent,
-    ParticleSystemComponent
+    ParticleSystemComponent,
   ],
   // ...
 })
@@ -221,6 +223,7 @@ export class LandingPageComponent {}
 ### Scroll Animation Directive Usage
 
 **Available Animation Types**:
+
 - `fadeIn` - Opacity 0 → 1
 - `slideUp` - Translate Y 100px → 0 with fade
 - `slideDown` - Translate Y -100px → 0 with fade
@@ -294,11 +297,7 @@ import { ParticleSystemComponent } from '@app/core/angular-3d/components/primiti
 @Component({
   selector: 'app-hero-scene-graph',
   standalone: true,
-  imports: [
-    NgtArgs,
-    FloatingSphereComponent,
-    ParticleSystemComponent
-  ],
+  imports: [NgtArgs, FloatingSphereComponent, ParticleSystemComponent],
   template: `
     <!-- Ambient light -->
     <ngt-ambient-light [intensity]="0.5" />
@@ -389,7 +388,7 @@ import { ParticleSystemComponent } from '@app/core/angular-3d/components/primiti
       }"
       performance3d
     />
-  `
+  `,
 })
 export class HeroSceneGraphComponent {}
 ```
@@ -496,47 +495,87 @@ export class LandingPageComponent {
 
     <!-- Subheadline -->
     <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto mb-8">
-      NestJS AI SaaS Starter: <strong class="text-primary">90% less code</strong>,
-      enterprise capabilities out-of-the-box, familiar patterns for vector databases,
-      knowledge graphs, and multi-agent workflows
+      NestJS AI SaaS Starter: <strong class="text-primary">90% less code</strong>, enterprise
+      capabilities out-of-the-box, familiar patterns for vector databases, knowledge graphs, and
+      multi-agent workflows
     </p>
 
     <!-- Value Proposition Bullets -->
     <ul class="space-y-4 text-base md:text-lg text-primary max-w-2xl mx-auto mb-12">
       <li class="flex items-start gap-3">
-        <svg class="w-6 h-6 text-accent-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        <svg
+          class="w-6 h-6 text-accent-primary flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
         </svg>
-        <span>Reduce vector database operations from 50+ lines to 5 with TypeORM-style repositories</span>
+        <span
+          >Reduce vector database operations from 50+ lines to 5 with TypeORM-style
+          repositories</span
+        >
       </li>
       <li class="flex items-start gap-3">
-        <svg class="w-6 h-6 text-accent-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        <svg
+          class="w-6 h-6 text-accent-primary flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
         </svg>
         <span>Build multi-agent workflows with decorators, not imperative graph construction</span>
       </li>
       <li class="flex items-start gap-3">
-        <svg class="w-6 h-6 text-accent-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        <svg
+          class="w-6 h-6 text-accent-primary flex-shrink-0"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
         </svg>
-        <span>Get enterprise features (multi-tenancy, monitoring, approvals) without months of infrastructure work</span>
+        <span
+          >Get enterprise features (multi-tenancy, monitoring, approvals) without months of
+          infrastructure work</span
+        >
       </li>
     </ul>
 
     <!-- CTA Buttons -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <button class="px-8 py-4 bg-accent-primary text-white text-base font-semibold
+      <button
+        class="px-8 py-4 bg-accent-primary text-white text-base font-semibold
                      rounded-button shadow-button hover:bg-accent-primary-dark
                      hover:shadow-button-hover hover:scale-105 transition-all duration-300
                      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                     focus-visible:outline-accent-primary">
+                     focus-visible:outline-accent-primary"
+      >
         See Complete Workflow Examples
       </button>
-      <button class="px-8 py-4 bg-white text-accent-primary text-base font-semibold
+      <button
+        class="px-8 py-4 bg-white text-accent-primary text-base font-semibold
                      rounded-button border-2 border-accent-primary
                      hover:bg-accent-primary hover:text-white transition-all duration-300
                      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                     focus-visible:outline-accent-primary">
+                     focus-visible:outline-accent-primary"
+      >
         Read Documentation
       </button>
     </div>
@@ -557,13 +596,9 @@ import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.compone
 @Component({
   selector: 'app-hero-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    Scene3DComponent,
-    ScrollAnimationDirective
-  ],
+  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   templateUrl: './hero-section.component.html',
-  styleUrls: ['./hero-section.component.css']
+  styleUrls: ['./hero-section.component.css'],
 })
 export class HeroSectionComponent {
   heroSceneGraphComponent = HeroSceneGraphComponent;
@@ -607,8 +642,8 @@ export class HeroSectionComponent {
       }"
     >
       TypeScript developers building AI applications face a painful choice: use Python-style
-      frameworks like LangGraph (pattern mismatch), stitch together raw SDKs (integration hell),
-      or spend months building production infrastructure (multi-tenancy, monitoring, approvals).
+      frameworks like LangGraph (pattern mismatch), stitch together raw SDKs (integration hell), or
+      spend months building production infrastructure (multi-tenancy, monitoring, approvals).
     </p>
 
     <!-- Solution Statement Card -->
@@ -648,32 +683,42 @@ export class HeroSectionComponent {
       }"
     >
       <!-- Metric Card 1 -->
-      <div class="bg-white rounded-card shadow-card hover:shadow-card-hover
-                  hover:scale-102 transition-all duration-300 p-8 text-center">
+      <div
+        class="bg-white rounded-card shadow-card hover:shadow-card-hover
+                  hover:scale-102 transition-all duration-300 p-8 text-center"
+      >
         <div class="text-5xl md:text-6xl font-bold text-accent-primary mb-4">90%</div>
         <div class="text-lg text-primary font-semibold mb-2">Code Reduction</div>
         <div class="text-sm text-secondary">Vector operations: 50 lines → 5 lines</div>
       </div>
 
       <!-- Metric Card 2 -->
-      <div class="bg-white rounded-card shadow-card hover:shadow-card-hover
-                  hover:scale-102 transition-all duration-300 p-8 text-center">
+      <div
+        class="bg-white rounded-card shadow-card hover:shadow-card-hover
+                  hover:scale-102 transition-all duration-300 p-8 text-center"
+      >
         <div class="text-5xl md:text-6xl font-bold text-accent-primary mb-4">60%</div>
         <div class="text-lg text-primary font-semibold mb-2">Less Approval Overhead</div>
-        <div class="text-sm text-secondary">ML confidence scoring auto-approves high-confidence tasks</div>
+        <div class="text-sm text-secondary">
+          ML confidence scoring auto-approves high-confidence tasks
+        </div>
       </div>
 
       <!-- Metric Card 3 -->
-      <div class="bg-white rounded-card shadow-card hover:shadow-card-hover
-                  hover:scale-102 transition-all duration-300 p-8 text-center">
+      <div
+        class="bg-white rounded-card shadow-card hover:shadow-card-hover
+                  hover:scale-102 transition-all duration-300 p-8 text-center"
+      >
         <div class="text-5xl md:text-6xl font-bold text-accent-primary mb-4">75+</div>
         <div class="text-lg text-primary font-semibold mb-2">Lines → 1 Line</div>
         <div class="text-sm text-secondary">WorkflowStreamingOrchestrator one-liner execution</div>
       </div>
 
       <!-- Metric Card 4 -->
-      <div class="bg-white rounded-card shadow-card hover:shadow-card-hover
-                  hover:scale-102 transition-all duration-300 p-8 text-center">
+      <div
+        class="bg-white rounded-card shadow-card hover:shadow-card-hover
+                  hover:scale-102 transition-all duration-300 p-8 text-center"
+      >
         <div class="text-5xl md:text-6xl font-bold text-accent-primary mb-4">$262K</div>
         <div class="text-lg text-primary font-semibold mb-2">ROI Savings</div>
         <div class="text-sm text-secondary">11 weeks infrastructure development eliminated</div>
@@ -737,8 +782,10 @@ export interface ValueProposition {
       </div>
 
       <!-- Business Value Headline -->
-      <h3 class="text-2xl font-bold text-headline mb-4
-                 group-hover:text-accent-primary transition-colors">
+      <h3
+        class="text-2xl font-bold text-headline mb-4
+                 group-hover:text-accent-primary transition-colors"
+      >
         {{ valueProposition.businessHeadline }}
       </h3>
 
@@ -765,8 +812,18 @@ export interface ValueProposition {
       <!-- Capabilities -->
       <ul class="space-y-2 mb-6">
         <li *ngFor="let capability of valueProposition.capabilities" class="flex items-start gap-2">
-          <svg class="w-5 h-5 text-accent-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          <svg
+            class="w-5 h-5 text-accent-primary flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
           </svg>
           <span class="text-sm text-secondary">{{ capability }}</span>
         </li>
@@ -786,15 +843,22 @@ export interface ValueProposition {
       </div>
 
       <!-- Hover Arrow -->
-      <div class="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100
+      <div
+        class="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100
                   transform translate-x-2 group-hover:translate-x-0
-                  transition-all duration-300">
-        <svg class="w-6 h-6 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  transition-all duration-300"
+      >
+        <svg
+          class="w-6 h-6 text-accent-primary"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </div>
     </div>
-  `
+  `,
 })
 export class ValuePropositionCardComponent {
   @Input({ required: true }) valueProposition!: ValueProposition;
@@ -808,14 +872,10 @@ export class ValuePropositionCardComponent {
 <section class="py-20 md:py-32 px-8 md:px-16 bg-white">
   <div class="max-w-7xl mx-auto space-y-32">
     <!-- ChromaDB Value Proposition -->
-    <app-value-proposition-card
-      [valueProposition]="chromaDBProposition"
-    />
+    <app-value-proposition-card [valueProposition]="chromaDBProposition" />
 
     <!-- Neo4j Value Proposition -->
-    <app-value-proposition-card
-      [valueProposition]="neo4jProposition"
-    />
+    <app-value-proposition-card [valueProposition]="neo4jProposition" />
 
     <!-- ... Repeat for 11 total value propositions -->
   </div>
@@ -828,33 +888,37 @@ export class ValuePropositionsSectionComponent {
   chromaDBProposition: ValueProposition = {
     packageName: '@hive-academy/nestjs-chromadb',
     businessHeadline: 'Build RAG Applications in Minutes',
-    painPoint: '50+ lines of manual ChromaDB client setup, embedding generation, error handling, retry logic, tenant isolation...',
-    solution: 'TypeORM-style repository pattern with automatic embeddings, tenant isolation, and caching via decorators',
+    painPoint:
+      '50+ lines of manual ChromaDB client setup, embedding generation, error handling, retry logic, tenant isolation...',
+    solution:
+      'TypeORM-style repository pattern with automatic embeddings, tenant isolation, and caching via decorators',
     capabilities: [
       'Multi-provider embeddings (OpenAI, Cohere, local)',
       'Multi-tenant database-per-tenant isolation',
       'Intelligent caching with @Cached decorator',
-      'Auto-chunking for large documents'
+      'Auto-chunking for large documents',
     ],
     metricValue: '90%',
     metricLabel: 'Less Code',
-    iconUrl: '[CANVA_CHROMADB_ICON_URL]'
+    iconUrl: '[CANVA_CHROMADB_ICON_URL]',
   };
 
   neo4jProposition: ValueProposition = {
     packageName: '@hive-academy/nestjs-neo4j',
     businessHeadline: 'Graph Queries Without Cypher Boilerplate',
-    painPoint: 'Raw Cypher queries with manual parameter binding, result mapping, error handling, connection pooling...',
-    solution: 'Specialized repository pattern for graphs with type-safe operations and Neogma OGM integration',
+    painPoint:
+      'Raw Cypher queries with manual parameter binding, result mapping, error handling, connection pooling...',
+    solution:
+      'Specialized repository pattern for graphs with type-safe operations and Neogma OGM integration',
     capabilities: [
       'GraphRepository and RelationshipRepository patterns',
       'Type-safe Cypher query builder',
       'Multi-tenancy with database-per-tenant',
-      'NestJS native dependency injection'
+      'NestJS native dependency injection',
     ],
     metricValue: '85%',
     metricLabel: 'Less Boilerplate',
-    iconUrl: '[CANVA_NEO4J_ICON_URL]'
+    iconUrl: '[CANVA_NEO4J_ICON_URL]',
   };
 
   // ... Define remaining 9 value propositions
@@ -868,6 +932,7 @@ export class ValuePropositionsSectionComponent {
 ### Breakpoint Testing Checklist
 
 **Mobile (375px, 414px)**:
+
 - [ ] Hero headline readable at 40px
 - [ ] CTA buttons stacked vertically with full width
 - [ ] Section padding reduced to 80px (py-20)
@@ -876,6 +941,7 @@ export class ValuePropositionsSectionComponent {
 - [ ] 3D particle count reduced to 100
 
 **Tablet (768px, 1024px)**:
+
 - [ ] Hero headline at 56px
 - [ ] CTA buttons horizontal row
 - [ ] Section padding 104px (py-26)
@@ -883,6 +949,7 @@ export class ValuePropositionsSectionComponent {
 - [ ] 3D particle count at 150
 
 **Desktop (1280px, 1920px)**:
+
 - [ ] Hero headline at full 72px
 - [ ] All spacing at maximum values
 - [ ] Grid layouts at intended column count
@@ -902,12 +969,8 @@ export class ValuePropositionsSectionComponent {
 </div>
 
 <!-- Responsive Typography -->
-<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">
-  Headline
-</h1>
-<p class="text-base md:text-lg lg:text-xl">
-  Body text
-</p>
+<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">Headline</h1>
+<p class="text-base md:text-lg lg:text-xl">Body text</p>
 
 <!-- Responsive Spacing -->
 <section class="py-20 md:py-26 lg:py-32 px-8 md:px-12 lg:px-16">
@@ -924,22 +987,22 @@ export class ValuePropositionsSectionComponent {
 ```css
 /* Global focus style - Add to global CSS */
 *:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* Button focus */
 button:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
 
 /* Card focus (if clickable) */
 .library-card:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 4px;
-  border-color: #6366F1;
+  border-color: #6366f1;
 }
 ```
 
@@ -957,12 +1020,7 @@ button:focus-visible {
 </section>
 
 <!-- Value Proposition Card -->
-<article
-  role="article"
-  aria-labelledby="chromadb-headline"
-  tabindex="0"
-  class="library-card"
->
+<article role="article" aria-labelledby="chromadb-headline" tabindex="0" class="library-card">
   <h3 id="chromadb-headline">Build RAG Applications in Minutes</h3>
   <!-- Content -->
 </article>
@@ -1010,12 +1068,14 @@ button:focus-visible {
 ### Phase 1: Foundation (Day 1-2, 4 hours)
 
 **Deliverables**:
+
 1. Tailwind configuration with design tokens
 2. Base layout components (Section, Container)
 3. Angular-3D imports and configuration
 4. Hero section scene graph component
 
 **Tasks**:
+
 - [ ] Update tailwind.config.js with custom colors, spacing, shadows
 - [ ] Create HeroSceneGraphComponent with 3D elements
 - [ ] Test 3D scene rendering
@@ -1024,11 +1084,13 @@ button:focus-visible {
 ### Phase 2: Hero & Core Sections (Day 3-4, 8 hours)
 
 **Deliverables**:
+
 1. Hero section (complete with 3D background)
 2. Problem/solution section
 3. First 3 value proposition cards
 
 **Tasks**:
+
 - [ ] Implement HeroSectionComponent with all content
 - [ ] Add scroll animations to hero content
 - [ ] Implement ProblemSolutionSectionComponent
@@ -1039,11 +1101,13 @@ button:focus-visible {
 ### Phase 3: Content Sections (Day 5-6, 12 hours)
 
 **Deliverables**:
+
 1. Remaining 8 value proposition cards
 2. Workflow example cards (3 total)
 3. Enterprise capabilities matrix
 
 **Tasks**:
+
 - [ ] Implement 8 remaining value proposition cards
 - [ ] Create workflow example card component
 - [ ] Add Canva-generated workflow diagrams
@@ -1053,12 +1117,14 @@ button:focus-visible {
 ### Phase 4: Interactivity & Polish (Day 7-8, 8 hours)
 
 **Deliverables**:
+
 1. All hover states and microinteractions
 2. Scroll-triggered stagger animations
 3. CTA section with 3D accents
 4. Developer experience code comparison
 
 **Tasks**:
+
 - [ ] Add hover states to all cards (scale, shadow, border)
 - [ ] Implement stagger animations for card grids
 - [ ] Create CTA section scene graph
@@ -1068,12 +1134,14 @@ button:focus-visible {
 ### Phase 5: Responsive & Accessibility (Day 9-10, 8 hours)
 
 **Deliverables**:
+
 1. All breakpoints tested and fixed
 2. WCAG 2.1 AA validation complete
 3. Keyboard navigation functional
 4. Reduced motion support
 
 **Tasks**:
+
 - [ ] Test mobile layout (375px, 414px)
 - [ ] Test tablet layout (768px, 1024px)
 - [ ] Test desktop layout (1280px, 1920px)
@@ -1161,6 +1229,7 @@ button:focus-visible {
 **Issue**: 3D scene doesn't appear or shows blank canvas
 
 **Solutions**:
+
 1. Verify Angular Three imports in component
 2. Check scene graph component is provided correctly
 3. Ensure `ngt-canvas` has height/width (use `h-full w-full`)
@@ -1180,6 +1249,7 @@ heroSceneGraphComponent = HeroSceneGraphComponent;
 **Issue**: Elements don't animate when scrolled into view
 
 **Solutions**:
+
 1. Verify `ScrollAnimationDirective` is imported
 2. Check `start` trigger position (try 'top 90%' for earlier trigger)
 3. Ensure element is in viewport during scroll
@@ -1202,6 +1272,7 @@ ngAfterViewInit() {
 **Issue**: Cards don't reveal sequentially, all appear at once
 
 **Solutions**:
+
 1. Ensure `stagger` property is set in `scrollConfig`
 2. Apply directive to **parent container**, not individual cards
 3. Verify cards are direct children of animated container
@@ -1229,6 +1300,7 @@ ngAfterViewInit() {
 **Issue**: 3D scenes cause frame rate drops or stuttering
 
 **Solutions**:
+
 1. Enable `performance3d` directive on all 3D elements
 2. Reduce particle count on lower-end devices
 3. Lower geometry segments (e.g., 16 instead of 32)
@@ -1237,15 +1309,9 @@ ngAfterViewInit() {
 
 ```html
 <!-- Performance optimization -->
-<app-floating-sphere
-  [segments]="16"
-  performance3d
-/>
+<app-floating-sphere [segments]="16" performance3d />
 
-<app-scene-3d
-  [gl]="{ antialias: true, powerPreference: 'high-performance' }"
-  [shadows]="false"
-/>
+<app-scene-3d [gl]="{ antialias: true, powerPreference: 'high-performance' }" [shadows]="false" />
 ```
 
 ### Tailwind Classes Not Working
@@ -1253,6 +1319,7 @@ ngAfterViewInit() {
 **Issue**: Custom Tailwind classes (shadow-card, rounded-button) don't apply
 
 **Solutions**:
+
 1. Verify tailwind.config.js includes custom values in `extend`
 2. Run Tailwind build process: `npx tailwindcss -o output.css`
 3. Check component has `styleUrls` or global CSS import
@@ -1262,12 +1329,13 @@ ngAfterViewInit() {
 // tailwind.config.js must extend theme
 module.exports = {
   theme: {
-    extend: {  // <-- Must be inside extend
+    extend: {
+      // <-- Must be inside extend
       boxShadow: {
-        'card': '0 4px 32px rgba(0, 0, 0, 0.04)'
-      }
-    }
-  }
+        card: '0 4px 32px rgba(0, 0, 0, 0.04)',
+      },
+    },
+  },
 };
 ```
 

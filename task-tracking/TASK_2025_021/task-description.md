@@ -9,6 +9,7 @@ TASK_2025_021 focuses on rewriting the composables (Angular inject-pattern funct
 **Current State**: The original documentation includes hardcoded composables like `useLangGraphWorkflow(githubUsername: string)` that accept DevBrand-specific parameters. Provider functions already use generic patterns from TASK_2025_019 (`provideLangGraph`, `provideLangGraphWorkflow`), but require documentation updates to emphasize multi-workflow support.
 
 **Value Proposition**:
+
 - **Developer Experience**: Type-safe composables with full IDE autocomplete for custom workflows
 - **Flexibility**: Support ANY workflow type through generic type parameters
 - **Composability**: RxJS operators that chain seamlessly with existing reactive code
@@ -18,10 +19,12 @@ TASK_2025_021 focuses on rewriting the composables (Angular inject-pattern funct
 ### Dependencies
 
 **Required Predecessors** (COMPLETED):
+
 - **TASK_2025_019**: WorkflowRegistry, LangGraphConnectionService, Provider functions
 - **TASK_2025_020**: Components, directives, template contexts
 
 **Dependency Integration**:
+
 - Composables MUST use WorkflowRegistry from TASK_2025_019 for workflow lookups
 - Composables MUST leverage LangGraphProtocolService generic event types from TASK_2025_019
 - Providers MUST integrate WorkflowRegistry initialization patterns from TASK_2025_019
@@ -32,6 +35,7 @@ TASK_2025_021 focuses on rewriting the composables (Angular inject-pattern funct
 This task rewrites **TWO MAIN SECTIONS** of angular-langgraph.md:
 
 1. **Composable Functions** (Lines 849-958, ~110 lines)
+
    - `useLangGraphWorkflow` - Generic workflow execution
    - `useLangGraphChat` - Generic chat functionality
    - `useLangGraphApproval` - Generic HITL approval handling
@@ -67,6 +71,7 @@ This task rewrites **TWO MAIN SECTIONS** of angular-langgraph.md:
 #### Technical Specifications
 
 **Generic Signature Pattern** (from TASK_2025_018 spec):
+
 ```typescript
 export function useLangGraphWorkflow<TInput, TState, TOutput>(
   workflowId: string,
@@ -80,7 +85,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
   return {
     execute: (input: TInput) => connection.executeWorkflow(workflow, input),
     state: toSignal(connection.on<StateSnapshot<TState>>('state_snapshot')),
-    result: toSignal(connection.on<RunCompletedEvent<TOutput>>('run_finished'))
+    result: toSignal(connection.on<RunCompletedEvent<TOutput>>('run_finished')),
   };
 }
 ```
@@ -88,24 +93,28 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 **Composables to Document**:
 
 1. **useLangGraphWorkflow<TInput, TState, TOutput>** (~150 lines)
+
    - Workflow execution management
    - State tracking with typed signals
    - Result handling with typed observables
    - Error state management
 
 2. **useLangGraphChat<TMessage>** (~120 lines)
+
    - Generic message types
    - Chat history management
    - Typing indicators
    - Message streaming
 
 3. **useLangGraphApproval<TApprovalData>** (~120 lines)
+
    - Generic approval data types
    - Pending approval state
    - Approval/rejection actions
    - Approval history tracking
 
 4. **useLangGraphStreaming<TToken, TOutput>** (~100 lines) [NEW]
+
    - Token streaming with buffering
    - Accumulated output tracking
    - Stream completion detection
@@ -141,36 +150,42 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 **RxJS Operators to Document** (~300 lines total):
 
 1. **filterWorkflowEvents<TEvent extends AGUIEvent>** (~40 lines)
+
    - Type-safe event filtering
    - Support for event type discrimination
    - TypeScript type guard integration
    - Example: `events$.pipe(filterWorkflowEvents<TokenUpdateEvent>('token_update'))`
 
 2. **mapToWorkflowState<TState>** (~40 lines)
+
    - Extract state from StateSnapshot events
    - Apply state deltas incrementally
    - Type-safe state transformation
    - Example: `events$.pipe(mapToWorkflowState<MyWorkflowState>())`
 
 3. **retryOnWorkflowError** (~50 lines)
+
    - Exponential backoff retry strategy
    - Configurable max attempts
    - Error type filtering
    - Example: `executeWorkflow(input).pipe(retryOnWorkflowError({ maxAttempts: 3 }))`
 
 4. **takeUntilWorkflowComplete<TOutput>** (~40 lines)
+
    - Auto-unsubscribe on workflow completion
    - Extract final output
    - Handle both success and failure
    - Example: `events$.pipe(takeUntilWorkflowComplete<MyOutput>())`
 
 5. **bufferWorkflowTokens<TOutput>** (~60 lines)
+
    - Buffer token updates by time or count
    - Accumulate tokens into output
    - Configurable buffer strategy (time, count, idle)
    - Example: `tokens$.pipe(bufferWorkflowTokens({ bufferTime: 100 }))`
 
 6. **shareWorkflowExecution** (~30 lines)
+
    - Share execution observable across subscribers
    - Multicast workflow events
    - Prevent duplicate executions
@@ -204,6 +219,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 **Type Guards to Document** (~200 lines total):
 
 1. **Event Type Guards** (~120 lines)
+
    ```typescript
    // Run lifecycle guards
    function isRunStartedEvent(event: AGUIEvent): event is RunStartedEvent;
@@ -218,7 +234,9 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    function isStreamUpdate(event: AGUIEvent): event is StreamUpdateEvent;
 
    // HITL guards
-   function isInterruptionRequest<TData>(event: AGUIEvent): event is InterruptionRequestEvent<TData>;
+   function isInterruptionRequest<TData>(
+     event: AGUIEvent
+   ): event is InterruptionRequestEvent<TData>;
    function isInterruptionResolved(event: AGUIEvent): event is InterruptionResolvedEvent;
 
    // Tool guards
@@ -230,17 +248,13 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    ```
 
 2. **Utility Functions** (~80 lines)
+
    ```typescript
    // Output extraction
-   function extractWorkflowOutput<TOutput>(
-     result: WorkflowResult<TOutput>
-   ): TOutput | undefined;
+   function extractWorkflowOutput<TOutput>(result: WorkflowResult<TOutput>): TOutput | undefined;
 
    // State validation
-   function validateWorkflowState<TState>(
-     state: unknown,
-     schema: ZodSchema<TState>
-   ): TState | null;
+   function validateWorkflowState<TState>(state: unknown, schema: ZodSchema<TState>): TState | null;
 
    // Input validation
    function validateWorkflowInput<TInput>(
@@ -278,6 +292,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 **Provider Functions to Document** (~150 lines):
 
 1. **provideLangGraph(config)** (~60 lines)
+
    - Already generic from TASK_2025_019
    - Update docs to emphasize WorkflowRegistry initialization
    - Show configuration options with defaults
@@ -285,6 +300,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    - Example: Multi-workflow application setup
 
 2. **provideLangGraphWorkflow(workflow)** (~40 lines)
+
    - Already generic from TASK_2025_019
    - Update docs to show array registration pattern
    - Demonstrate type inference from workflow definitions
@@ -292,6 +308,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    - Example: Feature module workflow registration
 
 3. **provideLangGraphFeature(providers)** (~30 lines)
+
    - Custom feature provider extension
    - Show how to add custom services
    - Demonstrate feature flag patterns
@@ -304,6 +321,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    - Example: Unit test setup
 
 **Provider Configuration Examples** (~80 lines):
+
 - Single workflow application
 - Multi-workflow application (3+ workflows)
 - Lazy-loaded workflow module
@@ -331,6 +349,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 **Integration Examples** (~200 lines):
 
 1. **Complete Workflow Integration** (~80 lines)
+
    - WorkflowRegistry registration
    - Component with useLangGraphWorkflow composable
    - RxJS operator pipeline for event processing
@@ -338,6 +357,7 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
    - State tracking with signals
 
 2. **Multi-Workflow Dashboard** (~60 lines)
+
    - Multiple workflows registered
    - WorkflowVisualizer components from TASK_2025_020
    - Composables for each workflow
@@ -358,12 +378,14 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 ### Performance Requirements
 
 1. **Bundle Size Impact**:
+
    - RxJS operators: < 5KB additional (tree-shakeable)
    - Composables: < 3KB per composable (code splitting)
    - Type guards: 0KB runtime (TypeScript only)
    - Total library addition: < 15KB gzipped
 
 2. **Runtime Performance**:
+
    - Type guard execution: < 1ms per check
    - Composable initialization: < 10ms
    - Operator overhead: < 5% vs raw RxJS
@@ -376,11 +398,13 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 ### Type Safety Requirements
 
 1. **Generic Type Propagation**:
+
    - All type parameters SHALL propagate through Observable chains
    - TypeScript strict mode compliant (no 'any' types)
    - Generic constraints documented for complex types
 
 2. **Type Inference**:
+
    - WorkflowRegistry lookups SHALL infer TInput/TOutput from registered workflows
    - Composable return types SHALL be fully inferred
    - RxJS operators SHALL maintain type information through pipelines
@@ -393,12 +417,14 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 ### Developer Experience Requirements
 
 1. **Documentation Quality**:
+
    - Every composable has minimum 2 complete examples
    - Every operator has chaining example
    - Every type guard has TypeScript narrowing example
    - Copy-paste ready code snippets
 
 2. **Error Messages**:
+
    - Clear error messages for missing workflow registrations
    - Type mismatch errors with helpful suggestions
    - Runtime validation errors with context
@@ -417,12 +443,14 @@ export function useLangGraphWorkflow<TInput, TState, TOutput>(
 #### From Composables Section:
 
 1. **useLangGraphWorkflow**:
+
    - REMOVE: `githubUsername: string` parameter
    - ADD: `workflowId: string` parameter
    - ADD: Generic type parameters `<TInput, TState, TOutput>`
    - UPDATE: `connection.startWorkflow(githubUsername)` → `connection.executeWorkflow(workflow, input)`
 
 2. **useLangGraphApproval**:
+
    - REMOVE: Hardcoded `/hitl/approve` endpoint
    - ADD: Generic TApprovalData type parameter
    - UPDATE: Use WorkflowRegistry to get approval configuration
@@ -454,6 +482,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### From TASK_2025_019 (Core Services):
 
 **Required Imports**:
+
 - `WorkflowRegistry` - For workflow lookups in composables
 - `WorkflowDefinition<TInput, TOutput>` - Type definitions
 - `LangGraphConnectionService` - For workflow execution
@@ -462,6 +491,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - All 16 event type interfaces (RunStartedEvent, TokenUpdateEvent, etc.)
 
 **Required Patterns**:
+
 - Generic type parameter usage: `<TInput, TState, TOutput>`
 - WorkflowRegistry.get() type inference
 - Event filtering with type guards
@@ -469,12 +499,14 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### From TASK_2025_020 (Components):
 
 **Required Integration Points**:
+
 - Component template contexts for composable examples
 - WorkflowVisualizer component for integration examples
 - ApprovalModal component for HITL composable examples
 - Signal-based reactivity patterns
 
 **Required Type Definitions**:
+
 - `AgentContext<TAgent>` - For agent-related composables
 - Template variable types for content projection examples
 
@@ -485,6 +517,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Technical Risks
 
 #### Risk: Generic Type Complexity Overwhelms Developers
+
 - **Probability**: Medium
 - **Impact**: High (DX degradation)
 - **Mitigation**:
@@ -495,6 +528,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - **Contingency**: Create simplified non-generic composables as convenience wrappers
 
 #### Risk: RxJS Operator Performance Overhead
+
 - **Probability**: Low
 - **Impact**: Medium (Runtime performance)
 - **Mitigation**:
@@ -505,6 +539,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - **Contingency**: Provide direct service access for performance-critical paths
 
 #### Risk: Type Guard False Positives
+
 - **Probability**: Low
 - **Impact**: High (Runtime errors)
 - **Mitigation**:
@@ -517,6 +552,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Integration Risks
 
 #### Risk: Composable Lifecycle Conflicts with Components
+
 - **Probability**: Medium
 - **Impact**: Medium (Memory leaks or broken subscriptions)
 - **Mitigation**:
@@ -527,6 +563,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - **Contingency**: Provide class-based service alternatives
 
 #### Risk: Multi-Workflow State Conflicts
+
 - **Probability**: Medium
 - **Impact**: High (State corruption)
 - **Mitigation**:
@@ -543,6 +580,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Primary Stakeholders
 
 #### Angular Developers (Custom Workflow Builders)
+
 - **Needs**: Type-safe, composable API for custom workflows
 - **Pain Points**: Complex generic signatures, unclear type propagation
 - **Success Criteria**:
@@ -552,6 +590,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - **Involvement**: Documentation consumers, example users
 
 #### Library Maintainers
+
 - **Needs**: Maintainable, extensible composable architecture
 - **Pain Points**: Breaking changes management, type complexity
 - **Success Criteria**:
@@ -563,6 +602,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Secondary Stakeholders
 
 #### Quality Assurance Engineers
+
 - **Needs**: Testable composables, mockable dependencies
 - **Pain Points**: Integration testing complexity, type mocking
 - **Success Criteria**:
@@ -572,6 +612,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - **Involvement**: Testing utility design, test pattern documentation
 
 #### Technical Writers
+
 - **Needs**: Clear, consistent API documentation
 - **Pain Points**: Generic type explanation, complex examples
 - **Success Criteria**:
@@ -587,6 +628,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Quantitative Metrics
 
 1. **Documentation Completeness**:
+
    - 5 composables fully documented
    - 7 RxJS operators documented
    - 12+ type guards documented
@@ -595,6 +637,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
    - Target: 800-1,200 lines total
 
 2. **Type Safety**:
+
    - Zero 'any' types in composable signatures
    - 100% generic type parameter coverage
    - All return types fully inferred
@@ -609,12 +652,14 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 ### Qualitative Metrics
 
 1. **Developer Experience**:
+
    - Composable usage requires < 5 lines of code
    - Type inference works without manual annotation
    - Error messages provide actionable guidance
    - IDE autocomplete shows relevant suggestions
 
 2. **Integration Quality**:
+
    - Examples demonstrate real-world patterns
    - Composables integrate seamlessly with components from TASK_2025_020
    - Operators chain naturally with RxJS
@@ -695,18 +740,21 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 **Rationale**:
 
 1. **Existing Patterns Sufficient**:
+
    - TASK_2025_019 established WorkflowRegistry pattern - reuse directly
    - TASK_2025_019 defined generic type system - apply consistently
    - TASK_2025_020 demonstrated content projection - extend pattern to composables
    - No NEW architectural patterns required
 
 2. **Composables = Service Wrappers**:
+
    - Composables are thin wrappers around LangGraphConnectionService (TASK_2025_019)
    - RxJS operators use standard reactive patterns (filter, map, retry)
    - Type guards are straightforward TypeScript predicates
    - Providers follow Angular's standard dependency injection
 
 3. **Clear Implementation Path**:
+
    - Genericize composable signatures by adding type parameters
    - Replace hardcoded workflow IDs with registry lookups
    - Create RxJS operators using standard RxJS composition
@@ -718,6 +766,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
    - No architectural decisions needed (follow TASK_2025_019/020 patterns)
 
 **Conditions That Would Require Architect**:
+
 - If custom RxJS operator scheduler needed (performance optimization)
 - If multi-workflow state isolation requires complex architecture
 - If provider tree conflicts with Angular DI system
@@ -738,12 +787,14 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 **Task**: Rewrite composables and providers sections of angular-langgraph.md (800-1,200 lines) to eliminate DevBrand-specific implementations and create fully generic, type-safe API.
 
 **Input Artifacts**:
+
 1. This requirements document (task-description.md)
 2. TASK_2025_019/angular-langgraph-services-REWRITE.md (WorkflowRegistry, services, models)
 3. TASK_2025_020/angular-langgraph-components-REWRITE.md (Components, directives, contexts)
 4. Original angular-langgraph.md lines 849-1100 (current composables/providers)
 
 **Expected Deliverables**:
+
 1. `angular-langgraph-composables-REWRITE.md` (800-1,200 lines)
    - 5 generic composable functions with examples
    - 7 RxJS operators with chaining examples
@@ -754,6 +805,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 3. Test examples demonstrating provideLangGraphTesting utilities
 
 **Success Criteria**:
+
 - All 32 BDD acceptance criteria met
 - Zero DevBrand references (automated validation)
 - TypeScript strict mode compliance
@@ -761,6 +813,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - Type inference demonstrated for all generic APIs
 
 **Quality Bar**:
+
 - JSDoc documentation for all public APIs
 - Minimum 2 examples per composable
 - Operator chaining demonstrated for RxJS operators
@@ -768,6 +821,7 @@ grep "/hitl/approve" task-tracking/TASK_2025_021/*.md
 - Integration examples demonstrate real-world patterns
 
 **Time Budget**: M effort (6-8 hours)
+
 - Composables documentation: 2h
 - RxJS operators documentation: 2h
 - Type guards documentation: 1h
@@ -788,13 +842,11 @@ const workflow = registry.get<ContentInput, ContentOutput>('content-generation')
 
 // Pattern: Generic event subscription
 const protocol = inject(LangGraphProtocolService);
-protocol.events$.pipe(
-  filter((event): event is StateSnapshot<MyState> =>
-    event.type === 'state_snapshot'
-  )
-).subscribe(snapshot => {
-  // TypeScript knows snapshot.state is MyState
-});
+protocol.events$
+  .pipe(filter((event): event is StateSnapshot<MyState> => event.type === 'state_snapshot'))
+  .subscribe((snapshot) => {
+    // TypeScript knows snapshot.state is MyState
+  });
 ```
 
 ### From TASK_2025_020: Component Integration
@@ -804,19 +856,14 @@ protocol.events$.pipe(
 @Component({
   selector: 'app-workflow-page',
   template: `
-    <lg-workflow-visualizer
-      [workflowId]="workflowId()"
-      [executionId]="execution()?.id"
-    />
-  `
+    <lg-workflow-visualizer [workflowId]="workflowId()" [executionId]="execution()?.id" />
+  `,
 })
 export class WorkflowPageComponent {
   workflowId = input.required<string>();
 
   // Composable usage
-  workflow = useLangGraphWorkflow<MyInput, MyState, MyOutput>(
-    this.workflowId()
-  );
+  workflow = useLangGraphWorkflow<MyInput, MyState, MyOutput>(this.workflowId());
 
   execution = this.workflow.state;
 }

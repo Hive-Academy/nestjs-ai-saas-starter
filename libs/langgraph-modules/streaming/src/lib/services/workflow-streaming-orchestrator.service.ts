@@ -107,9 +107,7 @@ export class WorkflowStreamingOrchestrator {
   ): Promise<WorkflowExecutionInfo> {
     const { workflow, input, executionId } = options;
 
-    this.logger.log(
-      `🚀 Starting workflow with streaming: ${executionId}`
-    );
+    this.logger.log(`🚀 Starting workflow with streaming: ${executionId}`);
 
     // Track execution
     this.activeExecutions.set(executionId, {
@@ -219,7 +217,7 @@ export class WorkflowStreamingOrchestrator {
    *
    * @param olderThanMinutes - Remove executions older than this (default: 60)
    */
-  cleanupCompletedExecutions(olderThanMinutes: number = 60): void {
+  cleanupCompletedExecutions(olderThanMinutes = 60): void {
     const now = Date.now();
     const threshold = olderThanMinutes * 60 * 1000;
     let cleaned = 0;

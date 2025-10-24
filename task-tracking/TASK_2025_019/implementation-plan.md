@@ -5,6 +5,7 @@
 ### 📊 Codebase Investigation Summary
 
 **Investigation Scope:**
+
 - **Angular Patterns Analyzed:** 5 service files examined for DI patterns
 - **Provider Patterns Verified:** ApplicationConfig pattern validated in app.config.ts
 - **Documentation Reviewed:** 720 lines of requirements + 1523 lines of source documentation
@@ -13,15 +14,18 @@
 **Evidence Sources:**
 
 1. **Angular Service Pattern** - apps/dev-brand-ui/src/app/core/angular-3d/services/animation.service.ts
+
    - Verified pattern: `@Injectable({ providedIn: 'root' })` (lines 63-66)
    - Signal-based state management validated (lines 71-94)
    - Modern inject() function usage confirmed
 
 2. **ApplicationConfig Pattern** - apps/dev-brand-ui/src/app/app.config.ts
+
    - Provider function pattern: `provideLangGraph()` matches `provideRouter()` (lines 13-20)
    - Multi-provider support: Angular DI multi-token pattern (standard framework feature)
 
 3. **Requirements Documentation** - task-tracking/TASK_2025_019/task-description.md
+
    - WorkflowRegistry specification (lines 78-111)
    - Provider function design (lines 236-256)
    - Multi-workflow registration examples (lines 260-272)
@@ -34,6 +38,7 @@
 ### 🔍 Pattern Discovery
 
 **Pattern 1: Multi-Provider InjectionToken for Registry**
+
 - **Evidence:** Angular Router pattern - `ROUTES` token with `multi: true`
 - **Definition:** Angular DI framework feature (core Angular pattern)
 - **Examples:** Router, HttpInterceptors, APP_INITIALIZER
@@ -41,9 +46,7 @@
 
 ```typescript
 // Pattern verified from Angular Router architecture
-export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>(
-  'LANGGRAPH_WORKFLOWS'
-);
+export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>('LANGGRAPH_WORKFLOWS');
 
 export function provideLangGraphWorkflow<TInput, TOutput>(
   workflow: WorkflowDefinition<TInput, TOutput>
@@ -57,6 +60,7 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
 ```
 
 **Pattern 2: Singleton Service with Constructor Injection**
+
 - **Evidence:** All examined services use `providedIn: 'root'`
 - **Definition:** apps/dev-brand-ui/src/app/core/angular-3d/services/animation.service.ts:64
 - **Usage:** WorkflowRegistry as singleton consuming LANGGRAPH_WORKFLOWS token
@@ -71,12 +75,13 @@ export class WorkflowRegistry {
 
   constructor(@Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[]) {
     // Populate map once in constructor - thread-safe initialization
-    workflows.forEach(w => this.workflowMap.set(w.id, w));
+    workflows.forEach((w) => this.workflowMap.set(w.id, w));
   }
 }
 ```
 
 **Pattern 3: Generic Type Propagation with RxJS**
+
 - **Evidence:** RxJS Observable generic signatures (standard RxJS API)
 - **Verified:** Type parameters flow through pipe operators
 - **Challenge Identified:** Event streams require explicit type annotations
@@ -101,12 +106,14 @@ startWorkflow<TInput, TOutput>(
 **Chosen Approach:** Multi-Provider Registry Pattern with Generic Type Safety
 
 **Rationale:**
+
 - Matches proven Angular Router architecture (20+ million weekly NPM downloads)
 - Enables unlimited workflow registration without library modification
 - Full TypeScript generic support with Zod schema type inference
 - Zero runtime overhead (type-only generics compiled away)
 
 **Evidence:**
+
 - Angular Router uses identical InjectionToken multi-provider pattern
 - Signal-based services proven in current codebase (animation.service.ts)
 - RxJS WebSocket documented in angular-langgraph.md (lines 105-188)
@@ -127,13 +134,10 @@ import { InjectionToken } from '@angular/core';
  * Injection token for workflow definitions
  * Uses Angular's multi-provider pattern to collect all registered workflows
  */
-export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>(
-  'LANGGRAPH_WORKFLOWS',
-  {
-    providedIn: 'root',
-    factory: () => [], // Default: empty array if no workflows registered
-  }
-);
+export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>('LANGGRAPH_WORKFLOWS', {
+  providedIn: 'root',
+  factory: () => [], // Default: empty array if no workflows registered
+});
 
 // workflow-registry.service.ts
 import { Injectable, Inject, Optional } from '@angular/core';
@@ -144,11 +148,9 @@ import { Injectable, Inject, Optional } from '@angular/core';
 export class WorkflowRegistry {
   private readonly workflowMap = new Map<string, WorkflowDefinition<any, any>>();
 
-  constructor(
-    @Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []
-  ) {
+  constructor(@Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []) {
     // Populate registry once during service initialization
-    workflows.forEach(workflow => {
+    workflows.forEach((workflow) => {
       if (this.workflowMap.has(workflow.id)) {
         console.warn(`Duplicate workflow ID: ${workflow.id} - overwriting`);
       }
@@ -160,9 +162,7 @@ export class WorkflowRegistry {
    * Register a new workflow dynamically (runtime registration)
    * @param workflow - Workflow definition with generic input/output types
    */
-  register<TInput = any, TOutput = any>(
-    workflow: WorkflowDefinition<TInput, TOutput>
-  ): void {
+  register<TInput = any, TOutput = any>(workflow: WorkflowDefinition<TInput, TOutput>): void {
     if (this.workflowMap.has(workflow.id)) {
       throw new Error(`Workflow with ID '${workflow.id}' is already registered`);
     }
@@ -174,9 +174,7 @@ export class WorkflowRegistry {
    * @param id - Workflow identifier
    * @returns Workflow definition or undefined if not found
    */
-  get<TInput = any, TOutput = any>(
-    id: string
-  ): WorkflowDefinition<TInput, TOutput> | undefined {
+  get<TInput = any, TOutput = any>(id: string): WorkflowDefinition<TInput, TOutput> | undefined {
     return this.workflowMap.get(id) as WorkflowDefinition<TInput, TOutput> | undefined;
   }
 
@@ -207,6 +205,7 @@ export class WorkflowRegistry {
 ```
 
 **Rationale:**
+
 - **Thread-Safe:** Map populated once in constructor, read-only afterwards
 - **O(1) Lookup:** Map-based implementation for performance
 - **DI-Compatible:** Works seamlessly with Angular's dependency injection
@@ -309,7 +308,7 @@ connection.startWorkflow<ContentGenInput, ContentGenOutput>('content-generation'
 // Solution: Explicit type annotation + helper composables
 
 // Approach 1: Manual type annotation (simple, explicit)
-this.connection.on<ContentGenOutput>('run_finished').subscribe(event => {
+this.connection.on<ContentGenOutput>('run_finished').subscribe((event) => {
   console.log(event.content); // ✅ TypeScript knows event is ContentGenOutput
 });
 
@@ -324,7 +323,7 @@ interface WorkflowExecution<TInput, TOutput> {
 
 // Usage - types flow automatically
 const execution = await connection.startWorkflow('content-gen', input);
-execution.output$.subscribe(output => {
+execution.output$.subscribe((output) => {
   // ✅ TypeScript infers output is ContentGenOutput
 });
 ```
@@ -369,7 +368,10 @@ export class LangGraphConnectionService {
 
     if (!workflow) {
       throw new Error(
-        `Workflow '${workflowId}' not registered. Available workflows: ${this.registry.list().map(w => w.id).join(', ')}`
+        `Workflow '${workflowId}' not registered. Available workflows: ${this.registry
+          .list()
+          .map((w) => w.id)
+          .join(', ')}`
       );
     }
 
@@ -432,11 +434,7 @@ export interface LangGraphConfig {
 
 ```typescript
 // providers/provide-langgraph.ts
-import {
-  EnvironmentProviders,
-  makeEnvironmentProviders,
-  InjectionToken,
-} from '@angular/core';
+import { EnvironmentProviders, makeEnvironmentProviders, InjectionToken } from '@angular/core';
 import {
   LangGraphConnectionService,
   LangGraphProtocolService,
@@ -488,10 +486,8 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
  * @param workflows - Array of workflow definitions
  * @returns Array of providers for Angular DI
  */
-export function provideLangGraphWorkflows(
-  workflows: WorkflowDefinition<any, any>[]
-) {
-  return workflows.map(workflow => ({
+export function provideLangGraphWorkflows(workflows: WorkflowDefinition<any, any>[]) {
+  return workflows.map((workflow) => ({
     provide: LANGGRAPH_WORKFLOWS,
     multi: true,
     useValue: workflow,
@@ -500,6 +496,7 @@ export function provideLangGraphWorkflows(
 ```
 
 **Evidence:**
+
 - WebSocket service architecture: angular-langgraph.md:105-233
 - Configuration pattern: TASK_2025_019/task-description.md:222-256
 - Integration validated against existing RxJS WebSocket implementation
@@ -584,6 +581,7 @@ export class AdminWorkflowManagerComponent {
 ### Step 1: Create TypeScript Model Interfaces
 
 **Investigation Required:**
+
 1. Review all DevBrand-specific interfaces in angular-langgraph.md
 2. Identify fields to remove (e.g., `githubUsername`, `brandData`)
 3. Extract generic patterns
@@ -632,11 +630,7 @@ export interface WorkflowDefinition<TInput = any, TOutput = any> {
  * @template TState - Workflow state type (LangGraph state)
  * @template TOutput - Workflow output type
  */
-export interface WorkflowExecution<
-  TInput = any,
-  TState = any,
-  TOutput = any
-> {
+export interface WorkflowExecution<TInput = any, TState = any, TOutput = any> {
   /** Unique execution identifier */
   id: string;
 
@@ -665,12 +659,7 @@ export interface WorkflowExecution<
   metadata?: Record<string, any>;
 }
 
-export type WorkflowStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'interrupted';
+export type WorkflowStatus = 'pending' | 'running' | 'completed' | 'failed' | 'interrupted';
 
 // models/workflow-events.model.ts
 /**
@@ -709,6 +698,7 @@ export interface InterruptionRequest<TApprovalData = any> {
 ```
 
 **Quality Gates:**
+
 - [x] All DevBrand-specific fields removed
 - [x] Generic type parameters documented with JSDoc
 - [x] Zod schema types integrated
@@ -716,6 +706,7 @@ export interface InterruptionRequest<TApprovalData = any> {
 - [x] All 16 AG-UI event types have corresponding generic interfaces
 
 **Evidence Citations:**
+
 - DevBrand removal targets: angular-langgraph.md:220-226 (hardcoded endpoint)
 - Generic model specification: TASK_2025_019/task-description.md:164-199
 - Event type requirements: TASK_2025_019/task-description.md:145-148
@@ -725,6 +716,7 @@ export interface InterruptionRequest<TApprovalData = any> {
 ### Step 2: Implement WorkflowRegistry Service
 
 **Investigation Required:**
+
 1. Verify Angular DI multi-provider pattern
 2. Test Map-based registry performance
 3. Validate optional injection for empty registry
@@ -747,10 +739,8 @@ import { WorkflowDefinition } from '../models';
 export class WorkflowRegistry {
   private readonly workflowMap = new Map<string, WorkflowDefinition<any, any>>();
 
-  constructor(
-    @Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []
-  ) {
-    workflows.forEach(workflow => {
+  constructor(@Optional() @Inject(LANGGRAPH_WORKFLOWS) workflows: WorkflowDefinition[] = []) {
+    workflows.forEach((workflow) => {
       if (this.workflowMap.has(workflow.id)) {
         console.warn(
           `[WorkflowRegistry] Duplicate workflow ID: ${workflow.id}. Later registration will overwrite.`
@@ -770,9 +760,7 @@ export class WorkflowRegistry {
    * Register a workflow dynamically (runtime registration)
    * @throws Error if workflow ID already exists
    */
-  register<TInput = any, TOutput = any>(
-    workflow: WorkflowDefinition<TInput, TOutput>
-  ): void {
+  register<TInput = any, TOutput = any>(workflow: WorkflowDefinition<TInput, TOutput>): void {
     if (this.workflowMap.has(workflow.id)) {
       throw new Error(
         `Workflow with ID '${workflow.id}' is already registered. Use unregister() first to replace.`
@@ -785,9 +773,7 @@ export class WorkflowRegistry {
    * Get workflow definition by ID with type safety
    * @returns Workflow definition or undefined if not found
    */
-  get<TInput = any, TOutput = any>(
-    id: string
-  ): WorkflowDefinition<TInput, TOutput> | undefined {
+  get<TInput = any, TOutput = any>(id: string): WorkflowDefinition<TInput, TOutput> | undefined {
     return this.workflowMap.get(id) as WorkflowDefinition<TInput, TOutput> | undefined;
   }
 
@@ -795,9 +781,7 @@ export class WorkflowRegistry {
    * Get workflow definition by ID or throw error
    * @throws Error if workflow not found
    */
-  getOrThrow<TInput = any, TOutput = any>(
-    id: string
-  ): WorkflowDefinition<TInput, TOutput> {
+  getOrThrow<TInput = any, TOutput = any>(id: string): WorkflowDefinition<TInput, TOutput> {
     const workflow = this.get<TInput, TOutput>(id);
     if (!workflow) {
       throw new Error(
@@ -846,6 +830,7 @@ export class WorkflowRegistry {
 ```
 
 **Quality Gates:**
+
 - [x] Map-based O(1) lookup implemented
 - [x] Constructor populates registry from injected workflows
 - [x] Optional injection handles zero workflows case
@@ -853,6 +838,7 @@ export class WorkflowRegistry {
 - [x] Runtime registration support for advanced use cases
 
 **Evidence Citations:**
+
 - Multi-provider pattern: Angular DI framework documentation
 - Registry specification: TASK_2025_019/task-description.md:78-111
 - Error handling: Best practice for developer experience
@@ -862,13 +848,14 @@ export class WorkflowRegistry {
 ### Step 3: Create Provider Functions
 
 **Investigation Required:**
+
 1. Verify EnvironmentProviders pattern (Angular 15+)
 2. Test multi-provider token collection
 3. Validate makeEnvironmentProviders usage
 
 **Implementation:**
 
-```typescript
+````typescript
 // tokens.ts
 import { InjectionToken } from '@angular/core';
 import { WorkflowDefinition } from './models';
@@ -877,26 +864,18 @@ import { WorkflowDefinition } from './models';
  * Injection token for workflow definitions
  * Uses multi-provider pattern to collect all workflows from application config
  */
-export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>(
-  'LANGGRAPH_WORKFLOWS',
-  {
-    providedIn: 'root',
-    factory: () => [], // Default: empty array
-  }
-);
+export const LANGGRAPH_WORKFLOWS = new InjectionToken<WorkflowDefinition[]>('LANGGRAPH_WORKFLOWS', {
+  providedIn: 'root',
+  factory: () => [], // Default: empty array
+});
 
 /**
  * Injection token for LangGraph configuration
  */
-export const LANGGRAPH_CONFIG = new InjectionToken<LangGraphConfig>(
-  'LANGGRAPH_CONFIG'
-);
+export const LANGGRAPH_CONFIG = new InjectionToken<LangGraphConfig>('LANGGRAPH_CONFIG');
 
 // providers/provide-langgraph.ts
-import {
-  EnvironmentProviders,
-  makeEnvironmentProviders,
-} from '@angular/core';
+import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import {
   LangGraphConnectionService,
@@ -979,18 +958,17 @@ export function provideLangGraphWorkflow<TInput, TOutput>(
  * ]
  * ```
  */
-export function provideLangGraphWorkflows(
-  workflows: WorkflowDefinition<any, any>[]
-) {
-  return workflows.map(workflow => ({
+export function provideLangGraphWorkflows(workflows: WorkflowDefinition<any, any>[]) {
+  return workflows.map((workflow) => ({
     provide: LANGGRAPH_WORKFLOWS,
     multi: true,
     useValue: workflow,
   }));
 }
-```
+````
 
 **Quality Gates:**
+
 - [x] EnvironmentProviders pattern used (Angular 15+ standalone API)
 - [x] InjectionToken factory provides safe defaults
 - [x] Both single and batch registration supported
@@ -998,6 +976,7 @@ export function provideLangGraphWorkflows(
 - [x] HTTP client provisioning included
 
 **Evidence Citations:**
+
 - Provider pattern: TASK_2025_019/task-description.md:236-256
 - EnvironmentProviders: Angular standalone components guide
 - Multi-provider: Angular DI documentation
@@ -1007,23 +986,21 @@ export function provideLangGraphWorkflows(
 ### Step 4: Update Connection Service
 
 **Investigation Required:**
+
 1. Review current hardcoded endpoint (angular-langgraph.md:220-226)
 2. Verify RxJS Observable signatures
 3. Test Zod schema validation integration
 
 **Implementation:**
 
-```typescript
+````typescript
 // services/langgraph-connection.service.ts (UPDATED SECTIONS)
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { WorkflowRegistry } from './workflow-registry.service';
 import { LANGGRAPH_CONFIG } from '../tokens';
-import {
-  WorkflowExecution,
-  LangGraphConfig,
-} from '../models';
+import { WorkflowExecution, LangGraphConfig } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class LangGraphConnectionService {
@@ -1097,9 +1074,10 @@ export class LangGraphConnectionService {
 
   // ... rest of service (on(), connect(), disconnect()) remains unchanged ...
 }
-```
+````
 
 **Quality Gates:**
+
 - [x] Hardcoded `/devbrand/execute` endpoint removed
 - [x] Registry lookup integrated for dynamic endpoints
 - [x] Zod schema validation implemented
@@ -1107,6 +1085,7 @@ export class LangGraphConnectionService {
 - [x] Generic type parameters flow through Observable chain
 
 **Evidence Citations:**
+
 - Hardcoded endpoint removal: angular-langgraph.md:220-226
 - Generic signature: TASK_2025_019/task-description.md:66-74
 - Zod validation: TASK_2025_019/task-description.md:161
@@ -1116,6 +1095,7 @@ export class LangGraphConnectionService {
 ### Step 5: Genericize Protocol Service
 
 **Investigation Required:**
+
 1. Review DevBrand-specific approval logic (angular-langgraph.md:286-304)
 2. Identify workflow-specific conditionals to remove
 3. Verify event type preservation
@@ -1178,9 +1158,7 @@ export class LangGraphProtocolService {
    * Process state delta event
    * @template TState - Workflow state type
    */
-  private processStateDelta<TState>(
-    data: StateDelta<TState>
-  ): ProcessedEvent<StateDelta<TState>> {
+  private processStateDelta<TState>(data: StateDelta<TState>): ProcessedEvent<StateDelta<TState>> {
     return {
       type: 'state_delta',
       data,
@@ -1211,6 +1189,7 @@ export class LangGraphProtocolService {
 ```
 
 **Quality Gates:**
+
 - [x] All DevBrand-specific logic removed
 - [x] Generic type parameters applied to state events
 - [x] HITL events support custom approval data types
@@ -1218,6 +1197,7 @@ export class LangGraphProtocolService {
 - [x] All 16 event types remain supported
 
 **Evidence Citations:**
+
 - DevBrand approval logic removal: angular-langgraph.md:286-304
 - Generic requirements: TASK_2025_019/task-description.md:125-148
 - Event type preservation: TASK_2025_019/task-description.md:145-148
@@ -1227,6 +1207,7 @@ export class LangGraphProtocolService {
 ### Step 6: Create Code Examples
 
 **Investigation Required:**
+
 1. Review placeholder workflow domains (requirements suggest 3+)
 2. Design realistic workflow scenarios
 3. Ensure examples demonstrate all registry features
@@ -1262,10 +1243,7 @@ export type ContentGenInput = z.infer<typeof ContentGenInputSchema>;
 export type ContentGenOutput = z.infer<typeof ContentGenOutputSchema>;
 
 // 3. Define workflow
-export const contentGenerationWorkflow: WorkflowDefinition<
-  ContentGenInput,
-  ContentGenOutput
-> = {
+export const contentGenerationWorkflow: WorkflowDefinition<ContentGenInput, ContentGenOutput> = {
   id: 'content-generation',
   name: 'AI Content Generator',
   description: 'Generate blog posts and articles with AI-powered writing assistance',
@@ -1292,20 +1270,19 @@ const DataAnalysisInputSchema = z.object({
 
 const DataAnalysisOutputSchema = z.object({
   results: z.record(z.any()),
-  visualizations: z.array(z.object({
-    type: z.string(),
-    data: z.any(),
-  })),
+  visualizations: z.array(
+    z.object({
+      type: z.string(),
+      data: z.any(),
+    })
+  ),
   insights: z.array(z.string()),
 });
 
 export type DataAnalysisInput = z.infer<typeof DataAnalysisInputSchema>;
 export type DataAnalysisOutput = z.infer<typeof DataAnalysisOutputSchema>;
 
-export const dataAnalysisWorkflow: WorkflowDefinition<
-  DataAnalysisInput,
-  DataAnalysisOutput
-> = {
+export const dataAnalysisWorkflow: WorkflowDefinition<DataAnalysisInput, DataAnalysisOutput> = {
   id: 'data-analysis',
   name: 'Data Analysis Workflow',
   description: 'Analyze datasets and generate insights with visualizations',
@@ -1327,23 +1304,22 @@ const CodeReviewInputSchema = z.object({
 
 const CodeReviewOutputSchema = z.object({
   overallScore: z.number().min(0).max(100),
-  issues: z.array(z.object({
-    severity: z.enum(['critical', 'high', 'medium', 'low']),
-    file: z.string(),
-    line: z.number(),
-    message: z.string(),
-    suggestion: z.string().optional(),
-  })),
+  issues: z.array(
+    z.object({
+      severity: z.enum(['critical', 'high', 'medium', 'low']),
+      file: z.string(),
+      line: z.number(),
+      message: z.string(),
+      suggestion: z.string().optional(),
+    })
+  ),
   summary: z.string(),
 });
 
 export type CodeReviewInput = z.infer<typeof CodeReviewInputSchema>;
 export type CodeReviewOutput = z.infer<typeof CodeReviewOutputSchema>;
 
-export const codeReviewWorkflow: WorkflowDefinition<
-  CodeReviewInput,
-  CodeReviewOutput
-> = {
+export const codeReviewWorkflow: WorkflowDefinition<CodeReviewInput, CodeReviewOutput> = {
   id: 'code-review',
   name: 'AI Code Review',
   description: 'Automated code review with security and best practices analysis',
@@ -1414,19 +1390,17 @@ import { ContentGenInput, ContentGenOutput } from './workflows/content-generatio
       </form>
 
       @if (isGenerating()) {
-        <div class="loading">Generating content...</div>
-      }
-
-      @if (result(); as output) {
-        <div class="result">
-          <h3>Generated Content</h3>
-          <p>{{ output.content }}</p>
-          <div class="metadata">
-            <span>Words: {{ output.metadata.wordCount }}</span>
-            <span>Reading Time: {{ output.metadata.readingTime }}min</span>
-            <span>SEO Score: {{ output.metadata.seoScore }}/100</span>
-          </div>
+      <div class="loading">Generating content...</div>
+      } @if (result(); as output) {
+      <div class="result">
+        <h3>Generated Content</h3>
+        <p>{{ output.content }}</p>
+        <div class="metadata">
+          <span>Words: {{ output.metadata.wordCount }}</span>
+          <span>Reading Time: {{ output.metadata.readingTime }}min</span>
+          <span>SEO Score: {{ output.metadata.seoScore }}/100</span>
         </div>
+      </div>
       }
     </div>
   `,
@@ -1457,7 +1431,7 @@ export class ContentGeneratorComponent {
           console.log('Execution started:', execution.id);
 
           // Subscribe to completion event
-          this.connection.on<ContentGenOutput>('run_finished').subscribe(event => {
+          this.connection.on<ContentGenOutput>('run_finished').subscribe((event) => {
             if (event.executionId === execution.id) {
               this.result.set(event.data);
               this.isGenerating.set(false);
@@ -1474,6 +1448,7 @@ export class ContentGeneratorComponent {
 ```
 
 **Quality Gates:**
+
 - [x] 3 placeholder workflow domains demonstrated
 - [x] Zod schema validation shown in all examples
 - [x] Type inference demonstrated (z.infer)
@@ -1482,6 +1457,7 @@ export class ContentGeneratorComponent {
 - [x] No DevBrand-specific code in examples
 
 **Evidence Citations:**
+
 - Placeholder requirements: TASK_2025_019/task-description.md:607-717
 - Workflow diversity: TASK_2025_019/task-description.md:294 (minimum 3 domains)
 - Type safety: TASK_2025_019/task-description.md:154-161
@@ -1501,6 +1477,7 @@ export class ContentGeneratorComponent {
 **Estimated Time:** 10-12 hours
 
 **Rationale:**
+
 - Task involves Angular service documentation (frontend domain)
 - Requires understanding of TypeScript generics and RxJS Observables (frontend expertise)
 - WebSocket integration is client-side infrastructure (frontend focus)
@@ -1537,41 +1514,48 @@ Before documentation rewrite, developer MUST verify:
 **Implementation Steps:**
 
 1. **Read Source Documentation** (1 hour)
+
    - Review angular-langgraph.md sections 105-570 (Core Services)
    - Identify hardcoded endpoints to remove
    - List all DevBrand-specific examples
 
 2. **Rewrite Connection Service Documentation** (3 hours)
+
    - Replace `startWorkflow(githubUsername)` with generic version
    - Document WorkflowRegistry integration
    - Add type safety examples with Zod
    - Show multi-workflow execution patterns
 
 3. **Document WorkflowRegistry** (2 hours)
+
    - Create new section for WorkflowRegistry service
    - Explain multi-provider pattern
    - Document register/get/list/has methods
    - Add error handling examples
 
 4. **Rewrite Protocol Service Documentation** (2 hours)
+
    - Remove DevBrand-specific event processing
    - Document generic event handling
    - Show StateSnapshot/StateDelta typing
    - Update InterruptionRequest examples
 
 5. **Update Model Interfaces** (1 hour)
+
    - Remove DevBrand-specific fields
    - Add generic type parameters
    - Document Zod schema integration
    - Add WorkflowDefinition interface docs
 
 6. **Create Provider Function Documentation** (1 hour)
+
    - Document provideLangGraph() function
    - Show provideLangGraphWorkflow() usage
    - Add batch registration examples
    - Document ApplicationConfig integration
 
 7. **Add Code Examples** (2 hours)
+
    - Replace DevBrand examples with 3 placeholder workflows
    - Show complete application setup
    - Add component usage examples
@@ -1613,10 +1597,12 @@ npx tsc --noEmit --strict
 **Risk Mitigation:**
 
 - **Risk:** Documentation becomes too abstract
+
   - **Mitigation:** Use 3 concrete placeholder workflows (content-gen, data-analysis, code-review)
   - **Verification:** Every abstract concept paired with concrete example
 
 - **Risk:** Type parameter propagation unclear
+
   - **Mitigation:** Add dedicated "Type Safety Guide" section with step-by-step examples
   - **Verification:** Include TypeScript playground links for validation
 
@@ -1631,6 +1617,7 @@ npx tsc --noEmit --strict
 ### Bundle Size Analysis
 
 **Zod Schema Validation:**
+
 - **Bundle Impact:** +50KB minified (~12.5KB gzipped)
 - **Percentage Increase:** ~25% for typical Angular app (base: 150-200KB)
 - **Justification:** Automatic TypeScript type inference is CRITICAL for developer experience
@@ -1642,6 +1629,7 @@ npx tsc --noEmit --strict
 ### Performance Considerations
 
 **Registry Lookup Performance:**
+
 - **Data Structure:** Map-based implementation
 - **Lookup Complexity:** O(1) time complexity
 - **Initialization:** Single constructor pass (no runtime overhead)
@@ -1654,6 +1642,7 @@ npx tsc --noEmit --strict
 **Minimum Angular Version:** 15.0.0 (standalone components, EnvironmentProviders)
 
 **Breaking Changes:**
+
 - Requires standalone components API
 - Uses modern provider functions (not NgModules)
 - Leverages signals (Angular 16+)
@@ -1665,10 +1654,12 @@ npx tsc --noEmit --strict
 **Intentional Breaking Changes (v2.0.0 release):**
 
 1. **Connection Service:**
+
    - ❌ OLD: `startWorkflow(githubUsername, userId)`
    - ✅ NEW: `startWorkflow<TInput, TOutput>(workflowId, input)`
 
 2. **Hardcoded Endpoints:**
+
    - ❌ OLD: `/devbrand/execute` hardcoded
    - ✅ NEW: Dynamic from WorkflowRegistry
 

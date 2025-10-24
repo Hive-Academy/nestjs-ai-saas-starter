@@ -73,7 +73,9 @@ export class HijackedScrollDirective implements OnDestroy {
   private masterTimeline?: gsap.core.Timeline;
 
   // Query all child step items using signal-based API
-  readonly items = contentChildren(HijackedScrollItemDirective, { descendants: true });
+  readonly items = contentChildren(HijackedScrollItemDirective, {
+    descendants: true,
+  });
 
   // Configuration inputs
   readonly scrollHeightPerStep = input<number>(100); // vh per step
@@ -100,9 +102,12 @@ export class HijackedScrollDirective implements OnDestroy {
         this.cleanup();
 
         // Initialize after next render to ensure DOM is ready
-        afterNextRender(() => {
-          this.initializeHijackedScroll();
-        }, { injector: this.injector });
+        afterNextRender(
+          () => {
+            this.initializeHijackedScroll();
+          },
+          { injector: this.injector }
+        );
       }
     });
 
@@ -117,9 +122,12 @@ export class HijackedScrollDirective implements OnDestroy {
       if (this.scrollTrigger && this.items().length > 0) {
         console.log('[HijackedScroll] Config changed, re-initializing');
         this.cleanup();
-        afterNextRender(() => {
-          this.initializeHijackedScroll();
-        }, { injector: this.injector });
+        afterNextRender(
+          () => {
+            this.initializeHijackedScroll();
+          },
+          { injector: this.injector }
+        );
       }
     });
   }
@@ -163,8 +171,12 @@ export class HijackedScrollDirective implements OnDestroy {
       element.style.alignItems = 'flex-start';
 
       // Find decoration element for this step (if exists)
-      const decoration = element.querySelector(`[data-decoration-index="${index}"]`) as HTMLElement;
-      const decorationInner = decoration?.querySelector('.decoration-inner') as HTMLElement;
+      const decoration = element.querySelector(
+        `[data-decoration-index="${index}"]`
+      ) as HTMLElement;
+      const decorationInner = decoration?.querySelector(
+        '.decoration-inner'
+      ) as HTMLElement;
 
       // Build initial state (from)
       const fromState: gsap.TweenVars = {
@@ -220,38 +232,54 @@ export class HijackedScrollDirective implements OnDestroy {
       // Animate decoration during the step's visible period
       if (decorationInner) {
         // Set initial decoration state
-        this.masterTimeline!.set(decorationInner, {
-          rotation: 0,
-          scale: 0.8,
-          opacity: 0,
-        }, 0);
+        this.masterTimeline!.set(
+          decorationInner,
+          {
+            rotation: 0,
+            scale: 0.8,
+            opacity: 0,
+          },
+          0
+        );
 
         // Fade in and scale up decoration as step appears
-        this.masterTimeline!.to(decorationInner, {
-          rotation: 10,
-          scale: 1,
-          opacity: 1,
-          duration: 0.4,
-          ease: 'power2.out',
-        }, stepStartTime);
+        this.masterTimeline!.to(
+          decorationInner,
+          {
+            rotation: 10,
+            scale: 1,
+            opacity: 1,
+            duration: 0.4,
+            ease: 'power2.out',
+          },
+          stepStartTime
+        );
 
         // Continue rotating/moving during step visibility
-        this.masterTimeline!.to(decorationInner, {
-          rotation: -10,
-          scale: 1.1,
-          duration: 0.5,
-          ease: 'sine.inOut',
-        }, stepStartTime + 0.3);
+        this.masterTimeline!.to(
+          decorationInner,
+          {
+            rotation: -10,
+            scale: 1.1,
+            duration: 0.5,
+            ease: 'sine.inOut',
+          },
+          stepStartTime + 0.3
+        );
 
         // Fade out decoration as step exits (if not last step)
         if (index < totalSteps - 1) {
-          this.masterTimeline!.to(decorationInner, {
-            rotation: 20,
-            scale: 0.7,
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.in',
-          }, stepStartTime + 0.7);
+          this.masterTimeline!.to(
+            decorationInner,
+            {
+              rotation: 20,
+              scale: 0.7,
+              opacity: 0,
+              duration: 0.3,
+              ease: 'power2.in',
+            },
+            stepStartTime + 0.7
+          );
         }
       }
     });

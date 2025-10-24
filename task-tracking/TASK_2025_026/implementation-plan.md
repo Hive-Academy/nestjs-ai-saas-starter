@@ -1,4 +1,5 @@
 # Implementation Plan - TASK_2025_026
+
 ## Landing Page Redesign: Benefit-Focused Narrative Architecture
 
 **Task ID**: TASK_2025_026
@@ -14,6 +15,7 @@
 ### Libraries Discovered and Verified
 
 **Angular-3D Framework** (apps/dev-brand-ui/src/app/core/angular-3d/):
+
 - ✅ `Scene3DComponent` - NgtCanvas wrapper with configurable camera/renderer
 - ✅ `ScrollAnimationDirective` - GSAP ScrollTrigger integration with 9 animation types
 - ✅ `Float3dDirective` - GSAP-based floating animations (verified in existing sections)
@@ -22,6 +24,7 @@
 - ✅ `MouseParallax3dDirective` - Mouse-driven parallax for 3D scenes
 
 **3D Primitives** (apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/):
+
 - ✅ `FloatingSphereComponent` - Animated sphere with float/glow support
 - ✅ `ParticleSystemComponent` - Configurable particle system
 - ✅ `BoxComponent` - 3D box primitive
@@ -29,6 +32,7 @@
 - ✅ `CylinderComponent` - 3D cylinder primitive
 
 **Shared Components** (verified in existing sections):
+
 - ✅ `HijackedScrollTimelineComponent` - Scrolljacking timeline for step-by-step content
 - ✅ `CodeSnippetComponent` - Syntax-highlighted code blocks
 - ✅ `DecorativePatternComponent` - SVG decorative patterns
@@ -36,6 +40,7 @@
 ### Patterns Identified
 
 **Pattern 1**: **Section Component Architecture** (from chromadb-section.component.ts:lines 1-500)
+
 ```typescript
 // Evidence: chromadb-section.component.ts
 @Component({
@@ -58,6 +63,7 @@
 ```
 
 **Pattern 2**: **Scroll Animation Configuration** (from scroll-animation.directive.ts:lines 60-110)
+
 ```typescript
 // Available animation types: fadeIn, fadeOut, slideUp, slideDown, slideLeft,
 // slideRight, scaleIn, scaleOut, parallax, custom
@@ -74,6 +80,7 @@
 ```
 
 **Pattern 3**: **3D Scene Configuration** (from hero-section.component.ts:lines 1-175)
+
 ```typescript
 // Scene graph passed as component class reference
 readonly heroSceneGraph = HeroSceneGraphComponent;
@@ -90,6 +97,7 @@ readonly heroSceneGraph = HeroSceneGraphComponent;
 ### Design System Compliance Evidence
 
 **Design Tokens** (from visual-design-specification.md:lines 16-83):
+
 - Colors: 10 tokens (`#FFFFFF`, `#F9FAFB`, `#1A1A1A`, `#23272F`, `#71717A`, `#6366F1`, etc.)
 - Typography: 8 tokens (Inter font, 18px-72px range, 1.1-1.6 line heights)
 - Spacing: 15 tokens (8px grid system, 128px section padding, 32px card padding)
@@ -97,6 +105,7 @@ readonly heroSceneGraph = HeroSceneGraphComponent;
 - Border Radius: 4 tokens (16px card, 8px button, 12px image, 50% avatar)
 
 **WCAG 2.1 AA Validation** (from design-handoff.md:lines 73-77):
+
 - ✅ `#1A1A1A` on `#FFFFFF`: 16.5:1 contrast (AAA - exceeds)
 - ✅ `#23272F` on `#FFFFFF`: 15.3:1 contrast (AAA - exceeds)
 - ✅ `#71717A` on `#FFFFFF`: 5.8:1 contrast (AA - passes)
@@ -112,12 +121,14 @@ readonly heroSceneGraph = HeroSceneGraphComponent;
 
 **Rationale**:
 Based on evidence from existing codebase (chromadb-section.component.ts, hero-section.component.ts), the project follows a pattern where:
+
 1. Each major section is a standalone component
 2. Sections use shared Angular-3D directives for animations
 3. Sections leverage shared UI components (CodeSnippet, DecorativePattern, HijackedScrollTimeline)
 4. 3D backgrounds are encapsulated in separate scene graph components
 
 **Evidence**:
+
 - chromadb-section.component.ts:1-500 demonstrates full-width section with 3D background + scrolling timeline
 - hero-section.component.ts:1-175 shows 3D scene + DOM overlay pattern
 - Both use `ScrollAnimationDirective` for GSAP ScrollTrigger animations
@@ -125,6 +136,7 @@ Based on evidence from existing codebase (chromadb-section.component.ts, hero-se
 ### Visual Design Compliance
 
 **Reference Documents**:
+
 - **visual-design-specification.md**: 52 design tokens, 7 section specifications, motion design
 - **design-assets-inventory.md**: 20 Canva asset specifications
 - **design-handoff.md**: Tailwind config, component examples, 40-hour implementation plan
@@ -134,18 +146,21 @@ Based on evidence from existing codebase (chromadb-section.component.ts, hero-se
 The ui-ux-designer specified **7 major sections** (NOT 11 individual library sections):
 
 1. **Hero Section** (lines 329-507):
+
    - Full-screen 3D background with floating spheres + particles
    - Centered headline (72px), subheadline (20px), 3 value props, 2 CTA buttons
    - Mouse parallax sensitivity: 0.35, smoothing: 6
    - Particle count: 200 desktop, 150 tablet, 100 mobile
 
 2. **Problem/Solution** (lines 509-624):
+
    - Light gray background (`#F9FAFB`)
    - Problem statement + solution card + 4 metric cards (2x2 grid)
    - Metrics: 90%, 60%, 75+, $262K
    - Stagger animation: 0.15s delay between metric cards
 
 3. **Value Propositions** (lines 625-799):
+
    - **FULL-WIDTH INDIVIDUAL SPOTLIGHTS** (NOT card grids)
    - 11 value propositions (one per library) as individual full-width sections
    - Each with: Icon (48px), package name, business headline, pain point, solution, capabilities, metric
@@ -153,17 +168,20 @@ The ui-ux-designer specified **7 major sections** (NOT 11 individual library sec
    - Individual scroll-triggered reveals per section
 
 4. **Cohesive Workflow Examples** (lines 800-962):
+
    - 3 workflow examples (RAG Pipeline, Multi-Agent, DevBrand API)
    - Each example: Title, modules involved (pills), architecture diagram, code comparison, value delivered
    - Canva-generated workflow diagrams from design-assets-inventory.md
 
 5. **Enterprise Capabilities Matrix** (lines 963-1053):
+
    - 11x11 table (11 capabilities × 11 libraries)
    - Checkmark icons for supported features
    - ROI callout: $262,800 savings
    - Horizontal scroll on mobile with sticky first column
 
 6. **Developer Experience** (lines 1054-1189):
+
    - Side-by-side code comparison (Traditional NestJS vs AI/ML Workflow)
    - Pattern mapping table (NestJS patterns → AI/ML applications)
    - Demonstrates familiar decorators (@Injectable, @Module, @Node, @Edge)
@@ -184,18 +202,17 @@ The ui-ux-designer specified **7 major sections** (NOT 11 individual library sec
 **Evidence**: hero-section.component.ts:1-175 demonstrates exact pattern
 
 **Implementation**:
+
 ```typescript
 // apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts
 @Component({
   selector: 'app-hero-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    Scene3DComponent,
-    ScrollAnimationDirective
-  ],
+  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
-    <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+    <section
+      class="relative min-h-screen flex items-center justify-center overflow-hidden bg-white"
+    >
       <!-- 3D Background with Parallax (from design-handoff.md:lines 398-440) -->
       <div
         class="absolute inset-0 z-0"
@@ -221,7 +238,7 @@ The ui-ux-designer specified **7 major sections** (NOT 11 individual library sec
         <!-- Headline, Subheadline, Value Props, CTAs -->
       </div>
     </section>
-  `
+  `,
 })
 export class HeroSectionComponent {
   heroSceneGraphComponent = HeroSceneGraphComponent; // From design-handoff.md:286-396
@@ -231,6 +248,7 @@ export class HeroSectionComponent {
 **File Path**: `apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts`
 
 **3D Scene Graph** (from design-handoff.md:lines 286-396):
+
 - 200 particles (indigo `#6366F1`, size 0.05, float height 0.5, speed 3000ms)
 - 3 floating spheres (positions: [-3,2,-5], [3,-1,-3], [0,0,-8])
 - Glow config: intensity 0.2-0.3, scale 1.2-1.5, auto-adjust quality
@@ -246,6 +264,7 @@ export class HeroSectionComponent {
 **Evidence**: chromadb-section.component.ts:148-164 shows similar metric display pattern
 
 **Implementation**:
+
 ```typescript
 // apps/dev-brand-ui/src/app/features/landing-page/sections/problem-solution-section.component.ts
 @Component({
@@ -302,6 +321,7 @@ export class HeroSectionComponent {
 **Evidence**: design-handoff.md:lines 687-802 provides complete component specification
 
 **Implementation**:
+
 ```typescript
 // apps/dev-brand-ui/src/app/features/landing-page/components/value-proposition-card.component.ts
 export interface ValueProposition {
@@ -335,7 +355,7 @@ export interface ValueProposition {
     >
       <!-- Icon, Package Name, Headline, Pain/Solution, Capabilities, Metric -->
     </div>
-  `
+  `,
 })
 export class ValuePropositionCardComponent {
   @Input({ required: true }) valueProposition!: ValueProposition;
@@ -353,12 +373,14 @@ export class ValuePropositionCardComponent {
 **Pattern**: Section component using reusable card component
 
 **Layout Decision** (from visual-design-specification.md:lines 766-790):
+
 - **FULL-WIDTH INDIVIDUAL SECTIONS** (spotlight pattern, NOT card grids)
 - Each value proposition gets full viewport width or max-w-7xl container
 - 128px vertical spacing between sections (py-32)
 - Individual scroll-triggered reveals
 
 **Implementation**:
+
 ```typescript
 // apps/dev-brand-ui/src/app/features/landing-page/sections/value-propositions-section.component.ts
 @Component({
@@ -369,11 +391,11 @@ export class ValuePropositionCardComponent {
     <section class="py-20 md:py-32 px-8 md:px-16 bg-white">
       <div class="max-w-7xl mx-auto space-y-32">
         @for (valueProposition of valuePropositions; track valueProposition.packageName) {
-          <app-value-proposition-card [valueProposition]="valueProposition" />
+        <app-value-proposition-card [valueProposition]="valueProposition" />
         }
       </div>
     </section>
-  `
+  `,
 })
 export class ValuePropositionsSectionComponent {
   valuePropositions: ValueProposition[] = [
@@ -394,12 +416,13 @@ export class ValuePropositionsSectionComponent {
 **Pattern**: Card component with Canva diagrams, code comparison, value delivered
 
 **Implementation**:
+
 ```typescript
 // apps/dev-brand-ui/src/app/features/landing-page/components/workflow-example-card.component.ts
 export interface WorkflowExample {
   title: string;
   description: string;
-  modules: string[];  // ['ChromaDB', 'Neo4j', 'Memory', 'Streaming', 'Monitoring']
+  modules: string[]; // ['ChromaDB', 'Neo4j', 'Memory', 'Streaming', 'Monitoring']
   diagramUrl: string; // Canva-generated from design-assets-inventory.md
   codeBeforeLines: number;
   codeAfterLines: number;
@@ -420,7 +443,7 @@ export interface WorkflowExample {
       <!-- Code Comparison (Before/After) -->
       <!-- Value Delivered Bullets -->
     </div>
-  `
+  `,
 })
 export class WorkflowExampleCardComponent {
   @Input({ required: true }) workflowExample!: WorkflowExample;
@@ -439,6 +462,7 @@ export class WorkflowExampleCardComponent {
 **Location**: apps/dev-brand-ui/src/app/core/angular-3d/
 
 **Interface**:
+
 ```typescript
 // Verified exports from core/angular-3d/index.ts
 export { Scene3DComponent } from './components/scene-3d.component';
@@ -448,6 +472,7 @@ export { ParticleSystemComponent } from './components/primitives/particle-system
 ```
 
 **Usage**:
+
 - All sections import `ScrollAnimationDirective` for GSAP ScrollTrigger
 - Hero section imports `Scene3DComponent` for 3D background
 - Scene graph components use `FloatingSphereComponent` and `ParticleSystemComponent`
@@ -457,6 +482,7 @@ export { ParticleSystemComponent } from './components/primitives/particle-system
 **Location**: apps/dev-brand-ui/tailwind.config.js (needs extension)
 
 **Required Additions** (from design-handoff.md:lines 42-183):
+
 ```javascript
 // tailwind.config.js extensions
 module.exports = {
@@ -468,25 +494,25 @@ module.exports = {
         'text-headline': '#1A1A1A',
         'text-primary': '#23272F',
         'text-secondary': '#71717A',
-        'border-subtle': '#E5E7EB'
+        'border-subtle': '#E5E7EB',
       },
       spacing: {
-        '128': '128px'
+        128: '128px',
       },
       boxShadow: {
-        'card': '0 4px 32px rgba(0,0,0,0.04)',
+        card: '0 4px 32px rgba(0,0,0,0.04)',
         'card-hover': '0 8px 48px rgba(0,0,0,0.08)',
-        'button-hover': '0 8px 24px rgba(99,102,241,0.3)'
+        'button-hover': '0 8px 24px rgba(99,102,241,0.3)',
       },
       borderRadius: {
-        'card': '16px',
-        'button': '8px'
+        card: '16px',
+        button: '8px',
       },
       scale: {
-        '102': '1.02'
-      }
-    }
-  }
+        102: '1.02',
+      },
+    },
+  },
 };
 ```
 
@@ -495,6 +521,7 @@ module.exports = {
 **Location**: design-assets-inventory.md specifies 20 assets
 
 **Asset Categories**:
+
 1. Hero Background (1920x1080px PNG)
 2. Data Flow Diagram (1200x1200px PNG)
 3. 11 Library Icons (256x256px PNG each)
@@ -503,6 +530,7 @@ module.exports = {
 6. CTA Accent Graphic (1920x800px PNG)
 
 **Usage Pattern**:
+
 ```html
 <!-- Canva asset loading with responsive srcset -->
 <img
@@ -521,11 +549,13 @@ module.exports = {
 ### Phase 1: Foundation (8 hours)
 
 **Investigation Required Before Implementation**:
+
 1. Verify Tailwind config location and current extensions
 2. Check existing global CSS for design system compliance
 3. Verify all Angular-3D directives are exported in index.ts
 
 **Expected Evidence Documentation**:
+
 - [x] Verified ScrollAnimationDirective exists at scroll-animation.directive.ts:1-345
 - [x] Verified Scene3DComponent exists at scene-3d.component.ts:1-100
 - [x] Verified FloatingSphereComponent exists in primitives/
@@ -535,20 +565,29 @@ module.exports = {
 **Implementation**:
 
 **Step 1.1**: Extend Tailwind Configuration
+
 ```bash
 # File: apps/dev-brand-ui/tailwind.config.js
 # Add custom colors, spacing, shadows, border radius from design-handoff.md:42-183
 ```
 
 **Step 1.2**: Create Shared Interfaces
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/interfaces/index.ts
-export interface ValueProposition { /* ... */ }
-export interface WorkflowExample { /* ... */ }
-export interface MetricCardData { /* ... */ }
+export interface ValueProposition {
+  /* ... */
+}
+export interface WorkflowExample {
+  /* ... */
+}
+export interface MetricCardData {
+  /* ... */
+}
 ```
 
 **Step 1.3**: Create Base Section Components (Shells)
+
 ```bash
 # Create component files without implementation
 ng generate component features/landing-page/sections/hero-section --standalone
@@ -561,6 +600,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Quality Gates**:
+
 - [x] Tailwind config extends with all design tokens
 - [x] All shared interfaces created and exported
 - [x] 7 section component files created
@@ -572,11 +612,13 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### Phase 2: Hero & Core Sections (12 hours)
 
 **Investigation Required Before Implementation**:
+
 1. Analyze existing hero-section.component.ts pattern
 2. Review HeroSceneGraphComponent for 3D element structure
 3. Verify ScrollAnimationDirective parallax configuration
 
 **Expected Evidence Documentation**:
+
 - [x] Hero pattern verified: hero-section.component.ts:1-175
 - [x] 3D scene pattern verified: scene-3d.component.ts:1-100
 - [x] Scroll animation patterns verified: scroll-animation.directive.ts:60-110
@@ -584,6 +626,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Implementation**:
 
 **Step 2.1**: Implement Hero Scene Graph Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/hero-scene-graph.component.ts
 // Based on design-handoff.md:286-396
@@ -591,6 +634,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 2.2**: Implement Hero Section Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts
 // Based on design-handoff.md:453-544
@@ -598,6 +642,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 2.3**: Implement Problem/Solution Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/problem-solution-section.component.ts
 // Based on design-handoff.md:574-684
@@ -605,12 +650,14 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 2.4**: Create Metric Card Component (Reusable)
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/components/metric-card.component.ts
 // Reusable card: metric value, label, description
 ```
 
 **Quality Gates**:
+
 - [ ] Hero 3D scene renders at 60 FPS
 - [ ] Mouse parallax responds to cursor movement
 - [ ] Scroll parallax moves background on scroll
@@ -625,11 +672,13 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### Phase 3: Value Propositions & Workflows (12 hours)
 
 **Investigation Required Before Implementation**:
+
 1. Review chromadb-section.component.ts for card layout patterns
 2. Verify spacing between sections (py-32 = 128px)
 3. Check Canva asset URLs from design-assets-inventory.md
 
 **Expected Evidence Documentation**:
+
 - [x] Card pattern verified: chromadb-section.component.ts:148-164
 - [x] Spacing verified: design-system spacing tokens use py-32
 - [ ] Canva assets pending generation (design-assets-inventory.md status)
@@ -637,6 +686,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Implementation**:
 
 **Step 3.1**: Create Value Proposition Card Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/components/value-proposition-card.component.ts
 // Based on design-handoff.md:687-802
@@ -644,6 +694,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 3.2**: Implement Value Propositions Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/value-propositions-section.component.ts
 // Render 11 value propositions with 128px spacing (space-y-32)
@@ -651,6 +702,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 3.3**: Create Data for 11 Value Propositions
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/data/value-propositions.data.ts
 // Extract from research-report.md:
@@ -668,6 +720,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 3.4**: Create Workflow Example Card Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/components/workflow-example-card.component.ts
 // Based on design-handoff.md specifications
@@ -675,6 +728,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 3.5**: Implement Workflow Examples Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/workflow-examples-section.component.ts
 // 3 workflow examples:
@@ -684,6 +738,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Quality Gates**:
+
 - [ ] 11 value proposition cards render correctly
 - [ ] Card hover states work (scale 1.02, border color change, shadow)
 - [ ] Scroll animations trigger at 85% viewport
@@ -700,6 +755,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Implementation**:
 
 **Step 4.1**: Implement Enterprise Capabilities Matrix Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/capabilities-matrix-section.component.ts
 // Based on visual-design-specification.md:963-1053
@@ -708,6 +764,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 4.2**: Create Matrix Data
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/data/capabilities-matrix.data.ts
 // From research-report.md:1262-1276 (Enterprise Capabilities Matrix)
@@ -715,6 +772,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 4.3**: Implement Developer Experience Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/developer-experience-section.component.ts
 // Based on visual-design-specification.md:1054-1189
@@ -723,6 +781,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 4.4**: Create CTA Scene Graph Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/cta-scene-graph.component.ts
 // Subtle 3D floating shapes (3-5 elements)
@@ -730,6 +789,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 4.5**: Implement CTA Section
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/sections/cta-section.component.ts
 // Based on visual-design-specification.md:1190-1278
@@ -737,6 +797,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Quality Gates**:
+
 - [ ] Capabilities matrix displays correctly (table or image)
 - [ ] Matrix scrolls horizontally on mobile with sticky first column
 - [ ] ROI callout stands out ($262,800 in large text)
@@ -753,6 +814,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Implementation**:
 
 **Step 5.1**: Integrate All Sections into Landing Page Component
+
 ```typescript
 // File: apps/dev-brand-ui/src/app/features/landing-page/landing-page.component.ts
 // Import and render all 7 sections in order
@@ -766,12 +828,14 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 5.2**: Responsive Testing & Fixes
+
 ```bash
 # Test at breakpoints: 375px, 768px, 1024px, 1280px, 1920px
 # Verify typography scaling, spacing, grid columns, 3D particle counts
 ```
 
 **Step 5.3**: Accessibility Implementation
+
 ```typescript
 // Add ARIA labels for screen readers
 // Implement focus states (from design-handoff.md:922-944)
@@ -779,6 +843,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 5.4**: Performance Optimization
+
 ```typescript
 // Lazy load images below fold (loading="lazy")
 // Optimize Canva images (WEBP with PNG fallback)
@@ -787,6 +852,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Step 5.5**: Final QA
+
 ```bash
 # Run lighthouse audit (target: 90+ accessibility score)
 # Validate WCAG 2.1 AA with axe DevTools
@@ -795,6 +861,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ```
 
 **Quality Gates**:
+
 - [ ] All sections integrated and render in sequence
 - [ ] No console errors or warnings
 - [ ] Mobile (375px): Readable text, stacked CTAs, reduced particles
@@ -834,18 +901,21 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Before implementing, developer MUST verify**:
 
 1. **Tailwind Config Extends**:
+
    ```bash
    # Verify apps/dev-brand-ui/tailwind.config.js contains all custom tokens
    grep -A 50 "extend" apps/dev-brand-ui/tailwind.config.js
    ```
 
 2. **Angular-3D Directive Exports**:
+
    ```bash
    # Verify all directives are exported in index.ts
    cat apps/dev-brand-ui/src/app/core/angular-3d/index.ts
    ```
 
 3. **Existing Section Patterns**:
+
    ```bash
    # Read existing sections for patterns
    cat apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts
@@ -878,44 +948,26 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### Implementation Steps
 
 **Phase 1: Foundation (8 hours)**
+
 1. Extend Tailwind config with design system tokens
 2. Create shared interfaces (ValueProposition, WorkflowExample, MetricCardData)
 3. Generate 7 section component shells
 4. Verify all imports resolve
 
-**Phase 2: Hero & Core Sections (12 hours)**
-5. Implement HeroSceneGraphComponent with 3D elements
-6. Implement HeroSectionComponent with parallax scroll
-7. Implement ProblemSolutionSectionComponent with metric cards
-8. Create reusable MetricCardComponent
+**Phase 2: Hero & Core Sections (12 hours)** 5. Implement HeroSceneGraphComponent with 3D elements 6. Implement HeroSectionComponent with parallax scroll 7. Implement ProblemSolutionSectionComponent with metric cards 8. Create reusable MetricCardComponent
 
-**Phase 3: Value Propositions & Workflows (12 hours)**
-9. Create ValuePropositionCardComponent (reusable)
-10. Implement ValuePropositionsSectionComponent (11 cards)
-11. Create value propositions data from research-report.md
-12. Create WorkflowExampleCardComponent (reusable)
-13. Implement WorkflowExamplesSectionComponent (3 examples)
-14. Create workflow examples data from research-report.md
+**Phase 3: Value Propositions & Workflows (12 hours)** 9. Create ValuePropositionCardComponent (reusable) 10. Implement ValuePropositionsSectionComponent (11 cards) 11. Create value propositions data from research-report.md 12. Create WorkflowExampleCardComponent (reusable) 13. Implement WorkflowExamplesSectionComponent (3 examples) 14. Create workflow examples data from research-report.md
 
-**Phase 4: Matrix, DevEx, CTAs (8 hours)**
-15. Implement CapabilitiesMatrixSectionComponent
-16. Create capabilities matrix data
-17. Implement DeveloperExperienceSectionComponent
-18. Create CTASceneGraphComponent
-19. Implement CTASectionComponent
+**Phase 4: Matrix, DevEx, CTAs (8 hours)** 15. Implement CapabilitiesMatrixSectionComponent 16. Create capabilities matrix data 17. Implement DeveloperExperienceSectionComponent 18. Create CTASceneGraphComponent 19. Implement CTASectionComponent
 
-**Phase 5: Integration, Responsive, Accessibility (8 hours)**
-20. Integrate all sections into LandingPageComponent
-21. Test all breakpoints (375px, 768px, 1024px, 1280px)
-22. Implement accessibility (ARIA labels, focus states, reduced motion)
-23. Optimize performance (lazy loading, WEBP, particle throttling)
-24. Run final QA (Lighthouse, axe DevTools, keyboard navigation)
+**Phase 5: Integration, Responsive, Accessibility (8 hours)** 20. Integrate all sections into LandingPageComponent 21. Test all breakpoints (375px, 768px, 1024px, 1280px) 22. Implement accessibility (ARIA labels, focus states, reduced motion) 23. Optimize performance (lazy loading, WEBP, particle throttling) 24. Run final QA (Lighthouse, axe DevTools, keyboard navigation)
 
 ---
 
 ### Acceptance Criteria
 
 **Design System Compliance**:
+
 - [ ] All colors from design tokens (no arbitrary hex values)
 - [ ] All typography using Tailwind scale (text-base, text-xl, etc.)
 - [ ] All spacing using 8px grid (py-32, gap-8, etc.)
@@ -923,6 +975,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 - [ ] All border radius from design system (rounded-card, rounded-button)
 
 **Angular-3D Integration**:
+
 - [ ] Hero 3D scene renders correctly
 - [ ] ScrollAnimationDirective animations trigger at correct positions
 - [ ] Mouse parallax responds to cursor movement
@@ -931,6 +984,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 - [ ] Performance directive optimizes 3D quality
 
 **Content Accuracy**:
+
 - [ ] 11 value propositions match research-report.md
 - [ ] 3 workflow examples with correct modules
 - [ ] 4 metric cards show: 90%, 60%, 75+, $262K
@@ -938,11 +992,13 @@ ng generate component features/landing-page/sections/cta-section --standalone
 - [ ] Code examples match NestJS → AI workflow pattern
 
 **Responsive Design**:
+
 - [ ] Mobile (375px): Stacked layout, 40px headline, 100 particles
 - [ ] Tablet (768px): 2-column grids, 56px headline, 150 particles
 - [ ] Desktop (1280px+): Full spacing, 72px headline, 200 particles
 
 **Accessibility (WCAG 2.1 AA)**:
+
 - [ ] All text contrast ≥ 4.5:1
 - [ ] All touch targets ≥ 44x44px
 - [ ] Focus states visible
@@ -951,6 +1007,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 - [ ] Reduced motion support
 
 **Performance**:
+
 - [ ] 3D scenes render at 60 FPS
 - [ ] Images lazy-loaded below fold
 - [ ] WEBP format with PNG fallback
@@ -964,6 +1021,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Decision**: Use ScrollAnimationDirective for all scroll-triggered animations
 
 **Evidence**:
+
 - Definition: apps/dev-brand-ui/src/app/core/angular-3d/directives/scroll-animation.directive.ts:1-345
 - Animation types: fadeIn, slideUp, scaleIn, parallax, custom (lines 60-70)
 - Configuration: start, end, scrub, duration, ease, stagger (lines 72-110)
@@ -973,6 +1031,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Decision**: Use Scene3DComponent for all 3D backgrounds
 
 **Evidence**:
+
 - Definition: apps/dev-brand-ui/src/app/core/angular-3d/components/scene-3d.component.ts:1-100
 - Configuration: sceneGraph (component class), camera (position/fov), gl (WebGL options), enableMouseParallax
 - Pattern: hero-section.component.ts:17 (scene graph component reference)
@@ -981,6 +1040,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Decision**: Use full-width individual sections for value propositions (NOT card grids)
 
 **Evidence**:
+
 - Design spec: visual-design-specification.md:766-790 (layout decision)
 - Rationale: 11 value propositions are UNIQUE, HIGH-VALUE, CONTENT-RICH, NARRATIVE-DRIVEN
 - Spacing: 128px between sections (py-32)
@@ -989,6 +1049,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Decision**: Use stagger animations for metric cards
 
 **Evidence**:
+
 - Design spec: visual-design-specification.md:585-607 (stagger configuration)
 - Configuration: `stagger: 0.15` (150ms delay between cards)
 - Pattern: ScrollAnimationDirective supports stagger property (scroll-animation.directive.ts:89)
@@ -996,6 +1057,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Decision**: Tailwind CSS extensions required
 
 **Evidence**:
+
 - Design system: visual-design-specification.md:16-83 (52 design tokens)
 - Tailwind config: design-handoff.md:42-183 (required extensions)
 - Custom colors: accent-primary (#6366F1), text-headline (#1A1A1A), etc.
@@ -1015,6 +1077,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Impact**: Value proposition icons, workflow diagrams, capabilities matrix visualization not available
 
 **Mitigation**:
+
 1. Use placeholder images temporarily (SVG with library name)
 2. Assets can be added retroactively once Canva MCP tools generate them
 3. Frontend developer can implement with placeholders, swap assets later
@@ -1032,6 +1095,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Impact**: Poor user experience on older devices
 
 **Mitigation** (from design-handoff.md:1228-1248):
+
 1. Enable `performance3d` directive on all 3D elements (automatic quality adjustment)
 2. Reduce particle count on mobile: 100 particles vs 200 desktop
 3. Lower geometry segments: 16 instead of 32
@@ -1051,6 +1115,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 **Impact**: Potential layout issues on specific viewport sizes
 
 **Mitigation**:
+
 1. Use Tailwind responsive classes consistently (text-base md:text-xl)
 2. Test each section individually at all breakpoints before integration
 3. Use browser dev tools responsive design mode
@@ -1067,12 +1132,14 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### 📊 Codebase Investigation Summary
 
 **Investigation Scope**:
+
 - **Libraries Analyzed**: 1 framework (Angular-3D), 1 styling system (Tailwind CSS)
 - **Examples Reviewed**: 2 section components (hero-section, chromadb-section)
 - **Documentation Read**: 3 design documents (visual-design-specification, design-assets-inventory, design-handoff)
 - **Directives Verified**: 6 Angular-3D directives (ScrollAnimation, Scene3D, Float3d, Glow3d, Performance3d, MouseParallax3d)
 
 **Evidence Sources**:
+
 1. apps/dev-brand-ui/src/app/core/angular-3d/ - Angular-3D framework (directives, components, primitives)
 2. apps/dev-brand-ui/src/app/features/landing-page/sections/ - Existing section patterns
 3. task-tracking/TASK_2025_026/visual-design-specification.md - 52 design tokens, 7 section specs
@@ -1081,18 +1148,21 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### 🔍 Pattern Discovery
 
 **Pattern 1**: Section Component Architecture
+
 - **Evidence**: Found in chromadb-section.component.ts:1-500, hero-section.component.ts:1-175
 - **Definition**: Standalone component with 3D background + DOM overlay + scroll animations
 - **Examples**: HeroSectionComponent, ChromadbSectionComponent
 - **Usage**: Each major section is a standalone component using shared directives
 
 **Pattern 2**: Scroll Animation Configuration
+
 - **Evidence**: scroll-animation.directive.ts:60-110
 - **Definition**: GSAP ScrollTrigger directive with 9 animation types
 - **Examples**: fadeIn, slideUp, scaleIn, parallax, custom
 - **Usage**: Applied via `scrollAnimation` directive with `[scrollConfig]` input
 
 **Pattern 3**: 3D Scene Graph Architecture
+
 - **Evidence**: hero-section.component.ts:17, scene-3d.component.ts:1-100
 - **Definition**: Scene graph component class passed to Scene3DComponent
 - **Examples**: HeroSceneGraphComponent with particles + floating spheres
@@ -1101,6 +1171,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### 🏗️ Architecture Design (100% Verified)
 
 **All architectural decisions verified against codebase**:
+
 - ✅ All imports verified in Angular-3D framework source
 - ✅ All directives confirmed as exported (ScrollAnimation, Scene3D, etc.)
 - ✅ All patterns match existing section components
@@ -1111,10 +1182,12 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### 📋 Implementation Plan
 
 **Created Files**:
+
 - ✅ implementation-plan.md - Complete architecture with evidence citations
 - ✅ Will create progress.md after business-analyst validation
 
 **Evidence Quality**:
+
 - **Citation Count**: 47 file:line citations
 - **Verification Rate**: 100% (all APIs verified in codebase)
 - **Example Count**: 5 section component examples analyzed
@@ -1123,6 +1196,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 ### 🤝 Developer Handoff
 
 **Critical Success Factors**:
+
 1. **Follow Design System Exactly**: No arbitrary values, all from design tokens
 2. **Use Angular-3D Directives**: All animations use ScrollAnimationDirective
 3. **Maintain Generous Whitespace**: 128px section padding mandatory (py-32)
@@ -1130,6 +1204,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 5. **Test Responsive**: All breakpoints before moving to next phase
 
 **Quality Assurance**:
+
 - All proposed components verified against existing patterns
 - All directives verified as exported in Angular-3D framework
 - All Tailwind classes verified against design system
@@ -1137,6 +1212,7 @@ ng generate component features/landing-page/sections/cta-section --standalone
 - Zero assumptions without evidence marks
 
 **Recommended Next Steps**:
+
 1. business-analyst validates this architecture plan
 2. frontend-developer implements in 5 phases (40 hours)
 3. business-analyst validates final implementation

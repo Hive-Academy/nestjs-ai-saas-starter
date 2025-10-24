@@ -1,4 +1,5 @@
 # Visual Design Specification - TASK_2025_026
+
 ## Landing Page Redesign: Benefit-Focused Narrative for TypeScript/NestJS Developers
 
 **Design Classification**: PRODUCTION_READY
@@ -16,6 +17,7 @@
 **Extracted Design Tokens** (52 tokens total):
 
 **Colors** (10 tokens):
+
 - Background Primary: `#FFFFFF` (Pure white)
 - Background Secondary: `#F9FAFB` (Ultra-light gray)
 - Text Primary: `#23272F` (Deep gray - 15.3:1 contrast ratio)
@@ -28,6 +30,7 @@
 - Glow Accent Dark: `#0A0E11` (Deep black for 3D depth)
 
 **Typography** (8 tokens):
+
 - Font Family: Inter, Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif
 - Font Size Base: `18px` (body text - exceeds 16px minimum)
 - Font Size Display: `72px` (text-7xl - hero headlines)
@@ -38,6 +41,7 @@
 - Line Height Body: `1.6` (body text), `1.1` (headlines)
 
 **Spacing** (15 tokens - 8px grid system):
+
 - Section Padding Vertical: `128px` (py-32 - massive breathing room)
 - Subsection Padding Vertical: `80px` (py-20)
 - Card Padding Internal: `32px` (p-8)
@@ -55,23 +59,27 @@
 - Spacing Unit 5x: `40px`
 
 **Shadows & Elevation** (4 tokens):
+
 - Card Shadow Resting: `0 4px 32px rgba(0,0,0,0.04)`
 - Card Shadow Hover: `0 8px 48px rgba(0,0,0,0.08)`
 - Button Shadow Hover: `0 8px 24px rgba(99,102,241,0.3)` (accent color)
 - Glow Effect: `0 0 20px rgba(161,255,79,0.5)` (neon green)
 
 **Border Radius** (4 tokens):
+
 - Card Radius: `16px` (rounded-card / rounded-2xl)
 - Button Radius: `8px` (rounded-button / rounded-xl)
 - Image Radius: `12px` (rounded-xl)
 - Avatar Radius: `50%` (rounded-full)
 
 **Breakpoints** (3 tokens):
+
 - Mobile: `< 768px`
 - Tablet: `768px - 1024px`
 - Desktop: `1024px+`
 
 **3D Animation Parameters** (8 tokens from Angular-3D framework):
+
 - Float Height Default: `0.3` (3D units)
 - Float Speed Default: `2000ms`
 - Float Ease: `sine.inOut`
@@ -84,6 +92,7 @@
 ### Requirements Analysis
 
 **User Requirements** (from research-report.md):
+
 - Showcase 13 libraries (ChromaDB, Neo4j, 11 LangGraph modules)
 - Emphasize 90% code reduction and familiar NestJS patterns
 - Target senior TypeScript developers and technical decision-makers
@@ -91,6 +100,7 @@
 - Provide real workflow examples with production code
 
 **Business Requirements**:
+
 - Position as enterprise AI infrastructure solution
 - Highlight $262,800 ROI savings (11 weeks infrastructure development eliminated)
 - Demonstrate production readiness with DevBrand API use case
@@ -98,6 +108,7 @@
 - Convert developers to explore examples and documentation
 
 **Technical Constraints**:
+
 - Angular 19 with Tailwind CSS utility classes
 - Angular-3D framework integration (GSAP ScrollTrigger, THREE.js)
 - Light design system (white/light gray backgrounds)
@@ -107,6 +118,7 @@
 ### Design Inspiration
 
 **Awwwards Analysis** (INK Games - Site of the Day):
+
 - Generous whitespace as content (128px+ vertical spacing)
 - 3D depth with performance optimization (THREE.js + GSAP)
 - Scroll-driven storytelling (GSAP ScrollTrigger)
@@ -117,6 +129,7 @@
 - Section alternation (white/light gray backgrounds)
 
 **Design Philosophy Applied**:
+
 - **Whitespace-first**: Treat whitespace as intentional breathing room, not empty space
 - **3D Depth without Clutter**: Strategic use of floating elements and glow effects
 - **Scroll Narrative**: Progressive disclosure of value propositions through scroll animations
@@ -135,11 +148,13 @@
 This landing page targets senior TypeScript developers and CTOs who value technical depth and production readiness. The design must communicate enterprise credibility while maintaining developer authenticity. We avoid marketing fluff in favor of code examples, metrics, and architectural diagrams.
 
 **Evidence**:
+
 - Design system mandates 40px+ spacing and 18px base typography
 - Research report emphasizes 90% code reduction and production validation
 - Target persona: Senior developers who "write AI workflows like NestJS controllers"
 
 **Visual Hierarchy Priorities**:
+
 1. Code reduction metrics (90%, 60%, 75+ lines → 1 line)
 2. Real code examples (before/after comparisons)
 3. Cohesive workflow visualizations (ChromaDB + Neo4j + LangGraph)
@@ -151,67 +166,92 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 #### Color Palette (WCAG 2.1 AA Validated)
 
 **Background Colors**:
+
 ```css
 /* Section backgrounds alternate for visual rhythm */
-.bg-primary { background-color: #FFFFFF; } /* Pure white */
-.bg-secondary { background-color: #F9FAFB; } /* Ultra-light gray */
+.bg-primary {
+  background-color: #ffffff;
+} /* Pure white */
+.bg-secondary {
+  background-color: #f9fafb;
+} /* Ultra-light gray */
 ```
 
 **Text Colors** (Contrast ratios verified):
+
 ```css
 /* Headlines - Maximum readability */
-.text-headline { color: #1A1A1A; } /* Near-black, 16.5:1 on white */
+.text-headline {
+  color: #1a1a1a;
+} /* Near-black, 16.5:1 on white */
 
 /* Body text primary - Deep gray */
-.text-primary { color: #23272F; } /* 15.3:1 on white - exceeds 4.5:1 */
+.text-primary {
+  color: #23272f;
+} /* 15.3:1 on white - exceeds 4.5:1 */
 
 /* Body text secondary - Muted gray */
-.text-secondary { color: #71717A; } /* 5.8:1 on white - exceeds 4.5:1 */
+.text-secondary {
+  color: #71717a;
+} /* 5.8:1 on white - exceeds 4.5:1 */
 ```
 
 **Accent Colors**:
+
 ```css
 /* Primary CTA color */
-.accent-primary { color: #6366F1; } /* Indigo - 4.6:1 on white (meets 4.5:1) */
-.accent-primary-dark { color: #4F46E5; } /* Hover state - 6.2:1 on white */
+.accent-primary {
+  color: #6366f1;
+} /* Indigo - 4.6:1 on white (meets 4.5:1) */
+.accent-primary-dark {
+  color: #4f46e5;
+} /* Hover state - 6.2:1 on white */
 
 /* 3D Glow accents (strategic use only) */
-.glow-accent { color: #A1FF4F; } /* Neon green for 3D highlights */
-.glow-dark { color: #0A0E11; } /* Deep black for 3D backgrounds */
+.glow-accent {
+  color: #a1ff4f;
+} /* Neon green for 3D highlights */
+.glow-dark {
+  color: #0a0e11;
+} /* Deep black for 3D backgrounds */
 ```
 
 **Border & Dividers**:
+
 ```css
-.border-subtle { border-color: #E5E7EB; } /* Light gray - 1.2:1 on white */
+.border-subtle {
+  border-color: #e5e7eb;
+} /* Light gray - 1.2:1 on white */
 ```
 
 #### Typography Scale (Inter font family)
 
 **Desktop Typography Specifications**:
 
-| Element | Tailwind Class | Size | Weight | Line Height | Usage |
-|---------|----------------|------|--------|-------------|-------|
-| Display Headline | `text-7xl` | 72px | `font-bold` (700) | 1.1 | Hero section only |
-| Section Headline | `text-6xl` | 60px | `font-bold` (700) | 1.2 | Major sections (11 libraries) |
-| Subsection | `text-4xl` | 40px | `font-bold` (700) | 1.3 | Subsections within sections |
-| Card Title | `text-2xl` | 28px | `font-bold` (700) | 1.4 | Card headings |
-| Body Large | `text-xl` | 20px | `font-normal` (400) | 1.6 | Lead paragraphs, intros |
-| Body Base | `text-base` | 18px | `font-normal` (400) | 1.6 | Standard body text |
-| Small | `text-sm` | 14px | `font-normal` (400) | 1.5 | Captions, labels |
-| Code Inline | `text-sm font-mono` | 14px | `font-medium` (500) | 1.4 | Inline code snippets |
-| Code Block | `text-base font-mono` | 16px | `font-normal` (400) | 1.6 | Code examples |
+| Element          | Tailwind Class        | Size | Weight              | Line Height | Usage                         |
+| ---------------- | --------------------- | ---- | ------------------- | ----------- | ----------------------------- |
+| Display Headline | `text-7xl`            | 72px | `font-bold` (700)   | 1.1         | Hero section only             |
+| Section Headline | `text-6xl`            | 60px | `font-bold` (700)   | 1.2         | Major sections (11 libraries) |
+| Subsection       | `text-4xl`            | 40px | `font-bold` (700)   | 1.3         | Subsections within sections   |
+| Card Title       | `text-2xl`            | 28px | `font-bold` (700)   | 1.4         | Card headings                 |
+| Body Large       | `text-xl`             | 20px | `font-normal` (400) | 1.6         | Lead paragraphs, intros       |
+| Body Base        | `text-base`           | 18px | `font-normal` (400) | 1.6         | Standard body text            |
+| Small            | `text-sm`             | 14px | `font-normal` (400) | 1.5         | Captions, labels              |
+| Code Inline      | `text-sm font-mono`   | 14px | `font-medium` (500) | 1.4         | Inline code snippets          |
+| Code Block       | `text-base font-mono` | 16px | `font-normal` (400) | 1.6         | Code examples                 |
 
 **Mobile Typography Adjustments** (< 768px):
 
-| Element | Desktop Size | Mobile Size | Reduction |
-|---------|-------------|-------------|-----------|
-| Display Headline | 72px | 40px | -32px |
-| Section Headline | 60px | 36px | -24px |
-| Subsection | 40px | 28px | -12px |
-| Card Title | 28px | 24px | -4px |
-| Body Base | 18px | 16px | -2px (minimum) |
+| Element          | Desktop Size | Mobile Size | Reduction      |
+| ---------------- | ------------ | ----------- | -------------- |
+| Display Headline | 72px         | 40px        | -32px          |
+| Section Headline | 60px         | 36px        | -24px          |
+| Subsection       | 40px         | 28px        | -12px          |
+| Card Title       | 28px         | 24px        | -4px           |
+| Body Base        | 18px         | 16px        | -2px (minimum) |
 
 **Typography Implementation Example**:
+
 ```html
 <!-- Hero Headline -->
 <h1 class="text-7xl md:text-7xl font-bold text-headline leading-tight mb-6">
@@ -235,36 +275,59 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 
 ```css
 /* Section-level spacing (massive breathing room) */
-.section-padding { padding-top: 128px; padding-bottom: 128px; } /* py-32 */
+.section-padding {
+  padding-top: 128px;
+  padding-bottom: 128px;
+} /* py-32 */
 
 /* Subsection spacing */
-.subsection-padding { padding-top: 80px; padding-bottom: 80px; } /* py-20 */
+.subsection-padding {
+  padding-top: 80px;
+  padding-bottom: 80px;
+} /* py-20 */
 
 /* Card internal spacing */
-.card-padding { padding: 32px; } /* p-8 */
+.card-padding {
+  padding: 32px;
+} /* p-8 */
 
 /* Element spacing */
-.element-margin { margin-bottom: 24px; } /* mb-6 */
+.element-margin {
+  margin-bottom: 24px;
+} /* mb-6 */
 ```
 
 **Horizontal Spacing**:
 
 ```css
 /* Container constraints */
-.container-max-width { max-width: 1280px; } /* max-w-7xl */
+.container-max-width {
+  max-width: 1280px;
+} /* max-w-7xl */
 
 /* Desktop padding */
-.container-padding-desktop { padding-left: 64px; padding-right: 64px; } /* px-16 */
+.container-padding-desktop {
+  padding-left: 64px;
+  padding-right: 64px;
+} /* px-16 */
 
 /* Mobile padding */
-.container-padding-mobile { padding-left: 32px; padding-right: 32px; } /* px-8 */
+.container-padding-mobile {
+  padding-left: 32px;
+  padding-right: 32px;
+} /* px-8 */
 
 /* Grid gaps */
-.grid-gap-large { gap: 32px; } /* gap-8 - for 2-3 column grids */
-.grid-gap-medium { gap: 24px; } /* gap-6 - for 4 column grids */
+.grid-gap-large {
+  gap: 32px;
+} /* gap-8 - for 2-3 column grids */
+.grid-gap-medium {
+  gap: 24px;
+} /* gap-6 - for 4 column grids */
 ```
 
 **Whitespace Application Rules**:
+
 1. Minimum 128px between major sections (py-32)
 2. Minimum 80px within sections before subsections (py-20)
 3. Minimum 32px internal card padding (p-8)
@@ -311,16 +374,24 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 
 ```css
 /* Cards and containers */
-.rounded-card { border-radius: 16px; } /* rounded-2xl */
+.rounded-card {
+  border-radius: 16px;
+} /* rounded-2xl */
 
 /* Buttons and inputs */
-.rounded-button { border-radius: 8px; } /* rounded-xl */
+.rounded-button {
+  border-radius: 8px;
+} /* rounded-xl */
 
 /* Images and media */
-.rounded-image { border-radius: 12px; } /* rounded-xl */
+.rounded-image {
+  border-radius: 12px;
+} /* rounded-xl */
 
 /* Avatars and circular elements */
-.rounded-avatar { border-radius: 50%; } /* rounded-full */
+.rounded-avatar {
+  border-radius: 50%;
+} /* rounded-full */
 ```
 
 ---
@@ -334,42 +405,52 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 **Layout**: Full-width centered content, max-w-7xl container, 3D background
 
 **Background**:
+
 - Primary: `#FFFFFF` (white)
 - 3D Scene: Floating spheres with particle effects using Angular-3D
 
 **Padding**:
+
 - Desktop: `128px` vertical (py-32), `64px` horizontal (px-16)
 - Mobile: `80px` vertical (py-20), `32px` horizontal (px-8)
 
 **Content Hierarchy**:
 
 1. **Main Headline** (Display - 72px bold):
+
    ```html
    <h1 class="text-5xl md:text-7xl font-bold text-headline leading-tight mb-6">
      Build Production-Grade AI Applications<br />
      with TypeScript Patterns You Already Know
    </h1>
    ```
+
    - Desktop: 72px, line-height 1.1, `#1A1A1A`
    - Mobile: 40px, line-height 1.2
 
 2. **Subheadline** (Body Large - 20px):
+
    ```html
    <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto mb-8">
-     NestJS AI SaaS Starter: <strong class="text-primary">90% less code</strong>,
-     enterprise capabilities out-of-the-box, familiar patterns for vector databases,
-     knowledge graphs, and multi-agent workflows
+     NestJS AI SaaS Starter: <strong class="text-primary">90% less code</strong>, enterprise
+     capabilities out-of-the-box, familiar patterns for vector databases, knowledge graphs, and
+     multi-agent workflows
    </p>
    ```
+
    - Desktop: 20px, line-height 1.6, `#71717A`
    - Mobile: 18px
 
 3. **Value Proposition Bullets** (3 key points):
+
    ```html
    <ul class="space-y-4 text-base md:text-lg text-primary max-w-2xl mx-auto mb-12">
      <li class="flex items-start gap-3">
        <svg class="w-6 h-6 text-accent-primary flex-shrink-0"><!-- checkmark --></svg>
-       <span>Reduce vector database operations from 50+ lines to 5 with TypeORM-style repositories</span>
+       <span
+         >Reduce vector database operations from 50+ lines to 5 with TypeORM-style
+         repositories</span
+       >
      </li>
      <li class="flex items-start gap-3">
        <svg class="w-6 h-6 text-accent-primary flex-shrink-0"><!-- checkmark --></svg>
@@ -377,7 +458,10 @@ This landing page targets senior TypeScript developers and CTOs who value techni
      </li>
      <li class="flex items-start gap-3">
        <svg class="w-6 h-6 text-accent-primary flex-shrink-0"><!-- checkmark --></svg>
-       <span>Get enterprise features (multi-tenancy, monitoring, approvals) without months of infrastructure work</span>
+       <span
+         >Get enterprise features (multi-tenancy, monitoring, approvals) without months of
+         infrastructure work</span
+       >
      </li>
    </ul>
    ```
@@ -385,14 +469,18 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 4. **Primary CTA Button**:
    ```html
    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-     <button class="px-8 py-4 bg-accent-primary text-white text-base font-semibold
+     <button
+       class="px-8 py-4 bg-accent-primary text-white text-base font-semibold
                     rounded-button shadow-button hover:bg-accent-primary-dark
-                    hover:shadow-button-hover hover:scale-105 transition-all duration-300">
+                    hover:shadow-button-hover hover:scale-105 transition-all duration-300"
+     >
        See Complete Workflow Examples
      </button>
-     <button class="px-8 py-4 bg-white text-accent-primary text-base font-semibold
+     <button
+       class="px-8 py-4 bg-white text-accent-primary text-base font-semibold
                     rounded-button border-2 border-accent-primary
-                    hover:bg-accent-primary hover:text-white transition-all duration-300">
+                    hover:bg-accent-primary hover:text-white transition-all duration-300"
+     >
        Read Documentation
      </button>
    </div>
@@ -408,8 +496,8 @@ const heroSceneConfig = {
   mouseParallax: {
     sensitivity: 0.35,
     smoothing: 6,
-    cameraDistance: 15
-  }
+    cameraDistance: 15,
+  },
 };
 
 // 3D Elements
@@ -419,16 +507,16 @@ const hero3DElements = [
     component: 'app-particle-system',
     props: {
       count: 200,
-      color: 0x6366F1,
-      size: 0.05
+      color: 0x6366f1,
+      size: 0.05,
     },
     directives: {
       float3d: {
         height: 0.5,
         speed: 3000,
-        ease: 'sine.inOut'
-      }
-    }
+        ease: 'sine.inOut',
+      },
+    },
   },
   // Floating accent spheres (3 total - strategic placement)
   {
@@ -436,22 +524,22 @@ const hero3DElements = [
     props: {
       position: [-3, 2, -5],
       radius: 0.8,
-      color: 0x6366F1
+      color: 0x6366f1,
     },
     directives: {
       float3d: {
         height: 0.3,
         speed: 2500,
-        ease: 'sine.inOut'
+        ease: 'sine.inOut',
       },
       glow3d: {
-        color: 0x6366F1,
+        color: 0x6366f1,
         intensity: 0.3,
-        scale: 1.4
+        scale: 1.4,
       },
-      performance3d: true
-    }
-  }
+      performance3d: true,
+    },
+  },
 ];
 ```
 
@@ -491,13 +579,14 @@ const hero3DElements = [
 
 **Responsive Behavior**:
 
-| Viewport | Headline Size | Padding | 3D Elements | Button Layout |
-|----------|--------------|---------|-------------|---------------|
-| Mobile (< 768px) | 40px | 80px vertical, 32px horizontal | Reduced particle count (100), smaller spheres | Stacked vertical |
-| Tablet (768-1024px) | 56px | 104px vertical, 48px horizontal | Medium particle count (150) | Horizontal row |
-| Desktop (1024px+) | 72px | 128px vertical, 64px horizontal | Full particle count (200) | Horizontal row |
+| Viewport            | Headline Size | Padding                         | 3D Elements                                   | Button Layout    |
+| ------------------- | ------------- | ------------------------------- | --------------------------------------------- | ---------------- |
+| Mobile (< 768px)    | 40px          | 80px vertical, 32px horizontal  | Reduced particle count (100), smaller spheres | Stacked vertical |
+| Tablet (768-1024px) | 56px          | 104px vertical, 48px horizontal | Medium particle count (150)                   | Horizontal row   |
+| Desktop (1024px+)   | 72px          | 128px vertical, 64px horizontal | Full particle count (200)                     | Horizontal row   |
 
 **Accessibility Specifications**:
+
 - All text meets WCAG 2.1 AA contrast ratios
 - CTA buttons: minimum 44x44px touch targets
 - Focus states: 2px solid `#6366F1` outline with 2px offset
@@ -519,6 +608,7 @@ const hero3DElements = [
 **Content Structure**:
 
 1. **Section Headline** (60px bold):
+
    ```html
    <h2 class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-12 text-center">
      The Problem TypeScript Developers Face
@@ -526,15 +616,17 @@ const hero3DElements = [
    ```
 
 2. **Problem Statement** (20px body large):
+
    ```html
    <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-4xl mx-auto text-center mb-16">
      TypeScript developers building AI applications face a painful choice: use Python-style
-     frameworks like LangGraph (pattern mismatch), stitch together raw SDKs (integration hell),
-     or spend months building production infrastructure (multi-tenancy, monitoring, approvals).
+     frameworks like LangGraph (pattern mismatch), stitch together raw SDKs (integration hell), or
+     spend months building production infrastructure (multi-tenancy, monitoring, approvals).
    </p>
    ```
 
 3. **Solution Statement** (20px body large):
+
    ```html
    <div class="bg-white rounded-card shadow-card p-12 max-w-4xl mx-auto mb-16">
      <h3 class="text-2xl md:text-4xl font-bold text-headline mb-6">
@@ -550,6 +642,7 @@ const hero3DElements = [
    ```
 
 4. **Proof Points Grid** (4 metrics in 2x2 grid):
+
    ```html
    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
      <!-- Metric Card 1 -->
@@ -563,7 +656,9 @@ const hero3DElements = [
      <div class="bg-white rounded-card shadow-card p-8 text-center">
        <div class="text-5xl md:text-6xl font-bold text-accent-primary mb-4">60%</div>
        <div class="text-lg text-primary font-semibold mb-2">Less Approval Overhead</div>
-       <div class="text-sm text-secondary">ML confidence scoring auto-approves high-confidence tasks</div>
+       <div class="text-sm text-secondary">
+         ML confidence scoring auto-approves high-confidence tasks
+       </div>
      </div>
 
      <!-- Metric Card 3 -->
@@ -592,7 +687,7 @@ const metricCardScrollConfig = {
   duration: 0.8,
   ease: 'power3.out',
   stagger: 0.15, // 150ms delay between cards
-  once: true
+  once: true,
 };
 ```
 
@@ -609,12 +704,14 @@ const metricCardScrollConfig = {
 **Visual States**:
 
 **Metric Card Resting**:
+
 - Background: `#FFFFFF`
 - Border: none
 - Shadow: `0 4px 32px rgba(0,0,0,0.04)`
 - Padding: `32px` (p-8)
 
 **Metric Card Hover**:
+
 - Background: `#FFFFFF`
 - Border: `2px solid #6366F1`
 - Shadow: `0 8px 48px rgba(0,0,0,0.08)`
@@ -684,13 +781,13 @@ Each value proposition follows this pattern:
   </div>
 
   <!-- Package Name -->
-  <div class="text-sm font-mono text-secondary mb-3">
-    @hive-academy/nestjs-chromadb
-  </div>
+  <div class="text-sm font-mono text-secondary mb-3">@hive-academy/nestjs-chromadb</div>
 
   <!-- Business Value Headline -->
-  <h3 class="text-2xl font-bold text-headline mb-4
-             group-hover:text-accent-primary transition-colors">
+  <h3
+    class="text-2xl font-bold text-headline mb-4
+             group-hover:text-accent-primary transition-colors"
+  >
     Build RAG Applications in Minutes
   </h3>
 
@@ -700,8 +797,8 @@ Each value proposition follows this pattern:
       Traditional Approach
     </div>
     <p class="text-base text-secondary leading-relaxed">
-      50+ lines of manual ChromaDB client setup, embedding generation, error handling,
-      retry logic, tenant isolation...
+      50+ lines of manual ChromaDB client setup, embedding generation, error handling, retry logic,
+      tenant isolation...
     </p>
   </div>
 
@@ -711,8 +808,8 @@ Each value proposition follows this pattern:
       Our Solution
     </div>
     <p class="text-base text-primary leading-relaxed">
-      TypeORM-style repository pattern with automatic embeddings, tenant isolation,
-      and caching via decorators
+      TypeORM-style repository pattern with automatic embeddings, tenant isolation, and caching via
+      decorators
     </p>
   </div>
 
@@ -754,11 +851,13 @@ Each value proposition follows this pattern:
   </div>
 
   <!-- Hover Arrow -->
-  <div class="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100
+  <div
+    class="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100
               transform translate-x-2 group-hover:translate-x-0
-              transition-all duration-300">
+              transition-all duration-300"
+  >
     <svg class="w-6 h-6 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
     </svg>
   </div>
 </div>
@@ -769,6 +868,7 @@ Each value proposition follows this pattern:
 Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 
 **Content Analysis**:
+
 - 11 value propositions are UNIQUE (each library has distinct capabilities)
 - Each is HIGH-VALUE (deserves individual spotlight)
 - CONTENT-RICH (multiple features, code examples, metrics per library)
@@ -778,6 +878,7 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 **Decision**: FULL-WIDTH INDIVIDUAL SECTIONS (spotlight pattern)
 
 **Implementation**:
+
 - Each value proposition gets full viewport width or max-w-7xl container
 - Generous vertical whitespace: 128px between sections (py-32)
 - Unique composition per section (different 3D backgrounds)
@@ -785,17 +886,18 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 - No card grids for value propositions
 
 **Spacing**:
+
 - Between value propositions: `128px` (py-32)
 - Internal padding: `64px` vertical (py-16)
 - Card padding (when used): `32px` (p-8)
 
 **Responsive Behavior**:
 
-| Viewport | Icon Size | Headline Size | Padding | Capabilities |
-|----------|-----------|--------------|---------|--------------|
-| Mobile (< 768px) | 40px | 24px | 64px vertical, 32px horizontal | Show 3, "View more" link |
-| Tablet (768-1024px) | 48px | 28px | 96px vertical, 48px horizontal | Show 4 capabilities |
-| Desktop (1024px+) | 48px | 28px | 128px vertical, 64px horizontal | Show all capabilities |
+| Viewport            | Icon Size | Headline Size | Padding                         | Capabilities             |
+| ------------------- | --------- | ------------- | ------------------------------- | ------------------------ |
+| Mobile (< 768px)    | 40px      | 24px          | 64px vertical, 32px horizontal  | Show 3, "View more" link |
+| Tablet (768-1024px) | 48px      | 28px          | 96px vertical, 48px horizontal  | Show 4 capabilities      |
+| Desktop (1024px+)   | 48px      | 28px          | 128px vertical, 64px horizontal | Show all capabilities    |
 
 ---
 
@@ -812,6 +914,7 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 **Section Structure**:
 
 1. **Section Headline**:
+
    ```html
    <h2 class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center">
      See Libraries Working Together
@@ -819,10 +922,11 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
    ```
 
 2. **Section Intro**:
+
    ```html
    <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16">
-     These aren't isolated tools—they're a cohesive ecosystem. See how ChromaDB, Neo4j,
-     and LangGraph modules orchestrate together through real production workflows.
+     These aren't isolated tools—they're a cohesive ecosystem. See how ChromaDB, Neo4j, and
+     LangGraph modules orchestrate together through real production workflows.
    </p>
    ```
 
@@ -835,14 +939,14 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 <div class="bg-white rounded-card shadow-card p-12 mb-12">
   <!-- Workflow Title -->
   <div class="flex items-start gap-6 mb-8">
-    <div class="flex-shrink-0 w-12 h-12 bg-accent-primary text-white
-                rounded-full flex items-center justify-center text-xl font-bold">
+    <div
+      class="flex-shrink-0 w-12 h-12 bg-accent-primary text-white
+                rounded-full flex items-center justify-center text-xl font-bold"
+    >
       1
     </div>
     <div>
-      <h3 class="text-3xl font-bold text-headline mb-3">
-        Production RAG Pipeline
-      </h3>
+      <h3 class="text-3xl font-bold text-headline mb-3">Production RAG Pipeline</h3>
       <p class="text-lg text-secondary">
         Document Q&A system with semantic search, knowledge graph, memory, streaming, and monitoring
       </p>
@@ -851,19 +955,29 @@ Based on the INTELLIGENT LAYOUT SELECTION PRINCIPLES:
 
   <!-- Modules Involved (Pills) -->
   <div class="flex flex-wrap gap-2 mb-8">
-    <span class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full">
+    <span
+      class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full"
+    >
       ChromaDB
     </span>
-    <span class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full">
+    <span
+      class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full"
+    >
       Neo4j
     </span>
-    <span class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full">
+    <span
+      class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full"
+    >
       Memory
     </span>
-    <span class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full">
+    <span
+      class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full"
+    >
       Streaming
     </span>
-    <span class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full">
+    <span
+      class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-sm font-medium rounded-full"
+    >
       Monitoring
     </span>
   </div>
@@ -940,7 +1054,9 @@ const embeddings = await generate(texts);
         <svg class="w-5 h-5 text-accent-primary flex-shrink-0 mt-0.5">
           <!-- checkmark -->
         </svg>
-        <span class="text-sm text-secondary">Context-aware responses (memory + vector + graph)</span>
+        <span class="text-sm text-secondary"
+          >Context-aware responses (memory + vector + graph)</span
+        >
       </li>
     </ul>
   </div>
@@ -950,13 +1066,14 @@ const embeddings = await generate(texts);
 **Repeat this pattern for Workflow Examples 2 and 3** (Multi-Agent Document Processing, DevBrand API)
 
 **Scroll Animation**:
+
 ```typescript
 const workflowCardScrollConfig = {
   animation: 'fadeIn',
   start: 'top 75%',
   duration: 1.0,
   ease: 'power2.out',
-  once: true
+  once: true,
 };
 ```
 
@@ -975,6 +1092,7 @@ const workflowCardScrollConfig = {
 **Section Structure**:
 
 1. **Section Headline**:
+
    ```html
    <h2 class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center">
      Production-Ready from Day One
@@ -982,10 +1100,11 @@ const workflowCardScrollConfig = {
    ```
 
 2. **Section Intro**:
+
    ```html
    <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16">
-     Enterprise capabilities built-in across all 13 libraries. Multi-tenancy, monitoring,
-     retry logic, caching, audit logging—zero infrastructure code required.
+     Enterprise capabilities built-in across all 13 libraries. Multi-tenancy, monitoring, retry
+     logic, caching, audit logging—zero infrastructure code required.
    </p>
    ```
 
@@ -1013,9 +1132,7 @@ const workflowCardScrollConfig = {
     <tbody>
       <!-- Row 1: Multi-Tenancy -->
       <tr class="hover:bg-accent-primary/5 transition-colors">
-        <td class="p-4 text-sm font-medium text-primary border-b border-gray-200">
-          Multi-Tenancy
-        </td>
+        <td class="p-4 text-sm font-medium text-primary border-b border-gray-200">Multi-Tenancy</td>
         <td class="p-4 text-center border-b border-gray-200">
           <svg class="w-6 h-6 text-accent-primary mx-auto">
             <!-- checkmark icon -->
@@ -1045,8 +1162,8 @@ const workflowCardScrollConfig = {
   <div class="text-6xl font-bold text-accent-primary mb-4">$262,800</div>
   <div class="text-2xl font-bold text-headline mb-4">Infrastructure Development Savings</div>
   <div class="text-lg text-secondary max-w-2xl mx-auto">
-    Traditional approach: 11 weeks = 1,760 hours = $264,000 in developer time.
-    Our approach: 1 day = 8 hours = $1,200. Savings: $262,800.
+    Traditional approach: 11 weeks = 1,760 hours = $264,000 in developer time. Our approach: 1 day =
+    8 hours = $1,200. Savings: $262,800.
   </div>
 </div>
 ```
@@ -1066,6 +1183,7 @@ const workflowCardScrollConfig = {
 **Section Structure**:
 
 1. **Section Headline**:
+
    ```html
    <h2 class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center">
      Write AI Workflows Like NestJS Controllers
@@ -1073,6 +1191,7 @@ const workflowCardScrollConfig = {
    ```
 
 2. **Intro**:
+
    ```html
    <p class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16">
      Same decorators. Same dependency injection. Same module system. Zero learning curve.
@@ -1085,9 +1204,7 @@ const workflowCardScrollConfig = {
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
   <!-- Traditional NestJS Controller -->
   <div>
-    <div class="text-xl font-bold text-headline mb-4">
-      Traditional NestJS Controller
-    </div>
+    <div class="text-xl font-bold text-headline mb-4">Traditional NestJS Controller</div>
     <pre class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto">
 <code class="font-mono">@Controller('users')
 export class UserController {
@@ -1114,9 +1231,7 @@ export class UserController {
 
   <!-- Our AI/ML Workflow -->
   <div>
-    <div class="text-xl font-bold text-accent-primary mb-4">
-      Our AI/ML Workflow (Same Patterns)
-    </div>
+    <div class="text-xl font-bold text-accent-primary mb-4">Our AI/ML Workflow (Same Patterns)</div>
     <pre class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto">
 <code class="font-mono">@Workflow({ name: 'user-analysis' })
 export class UserAnalysisWorkflow {
@@ -1214,59 +1329,63 @@ export class UserAnalysisWorkflow {
     </h2>
 
     <p class="text-lg md:text-xl text-secondary leading-relaxed mb-12">
-      Explore complete workflow examples, read comprehensive documentation,
-      or see the DevBrand API production use case.
+      Explore complete workflow examples, read comprehensive documentation, or see the DevBrand API
+      production use case.
     </p>
 
     <!-- CTA Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <!-- Primary CTA -->
-      <div class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
-                  hover:scale-105 transition-all duration-300">
+      <div
+        class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
+                  hover:scale-105 transition-all duration-300"
+      >
         <div class="text-4xl mb-4">📚</div>
-        <h3 class="text-xl font-bold text-headline mb-3">
-          Explore Examples
-        </h3>
+        <h3 class="text-xl font-bold text-headline mb-3">Explore Examples</h3>
         <p class="text-sm text-secondary mb-6">
           See 3 complete workflows: RAG, multi-agent, document processing
         </p>
-        <button class="w-full px-6 py-3 bg-accent-primary text-white font-semibold
+        <button
+          class="w-full px-6 py-3 bg-accent-primary text-white font-semibold
                        rounded-button hover:bg-accent-primary-dark
-                       hover:shadow-button-hover transition-all duration-300">
+                       hover:shadow-button-hover transition-all duration-300"
+        >
           View Examples
         </button>
       </div>
 
       <!-- Secondary CTA -->
-      <div class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
-                  hover:scale-105 transition-all duration-300">
+      <div
+        class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
+                  hover:scale-105 transition-all duration-300"
+      >
         <div class="text-4xl mb-4">📖</div>
-        <h3 class="text-xl font-bold text-headline mb-3">
-          Read Documentation
-        </h3>
+        <h3 class="text-xl font-bold text-headline mb-3">Read Documentation</h3>
         <p class="text-sm text-secondary mb-6">
           17+ comprehensive CLAUDE.md files with real code examples
         </p>
-        <button class="w-full px-6 py-3 bg-white text-accent-primary font-semibold
+        <button
+          class="w-full px-6 py-3 bg-white text-accent-primary font-semibold
                        rounded-button border-2 border-accent-primary
-                       hover:bg-accent-primary hover:text-white transition-all duration-300">
+                       hover:bg-accent-primary hover:text-white transition-all duration-300"
+        >
           Read Docs
         </button>
       </div>
 
       <!-- Tertiary CTA -->
-      <div class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
-                  hover:scale-105 transition-all duration-300">
+      <div
+        class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover
+                  hover:scale-105 transition-all duration-300"
+      >
         <div class="text-4xl mb-4">🚀</div>
-        <h3 class="text-xl font-bold text-headline mb-3">
-          See Production Use Case
-        </h3>
-        <p class="text-sm text-secondary mb-6">
-          DevBrand API: All 13 libraries working together
-        </p>
-        <button class="w-full px-6 py-3 bg-white text-accent-primary font-semibold
+        <h3 class="text-xl font-bold text-headline mb-3">See Production Use Case</h3>
+        <p class="text-sm text-secondary mb-6">DevBrand API: All 13 libraries working together</p>
+        <button
+          class="w-full px-6 py-3 bg-white text-accent-primary font-semibold
                        rounded-button border-2 border-accent-primary
-                       hover:bg-accent-primary hover:text-white transition-all duration-300">
+                       hover:bg-accent-primary hover:text-white transition-all duration-300"
+        >
           View Source Code
         </button>
       </div>
@@ -1284,17 +1403,19 @@ export class UserAnalysisWorkflow {
 **Global Scroll Animation Patterns**:
 
 1. **Section Entry** (Fade In):
+
 ```typescript
 const sectionEntryConfig = {
   animation: 'fadeIn',
   start: 'top 80%',
   duration: 1.2,
   ease: 'power3.out',
-  once: true
+  once: true,
 };
 ```
 
 2. **Card Stagger** (Sequential Reveal):
+
 ```typescript
 const cardStaggerConfig = {
   animation: 'slideUp',
@@ -1302,29 +1423,31 @@ const cardStaggerConfig = {
   duration: 0.8,
   ease: 'power3.out',
   stagger: 0.15, // 150ms delay between cards
-  once: true
+  once: true,
 };
 ```
 
 3. **Parallax Background**:
+
 ```typescript
 const parallaxBgConfig = {
   animation: 'parallax',
   speed: 0.5,
   scrub: true,
   start: 'top top',
-  end: 'bottom top'
+  end: 'bottom top',
 };
 ```
 
 4. **Headline Scale In**:
+
 ```typescript
 const headlineScaleConfig = {
   animation: 'scaleIn',
   start: 'top 75%',
   duration: 1.0,
   ease: 'back.out(1.2)',
-  once: true
+  once: true,
 };
 ```
 
@@ -1352,7 +1475,7 @@ const headlineScaleConfig = {
 }
 
 .button-primary:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
 ```
@@ -1415,13 +1538,13 @@ effect(() => {
     gsap.to(this.glowConfig, {
       intensity: 0.4,
       duration: 0.3,
-      ease: 'power2.out'
+      ease: 'power2.out',
     });
   } else {
     gsap.to(this.glowConfig, {
       intensity: 0,
       duration: 0.3,
-      ease: 'power2.in'
+      ease: 'power2.in',
     });
   }
 });
@@ -1441,8 +1564,8 @@ const heroSceneConfig: Scene3DConfig = {
   mouseParallax: {
     sensitivity: 0.35,
     smoothing: 6,
-    cameraDistance: 15
-  }
+    cameraDistance: 15,
+  },
 };
 
 // 3D Elements
@@ -1452,19 +1575,19 @@ const hero3DElements = [
     type: 'particle-system',
     props: {
       count: 200,
-      color: 0x6366F1,
+      color: 0x6366f1,
       size: 0.05,
-      spread: 10
+      spread: 10,
     },
     directives: {
       float3d: {
         height: 0.5,
         speed: 3000,
         ease: 'sine.inOut',
-        autoStart: true
+        autoStart: true,
       },
-      performance3d: true
-    }
+      performance3d: true,
+    },
   },
 
   // Accent sphere 1 (left)
@@ -1473,8 +1596,8 @@ const hero3DElements = [
     props: {
       position: [-3, 2, -5],
       radius: 0.8,
-      color: 0x6366F1,
-      segments: 32
+      color: 0x6366f1,
+      segments: 32,
     },
     directives: {
       float3d: {
@@ -1482,17 +1605,17 @@ const hero3DElements = [
         speed: 2500,
         ease: 'sine.inOut',
         delay: 0,
-        autoStart: true
+        autoStart: true,
       },
       glow3d: {
-        color: 0x6366F1,
+        color: 0x6366f1,
         intensity: 0.3,
         scale: 1.4,
         segments: 16,
-        autoAdjustQuality: true
+        autoAdjustQuality: true,
       },
-      performance3d: true
-    }
+      performance3d: true,
+    },
   },
 
   // Accent sphere 2 (right)
@@ -1501,8 +1624,8 @@ const hero3DElements = [
     props: {
       position: [3, -1, -3],
       radius: 0.6,
-      color: 0x6366F1,
-      segments: 32
+      color: 0x6366f1,
+      segments: 32,
     },
     directives: {
       float3d: {
@@ -1510,17 +1633,17 @@ const hero3DElements = [
         speed: 2000,
         ease: 'sine.inOut',
         delay: 500,
-        autoStart: true
+        autoStart: true,
       },
       glow3d: {
-        color: 0x6366F1,
+        color: 0x6366f1,
         intensity: 0.25,
         scale: 1.3,
         segments: 16,
-        autoAdjustQuality: true
+        autoAdjustQuality: true,
       },
-      performance3d: true
-    }
+      performance3d: true,
+    },
   },
 
   // Accent sphere 3 (center back)
@@ -1529,8 +1652,8 @@ const hero3DElements = [
     props: {
       position: [0, 0, -8],
       radius: 1.0,
-      color: 0x6366F1,
-      segments: 32
+      color: 0x6366f1,
+      segments: 32,
     },
     directives: {
       float3d: {
@@ -1538,18 +1661,18 @@ const hero3DElements = [
         speed: 3500,
         ease: 'sine.inOut',
         delay: 1000,
-        autoStart: true
+        autoStart: true,
       },
       glow3d: {
-        color: 0x6366F1,
+        color: 0x6366f1,
         intensity: 0.2,
         scale: 1.5,
         segments: 16,
-        autoAdjustQuality: true
+        autoAdjustQuality: true,
       },
-      performance3d: true
-    }
-  }
+      performance3d: true,
+    },
+  },
 ];
 ```
 
@@ -1561,10 +1684,10 @@ const performanceConfig = {
   autoAdjustQuality: true,
   targetFPS: 60,
   degradationThresholds: {
-    fps60: 'high-quality',   // >= 60 FPS: full quality
+    fps60: 'high-quality', // >= 60 FPS: full quality
     fps30: 'medium-quality', // 30-60 FPS: reduce segments
-    fps15: 'low-quality'     // < 30 FPS: minimal geometry
-  }
+    fps15: 'low-quality', // < 30 FPS: minimal geometry
+  },
 };
 ```
 
@@ -1575,6 +1698,7 @@ const performanceConfig = {
 ### Breakpoint Strategy
 
 **Mobile-First Approach**:
+
 1. Design base styles for 375px width
 2. Enhance for 768px (tablet)
 3. Full feature set at 1024px+ (desktop)
@@ -1583,47 +1707,45 @@ const performanceConfig = {
 
 **Hero Section**:
 
-| Element | Mobile (< 768px) | Tablet (768-1024px) | Desktop (1024px+) |
-|---------|------------------|---------------------|-------------------|
-| Headline | 40px, line 1.2 | 56px, line 1.15 | 72px, line 1.1 |
-| Padding Vertical | 80px (py-20) | 104px (py-26) | 128px (py-32) |
-| Padding Horizontal | 32px (px-8) | 48px (px-12) | 64px (px-16) |
-| 3D Particles | 100 count | 150 count | 200 count |
-| CTA Buttons | Stacked vertical | Horizontal row | Horizontal row |
+| Element            | Mobile (< 768px) | Tablet (768-1024px) | Desktop (1024px+) |
+| ------------------ | ---------------- | ------------------- | ----------------- |
+| Headline           | 40px, line 1.2   | 56px, line 1.15     | 72px, line 1.1    |
+| Padding Vertical   | 80px (py-20)     | 104px (py-26)       | 128px (py-32)     |
+| Padding Horizontal | 32px (px-8)      | 48px (px-12)        | 64px (px-16)      |
+| 3D Particles       | 100 count        | 150 count           | 200 count         |
+| CTA Buttons        | Stacked vertical | Horizontal row      | Horizontal row    |
 
 **Value Proposition Cards**:
 
-| Element | Mobile | Tablet | Desktop |
-|---------|--------|--------|---------|
-| Layout | Single column | 2 columns | Full-width spotlight |
-| Icon Size | 40px | 48px | 48px |
-| Headline | 24px | 26px | 28px |
-| Padding | 24px (p-6) | 28px (p-7) | 32px (p-8) |
-| Capabilities Shown | 3 + "View more" | 4 | All |
+| Element            | Mobile          | Tablet     | Desktop              |
+| ------------------ | --------------- | ---------- | -------------------- |
+| Layout             | Single column   | 2 columns  | Full-width spotlight |
+| Icon Size          | 40px            | 48px       | 48px                 |
+| Headline           | 24px            | 26px       | 28px                 |
+| Padding            | 24px (p-6)      | 28px (p-7) | 32px (p-8)           |
+| Capabilities Shown | 3 + "View more" | 4          | All                  |
 
 **Workflow Example Cards**:
 
-| Element | Mobile | Tablet | Desktop |
-|---------|--------|--------|---------|
-| Code Comparison | Stacked vertical | Stacked vertical | Side-by-side 2 columns |
-| Architecture Diagram | Horizontal scroll | Full width | Full width |
-| Module Pills | Wrap 2 per row | Wrap 3 per row | Single row |
+| Element              | Mobile            | Tablet           | Desktop                |
+| -------------------- | ----------------- | ---------------- | ---------------------- |
+| Code Comparison      | Stacked vertical  | Stacked vertical | Side-by-side 2 columns |
+| Architecture Diagram | Horizontal scroll | Full width       | Full width             |
+| Module Pills         | Wrap 2 per row    | Wrap 3 per row   | Single row             |
 
 **Enterprise Capabilities Matrix**:
 
-| Element | Mobile | Tablet | Desktop |
-|---------|--------|--------|---------|
+| Element      | Mobile            | Tablet            | Desktop    |
+| ------------ | ----------------- | ----------------- | ---------- |
 | Table Layout | Horizontal scroll | Horizontal scroll | Full width |
-| First Column | Sticky left | Sticky left | Normal |
-| Font Size | 12px | 13px | 14px |
+| First Column | Sticky left       | Sticky left       | Normal     |
+| Font Size    | 12px              | 13px              | 14px       |
 
 ### Responsive Tailwind Classes
 
 ```html
 <!-- Responsive Headline Example -->
-<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">
-  Responsive Headline
-</h1>
+<h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">Responsive Headline</h1>
 
 <!-- Responsive Padding Example -->
 <section class="py-20 md:py-26 lg:py-32 px-8 md:px-12 lg:px-16">
@@ -1636,9 +1758,7 @@ const performanceConfig = {
 </div>
 
 <!-- Responsive Typography Example -->
-<p class="text-base md:text-lg lg:text-xl leading-relaxed">
-  Body text with responsive sizing
-</p>
+<p class="text-base md:text-lg lg:text-xl leading-relaxed">Body text with responsive sizing</p>
 ```
 
 ---
@@ -1649,62 +1769,64 @@ const performanceConfig = {
 
 **All text/background combinations verified**:
 
-| Foreground | Background | Contrast Ratio | WCAG Level | Status |
-|------------|------------|----------------|------------|--------|
-| `#1A1A1A` (Headline) | `#FFFFFF` (White) | 16.5:1 | AAA | ✅ Exceeds |
-| `#23272F` (Text Primary) | `#FFFFFF` | 15.3:1 | AAA | ✅ Exceeds |
-| `#71717A` (Text Secondary) | `#FFFFFF` | 5.8:1 | AA | ✅ Passes |
-| `#6366F1` (Accent) | `#FFFFFF` | 4.6:1 | AA | ✅ Passes |
-| `#4F46E5` (Accent Dark) | `#FFFFFF` | 6.2:1 | AAA | ✅ Exceeds |
-| `#FFFFFF` (White Text) | `#6366F1` (Accent BG) | 4.6:1 | AA | ✅ Passes |
+| Foreground                 | Background            | Contrast Ratio | WCAG Level | Status     |
+| -------------------------- | --------------------- | -------------- | ---------- | ---------- |
+| `#1A1A1A` (Headline)       | `#FFFFFF` (White)     | 16.5:1         | AAA        | ✅ Exceeds |
+| `#23272F` (Text Primary)   | `#FFFFFF`             | 15.3:1         | AAA        | ✅ Exceeds |
+| `#71717A` (Text Secondary) | `#FFFFFF`             | 5.8:1          | AA         | ✅ Passes  |
+| `#6366F1` (Accent)         | `#FFFFFF`             | 4.6:1          | AA         | ✅ Passes  |
+| `#4F46E5` (Accent Dark)    | `#FFFFFF`             | 6.2:1          | AAA        | ✅ Exceeds |
+| `#FFFFFF` (White Text)     | `#6366F1` (Accent BG) | 4.6:1          | AA         | ✅ Passes  |
 
 ### Typography Minimum Sizes
 
 **All text meets or exceeds minimums**:
 
-| Element | Minimum Required | Our Specification | Status |
-|---------|------------------|-------------------|--------|
-| Body Text | 16px | 18px (desktop), 16px (mobile) | ✅ Exceeds |
-| Small Text | 14px | 14px | ✅ Meets |
-| Headline Text | No minimum | 40-72px | ✅ N/A |
+| Element       | Minimum Required | Our Specification             | Status     |
+| ------------- | ---------------- | ----------------------------- | ---------- |
+| Body Text     | 16px             | 18px (desktop), 16px (mobile) | ✅ Exceeds |
+| Small Text    | 14px             | 14px                          | ✅ Meets   |
+| Headline Text | No minimum       | 40-72px                       | ✅ N/A     |
 
 ### Touch Target Sizes
 
 **All interactive elements meet 44x44px minimum**:
 
-| Element | Size | Status |
-|---------|------|--------|
-| Primary CTA Button | 64px height (px-8 py-4) | ✅ Exceeds |
-| Secondary CTA Button | 64px height | ✅ Exceeds |
-| Card Hover Target | Full card area (400px+ height) | ✅ Exceeds |
-| Link Touch Area | 48px height (padding) | ✅ Exceeds |
+| Element              | Size                           | Status     |
+| -------------------- | ------------------------------ | ---------- |
+| Primary CTA Button   | 64px height (px-8 py-4)        | ✅ Exceeds |
+| Secondary CTA Button | 64px height                    | ✅ Exceeds |
+| Card Hover Target    | Full card area (400px+ height) | ✅ Exceeds |
+| Link Touch Area      | 48px height (padding)          | ✅ Exceeds |
 
 ### Keyboard Navigation
 
 **Focus States**:
+
 ```css
 /* Global focus style */
 *:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* Button focus */
 button:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
 
 /* Card focus */
 .library-card:focus-visible {
-  outline: 2px solid #6366F1;
+  outline: 2px solid #6366f1;
   outline-offset: 4px;
-  border-color: #6366F1;
+  border-color: #6366f1;
 }
 ```
 
 **Tab Order**:
+
 1. Primary navigation (if present)
 2. Hero CTA buttons (left to right)
 3. Section content (top to bottom)
@@ -1725,12 +1847,7 @@ button:focus-visible {
 </section>
 
 <!-- Value Proposition Card ARIA -->
-<article
-  role="article"
-  aria-labelledby="chromadb-headline"
-  tabindex="0"
-  class="library-card"
->
+<article role="article" aria-labelledby="chromadb-headline" tabindex="0" class="library-card">
   <h3 id="chromadb-headline">Build RAG Applications in Minutes</h3>
   <!-- Content -->
 </article>
@@ -1787,29 +1904,29 @@ module.exports = {
         'text-secondary': '#71717A',
         'border-subtle': '#E5E7EB',
         'glow-accent': '#A1FF4F',
-        'glow-dark': '#0A0E11'
+        'glow-dark': '#0A0E11',
       },
       fontSize: {
-        'display': '72px',
-        'section': '60px'
+        display: '72px',
+        section: '60px',
       },
       spacing: {
-        '128': '128px' // py-32 equivalent
+        128: '128px', // py-32 equivalent
       },
       borderRadius: {
-        'card': '16px',
-        'button': '8px'
+        card: '16px',
+        button: '8px',
       },
       boxShadow: {
-        'card': '0 4px 32px rgba(0,0,0,0.04)',
+        card: '0 4px 32px rgba(0,0,0,0.04)',
         'card-hover': '0 8px 48px rgba(0,0,0,0.08)',
-        'button-hover': '0 8px 24px rgba(99,102,241,0.3)'
+        'button-hover': '0 8px 24px rgba(99,102,241,0.3)',
       },
       scale: {
-        '102': '1.02'
-      }
-    }
-  }
+        102: '1.02',
+      },
+    },
+  },
 };
 ```
 
@@ -1848,7 +1965,7 @@ export const ANIMATION_TIMING = {
   // 3D animation parameters
   FLOAT_SPEED_DEFAULT: 2000, // milliseconds
   FLOAT_HEIGHT_DEFAULT: 0.3, // 3D units
-  PARALLAX_SPEED: 0.5
+  PARALLAX_SPEED: 0.5,
 };
 
 export const ANIMATION_EASING = {
@@ -1857,31 +1974,35 @@ export const ANIMATION_EASING = {
   HEADLINE_SCALE: 'back.out(1.2)',
   FLOAT_3D: 'sine.inOut',
   BUTTON_HOVER: 'ease-out',
-  CARD_HOVER: 'ease-out'
+  CARD_HOVER: 'ease-out',
 };
 ```
 
 ### Implementation Priority Order
 
 1. **Phase 1 - Foundation** (Day 1-2):
+
    - Set up Tailwind configuration with design tokens
    - Create base layout components (Section, Container, Card)
    - Implement typography system with responsive classes
    - Configure Angular-3D scene components
 
 2. **Phase 2 - Hero & Core Sections** (Day 3-4):
+
    - Implement hero section with 3D background
    - Add scroll animation system
    - Create problem/solution section
    - Build value proposition spotlight sections (3 libraries)
 
 3. **Phase 3 - Content Sections** (Day 5-6):
+
    - Complete remaining value proposition sections (8 libraries)
    - Implement workflow example cards with code comparisons
    - Build enterprise capabilities matrix
    - Add developer experience section
 
 4. **Phase 4 - Interactivity & Polish** (Day 7-8):
+
    - Implement all microinteractions (hover states, focus states)
    - Add 3D glow effects on card hover
    - Configure scroll-triggered stagger animations
@@ -1897,6 +2018,7 @@ export const ANIMATION_EASING = {
 ### Quality Checklist
 
 **Design System Compliance**:
+
 - [ ] All colors from design system tokens
 - [ ] All typography following type scale
 - [ ] All spacing using 8px grid (40px, 80px, 128px)
@@ -1904,6 +2026,7 @@ export const ANIMATION_EASING = {
 - [ ] All border radius using design system values
 
 **Accessibility (WCAG 2.1 AA)**:
+
 - [ ] All text contrast ratios meet 4.5:1 minimum
 - [ ] All touch targets meet 44x44px minimum
 - [ ] All interactive elements have focus states
@@ -1912,6 +2035,7 @@ export const ANIMATION_EASING = {
 - [ ] Reduced motion support implemented
 
 **Responsive Design**:
+
 - [ ] Mobile layout tested at 375px, 414px widths
 - [ ] Tablet layout tested at 768px, 1024px widths
 - [ ] Desktop layout tested at 1280px, 1920px widths
@@ -1920,6 +2044,7 @@ export const ANIMATION_EASING = {
 - [ ] 3D element counts adjust by viewport
 
 **Angular-3D Integration**:
+
 - [ ] Scene3DComponent configured correctly
 - [ ] Scroll animations using scrollAnimation directive
 - [ ] Float animations using float3d directive
@@ -1928,6 +2053,7 @@ export const ANIMATION_EASING = {
 - [ ] Mouse parallax enabled for hero section
 
 **Motion & Interactivity**:
+
 - [ ] All scroll animations trigger at correct viewport positions
 - [ ] Card stagger animations reveal sequentially
 - [ ] Button hover states include scale and shadow
@@ -1936,6 +2062,7 @@ export const ANIMATION_EASING = {
 - [ ] All transitions use consistent easing functions
 
 **Content Integration**:
+
 - [ ] All 11 value propositions implemented
 - [ ] All 3 workflow examples with diagrams
 - [ ] Enterprise capabilities matrix complete
@@ -1950,11 +2077,13 @@ export const ANIMATION_EASING = {
 This specification provides pixel-perfect implementation guidance for the frontend-developer agent. All design decisions are grounded in the project's design system and Angular-3D framework capabilities.
 
 **Next Steps**:
+
 1. Review design-assets-inventory.md for Canva-generated assets
 2. Review design-handoff.md for implementation guide
 3. Begin Phase 1 implementation (Foundation)
 
 **Critical Success Factors**:
+
 - Follow design system exactly (no arbitrary values)
 - Use Angular-3D directives for all 3D and scroll animations
 - Maintain generous whitespace (128px+ section padding)

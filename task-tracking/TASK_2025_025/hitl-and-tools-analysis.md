@@ -25,6 +25,7 @@ Tool calls are made by agents using LangChain tools, but the backend does NOT em
 
 **Module**: `@hive-academy/langgraph-hitl`
 **Services**: 16 specialized services including:
+
 - `HumanApprovalService` - Main approval orchestrator
 - `UserInterruptionService` - Dynamic user interruptions
 - `ConfidenceEvaluatorService` - ML confidence scoring
@@ -61,6 +62,7 @@ async finalizeAnalysis(context: TaskExecutionContext): Promise<TaskExecutionResu
 ```
 
 **Key Insights**:
+
 - ✅ HITL approval occurs at `finalizeAnalysis` step (step 6 of 6)
 - ✅ Approval required when confidence < 0.8
 - ✅ 2-minute timeout with escalation strategy
@@ -81,6 +83,7 @@ async generateFinalStrategy(context: TaskExecutionContext): Promise<TaskExecutio
 ```
 
 **Key Insights**:
+
 - ✅ HITL approval at `generateFinalStrategy` (final step)
 - ✅ Lower confidence threshold (0.7) for creative work
 - ✅ 3-minute timeout (longer for strategic decisions)
@@ -129,11 +132,11 @@ Frontend receives via 'stream_update' event
 ```typescript
 // What the POC will receive
 interface InterruptionRequestEvent {
-  type: 'interruption_request';  // Custom event type (not in StreamEventType enum)
+  type: 'interruption_request'; // Custom event type (not in StreamEventType enum)
   data: {
     interruptionId: string;
     agentId: string;
-    message: string;  // From @RequiresApproval message parameter
+    message: string; // From @RequiresApproval message parameter
     metadata: {
       achievementCount?: number;
       repositoriesAnalyzed?: number;
@@ -141,7 +144,7 @@ interface InterruptionRequestEvent {
       brandScore?: number;
       strategyType?: string;
     };
-    timeout: number;  // timeoutMs from decorator
+    timeout: number; // timeoutMs from decorator
     createdAt: Date;
   };
   metadata: {
@@ -190,12 +193,7 @@ interface ApprovalResponse {
 **File**: `apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts:71-76`
 
 ```typescript
-tools: [
-  'github-analyzer',
-  'achievement-extractor',
-  'developer-insights',
-  'ai-synthesis',
-]
+tools: ['github-analyzer', 'achievement-extractor', 'developer-insights', 'ai-synthesis'];
 ```
 
 **Tool Implementation**: `apps/dev-brand-api/src/app/business-workflows/core/tools/github-integration.tools.ts`
@@ -204,16 +202,16 @@ tools: [
 @Injectable()
 export class GitHubIntegrationTools {
   // Tool 1: github-analyzer
-  async analyzeGitHub(username: string, timeframe: string): Promise<GitHubAnalysisResponse>
+  async analyzeGitHub(username: string, timeframe: string): Promise<GitHubAnalysisResponse>;
 
   // Tool 2: achievement-extractor
-  async extractAchievements(githubData: any): Promise<CodeAchievement[]>
+  async extractAchievements(githubData: any): Promise<CodeAchievement[]>;
 
   // Tool 3: developer-insights
-  async generateInsights(achievements: CodeAchievement[]): Promise<DeveloperInsights>
+  async generateInsights(achievements: CodeAchievement[]): Promise<DeveloperInsights>;
 
   // Tool 4: ai-synthesis
-  async synthesize(insights: DeveloperInsights): Promise<string>
+  async synthesize(insights: DeveloperInsights): Promise<string>;
 }
 ```
 
@@ -359,6 +357,7 @@ When agents use LLM tools (like `ai-synthesis`), token streaming provides insigh
 **Architecture Coverage**: ✅ ADEQUATE
 
 The plan includes:
+
 - State management with `HITLApproval` interface
 - Component for approval UI
 - WebSocket event handling for `interruption_request`
@@ -399,6 +398,7 @@ submitApproval(
 **Current Plan**: EventStreamComponent shows all events but doesn't specifically track tool calls.
 
 **Why This Is a Gap**:
+
 - Requirement B5 states: "Tool call tracking displays invocations and results"
 - Backend doesn't emit `TOOL_CALL_START`/`TOOL_CALL_END`
 - POC needs to infer tool calls from NODE events
@@ -576,50 +576,41 @@ export interface ToolCall {
   imports: [CommonModule, FormsModule],
   template: `
     @if (pendingApproval(); as approval) {
-      <div class="hitl-approval-overlay">
-        <div class="hitl-approval-modal">
-          <div class="modal-header">
-            <h2>🤔 Approval Required</h2>
-            <span class="agent-badge">{{ approval.agentId }}</span>
-          </div>
+    <div class="hitl-approval-overlay">
+      <div class="hitl-approval-modal">
+        <div class="modal-header">
+          <h2>🤔 Approval Required</h2>
+          <span class="agent-badge">{{ approval.agentId }}</span>
+        </div>
 
-          <div class="modal-content">
-            <p class="approval-message">{{ approval.message }}</p>
+        <div class="modal-content">
+          <p class="approval-message">{{ approval.message }}</p>
 
-            @if (approval.metadata) {
-              <div class="metadata">
-                @if (approval.metadata.achievementCount) {
-                  <p>✅ Achievements: {{ approval.metadata.achievementCount }}</p>
-                }
-                @if (approval.metadata.confidenceScore) {
-                  <p>🎯 Confidence: {{ approval.metadata.confidenceScore * 100 | number:'1.0-0' }}%</p>
-                }
-              </div>
+          @if (approval.metadata) {
+          <div class="metadata">
+            @if (approval.metadata.achievementCount) {
+            <p>✅ Achievements: {{ approval.metadata.achievementCount }}</p>
+            } @if (approval.metadata.confidenceScore) {
+            <p>🎯 Confidence: {{ approval.metadata.confidenceScore * 100 | number : '1.0-0' }}%</p>
             }
+          </div>
+          }
 
-            <div class="timeout-indicator">
-              ⏱️ Timeout: {{ approval.timeout / 60000 | number:'1.0-0' }} minutes
-            </div>
-
-            <textarea
-              [(ngModel)]="feedback"
-              placeholder="Optional feedback..."
-              rows="3"
-            ></textarea>
+          <div class="timeout-indicator">
+            ⏱️ Timeout: {{ approval.timeout / 60000 | number : '1.0-0' }} minutes
           </div>
 
-          <div class="modal-actions">
-            <button class="btn-approve" (click)="approve(approval)">
-              ✅ Approve
-            </button>
-            <button class="btn-reject" (click)="reject(approval)">
-              ❌ Reject
-            </button>
-          </div>
+          <textarea [(ngModel)]="feedback" placeholder="Optional feedback..." rows="3"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-approve" (click)="approve(approval)">✅ Approve</button>
+          <button class="btn-reject" (click)="reject(approval)">❌ Reject</button>
         </div>
       </div>
+    </div>
     }
-  `
+  `,
 })
 export class HITLApprovalModalComponent {
   private apiService = inject(DevBrandApiService);
@@ -630,31 +621,35 @@ export class HITLApprovalModalComponent {
   approvalSubmitted = output<HITLApprovalResponse>();
 
   approve(approval: HITLApproval): void {
-    this.apiService.submitApproval(approval.interruptionId, {
-      decision: 'approved',
-      feedback: this.feedback(),
-      userId: 'user-123', // From auth service
-    }).subscribe({
-      next: (response) => {
-        this.approvalSubmitted.emit(response);
-        this.feedback.set('');
-      },
-      error: (err) => console.error('Approval submission failed:', err)
-    });
+    this.apiService
+      .submitApproval(approval.interruptionId, {
+        decision: 'approved',
+        feedback: this.feedback(),
+        userId: 'user-123', // From auth service
+      })
+      .subscribe({
+        next: (response) => {
+          this.approvalSubmitted.emit(response);
+          this.feedback.set('');
+        },
+        error: (err) => console.error('Approval submission failed:', err),
+      });
   }
 
   reject(approval: HITLApproval): void {
-    this.apiService.submitApproval(approval.interruptionId, {
-      decision: 'rejected',
-      feedback: this.feedback(),
-      userId: 'user-123',
-    }).subscribe({
-      next: (response) => {
-        this.approvalSubmitted.emit(response);
-        this.feedback.set('');
-      },
-      error: (err) => console.error('Approval rejection failed:', err)
-    });
+    this.apiService
+      .submitApproval(approval.interruptionId, {
+        decision: 'rejected',
+        feedback: this.feedback(),
+        userId: 'user-123',
+      })
+      .subscribe({
+        next: (response) => {
+          this.approvalSubmitted.emit(response);
+          this.feedback.set('');
+        },
+        error: (err) => console.error('Approval rejection failed:', err),
+      });
   }
 }
 ```
@@ -666,12 +661,14 @@ export class HITLApprovalModalComponent {
 ### Updated Component List
 
 **ORIGINAL (from plan)**:
+
 1. ExecutionControlComponent
 2. ProgressVisualizationComponent
 3. EventStreamComponent
 4. DevBrandPOCPageComponent
 
 **UPDATED (with HITL + Tool tracking)**:
+
 1. ExecutionControlComponent
 2. ProgressVisualizationComponent
 3. EventStreamComponent
@@ -684,17 +681,20 @@ export class HITLApprovalModalComponent {
 ### Updated Service Methods
 
 **DevBrandApiService** (REST):
+
 - ✅ executeWorkflow() - existing
 - ✅ **submitApproval()** - NEW
 - ❓ getApprovalStatus() - FUTURE
 
 **DevBrandWebSocketService**:
+
 - ✅ connect() - existing
 - ✅ subscribeToExecution() - existing
 - ✅ Handle 'interruption_request' event - existing
 - ✅ **Handle 'interruption_resolved' event** - NEW
 
 **DevBrandWorkflowStateService**:
+
 - ✅ Track execution state - existing
 - ✅ Track agent progress - existing
 - ✅ **Track HITL approval queue** - existing
@@ -720,7 +720,7 @@ export class HITLApprovalModalComponent {
 - [x] Agents use LangChain tools
 - [x] Tool names defined in @Agent decorator
 - [x] Tools invoked within agent tasks
-- [ ] **GAP**: Backend doesn't emit TOOL_CALL_* events
+- [ ] **GAP**: Backend doesn't emit TOOL*CALL*\* events
 - [ ] **GAP**: POC needs to infer from NODE_START/NODE_END
 - [ ] **GAP**: ToolCallTrackerComponent not in original plan
 - [ ] **GAP**: Tool call state management logic needed
@@ -732,11 +732,13 @@ export class HITLApprovalModalComponent {
 ### Summary of Findings
 
 **HITL Integration**: ✅ **95% Covered**
+
 - Backend architecture is production-ready with @hive-academy/langgraph-hitl
 - WebSocket events are emitted automatically
 - Minor gap: Need to add REST API approval submission method
 
 **Tool Calls**: ⚠️ **60% Covered**
+
 - Backend doesn't emit dedicated tool call events
 - Must infer tool calls from NODE_START/NODE_END events
 - Requires additional component and state management logic
@@ -744,38 +746,37 @@ export class HITLApprovalModalComponent {
 ### Required Actions for POC
 
 **CRITICAL (Must Have for POC Validation)**:
+
 1. Add `submitApproval()` method to DevBrandApiService
 2. Add HITLApprovalModalComponent with approval/reject UI
 3. Handle 'interruption_resolved' WebSocket event
 4. Add tool call inference logic to DevBrandWorkflowStateService
 
-**IMPORTANT (Nice to Have for Complete Validation)**:
-5. Create ToolCallTrackerComponent for dedicated tool visualization
-6. Add tool call filtering in EventStreamComponent
-7. Display tool call duration and success/failure indicators
+**IMPORTANT (Nice to Have for Complete Validation)**: 5. Create ToolCallTrackerComponent for dedicated tool visualization 6. Add tool call filtering in EventStreamComponent 7. Display tool call duration and success/failure indicators
 
-**FUTURE (Post-POC Enhancement)**:
-8. Request backend team to add TOOL_CALL_* event types
-9. Implement tool call replay functionality
-10. Add tool performance metrics and analytics
+**FUTURE (Post-POC Enhancement)**: 8. Request backend team to add TOOL*CALL*\* event types 9. Implement tool call replay functionality 10. Add tool performance metrics and analytics
 
 ---
 
 ## References
 
 **Backend Code**:
+
 - `apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/github-code-analyzer.agent.ts:434-449`
 - `apps/dev-brand-api/src/app/business-workflows/core/tools/github-integration.tools.ts`
 - `libs/langgraph-modules/hitl/src/lib/constants.ts:19-28`
 - `libs/langgraph-modules/streaming/src/lib/constants.ts:333-366`
 
 **Research Documents**:
+
 - `task-tracking/TASK_2025_025/research-summary.md:189-198` (HITL integration)
 - `task-tracking/TASK_2025_025/research-summary.md:170-176` (Tool usage)
 
 **Library Documentation**:
+
 - `libs/langgraph-modules/hitl/CLAUDE.md` (Complete HITL module guide)
 - `angular-langgraph.md:752-844` (HITL approval component reference)
 
 **Implementation Plan**:
+
 - `task-tracking/TASK_2025_025/implementation-plan.md` (Current architecture)

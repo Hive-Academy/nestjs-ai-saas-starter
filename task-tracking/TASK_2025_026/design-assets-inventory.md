@@ -1,4 +1,5 @@
 # Design Assets Inventory - TASK_2025_026
+
 ## Canva-Generated Visual Assets for Landing Page
 
 **Asset Generation Date**: 2025-10-23
@@ -30,6 +31,7 @@
 ## ASSET 1: HERO SECTION BACKGROUND GRAPHIC
 
 ### Purpose
+
 Complement 3D background scene with static graphic elements for hero section
 
 ### Canva Generation Prompt
@@ -109,6 +111,7 @@ Design a hero section background graphic for an enterprise AI platform landing p
 ## ASSET 2: HERO SECTION DATA FLOW DIAGRAM
 
 ### Purpose
+
 Visual representation of data flow (ChromaDB → Neo4j → LangGraph) for hero section
 
 ### Canva Generation Prompt
@@ -193,11 +196,13 @@ Create a technical data flow diagram showing the integration of ChromaDB, Neo4j,
 ## ASSETS 3-13: LIBRARY ICONS (11 Total)
 
 ### Purpose
+
 Visual icons representing each of the 13 libraries (ChromaDB, Neo4j, 11 LangGraph modules)
 
 ### Master Icon Specification
 
 **Consistent Design System**:
+
 - Size: 256x256px (icon safe area: 200x200px with 28px padding)
 - Background: Transparent
 - Icon Color: Indigo (#6366F1)
@@ -423,11 +428,7 @@ Create a modern, line-based icon for Workflow-Engine central orchestration.
 <!-- Library icon usage in value proposition card -->
 <div class="relative w-16 h-16 mb-6">
   <!-- Option 1: Static Canva icon -->
-  <img
-    src="[CANVA_CHROMADB_ICON_URL]"
-    alt="ChromaDB library icon"
-    class="w-full h-full"
-  />
+  <img src="[CANVA_CHROMADB_ICON_URL]" alt="ChromaDB library icon" class="w-full h-full" />
 
   <!-- Option 2: Canva icon with Angular-3D glow effect -->
   <app-scene-3d [sceneGraph]="iconSceneGraph">
@@ -440,11 +441,7 @@ Create a modern, line-based icon for Workflow-Engine central orchestration.
   </app-scene-3d>
 
   <!-- Overlay Canva icon on top of 3D sphere -->
-  <img
-    src="[CANVA_ICON_URL]"
-    alt="Library icon"
-    class="absolute inset-0 w-full h-full"
-  />
+  <img src="[CANVA_ICON_URL]" alt="Library icon" class="absolute inset-0 w-full h-full" />
 </div>
 ```
 
@@ -455,6 +452,7 @@ Create a modern, line-based icon for Workflow-Engine central orchestration.
 ### ASSET 16: Production RAG Pipeline Diagram
 
 ### Purpose
+
 Visualize data flow for RAG pipeline (ChromaDB + Neo4j + Memory + Streaming + Monitoring)
 
 ### Canva Generation Prompt
@@ -645,6 +643,7 @@ Create a comprehensive architecture diagram for DevBrand API showing all 13 libr
 ## ASSET 19: ENTERPRISE CAPABILITIES MATRIX VISUALIZATION
 
 ### Purpose
+
 Visual representation of 11x11 enterprise capabilities matrix
 
 ### Canva Generation Prompt
@@ -738,6 +737,7 @@ Create a visual representation of the Enterprise Capabilities Matrix (11 capabil
 ## ASSET 20: CTA SECTION 3D ACCENT GRAPHIC
 
 ### Purpose
+
 Decorative 3D-style graphic for final CTA section background
 
 ### Canva Generation Prompt
@@ -817,40 +817,31 @@ Create a subtle 3D-style accent graphic for a Call-to-Action section background.
 
 ### Export Formats by Asset Type
 
-| Asset Type | Primary Format | Secondary Format | Size |
-|------------|----------------|------------------|------|
-| Hero Background | PNG (transparent) | WEBP | 1920x1080px |
-| Data Flow Diagram | PNG (transparent) | SVG (if vector) | 1200x1200px |
-| Library Icons | PNG (transparent) | SVG (if vector) | 256x256px |
-| Workflow Diagrams | PNG (white BG) | PDF | 2400x1200px |
-| Capabilities Matrix | PNG (white BG) | PDF | 2400x1600px |
-| CTA Accent | PNG (transparent) | WEBP | 1920x800px |
+| Asset Type          | Primary Format    | Secondary Format | Size        |
+| ------------------- | ----------------- | ---------------- | ----------- |
+| Hero Background     | PNG (transparent) | WEBP             | 1920x1080px |
+| Data Flow Diagram   | PNG (transparent) | SVG (if vector)  | 1200x1200px |
+| Library Icons       | PNG (transparent) | SVG (if vector)  | 256x256px   |
+| Workflow Diagrams   | PNG (white BG)    | PDF              | 2400x1200px |
+| Capabilities Matrix | PNG (white BG)    | PDF              | 2400x1600px |
+| CTA Accent          | PNG (transparent) | WEBP             | 1920x800px  |
 
 ### Image Optimization
 
 **Post-Export Optimization**:
+
 1. Run PNG assets through TinyPNG or ImageOptim (lossless compression)
 2. Generate WEBP variants for modern browsers
 3. Create responsive image variants (1x, 2x, 3x pixel densities)
 4. Generate mobile-optimized sizes (50% desktop width)
 
 **Responsive Image Implementation**:
+
 ```html
 <picture>
-  <source
-    srcset="[CANVA_ASSET_URL]@2x.webp 2x, [CANVA_ASSET_URL].webp 1x"
-    type="image/webp"
-  />
-  <source
-    srcset="[CANVA_ASSET_URL]@2x.png 2x, [CANVA_ASSET_URL].png 1x"
-    type="image/png"
-  />
-  <img
-    src="[CANVA_ASSET_URL].png"
-    alt="Descriptive alt text"
-    loading="lazy"
-    decoding="async"
-  />
+  <source srcset="[CANVA_ASSET_URL]@2x.webp 2x, [CANVA_ASSET_URL].webp 1x" type="image/webp" />
+  <source srcset="[CANVA_ASSET_URL]@2x.png 2x, [CANVA_ASSET_URL].png 1x" type="image/png" />
+  <img src="[CANVA_ASSET_URL].png" alt="Descriptive alt text" loading="lazy" decoding="async" />
 </picture>
 ```
 
@@ -860,44 +851,41 @@ Create a subtle 3D-style accent graphic for a Call-to-Action section background.
 
 ### Asset Generation Status
 
-| Asset ID | Asset Name | Status | Canva Design ID | Export URL | Notes |
-|----------|------------|--------|-----------------|------------|-------|
-| ASSET_01 | Hero Background | Pending | - | - | Needs generation |
-| ASSET_02 | Data Flow Diagram | Pending | - | - | Needs generation |
-| ASSET_03 | ChromaDB Icon | Pending | - | - | Needs generation |
-| ASSET_04 | Neo4j Icon | Pending | - | - | Needs generation |
-| ASSET_05 | LangGraph Core Icon | Pending | - | - | Needs generation |
-| ASSET_06 | Memory Module Icon | Pending | - | - | Needs generation |
-| ASSET_07 | Checkpoint Icon | Pending | - | - | Needs generation |
-| ASSET_08 | Functional-API Icon | Pending | - | - | Needs generation |
-| ASSET_09 | Multi-Agent Icon | Pending | - | - | Needs generation |
-| ASSET_10 | Platform Icon | Pending | - | - | Needs generation |
-| ASSET_11 | Time-Travel Icon | Pending | - | - | Needs generation |
-| ASSET_12 | Monitoring Icon | Pending | - | - | Needs generation |
-| ASSET_13 | HITL Icon | Pending | - | - | Needs generation |
-| ASSET_14 | Streaming Icon | Pending | - | - | Needs generation |
-| ASSET_15 | Workflow-Engine Icon | Pending | - | - | Needs generation |
-| ASSET_16 | RAG Pipeline Diagram | Pending | - | - | Needs generation |
-| ASSET_17 | Multi-Agent Diagram | Pending | - | - | Needs generation |
-| ASSET_18 | DevBrand API Diagram | Pending | - | - | Needs generation |
-| ASSET_19 | Capabilities Matrix | Pending | - | - | Needs generation |
-| ASSET_20 | CTA Accent Graphic | Pending | - | - | Needs generation |
+| Asset ID | Asset Name           | Status  | Canva Design ID | Export URL | Notes            |
+| -------- | -------------------- | ------- | --------------- | ---------- | ---------------- |
+| ASSET_01 | Hero Background      | Pending | -               | -          | Needs generation |
+| ASSET_02 | Data Flow Diagram    | Pending | -               | -          | Needs generation |
+| ASSET_03 | ChromaDB Icon        | Pending | -               | -          | Needs generation |
+| ASSET_04 | Neo4j Icon           | Pending | -               | -          | Needs generation |
+| ASSET_05 | LangGraph Core Icon  | Pending | -               | -          | Needs generation |
+| ASSET_06 | Memory Module Icon   | Pending | -               | -          | Needs generation |
+| ASSET_07 | Checkpoint Icon      | Pending | -               | -          | Needs generation |
+| ASSET_08 | Functional-API Icon  | Pending | -               | -          | Needs generation |
+| ASSET_09 | Multi-Agent Icon     | Pending | -               | -          | Needs generation |
+| ASSET_10 | Platform Icon        | Pending | -               | -          | Needs generation |
+| ASSET_11 | Time-Travel Icon     | Pending | -               | -          | Needs generation |
+| ASSET_12 | Monitoring Icon      | Pending | -               | -          | Needs generation |
+| ASSET_13 | HITL Icon            | Pending | -               | -          | Needs generation |
+| ASSET_14 | Streaming Icon       | Pending | -               | -          | Needs generation |
+| ASSET_15 | Workflow-Engine Icon | Pending | -               | -          | Needs generation |
+| ASSET_16 | RAG Pipeline Diagram | Pending | -               | -          | Needs generation |
+| ASSET_17 | Multi-Agent Diagram  | Pending | -               | -          | Needs generation |
+| ASSET_18 | DevBrand API Diagram | Pending | -               | -          | Needs generation |
+| ASSET_19 | Capabilities Matrix  | Pending | -               | -          | Needs generation |
+| ASSET_20 | CTA Accent Graphic   | Pending | -               | -          | Needs generation |
 
 ### Next Steps for Asset Generation
 
 **Phase 1: Generate Hero & Core Assets** (Priority: High)
+
 1. Generate ASSET_01 (Hero Background)
 2. Generate ASSET_02 (Data Flow Diagram)
 3. Generate ASSET_19 (Capabilities Matrix)
 4. Generate ASSET_20 (CTA Accent)
 
-**Phase 2: Generate Library Icons** (Priority: Medium)
-5. Generate all 13 library icons (ASSET_03 through ASSET_15)
+**Phase 2: Generate Library Icons** (Priority: Medium) 5. Generate all 13 library icons (ASSET_03 through ASSET_15)
 
-**Phase 3: Generate Workflow Diagrams** (Priority: Medium)
-6. Generate ASSET_16 (RAG Pipeline)
-7. Generate ASSET_17 (Multi-Agent Diagram)
-8. Generate ASSET_18 (DevBrand API Diagram)
+**Phase 3: Generate Workflow Diagrams** (Priority: Medium) 6. Generate ASSET_16 (RAG Pipeline) 7. Generate ASSET_17 (Multi-Agent Diagram) 8. Generate ASSET_18 (DevBrand API Diagram)
 
 ---
 
@@ -906,11 +894,12 @@ Create a subtle 3D-style accent graphic for a Call-to-Action section background.
 ### Step 1: Generate Design Candidates
 
 **Example for Hero Background**:
+
 ```typescript
 const heroBackgroundCandidates = await mcp__Canva__generate_design({
   design_type: 'poster',
   query: `[Full prompt from ASSET_01 above]`,
-  user_intent: 'Generate hero section background graphic for landing page'
+  user_intent: 'Generate hero section background graphic for landing page',
 });
 
 // Response includes:
@@ -926,16 +915,19 @@ const heroBackgroundCandidates = await mcp__Canva__generate_design({
 I've generated 3 design directions using Canva AI:
 
 **Candidate 1**: [Thumbnail URL]
+
 - Hexagonal grid pattern with subtle gradient
 - Minimal geometric shapes
 - Indigo accent lines
 
 **Candidate 2**: [Thumbnail URL]
+
 - Abstract data flow curves
 - Layered depth effect
 - Grid overlay with fade
 
 **Candidate 3**: [Thumbnail URL]
+
 - Geometric circles and rounded rectangles
 - Clean, spacious composition
 - Subtle technical precision aesthetic
@@ -949,7 +941,7 @@ Which direction resonates with your vision for the hero section?
 const finalDesign = await mcp__Canva__create_design_from_candidate({
   job_id: heroBackgroundCandidates.job_id,
   candidate_id: 'candidate_2_id', // User's selection
-  user_intent: 'Create final hero background from selected candidate'
+  user_intent: 'Create final hero background from selected candidate',
 });
 
 // Response includes:
@@ -964,7 +956,7 @@ const finalDesign = await mcp__Canva__create_design_from_candidate({
 // Get available export formats
 const exportFormats = await mcp__Canva__get_export_formats({
   design_id: finalDesign.design_id,
-  user_intent: 'Check available export formats for hero background'
+  user_intent: 'Check available export formats for hero background',
 });
 
 // Export as PNG with transparency
@@ -975,9 +967,9 @@ const exportResult = await mcp__Canva__export_design({
     width: 1920,
     height: 1080,
     transparent_background: true,
-    lossless: true
+    lossless: true,
   },
-  user_intent: 'Export hero background as high-res PNG'
+  user_intent: 'Export hero background as high-res PNG',
 });
 
 // Response includes:
@@ -987,6 +979,7 @@ const exportResult = await mcp__Canva__export_design({
 ### Step 5: Document Asset
 
 Update this document with:
+
 - Canva Design ID: `finalDesign.design_id`
 - Download URL: `exportResult.download_url`
 - Status: "Complete"

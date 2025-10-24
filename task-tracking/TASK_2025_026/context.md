@@ -28,6 +28,7 @@ Transform the landing page from a "feature showcase" approach (11 library sectio
 ## Content Strategy
 
 The landing page should demonstrate:
+
 1. **Value propositions** extracted from real capabilities
 2. **Cohesive agentic workflows** (HITL, multi-agent, memory, checkpointers) working together
 3. **Familiar patterns** (adapter patterns, repository patterns, NestJS modules)
@@ -41,7 +42,7 @@ The landing page should demonstrate:
 1. Root CLAUDE.md - Architecture principles and integration patterns
 2. libs/nestjs-chromadb/CLAUDE.md - Vector search patterns and use cases
 3. libs/nestjs-neo4j/CLAUDE.md - Graph database patterns and use cases
-4. libs/langgraph-modules/*/CLAUDE.md (all 11 modules):
+4. libs/langgraph-modules/\*/CLAUDE.md (all 11 modules):
    - core - Workflow interfaces, state management
    - memory - Contextual memory for agents
    - checkpoint - State persistence

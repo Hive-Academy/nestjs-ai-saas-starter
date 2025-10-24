@@ -12,7 +12,7 @@ The Chat component provides a generic, fully customizable chat interface for AI 
 
 ### Component Signature
 
-```typescript
+````typescript
 import {
   Component,
   ChangeDetectionStrategy,
@@ -110,66 +110,65 @@ import type { AGUIEvent, TokenUpdateEvent } from '../models';
       <div class="chat-header">
         <ng-content select="[lgChatHeader]"></ng-content>
         @if (!hasHeaderContent) {
-          <div class="default-header">
-            <h3 class="chat-title">{{ title() }}</h3>
-            @if (executionId()) {
-              <span class="execution-badge">{{ executionId() }}</span>
-            }
-          </div>
+        <div class="default-header">
+          <h3 class="chat-title">{{ title() }}</h3>
+          @if (executionId()) {
+          <span class="execution-badge">{{ executionId() }}</span>
+          }
+        </div>
         }
       </div>
 
       <!-- Messages Container -->
       <div class="chat-messages" #messagesContainer>
         @if (messages().length === 0) {
-          <!-- Empty State Slot -->
-          <div class="empty-state">
-            <ng-content select="[lgChatEmpty]"></ng-content>
-            @if (!hasEmptyContent) {
-              <div class="default-empty">
-                <span class="empty-icon">💬</span>
-                <p class="empty-text">No messages yet. Start a conversation!</p>
-              </div>
-            }
+        <!-- Empty State Slot -->
+        <div class="empty-state">
+          <ng-content select="[lgChatEmpty]"></ng-content>
+          @if (!hasEmptyContent) {
+          <div class="default-empty">
+            <span class="empty-icon">💬</span>
+            <p class="empty-text">No messages yet. Start a conversation!</p>
           </div>
-        } @else {
-          <!-- Message List -->
-          @for (message of messages(); track trackBy($index, message)) {
-            <div
-              class="message-wrapper"
-              [class.user-message]="isUserMessage(message)"
-              [class.ai-message]="!isUserMessage(message)"
-            >
-              <ng-container
-                *ngTemplateOutlet="
-                  messageTemplate || defaultMessageTemplate;
-                  context: {
-                    $implicit: message,
-                    index: $index,
-                    count: messages().length,
-                    isFirst: $index === 0,
-                    isLast: $index === messages().length - 1,
-                    isEven: $index % 2 === 0,
-                    isOdd: $index % 2 !== 0
-                  }
-                "
-              ></ng-container>
-            </div>
           }
-        }
+        </div>
+        } @else {
+        <!-- Message List -->
+        @for (message of messages(); track trackBy($index, message)) {
+        <div
+          class="message-wrapper"
+          [class.user-message]="isUserMessage(message)"
+          [class.ai-message]="!isUserMessage(message)"
+        >
+          <ng-container
+            *ngTemplateOutlet="
+              messageTemplate || defaultMessageTemplate;
+              context: {
+                $implicit: message,
+                index: $index,
+                count: messages().length,
+                isFirst: $index === 0,
+                isLast: $index === messages().length - 1,
+                isEven: $index % 2 === 0,
+                isOdd: $index % 2 !== 0
+              }
+            "
+          ></ng-container>
+        </div>
+        } }
 
         <!-- Typing Indicator Slot -->
         @if (isTyping()) {
-          <div class="typing-wrapper">
-            <ng-content select="[lgChatTyping]"></ng-content>
-            @if (!hasTypingContent) {
-              <div class="default-typing">
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-              </div>
-            }
+        <div class="typing-wrapper">
+          <ng-content select="[lgChatTyping]"></ng-content>
+          @if (!hasTypingContent) {
+          <div class="default-typing">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
           </div>
+          }
+        </div>
         }
       </div>
 
@@ -177,24 +176,24 @@ import type { AGUIEvent, TokenUpdateEvent } from '../models';
       <div class="chat-input-container">
         <ng-content select="[lgChatInput]"></ng-content>
         @if (!hasInputContent) {
-          <div class="default-input">
-            <textarea
-              [(ngModel)]="inputText"
-              (keydown.enter)="onEnter($event)"
-              placeholder="{{ placeholder() }}"
-              rows="1"
-              class="input-field"
-              [disabled]="disabled()"
-            ></textarea>
-            <button
-              (click)="sendMessage()"
-              [disabled]="!canSend()"
-              class="send-button"
-              aria-label="Send message"
-            >
-              <span class="send-icon">➤</span>
-            </button>
-          </div>
+        <div class="default-input">
+          <textarea
+            [(ngModel)]="inputText"
+            (keydown.enter)="onEnter($event)"
+            placeholder="{{ placeholder() }}"
+            rows="1"
+            class="input-field"
+            [disabled]="disabled()"
+          ></textarea>
+          <button
+            (click)="sendMessage()"
+            [disabled]="!canSend()"
+            class="send-button"
+            aria-label="Send message"
+          >
+            <span class="send-icon">➤</span>
+          </button>
+        </div>
         }
       </div>
 
@@ -212,292 +211,292 @@ import type { AGUIEvent, TokenUpdateEvent } from '../models';
       let-isFirst="isFirst"
       let-isLast="isLast"
     >
-      <div
-        class="message-card"
-        [class.first-message]="isFirst"
-        [class.last-message]="isLast"
-      >
+      <div class="message-card" [class.first-message]="isFirst" [class.last-message]="isLast">
         <div class="message-header">
           <span class="message-role">{{ message.role || 'unknown' }}</span>
           @if (message.timestamp) {
-            <span class="message-time">{{ message.timestamp | date: 'short' }}</span>
+          <span class="message-time">{{ message.timestamp | date : 'short' }}</span>
           }
         </div>
         <div class="message-content">
           {{ message.content || message.text || message.message || '' }}
         </div>
         @if (message.metadata) {
-          <details class="message-metadata">
-            <summary>Metadata</summary>
-            <pre>{{ message.metadata | json }}</pre>
-          </details>
+        <details class="message-metadata">
+          <summary>Metadata</summary>
+          <pre>{{ message.metadata | json }}</pre>
+        </details>
         }
       </div>
     </ng-template>
   `,
-  styles: [`
-    .lg-chat {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: var(--lg-chat-bg, #ffffff);
-      border-radius: var(--lg-border-radius, 8px);
-      box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
-      overflow: hidden;
-    }
-
-    .chat-header {
-      padding: var(--lg-spacing-md, 16px);
-      border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
-      background: var(--lg-surface-color, #f5f5f5);
-    }
-
-    .default-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .chat-title {
-      margin: 0;
-      font-size: var(--lg-font-size-lg, 1.25rem);
-      font-weight: var(--lg-font-weight-bold, 600);
-      color: var(--lg-text-primary, #212121);
-    }
-
-    .execution-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      background: var(--lg-accent-color-light, #e3f2fd);
-      color: var(--lg-accent-color, #1976d2);
-      border-radius: var(--lg-border-radius-sm, 4px);
-      font-size: var(--lg-font-size-xs, 0.75rem);
-      font-family: monospace;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: var(--lg-spacing-md, 16px);
-      display: flex;
-      flex-direction: column;
-      gap: var(--lg-spacing-sm, 12px);
-    }
-
-    .empty-state {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .default-empty {
-      text-align: center;
-      color: var(--lg-text-secondary, #757575);
-    }
-
-    .empty-icon {
-      font-size: 3rem;
-      display: block;
-      margin-bottom: 12px;
-    }
-
-    .empty-text {
-      margin: 0;
-      font-size: var(--lg-font-size-base, 1rem);
-    }
-
-    .message-wrapper {
-      display: flex;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
+  styles: [
+    `
+      .lg-chat {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: var(--lg-chat-bg, #ffffff);
+        border-radius: var(--lg-border-radius, 8px);
+        box-shadow: var(--lg-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.1));
+        overflow: hidden;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
+
+      .chat-header {
+        padding: var(--lg-spacing-md, 16px);
+        border-bottom: 1px solid var(--lg-border-color, #e0e0e0);
+        background: var(--lg-surface-color, #f5f5f5);
       }
-    }
 
-    .message-wrapper.user-message {
-      justify-content: flex-end;
-    }
+      .default-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
 
-    .message-wrapper.ai-message {
-      justify-content: flex-start;
-    }
+      .chat-title {
+        margin: 0;
+        font-size: var(--lg-font-size-lg, 1.25rem);
+        font-weight: var(--lg-font-weight-bold, 600);
+        color: var(--lg-text-primary, #212121);
+      }
 
-    .message-card {
-      max-width: 70%;
-      padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
-      border-radius: var(--lg-border-radius, 8px);
-      background: var(--lg-message-bg, #f5f5f5);
-      word-wrap: break-word;
-    }
+      .execution-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background: var(--lg-accent-color-light, #e3f2fd);
+        color: var(--lg-accent-color, #1976d2);
+        border-radius: var(--lg-border-radius-sm, 4px);
+        font-size: var(--lg-font-size-xs, 0.75rem);
+        font-family: monospace;
+      }
 
-    .user-message .message-card {
-      background: var(--lg-primary-color, #1976d2);
-      color: white;
-    }
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--lg-spacing-md, 16px);
+        display: flex;
+        flex-direction: column;
+        gap: var(--lg-spacing-sm, 12px);
+      }
 
-    .message-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-    }
+      .empty-state {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .message-role {
-      font-weight: var(--lg-font-weight-medium, 500);
-      text-transform: capitalize;
-    }
+      .default-empty {
+        text-align: center;
+        color: var(--lg-text-secondary, #757575);
+      }
 
-    .message-time {
-      opacity: 0.7;
-      font-size: var(--lg-font-size-xs, 0.75rem);
-    }
+      .empty-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 12px;
+      }
 
-    .message-content {
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
+      .empty-text {
+        margin: 0;
+        font-size: var(--lg-font-size-base, 1rem);
+      }
 
-    .message-metadata {
-      margin-top: 8px;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-    }
+      .message-wrapper {
+        display: flex;
+        animation: slideIn 0.3s ease;
+      }
 
-    .message-metadata summary {
-      cursor: pointer;
-      opacity: 0.7;
-    }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    .message-metadata pre {
-      margin: 8px 0 0 0;
-      padding: 8px;
-      background: rgba(0, 0, 0, 0.1);
-      border-radius: var(--lg-border-radius-sm, 4px);
-      font-size: var(--lg-font-size-xs, 0.75rem);
-      overflow-x: auto;
-    }
+      .message-wrapper.user-message {
+        justify-content: flex-end;
+      }
 
-    .typing-wrapper {
-      display: flex;
-      justify-content: flex-start;
-    }
+      .message-wrapper.ai-message {
+        justify-content: flex-start;
+      }
 
-    .default-typing {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
-      background: var(--lg-message-bg, #f5f5f5);
-      border-radius: var(--lg-border-radius, 8px);
-      max-width: 70%;
-    }
+      .message-card {
+        max-width: 70%;
+        padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
+        border-radius: var(--lg-border-radius, 8px);
+        background: var(--lg-message-bg, #f5f5f5);
+        word-wrap: break-word;
+      }
 
-    .typing-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--lg-text-secondary, #757575);
-      border-radius: 50%;
-      animation: typing 1.4s infinite;
-    }
+      .user-message .message-card {
+        background: var(--lg-primary-color, #1976d2);
+        color: white;
+      }
 
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
+      .message-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+      }
 
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
+      .message-role {
+        font-weight: var(--lg-font-weight-medium, 500);
+        text-transform: capitalize;
+      }
 
-    @keyframes typing {
-      0%, 60%, 100% {
-        transform: translateY(0);
+      .message-time {
+        opacity: 0.7;
+        font-size: var(--lg-font-size-xs, 0.75rem);
+      }
+
+      .message-content {
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .message-metadata {
+        margin-top: 8px;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+      }
+
+      .message-metadata summary {
+        cursor: pointer;
         opacity: 0.7;
       }
-      30% {
-        transform: translateY(-10px);
-        opacity: 1;
+
+      .message-metadata pre {
+        margin: 8px 0 0 0;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: var(--lg-border-radius-sm, 4px);
+        font-size: var(--lg-font-size-xs, 0.75rem);
+        overflow-x: auto;
       }
-    }
 
-    .chat-input-container {
-      border-top: 1px solid var(--lg-border-color, #e0e0e0);
-      padding: var(--lg-spacing-sm, 12px);
-      background: var(--lg-surface-color, #f5f5f5);
-    }
+      .typing-wrapper {
+        display: flex;
+        justify-content: flex-start;
+      }
 
-    .default-input {
-      display: flex;
-      gap: var(--lg-spacing-sm, 12px);
-      align-items: flex-end;
-    }
+      .default-typing {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
+        background: var(--lg-message-bg, #f5f5f5);
+        border-radius: var(--lg-border-radius, 8px);
+        max-width: 70%;
+      }
 
-    .input-field {
-      flex: 1;
-      padding: var(--lg-spacing-sm, 12px);
-      border: 1px solid var(--lg-border-color, #e0e0e0);
-      border-radius: var(--lg-border-radius, 8px);
-      font-family: inherit;
-      font-size: var(--lg-font-size-base, 1rem);
-      resize: vertical;
-      min-height: 40px;
-      max-height: 120px;
-      transition: border-color 0.2s ease;
-    }
+      .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--lg-text-secondary, #757575);
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+      }
 
-    .input-field:focus {
-      outline: none;
-      border-color: var(--lg-accent-color, #1976d2);
-    }
+      .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
 
-    .input-field:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+      .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
 
-    .send-button {
-      padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
-      background: var(--lg-primary-color, #1976d2);
-      color: white;
-      border: none;
-      border-radius: var(--lg-border-radius, 8px);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 1.25rem;
-      line-height: 1;
-    }
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.7;
+        }
+        30% {
+          transform: translateY(-10px);
+          opacity: 1;
+        }
+      }
 
-    .send-button:hover:not(:disabled) {
-      background: var(--lg-primary-dark, #1565c0);
-      transform: translateX(2px);
-    }
+      .chat-input-container {
+        border-top: 1px solid var(--lg-border-color, #e0e0e0);
+        padding: var(--lg-spacing-sm, 12px);
+        background: var(--lg-surface-color, #f5f5f5);
+      }
 
-    .send-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+      .default-input {
+        display: flex;
+        gap: var(--lg-spacing-sm, 12px);
+        align-items: flex-end;
+      }
 
-    .send-icon {
-      display: block;
-    }
+      .input-field {
+        flex: 1;
+        padding: var(--lg-spacing-sm, 12px);
+        border: 1px solid var(--lg-border-color, #e0e0e0);
+        border-radius: var(--lg-border-radius, 8px);
+        font-family: inherit;
+        font-size: var(--lg-font-size-base, 1rem);
+        resize: vertical;
+        min-height: 40px;
+        max-height: 120px;
+        transition: border-color 0.2s ease;
+      }
 
-    .chat-footer {
-      padding: var(--lg-spacing-sm, 12px);
-      border-top: 1px solid var(--lg-border-color, #e0e0e0);
-      text-align: center;
-      font-size: var(--lg-font-size-sm, 0.875rem);
-      color: var(--lg-text-secondary, #757575);
-    }
-  `]
+      .input-field:focus {
+        outline: none;
+        border-color: var(--lg-accent-color, #1976d2);
+      }
+
+      .input-field:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .send-button {
+        padding: var(--lg-spacing-sm, 12px) var(--lg-spacing-md, 16px);
+        background: var(--lg-primary-color, #1976d2);
+        color: white;
+        border: none;
+        border-radius: var(--lg-border-radius, 8px);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 1.25rem;
+        line-height: 1;
+      }
+
+      .send-button:hover:not(:disabled) {
+        background: var(--lg-primary-dark, #1565c0);
+        transform: translateX(2px);
+      }
+
+      .send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .send-icon {
+        display: block;
+      }
+
+      .chat-footer {
+        padding: var(--lg-spacing-sm, 12px);
+        border-top: 1px solid var(--lg-border-color, #e0e0e0);
+        text-align: center;
+        font-size: var(--lg-font-size-sm, 0.875rem);
+        color: var(--lg-text-secondary, #757575);
+      }
+    `,
+  ],
 })
 export class ChatComponent<TMessage = any> implements OnInit, AfterViewChecked {
   // Inputs
@@ -629,7 +628,7 @@ export interface MessageContext<TMessage = any> {
   /** True if index is odd */
   isOdd: boolean;
 }
-```
+````
 
 ### Content Projection Slots
 
@@ -701,4 +700,3 @@ This is the primary slot for customizing how messages appear.
 (Due to length constraints, this file will be merged with the main REWRITE file in the next step. This demonstrates the structure and detail level for all remaining sections.)
 
 **FILE TRUNCATED FOR BREVITY - Full implementation would include all remaining sections as specified in the requirements.**
-

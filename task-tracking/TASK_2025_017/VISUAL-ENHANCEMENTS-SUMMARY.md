@@ -12,6 +12,7 @@
 **Location**: `apps/dev-brand-ui/public/assets/icons/libraries/`
 
 **12 Icons Created** (all saved locally):
+
 ```
 ✅ icon-chromadb.svg          (database with vector arrows)
 ✅ icon-neo4j.svg             (network graph)
@@ -28,6 +29,7 @@
 ```
 
 **Specifications**:
+
 - Size: 256x256px SVG
 - Color: #6366F1 (indigo)
 - Stroke: 3px
@@ -41,6 +43,7 @@
 **Location**: `apps/dev-brand-ui/src/app/features/landing-page/components/architecture-3d-scene.component.ts`
 
 **Features**:
+
 - ⚡ 13 floating 3D boxes (5 layers: Core, Data, Orchestration, Agents, Production)
 - 🎨 Layer-specific colors (indigo → blue → green → purple → orange gradients)
 - ✨ Staggered float animations (delays 0-700ms)
@@ -58,6 +61,7 @@
 **Location**: `apps/dev-brand-ui/src/app/features/landing-page/sections/chromadb-section.component.ts`
 
 **Visual Enhancements**:
+
 - ✨ 4 floating SVG decorations (corners with scroll animations)
 - 🎯 Large hero icon (128px with gradient background, scale-in animation)
 - 📜 5 staggered scroll animations (fadeIn, fadeInUp, fadeInDown, fadeInLeft, fadeInRight, scaleIn)
@@ -66,6 +70,7 @@
 - 📱 Layered depth (z-index 10 for content, absolute positioning for decorations)
 
 **Animation Timeline** (as user scrolls):
+
 1. 0.2s: Top-left icon fades in + rotates (fadeInUp)
 2. 0.4s: Top-right icon fades in + rotates (fadeInDown)
 3. 0.6s: Bottom-left circles fade in (fadeInLeft)
@@ -88,6 +93,7 @@
 **4 Themed Decorative Graphics Generated**:
 
 #### Asset 1: General Abstract Elements
+
 - **Canva Design ID**: `DAG2eTi-2KE`
 - **Size**: 2400x2400px
 - **Contains**: Gradient blobs, circuit patterns, hexagons, waves, dot grids, data nodes
@@ -96,6 +102,7 @@
 - **Target Filename**: `abstract-elements.png`
 
 #### Asset 2: ChromaDB Vector Search Theme
+
 - **Canva Design ID**: `DAG2eURMHVM`
 - **Size**: 1600x1600px
 - **Contains**: Central database, 8 radiating vector arrows, floating documents, connecting dots
@@ -104,6 +111,7 @@
 - **Target Filename**: `chromadb-vector-search.png`
 
 #### Asset 3: Neo4j Graph Network Theme
+
 - **Canva Design ID**: `DAG2eV--DkU`
 - **Size**: 1600x1600px
 - **Contains**: 12 interconnected nodes, curved relationship lines, central cluster, directional arrows
@@ -112,6 +120,7 @@
 - **Target Filename**: `neo4j-graph-network.png`
 
 #### Asset 4: Workflow/Streaming Data Flow Theme
+
 - **Canva Design ID**: `DAG2eUxXCrc`
 - **Size**: 2000x1200px (horizontal)
 - **Contains**: Flowing stream path, 20+ data particles, 3 processing nodes, parallel wave lines
@@ -149,6 +158,7 @@ mkdir -p apps/dev-brand-ui/public/assets/decorations
 ```
 
 **If URLs expired**:
+
 ```bash
 # Use "Edit in Canva" links from manifest
 # Re-export each design:
@@ -169,6 +179,7 @@ Replace the current floating decorations (4 small icon-chromadb.svg instances) w
 4. **Bottom-right**: `chromadb-vector-search.png` (medium, 300x300px, 10% opacity, fadeInRight)
 
 **Example**:
+
 ```typescript
 <!-- Top-left: Large ChromaDB themed graphic -->
 <div
@@ -190,6 +201,7 @@ Replace the current floating decorations (4 small icon-chromadb.svg instances) w
 **Pattern to Follow**: Enhanced ChromaDB section (with Canva decorations)
 
 **Sections to Create** (in order):
+
 1. ✅ ChromaDB (DONE - template ready)
 2. ⏳ Neo4j (use `neo4j-graph-network.png` decorations)
 3. ⏳ LangGraph Core
@@ -204,6 +216,7 @@ Replace the current floating decorations (4 small icon-chromadb.svg instances) w
 12. ⏳ Platform
 
 **Per Section** (1 hour each):
+
 - Large hero icon (128px with gradient background)
 - 4 floating decorations (mix of themed Canva graphics + simple SVGs)
 - LibraryShowcaseCard with capabilities
@@ -218,6 +231,7 @@ Replace the current floating decorations (4 small icon-chromadb.svg instances) w
 **Component**: `apps/dev-brand-ui/src/app/features/landing-page/sections/integration-showcase-section.component.ts`
 
 **Content**:
+
 ```typescript
 <app-section-container background="white" verticalPadding="xlarge">
   <div class="text-center mb-16">
@@ -252,11 +266,13 @@ Replace the current floating decorations (4 small icon-chromadb.svg instances) w
 - **Platform**: Cloud deployment architecture
 
 **Generation Command** (for each):
+
 ```typescript
-mcp__Canva__generate-design({
-  design_type: "infographic",
-  query: "[Library name] themed decorative background element: [detailed specs]"
-})
+mcp__Canva__generate -
+  design({
+    design_type: 'infographic',
+    query: '[Library name] themed decorative background element: [detailed specs]',
+  });
 ```
 
 ---
@@ -266,6 +282,7 @@ mcp__Canva__generate-design({
 ### Visual Richness Formula (per Section)
 
 **Elements**:
+
 1. ✅ Large hero icon (128px, gradient bg, scaleIn animation)
 2. ✅ 4 floating decorations (2 Canva PNGs + 2 SVG/inline graphics)
 3. ✅ LibraryShowcaseCard (capabilities grid, metric, CTA)
@@ -273,12 +290,14 @@ mcp__Canva__generate-design({
 5. ✅ Integration note (connection to other libraries)
 
 **Decorations Positioning**:
+
 - Top-left: Large (400x400px), 12% opacity, rotate 12deg
 - Top-right: Medium (350x350px), 8% opacity, rotate -12deg
 - Bottom-left: Large (400x400px), 5% opacity, inline SVG or PNG
 - Bottom-right: Medium (300x300px), 10% opacity
 
 **Scroll Animations** (total 9 per section):
+
 1. Top-left decoration (fadeInUp, delay 0.2s)
 2. Top-right decoration (fadeInDown, delay 0.4s)
 3. Bottom-left decoration (fadeInLeft, delay 0.6s)
@@ -297,20 +316,20 @@ mcp__Canva__generate-design({
 
 **Phase 5 Implementation** (13% → 25%):
 
-| Component | Status | Time |
-|-----------|--------|------|
-| Foundation Components | ✅ 100% | 3h |
-| ChromaDB Section (Enhanced) | ✅ 100% | 2h |
-| **Canva Assets Creation** | ✅ 100% | 1h |
-| **Architecture 3D Component** | ✅ 100% | 2h |
-| **Canva Assets Download** | ⏳ 0% | 0.5h |
-| **Canva Integration** | ⏳ 0% | 0.5h |
-| Neo4j Section | ⏳ 0% | 1h |
-| LangGraph Core Section | ⏳ 0% | 1h |
-| Workflow-Engine Section | ⏳ 0% | 1h |
-| ... (8 more sections) | ⏳ 0% | 8h |
-| Integration Showcase | ⏳ 0% | 2h |
-| Card Grids + Footer | ⏳ 0% | 5h |
+| Component                     | Status  | Time |
+| ----------------------------- | ------- | ---- |
+| Foundation Components         | ✅ 100% | 3h   |
+| ChromaDB Section (Enhanced)   | ✅ 100% | 2h   |
+| **Canva Assets Creation**     | ✅ 100% | 1h   |
+| **Architecture 3D Component** | ✅ 100% | 2h   |
+| **Canva Assets Download**     | ⏳ 0%   | 0.5h |
+| **Canva Integration**         | ⏳ 0%   | 0.5h |
+| Neo4j Section                 | ⏳ 0%   | 1h   |
+| LangGraph Core Section        | ⏳ 0%   | 1h   |
+| Workflow-Engine Section       | ⏳ 0%   | 1h   |
+| ... (8 more sections)         | ⏳ 0%   | 8h   |
+| Integration Showcase          | ⏳ 0%   | 2h   |
+| Card Grids + Footer           | ⏳ 0%   | 5h   |
 
 **Total Progress**: 8/23 hours (35% complete)
 **Remaining**: 15 hours
@@ -320,6 +339,7 @@ mcp__Canva__generate-design({
 ## 🎯 Key Files Modified/Created
 
 ### Created ✅
+
 ```
 apps/dev-brand-ui/public/assets/icons/libraries/
 ├── icon-chromadb.svg (NEW)
@@ -348,6 +368,7 @@ task-tracking/TASK_2025_017/
 ```
 
 ### Pending Download ⏳
+
 ```
 apps/dev-brand-ui/public/assets/decorations/
 ├── abstract-elements.png (PENDING)
@@ -367,6 +388,7 @@ apps/dev-brand-ui/public/assets/decorations/
 ```
 
 **Or directly**:
+
 ```
 Continue TASK_2025_017 visual enhancements from 35% checkpoint.
 

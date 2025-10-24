@@ -16,7 +16,6 @@
  * ```
  */
 
-
 export { SectionDividerComponent } from './section-divider.component';
 export { CodeSnippetComponent } from './code-snippet.component';
 export { DecorativePatternComponent } from './decorative-patterns.component';

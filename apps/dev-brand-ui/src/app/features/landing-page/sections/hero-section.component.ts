@@ -37,7 +37,8 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             class="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in-up"
             style="text-shadow: 0 10px 30px rgba(168, 85, 247, 0.5), 0 2px 5px rgba(0,0,0,0.8);"
           >
-            <span class="text-gray-900 drop-shadow-2xl">Enterprise AI</span><br />
+            <span class="text-gray-900 drop-shadow-2xl">Enterprise AI</span
+            ><br />
             <span
               class="text-gray-900 drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
             >

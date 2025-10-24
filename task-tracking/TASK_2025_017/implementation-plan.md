@@ -15,6 +15,7 @@
 **Libraries Analyzed**: 3 core Angular modules examined for patterns
 **Examples Reviewed**: 5 section component files analyzed
 **Documentation Read**:
+
 - visual-design-specification.md (complete visual specs)
 - LAYOUT-CORRECTION.md (critical layout correction - 12 full-width sections)
 - design-handoff.md (Angular-3D integration + component APIs)
@@ -27,11 +28,13 @@
 ### Evidence Sources
 
 1. **apps/dev-brand-ui/src/app/core/angular-3d/** - Angular-3D framework (verified)
+
    - Verified exports: Scene3DComponent, BoxComponent, FloatingSphereComponent, ParticleSystemComponent
    - Pattern usage: apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts
    - Directives available: scrollAnimation, float3d, glow3d, mouseParallax3d, performance3d
 
 2. **apps/dev-brand-ui/src/app/shared/components/** - Shared components (verified)
+
    - Verified exports: SectionContainerComponent, GlassmorphismCardComponent (to be renamed LibraryShowcaseCard)
    - Pattern usage: data-foundation-section.component.ts (lines 30-37)
 
@@ -47,11 +50,13 @@
 ### Pattern 1: Light Design System Enforcement
 
 **Evidence**: Found in SectionContainerComponent (lines 1-84)
+
 - **Definition**: apps/dev-brand-ui/src/app/shared/components/section-container.component.ts:28
 - **Examples**: data-foundation-section.component.ts:30-37
 - **Usage**: White (#FFFFFF) or light gray (#F9FAFB) backgrounds only
 
 **Implementation Verification**:
+
 ```typescript
 // Pattern source: section-container.component.ts:77-82
 readonly containerClasses = computed(() => {
@@ -64,6 +69,7 @@ readonly containerClasses = computed(() => {
 ```
 
 **Quality Gates**:
+
 - [x] All background classes verified (bg-white, bg-gray-50)
 - [x] Pattern matches design system (LAYOUT-CORRECTION.md:87-88)
 - [x] No dark backgrounds except code blocks
@@ -73,11 +79,13 @@ readonly containerClasses = computed(() => {
 ### Pattern 2: Angular-3D Scene Integration
 
 **Evidence**: Found in apps/dev-brand-ui/src/app/core/angular-3d/
+
 - **Definition**: components/scene-3d.component.ts:62-144
 - **Examples**: sections/hero-section.component.ts (uses Scene3DComponent)
 - **Usage**: Configurable NgtCanvas wrapper with mouse parallax, scroll animation, performance monitoring
 
 **Implementation Verification**:
+
 ```typescript
 // Pattern source: scene-3d.component.ts:62-144
 // Verified imports from: core/angular-3d/components/scene-3d.component.ts:38-39
@@ -94,7 +102,7 @@ readonly containerClasses = computed(() => {
       mouseParallax3d
       [sensitivity]="mouseParallax().sensitivity"
     />
-  `
+  `,
 })
 export class Scene3DComponent {
   sceneGraph = input.required<any>(); // ✓ Verified
@@ -105,6 +113,7 @@ export class Scene3DComponent {
 ```
 
 **Quality Gates**:
+
 - [x] All imports verified (Scene3DComponent, BoxComponent, directives)
 - [x] Pattern matches Angular-Three conventions
 - [x] Integration points confirmed (scrollAnimation, float3d, performance3d)
@@ -114,11 +123,13 @@ export class Scene3DComponent {
 ### Pattern 3: Component Composition (Section + Grid + Card)
 
 **Evidence**: Found in landing-page sections
+
 - **Definition**: data-foundation-section.component.ts:22-88
 - **Components**: SectionContainerComponent → LibraryShowcaseGridComponent → GlassmorphismCardComponent
 - **Pattern**: Parent container enforces background, grid enforces layout, card enforces content structure
 
 **Implementation Verification**:
+
 ```typescript
 // Pattern source: data-foundation-section.component.ts:30-37
 // Verified imports from: shared/components/section-container.component.ts, glassmorphism-card.component.ts
@@ -133,6 +144,7 @@ export class Scene3DComponent {
 ```
 
 **Quality Gates**:
+
 - [x] All components verified (SectionContainer, LibraryShowcaseGrid, GlassmorphismCard)
 - [x] Pattern matches design system hierarchy
 - [x] Data flow verified (libraries signal → grid → cards)
@@ -146,12 +158,14 @@ export class Scene3DComponent {
 **Chosen Approach**: Hybrid Component + Angular-3D Architecture
 
 **Rationale**:
+
 - Design system mandates light backgrounds with generous whitespace (designs-systems.md:27-33)
 - LAYOUT-CORRECTION.md corrects card grids to full-width sections (lines 19-42)
 - Angular-3D framework already exists for complex visualizations (apps/dev-brand-ui/src/app/core/angular-3d/)
 - 12 libraries require individual full-width sections (NOT card grids)
 
 **Evidence**:
+
 - Design system: "Background: Pure white or ultra-light gray (#FFFFFF or #F9FAFB)" (designs-systems.md:28)
 - Layout correction: "EACH of the 12 libraries receives its own FULL-WIDTH INDIVIDUAL SECTION" (LAYOUT-CORRECTION.md:21)
 - 3D framework: "apps/dev-brand-ui/src/app/core/angular-3d/ contains Scene3DComponent, BoxComponent, directives" (verified via Glob)
@@ -184,6 +198,7 @@ export class Scene3DComponent {
 17. **CTA + Footer** - Final CTA and footer - NEW
 
 **Critical Layout Enforcement** (LAYOUT-CORRECTION.md):
+
 - Sections 2-13: Full-width individual sections (py-32, alternating white/gray)
 - Section 14: Angular-3D architecture diagram (600px height)
 - Sections 15-16: Card grids (FIRST card usage in landing page)
@@ -198,6 +213,7 @@ export class Scene3DComponent {
 **Location**: apps/dev-brand-ui/src/app/shared/components/section-container.component.ts
 **Status**: EXISTING (verified via Read)
 **Props** (verified lines 71-74):
+
 ```typescript
 readonly title = input<string>('');
 readonly subtitle = input<string>('');
@@ -217,6 +233,7 @@ readonly minHeight = input<string>('auto'); // ✓ Content-driven
 **Location**: apps/dev-brand-ui/src/app/shared/components/glassmorphism-card.component.ts
 **Status**: EXISTING (verified via Read) - NEEDS SEMANTIC RENAME
 **Props** (verified lines 119-125):
+
 ```typescript
 readonly icon = input<string>(''); // ✓ Library icon (emoji or SVG path)
 readonly packageName = input<string>(''); // ✓ @hive-academy/package-name
@@ -232,6 +249,7 @@ readonly ctaText = input<string>(''); // ✓ "Learn more", "Explore docs"
 **Action**: RENAME to LibraryShowcaseCardComponent for semantic clarity
 
 **Rename Strategy** (Design Handoff Pattern):
+
 ```bash
 # Rename component file
 mv glassmorphism-card.component.ts library-showcase-card.component.ts
@@ -246,6 +264,7 @@ mv glassmorphism-card.component.ts library-showcase-card.component.ts
 ```
 
 **Migration Impact**:
+
 - 5 section components use GlassmorphismCardComponent (data-foundation, core-foundation, workflow-orchestration, intelligence-layer, production-systems)
 - All imports and usages must be updated
 - No API changes (props remain identical)
@@ -258,6 +277,7 @@ mv glassmorphism-card.component.ts library-showcase-card.component.ts
 **Status**: NEW (does not exist, verified via Glob)
 **Purpose**: Syntax-highlighted code blocks with copy functionality
 **Props** (from design-handoff.md:300-310):
+
 ```typescript
 readonly code = input.required<string>(); // Code content
 readonly language = input<'typescript' | 'bash' | 'javascript'>('typescript'); // Language
@@ -266,6 +286,7 @@ readonly maxHeight = input<string>('500px'); // Max height with scroll
 ```
 
 **Implementation Requirements** (design-handoff.md:312-383):
+
 - Prism.js for syntax highlighting (needs installation: `npm install prismjs @types/prismjs`)
 - Copy button with clipboard API
 - Dark code background (#23272F) - ONLY allowed dark background
@@ -286,30 +307,36 @@ readonly maxHeight = input<string>('500px'); // Max height with scroll
 **3D Scene Specification** (design-assets-inventory.md:53-294):
 
 **Scene Setup**:
+
 - Canvas size: Full section width (responsive, height: 600px)
 - Camera: OrthographicCamera position [0, 0, 800]
 - Renderer: WebGL with antialiasing, alpha: true (transparent background)
 - Lighting: AmbientLight (0.6) + DirectionalLight (0.4)
 
 **Layer Structure** (13 BoxGeometry instances):
+
 1. **Layer 1 - Core Foundation** (1 box):
+
    - Position: [0, -300, 0]
    - Dimensions: BoxGeometry(600, 120, 20)
    - Color: 0xEEF2FF (light indigo)
    - Animation: float3d { height: 0.2, speed: 4000 }
 
 2. **Layer 2 - Data Layer** (3 boxes side-by-side):
+
    - Positions: [-450, -150, 0], [0, -150, 0], [450, -150, 0]
    - Dimensions: BoxGeometry(400, 120, 20) each
    - Color: 0xDBEAFE (light blue)
    - Animation: Staggered float3d (delays: 0ms, 200ms, 400ms)
 
 3. **Layer 3 - Orchestration Layer** (3 boxes):
+
    - Positions: [-450, 0, 0], [0, 0, 0], [450, 0, 0]
    - Color: 0xD1FAE5 (light green)
    - Animation: Staggered float3d (delays: 100ms, 300ms, 500ms)
 
 4. **Layer 4 - Agent Systems** (3 boxes):
+
    - Positions: [-450, 150, 0], [0, 150, 0], [450, 150, 0]
    - Color: 0xF3E8FF (light purple)
    - Animation: Staggered float3d (delays: 200ms, 400ms, 600ms)
@@ -320,18 +347,21 @@ readonly maxHeight = input<string>('500px'); // Max height with scroll
    - Animation: Staggered float3d (delays: 300ms, 500ms, 700ms)
 
 **Directives Applied** (verified in codebase):
+
 - `float3d`: Floating animation on all boxes (verified: directives/float-3d.directive.ts)
 - `mouseParallax3d`: Camera parallax (verified: directives/mouse-parallax-3d.directive.ts)
 - `scrollAnimation`: Fade-in on viewport entry (verified: directives/scroll-animation.directive.ts)
 - `performance3d`: Auto-quality adjustment (verified: directives/performance-3d.directive.ts)
 
 **Performance Budget**:
+
 - Target FPS: 60 on mid-range devices
 - Polygon count: ~15,000 (13 boxes + edges)
 - Max draw calls: 50
 - Bundle size impact: ~30KB (Three.js scene)
 
 **Fallback for Non-WebGL**:
+
 - Static SVG fallback: architecture-12-libraries-fallback.svg
 - WebGL detection: Check for `WebGLRenderingContext` support
 - Conditional rendering: `@if (webGLSupported) { <app-architecture-3d-scene /> } @else { <img> }`
@@ -343,6 +373,7 @@ readonly maxHeight = input<string>('500px'); // Max height with scroll
 ### File Structure
 
 **Section Components** (apps/dev-brand-ui/src/app/features/landing-page/sections/):
+
 ```
 sections/
   hero-section.component.ts          # EXISTING (SKIP)
@@ -365,6 +396,7 @@ sections/
 ```
 
 **3D Scene Components** (apps/dev-brand-ui/src/app/features/landing-page/components/):
+
 ```
 components/
   architecture-3d-scene.component.ts # NEW (3D scene for section 14)
@@ -372,6 +404,7 @@ components/
 ```
 
 **Shared Components** (apps/dev-brand-ui/src/app/shared/components/):
+
 ```
 components/
   section-container.component.ts       # EXISTING (use as-is)
@@ -382,6 +415,7 @@ components/
 ```
 
 **Angular-3D Integration** (apps/dev-brand-ui/src/app/core/angular-3d/):
+
 ```
 # Reference existing framework (NO changes needed)
 core/angular-3d/
@@ -411,6 +445,7 @@ core/angular-3d/
 **Pattern**: Angular 19 signals for reactive state management
 
 **Example** (verified from data-foundation-section.component.ts:48-87):
+
 ```typescript
 export class ChromaDBSectionComponent {
   readonly library = signal<LibraryCard>({
@@ -438,6 +473,7 @@ export class ChromaDBSectionComponent {
 **State Management**: Angular-3D state store (existing service)
 
 **Pattern** (verified from angular-3d/services/angular-3d-state.store.ts):
+
 ```typescript
 // State tracked by PerformanceMonitorService and AdvancedPerformanceOptimizerService
 // - FPS monitoring
@@ -459,6 +495,7 @@ export class ChromaDBSectionComponent {
 **Pattern**: One-way data binding (read-only)
 
 **Example** (verified from data-foundation-section.component.ts:48-87):
+
 ```typescript
 // 1. Library data defined in section component
 readonly library = signal<LibraryCard>({ ... });
@@ -484,23 +521,21 @@ readonly library = signal<LibraryCard>({ ... });
 **Pattern**: CSS utility classes (no runtime state)
 
 **Tailwind Classes Used** (verified from section-container.component.ts:79-82):
+
 ```typescript
 // Background classes (light design system)
 const backgroundMap: Record<string, string> = {
-  white: 'bg-white',           // #FFFFFF
-  'light-gray': 'bg-gray-50',  // #F9FAFB
+  white: 'bg-white', // #FFFFFF
+  'light-gray': 'bg-gray-50', // #F9FAFB
 };
 ```
 
 **Typography Classes** (verified from section-container.component.ts:42-50):
+
 ```html
 <!-- Section header -->
-<h2 class="text-5xl md:text-6xl font-bold mb-4 text-gray-900">
-  {{ title() }}
-</h2>
-<p class="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-  {{ subtitle() }}
-</p>
+<h2 class="text-5xl md:text-6xl font-bold mb-4 text-gray-900">{{ title() }}</h2>
+<p class="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">{{ subtitle() }}</p>
 ```
 
 ---
@@ -512,6 +547,7 @@ const backgroundMap: Record<string, string> = {
 **Pattern**: Declarative component composition (Angular-Three primitives)
 
 **Example** (proposed based on design-assets-inventory.md:238-294):
+
 ```typescript
 // Scene configuration passed to Scene3DComponent
 @Component({
@@ -523,7 +559,7 @@ const backgroundMap: Record<string, string> = {
       [mouseParallax]="{ sensitivity: 0.3, smoothing: 6, cameraDistance: 800 }"
       performance3d
     />
-  `
+  `,
 })
 export class Architecture3DSceneComponent {
   ArchitectureSceneGraph = ArchitectureSceneGraphComponent;
@@ -543,7 +579,7 @@ export class Architecture3DSceneComponent {
       [floatConfig]="{ height: 0.2, speed: 4000 }"
     />
     <!-- ... Layer 2-5 boxes ... -->
-  `
+  `,
 })
 class ArchitectureSceneGraphComponent {}
 ```
@@ -559,22 +595,26 @@ class ArchitectureSceneGraphComponent {}
 **Direct Replacement Strategy**:
 
 1. **Phase 1**: Component renaming and cleanup
+
    - Rename GlassmorphismCardComponent → LibraryShowcaseCardComponent
    - Update all imports in 5 section files
    - Verify build passes
 
 2. **Phase 2**: Individual section creation (sections 2-13)
+
    - Create ChromaDBSectionComponent (section 2)
    - Create Neo4jSectionComponent (section 3)
    - ... (create all 12 library sections)
    - Each section: full-width, py-32, alternating white/gray
 
 3. **Phase 3**: Angular-3D integration (section 14)
+
    - Create Architecture3DSceneComponent
    - Create ArchitectureSceneGraphComponent (13 boxes + animations)
    - Implement WebGL detection and fallback
 
 4. **Phase 4**: Card grid sections (sections 15-16)
+
    - Create UseCasesSectionComponent (2x2 card grid)
    - Create GettingStartedSectionComponent (3-column steps)
 
@@ -582,6 +622,7 @@ class ArchitectureSceneGraphComponent {}
    - Create CTAFooterSectionComponent
 
 **Rollback Plan**:
+
 - All changes are component additions (no deletions)
 - Hero section remains unchanged (safe baseline)
 - If 3D performance issues: Fallback to static SVG (already specified)
@@ -593,11 +634,13 @@ class ArchitectureSceneGraphComponent {}
 **Priority Order** (based on dependency hierarchy):
 
 1. **Phase 1** (Foundation - 2 hours):
+
    - Rename GlassmorphismCardComponent → LibraryShowcaseCardComponent
    - Create CodeSnippetComponent
    - Install Prism.js: `npm install prismjs @types/prismjs`
 
 2. **Phase 2** (Library Sections - 12 hours, ~1 hour each):
+
    - ChromaDBSectionComponent (section 2)
    - Neo4jSectionComponent (section 3)
    - LangGraphCoreSectionComponent (section 4)
@@ -612,11 +655,13 @@ class ArchitectureSceneGraphComponent {}
    - PlatformSectionComponent (section 13)
 
 3. **Phase 3** (3D Integration - 4 hours):
+
    - Architecture3DSceneComponent (section 14)
    - ArchitectureSceneGraphComponent (13 boxes + animations)
    - WebGL detection and fallback SVG
 
 4. **Phase 4** (Card Grids - 3 hours):
+
    - UseCasesSectionComponent (section 15, 2x2 grid)
    - GettingStartedSectionComponent (section 16, 3-column steps)
 
@@ -630,21 +675,25 @@ class ArchitectureSceneGraphComponent {}
 ### Testing Strategy Per Component
 
 **Unit Tests** (Angular testing):
+
 - Component rendering (fixture.debugElement)
 - Signal reactivity (library data updates)
 - Event emissions (cardClick, etc.)
 
 **Visual Regression Tests** (Playwright or Cypress):
+
 - Screenshot comparison against visual-design-specification.md
 - Responsive breakpoints (375px, 768px, 1024px, 1920px)
 - Hover states (cards, buttons)
 
 **3D Scene Performance Tests** (custom service):
+
 - FPS monitoring (PerformanceMonitorService)
 - Polygon budget validation (< 50K polygons)
 - Quality adjustment verification (performance3d directive)
 
 **Cross-Browser Tests** (BrowserStack or Playwright):
+
 - WebGL detection in Chrome, Firefox, Safari, Edge
 - Fallback SVG rendering in non-WebGL browsers
 - Mobile Safari (iOS), Mobile Chrome (Android)
@@ -656,6 +705,7 @@ class ArchitectureSceneGraphComponent {}
 ### 3D Scene Rendering Budget
 
 **Target Performance**:
+
 - FPS: 60 on mid-range devices (performance3d directive auto-adjusts)
 - Polygon count: < 50,000 total (Architecture scene: ~15,000)
 - Draw calls: < 100
@@ -664,6 +714,7 @@ class ArchitectureSceneGraphComponent {}
 **Evidence**: design-handoff.md:710-721 (performance budget specification)
 
 **Enforcement Mechanisms**:
+
 - `performance3d` directive (verified: directives/performance-3d.directive.ts)
 - `PerformanceMonitorService` (verified: services/performance-monitor.service.ts)
 - `AdvancedPerformanceOptimizerService` (verified: services/advanced-performance-optimizer.service.ts)
@@ -673,6 +724,7 @@ class ArchitectureSceneGraphComponent {}
 ### Lazy Loading Strategy
 
 **3D Scene Lazy Loading** (design-handoff.md:734-740):
+
 ```typescript
 // Load 3D scene only when section visible
 @if (sectionVisible()) {
@@ -688,6 +740,7 @@ private observer = new IntersectionObserver((entries) => {
 ```
 
 **Code Snippet Lazy Loading** (Prism.js):
+
 ```typescript
 // Lazy load Prism.js when code snippet component created
 import('prismjs').then(() => {
@@ -701,6 +754,7 @@ import('prismjs').then(() => {
 ### Quality Adjustment Strategy
 
 **performance3d Directive** (verified implementation):
+
 - Monitors FPS via PerformanceMonitorService
 - Auto-reduces quality if FPS < 30:
   - Reduce particle count (50% reduction)
@@ -715,6 +769,7 @@ import('prismjs').then(() => {
 ### Resource Disposal
 
 **3D Scene Cleanup** (design-handoff.md:742-750):
+
 ```typescript
 ngOnDestroy(): void {
   // Dispose Three.js resources
@@ -737,6 +792,7 @@ ngOnDestroy(): void {
 ### Unit Tests for Section Components
 
 **Test Pattern** (Angular TestBed):
+
 ```typescript
 describe('ChromaDBSectionComponent', () => {
   let component: ChromaDBSectionComponent;
@@ -744,7 +800,7 @@ describe('ChromaDBSectionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ChromaDBSectionComponent] // Standalone component
+      imports: [ChromaDBSectionComponent], // Standalone component
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChromaDBSectionComponent);
@@ -754,7 +810,9 @@ describe('ChromaDBSectionComponent', () => {
 
   it('should render library data', () => {
     const compiled = fixture.nativeElement;
-    expect(compiled.querySelector('h3')?.textContent).toContain('Build RAG applications in minutes');
+    expect(compiled.querySelector('h3')?.textContent).toContain(
+      'Build RAG applications in minutes'
+    );
   });
 
   it('should display 4 capabilities', () => {
@@ -769,6 +827,7 @@ describe('ChromaDBSectionComponent', () => {
 ### Visual Regression Tests
 
 **Test Pattern** (Playwright or Cypress):
+
 ```typescript
 test('ChromaDB section matches design specs', async ({ page }) => {
   await page.goto('/');
@@ -780,9 +839,9 @@ test('ChromaDB section matches design specs', async ({ page }) => {
   await expect(page.locator('[data-section="chromadb"]')).toHaveScreenshot('chromadb-section.png');
 
   // Verify design system compliance
-  const background = await page.locator('[data-section="chromadb"]').evaluate(
-    el => window.getComputedStyle(el).backgroundColor
-  );
+  const background = await page
+    .locator('[data-section="chromadb"]')
+    .evaluate((el) => window.getComputedStyle(el).backgroundColor);
   expect(background).toBe('rgb(255, 255, 255)'); // White background
 });
 ```
@@ -792,6 +851,7 @@ test('ChromaDB section matches design specs', async ({ page }) => {
 ### 3D Scene Performance Tests
 
 **Test Pattern** (Custom PerformanceMonitorService):
+
 ```typescript
 test('Architecture 3D scene maintains 60 FPS', async ({ page }) => {
   await page.goto('/#integration-showcase');
@@ -827,6 +887,7 @@ test('Architecture 3D scene maintains 60 FPS', async ({ page }) => {
 ### Cross-Browser Tests
 
 **Test Matrix**:
+
 - Chrome (latest)
 - Firefox (latest)
 - Safari (latest) - WebGL support
@@ -835,12 +896,13 @@ test('Architecture 3D scene maintains 60 FPS', async ({ page }) => {
 - Mobile Chrome (Android) - Performance testing
 
 **Fallback Validation**:
+
 ```typescript
 test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
   // Disable WebGL
   await page.addInitScript(() => {
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-      value: () => null
+      value: () => null,
     });
   });
 
@@ -861,6 +923,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
 **Recommended Developer**: **frontend-developer**
 
 **Rationale**:
+
 - Task is 100% Angular component development (UI/UX implementation)
 - Requires Angular 19 standalone components, signals, Tailwind CSS
 - Requires Angular-Three integration (existing framework)
@@ -878,6 +941,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
 **Before implementing, developer MUST verify:**
 
 1. **All imports proposed exist in library**:
+
    ```bash
    # Verify Angular-3D imports
    grep -r "export.*Scene3DComponent" apps/dev-brand-ui/src/app/core/angular-3d/
@@ -886,6 +950,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
    ```
 
 2. **All decorators/directives proposed are available**:
+
    ```bash
    # Verify directives
    ls apps/dev-brand-ui/src/app/core/angular-3d/directives/
@@ -893,6 +958,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
    ```
 
 3. **All patterns match examples in codebase**:
+
    - Read: apps/dev-brand-ui/src/app/features/landing-page/sections/data-foundation-section.component.ts
    - Read: apps/dev-brand-ui/src/app/shared/components/section-container.component.ts
 
@@ -939,6 +1005,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
 **Step 1: Foundation Setup** (2 hours)
 
 1. Rename GlassmorphismCardComponent → LibraryShowcaseCardComponent:
+
    ```bash
    cd apps/dev-brand-ui/src/app/shared/components/
    mv glassmorphism-card.component.ts library-showcase-card.component.ts
@@ -946,6 +1013,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
    ```
 
 2. Update component class and selector:
+
    ```typescript
    // OLD
    @Component({ selector: 'app-glassmorphism-card' })
@@ -957,6 +1025,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
    ```
 
 3. Update all imports in section files:
+
    ```bash
    # Find all usages
    grep -r "GlassmorphismCardComponent" apps/dev-brand-ui/src/app/features/landing-page/sections/
@@ -964,6 +1033,7 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
    ```
 
 4. Create CodeSnippetComponent:
+
    ```bash
    # Create new component
    # Copy implementation from design-handoff.md:312-383
@@ -979,12 +1049,14 @@ test('Falls back to SVG in non-WebGL browsers', async ({ page }) => {
 For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 
 1. Create section component file:
+
    ```bash
    cd apps/dev-brand-ui/src/app/features/landing-page/sections/
    # Create chromadb-section.component.ts (copy pattern from data-foundation-section.component.ts)
    ```
 
 2. Define library data (from library-analysis.md):
+
    ```typescript
    readonly library = signal<LibraryCard>({
      icon: '🔍', // Library-specific icon
@@ -997,6 +1069,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
    ```
 
 3. Use SectionContainerComponent wrapper:
+
    ```html
    <app-section-container
      title="ChromaDB"
@@ -1023,6 +1096,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 **Step 3: 3D Integration** (4 hours)
 
 1. Create Architecture3DSceneComponent:
+
    ```bash
    cd apps/dev-brand-ui/src/app/features/landing-page/components/
    # Create architecture-3d-scene.component.ts
@@ -1030,12 +1104,14 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
    ```
 
 2. Create ArchitectureSceneGraphComponent:
+
    ```bash
    # Create architecture-scene-graph.component.ts
    # Copy implementation from design-assets-inventory.md:238-294
    ```
 
 3. Implement 13 boxes with BoxComponent:
+
    ```html
    <!-- Layer 1: Core Foundation (1 box) -->
    <app-box
@@ -1062,6 +1138,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
    ```
 
 4. Add directives:
+
    - `mouseParallax3d` on Scene3DComponent
    - `scrollAnimation` on parent container
    - `performance3d` on Scene3DComponent
@@ -1084,6 +1161,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 **Step 4: Card Grid Sections** (3 hours)
 
 1. Create UseCasesSectionComponent (2x2 card grid):
+
    ```html
    <app-section-container title="Production Use Cases" background="white">
      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1104,6 +1182,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 **Step 5: CTA + Footer** (2 hours)
 
 1. Create CTAFooterSectionComponent:
+
    ```html
    <!-- CTA Section -->
    <div class="bg-indigo-600 py-24 text-center">
@@ -1189,12 +1268,14 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 ## 📊 Quality Assurance Summary
 
 **Evidence Quality**:
+
 - **Citation Count**: 47 file:line citations across 7 design documents
 - **Verification Rate**: 100% (all APIs/components verified in codebase)
 - **Example Count**: 5 section component files analyzed
 - **Pattern Consistency**: Matches 100% of examined codebase patterns (light design, signal-based state, SectionContainer wrapper)
 
 **Design Document Compliance**:
+
 - ✅ LAYOUT-CORRECTION.md: 12 full-width sections enforced (NOT card grids)
 - ✅ visual-design-specification.md: Light backgrounds, deep gray text, soft shadows
 - ✅ design-handoff.md: Angular-3D integration patterns, component APIs
@@ -1202,6 +1283,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 - ✅ designs-systems.md: Design tokens (colors, typography, spacing, shadows)
 
 **Architectural Decisions (Evidence-Based)**:
+
 - **Decision**: Use existing SectionContainerComponent for all sections
   - **Evidence**: section-container.component.ts:28-84 (verified implementation enforces light design)
 - **Decision**: Rename GlassmorphismCardComponent → LibraryShowcaseCardComponent
@@ -1218,6 +1300,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 **Immediate Next Agent**: **frontend-developer**
 
 **Handoff Materials**:
+
 1. implementation-plan.md (this document) - Complete architecture
 2. visual-design-specification.md - Visual specs for all sections
 3. LAYOUT-CORRECTION.md - Layout pattern enforcement
@@ -1226,6 +1309,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 6. library-analysis.md - 12 library data source
 
 **Developer Success Checklist**:
+
 - [ ] All 6 handoff documents read
 - [ ] All Angular-3D imports verified in codebase
 - [ ] Example section files analyzed (data-foundation, core-foundation)
@@ -1234,6 +1318,7 @@ For each library section (ChromaDB, Neo4j, Core, Workflow-Engine, etc.):
 - [ ] Performance budget understood (60 FPS, < 50K polygons)
 
 **First Implementation Priority**:
+
 1. Rename GlassmorphismCardComponent → LibraryShowcaseCardComponent
 2. Create CodeSnippetComponent
 3. Create ChromaDBSectionComponent (section 2) as first library section

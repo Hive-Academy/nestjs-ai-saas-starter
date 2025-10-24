@@ -16,6 +16,7 @@ This document describes the architecture and implementation patterns for the Ang
 **Target Audience**: Angular developers integrating LangGraph workflows into their applications.
 
 **Key Principles**:
+
 - 100% generic - zero hardcoded workflow-specific logic
 - Copy-paste ready - complete, runnable implementations
 - Progressive complexity - simple to advanced examples
@@ -72,6 +73,7 @@ example-name/
 **Purpose**: Minimal workflow setup demonstrating basic execution pattern.
 
 **Features Demonstrated**:
+
 - WorkflowRegistry lookup
 - Signal-based state management
 - Basic error handling with retry
@@ -86,11 +88,7 @@ import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MockExecutionService } from '../../shared/mock-data/mock-execution.service';
-import {
-  SIMPLE_WORKFLOW,
-  SimpleInput,
-  SimpleOutput
-} from '../../shared/workflows/simple-workflow';
+import { SIMPLE_WORKFLOW, SimpleInput, SimpleOutput } from '../../shared/workflows/simple-workflow';
 
 @Component({
   selector: 'app-simple-execution',
@@ -113,136 +111,139 @@ import {
           placeholder="Enter a message"
           [disabled]="loading()"
         />
-        <button
-          (click)="execute()"
-          [disabled]="loading() || !messageInput"
-          class="btn-primary"
-        >
+        <button (click)="execute()" [disabled]="loading() || !messageInput" class="btn-primary">
           Execute Workflow
         </button>
       </div>
 
       <!-- Loading State -->
       @if (loading()) {
-        <div class="status-loading">
-          <div class="spinner"></div>
-          <p>Processing workflow...</p>
-        </div>
+      <div class="status-loading">
+        <div class="spinner"></div>
+        <p>Processing workflow...</p>
+      </div>
       }
 
       <!-- Result Display -->
       @if (result()) {
-        <div class="result-section">
-          <h3>Result</h3>
-          <div class="result-card">
-            <p><strong>Processed Message:</strong> {{ result()!.processedMessage }}</p>
-            <p><strong>Timestamp:</strong> {{ result()!.timestamp | date:'medium' }}</p>
-          </div>
+      <div class="result-section">
+        <h3>Result</h3>
+        <div class="result-card">
+          <p><strong>Processed Message:</strong> {{ result()!.processedMessage }}</p>
+          <p><strong>Timestamp:</strong> {{ result()!.timestamp | date : 'medium' }}</p>
         </div>
+      </div>
       }
 
       <!-- Error Display -->
       @if (error()) {
-        <div class="error-section">
-          <p class="error-message">{{ error() }}</p>
-          <button (click)="execute()" class="btn-secondary">Retry</button>
-        </div>
+      <div class="error-section">
+        <p class="error-message">{{ error() }}</p>
+        <button (click)="execute()" class="btn-secondary">Retry</button>
+      </div>
       }
 
       <!-- Execution Statistics -->
       @if (executionCount() > 0) {
-        <div class="statistics">
-          <h3>Execution Statistics</h3>
-          <p>Total Executions: {{ executionCount() }}</p>
-          <p>Success Rate: {{ successRate() }}%</p>
-          <p>Average Duration: {{ averageDuration() }}ms</p>
-        </div>
+      <div class="statistics">
+        <h3>Execution Statistics</h3>
+        <p>Total Executions: {{ executionCount() }}</p>
+        <p>Success Rate: {{ successRate() }}%</p>
+        <p>Average Duration: {{ averageDuration() }}ms</p>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    .example-container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+  styles: [
+    `
+      .example-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
 
-    .input-section {
-      margin: 1.5rem 0;
-    }
+      .input-section {
+        margin: 1.5rem 0;
+      }
 
-    .input-section label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
+      .input-section label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
 
-    .input-section input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
+      .input-section input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
 
-    .status-loading {
-      text-align: center;
-      padding: 2rem;
-      color: #666;
-    }
+      .status-loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
 
-    .spinner {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 1rem;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 1rem;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-    .result-section, .statistics {
-      margin: 1.5rem 0;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
+      .result-section,
+      .statistics {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
 
-    .error-section {
-      padding: 1rem;
-      background: #fee;
-      border: 1px solid #fcc;
-      border-radius: 4px;
-      margin: 1rem 0;
-    }
+      .error-section {
+        padding: 1rem;
+        background: #fee;
+        border: 1px solid #fcc;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
 
-    .btn-primary {
-      background: #3498db;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
+      .btn-primary {
+        background: #3498db;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
 
-    .btn-primary:hover:not(:disabled) {
-      background: #2980b9;
-    }
+      .btn-primary:hover:not(:disabled) {
+        background: #2980b9;
+      }
 
-    .btn-primary:disabled {
-      background: #bdc3c7;
-      cursor: not-allowed;
-    }
-  `]
+      .btn-primary:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class SimpleExecutionComponent {
   workflow = SIMPLE_WORKFLOW;
@@ -279,25 +280,23 @@ export class SimpleExecutionComponent {
     const startTime = Date.now();
     const input: SimpleInput = { message: this.messageInput };
 
-    this.mockExecution
-      .mockExecution<SimpleOutput>(this.workflow.id, input)
-      .subscribe({
-        next: (output) => {
-          const duration = Date.now() - startTime;
-          this.result.set(output);
-          this.loading.set(false);
+    this.mockExecution.mockExecution<SimpleOutput>(this.workflow.id, input).subscribe({
+      next: (output) => {
+        const duration = Date.now() - startTime;
+        this.result.set(output);
+        this.loading.set(false);
 
-          // Update statistics
-          this.executionCount.update(c => c + 1);
-          this.successCount.update(c => c + 1);
-          this.totalDuration.update(d => d + duration);
-        },
-        error: (err) => {
-          this.error.set(err.message || 'An error occurred during execution');
-          this.loading.set(false);
-          this.executionCount.update(c => c + 1);
-        }
-      });
+        // Update statistics
+        this.executionCount.update((c) => c + 1);
+        this.successCount.update((c) => c + 1);
+        this.totalDuration.update((d) => d + duration);
+      },
+      error: (err) => {
+        this.error.set(err.message || 'An error occurred during execution');
+        this.loading.set(false);
+        this.executionCount.update((c) => c + 1);
+      },
+    });
   }
 }
 ```
@@ -319,19 +318,19 @@ describe('SimpleExecutionComponent', () => {
 
   beforeEach(async () => {
     const mockService = {
-      mockExecution: jest.fn()
+      mockExecution: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [SimpleExecutionComponent],
-      providers: [
-        { provide: MockExecutionService, useValue: mockService }
-      ]
+      providers: [{ provide: MockExecutionService, useValue: mockService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SimpleExecutionComponent);
     component = fixture.componentInstance;
-    mockExecutionService = TestBed.inject(MockExecutionService) as jest.Mocked<MockExecutionService>;
+    mockExecutionService = TestBed.inject(
+      MockExecutionService
+    ) as jest.Mocked<MockExecutionService>;
     fixture.detectChanges();
   });
 
@@ -342,7 +341,7 @@ describe('SimpleExecutionComponent', () => {
   it('should execute workflow successfully', (done) => {
     const mockResult: SimpleOutput = {
       processedMessage: 'Processed: test',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     mockExecutionService.mockExecution.mockReturnValue(of(mockResult));
@@ -360,9 +359,7 @@ describe('SimpleExecutionComponent', () => {
   });
 
   it('should handle errors gracefully', (done) => {
-    mockExecutionService.mockExecution.mockReturnValue(
-      throwError(() => new Error('Test error'))
-    );
+    mockExecutionService.mockExecution.mockReturnValue(throwError(() => new Error('Test error')));
 
     component.messageInput = 'test';
     component.execute();
@@ -380,7 +377,7 @@ describe('SimpleExecutionComponent', () => {
   it('should calculate success rate correctly', (done) => {
     const mockResult: SimpleOutput = {
       processedMessage: 'Processed: test',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // First successful execution
@@ -390,9 +387,7 @@ describe('SimpleExecutionComponent', () => {
 
     setTimeout(() => {
       // Second failed execution
-      mockExecutionService.mockExecution.mockReturnValue(
-        throwError(() => new Error('Test error'))
-      );
+      mockExecutionService.mockExecution.mockReturnValue(throwError(() => new Error('Test error')));
       component.execute();
 
       setTimeout(() => {
@@ -455,10 +450,10 @@ Signals provide reactive state that automatically updates the template.
 
 \`\`\`typescript
 this.mockExecution.mockExecution<SimpleOutput>(this.workflow.id, input)
-  .subscribe({
-    next: (output) => { /* handle success */ },
-    error: (err) => { /* handle error */ }
-  });
+.subscribe({
+next: (output) => { /_ handle success _/ },
+error: (err) => { /_ handle error _/ }
+});
 \`\`\`
 
 The mock service simulates realistic workflow execution with delays and data generation.
@@ -467,8 +462,8 @@ The mock service simulates realistic workflow execution with delays and data gen
 
 \`\`\`typescript
 successRate = computed(() => {
-  const count = this.executionCount();
-  return count > 0 ? Math.round((this.successCount() / count) * 100) : 0;
+const count = this.executionCount();
+return count > 0 ? Math.round((this.successCount() / count) \* 100) : 0;
 });
 \`\`\`
 
@@ -504,6 +499,7 @@ Computed signals automatically recalculate when dependencies change.
 ```
 
 **Key Insights**:
+
 - This example establishes the foundational pattern used across all 25 examples
 - Signal-based reactivity is the core state management approach
 - MockExecutionService enables self-contained examples without backend dependencies
@@ -517,6 +513,7 @@ Computed signals automatically recalculate when dependencies change.
 **Purpose**: Demonstrate content projection for customizing agent visualization.
 
 **Features Demonstrated**:
+
 - WorkflowVisualizer component usage
 - Content projection slots (lgAgentDisplay)
 - Custom agent card templates
@@ -530,10 +527,7 @@ Computed signals automatically recalculate when dependencies change.
 @Component({
   selector: 'app-custom-rendering',
   template: `
-    <lg-workflow-visualizer
-      [workflowId]="workflow.id"
-      [executionId]="executionId()"
-    >
+    <lg-workflow-visualizer [workflowId]="workflow.id" [executionId]="executionId()">
       <!-- Custom agent display template -->
       <ng-template lgAgentDisplay let-agent let-status="status">
         <div class="custom-agent-card" [attr.data-status]="status">
@@ -543,49 +537,54 @@ Computed signals automatically recalculate when dependencies change.
           <h4>{{ agent.name }}</h4>
           <p class="agent-role">{{ agent.role }}</p>
 
-          @switch (status) {
-            @case ('active') {
-              <div class="status-active">
-                <div class="pulse"></div>
-                <span>Working...</span>
-              </div>
-            }
-            @case ('complete') {
-              <div class="status-complete">✓ Complete</div>
-            }
-            @case ('pending') {
-              <div class="status-pending">⏳ Waiting</div>
-            }
-          }
+          @switch (status) { @case ('active') {
+          <div class="status-active">
+            <div class="pulse"></div>
+            <span>Working...</span>
+          </div>
+          } @case ('complete') {
+          <div class="status-complete">✓ Complete</div>
+          } @case ('pending') {
+          <div class="status-pending">⏳ Waiting</div>
+          } }
         </div>
       </ng-template>
     </lg-workflow-visualizer>
   `,
-  styles: [`
-    .custom-agent-card {
-      padding: 1.5rem;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-    }
+  styles: [
+    `
+      .custom-agent-card {
+        padding: 1.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
 
-    .custom-agent-card[data-status="active"] {
-      border: 2px solid #3498db;
-      box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
-    }
+      .custom-agent-card[data-status='active'] {
+        border: 2px solid #3498db;
+        box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+      }
 
-    .pulse {
-      width: 12px;
-      height: 12px;
-      background: #3498db;
-      border-radius: 50%;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
+      .pulse {
+        width: 12px;
+        height: 12px;
+        background: #3498db;
+        border-radius: 50%;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.2); }
-    }
-  `]
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.2);
+        }
+      }
+    `,
+  ],
 })
 export class CustomRenderingComponent {
   workflow = CUSTOM_RENDERING_WORKFLOW;
@@ -593,9 +592,9 @@ export class CustomRenderingComponent {
 
   getAgentIcon(role: string): string {
     const icons: Record<string, string> = {
-      'researcher': 'fas fa-search',
-      'writer': 'fas fa-pen',
-      'editor': 'fas fa-check-circle'
+      researcher: 'fas fa-search',
+      writer: 'fas fa-pen',
+      editor: 'fas fa-check-circle',
     };
     return icons[role] || 'fas fa-cog';
   }
@@ -603,6 +602,7 @@ export class CustomRenderingComponent {
 ```
 
 **Key Insights**:
+
 - Content projection enables complete visual customization
 - Template context provides type-safe access to agent data
 - CSS animations enhance user experience
@@ -616,6 +616,7 @@ export class CustomRenderingComponent {
 **Purpose**: Demonstrate human-in-the-loop workflow with approval modal.
 
 **Features Demonstrated**:
+
 - ApprovalModal component integration
 - useLangGraphApproval composable
 - Custom approval metadata display
@@ -642,21 +643,18 @@ export class CustomRenderingComponent {
           <p class="approval-description">{{ data.description }}</p>
 
           @if (data.changes) {
-            <div class="changes-preview">
-              <h4>Proposed Changes:</h4>
-              <ul>
-                @for (change of data.changes; track change.id) {
-                  <li>{{ change.description }}</li>
-                }
-              </ul>
-            </div>
+          <div class="changes-preview">
+            <h4>Proposed Changes:</h4>
+            <ul>
+              @for (change of data.changes; track change.id) {
+              <li>{{ change.description }}</li>
+              }
+            </ul>
+          </div>
           }
 
           <div class="approval-actions">
-            <textarea
-              placeholder="Optional feedback..."
-              [(ngModel)]="approvalFeedback"
-            ></textarea>
+            <textarea placeholder="Optional feedback..." [(ngModel)]="approvalFeedback"></textarea>
           </div>
         </div>
       </ng-template>
@@ -664,20 +662,20 @@ export class CustomRenderingComponent {
 
     <!-- Approval History -->
     @if (approvalHistory().length > 0) {
-      <div class="approval-history">
-        <h3>Approval History</h3>
-        @for (approval of approvalHistory(); track approval.id) {
-          <div class="history-item" [attr.data-decision]="approval.decision">
-            <span class="timestamp">{{ approval.timestamp | date:'short' }}</span>
-            <span class="decision">{{ approval.decision }}</span>
-            @if (approval.feedback) {
-              <p class="feedback">{{ approval.feedback }}</p>
-            }
-          </div>
+    <div class="approval-history">
+      <h3>Approval History</h3>
+      @for (approval of approvalHistory(); track approval.id) {
+      <div class="history-item" [attr.data-decision]="approval.decision">
+        <span class="timestamp">{{ approval.timestamp | date : 'short' }}</span>
+        <span class="decision">{{ approval.decision }}</span>
+        @if (approval.feedback) {
+        <p class="feedback">{{ approval.feedback }}</p>
         }
       </div>
+      }
+    </div>
     }
-  `
+  `,
 })
 export class ApprovalHandlingComponent {
   approvalPending = signal(false);
@@ -690,10 +688,10 @@ export class ApprovalHandlingComponent {
       id: data.id,
       decision: 'approved',
       timestamp: new Date(),
-      feedback: this.approvalFeedback
+      feedback: this.approvalFeedback,
     };
 
-    this.approvalHistory.update(history => [...history, record]);
+    this.approvalHistory.update((history) => [...history, record]);
     this.approvalPending.set(false);
     this.approvalFeedback = '';
 
@@ -706,10 +704,10 @@ export class ApprovalHandlingComponent {
       id: data.id,
       decision: 'rejected',
       timestamp: new Date(),
-      feedback: this.approvalFeedback
+      feedback: this.approvalFeedback,
     };
 
-    this.approvalHistory.update(history => [...history, record]);
+    this.approvalHistory.update((history) => [...history, record]);
     this.approvalPending.set(false);
     this.approvalFeedback = '';
 
@@ -720,6 +718,7 @@ export class ApprovalHandlingComponent {
 ```
 
 **Key Insights**:
+
 - ApprovalModal handles UI presentation
 - Custom metadata templates show approval-specific data
 - Approval history provides audit trail
@@ -733,6 +732,7 @@ export class ApprovalHandlingComponent {
 **Purpose**: Demonstrate chat-based workflow interaction with message streaming.
 
 **Features Demonstrated**:
+
 - Chat component usage
 - useLangGraphChat composable
 - Token-by-token message streaming
@@ -750,21 +750,17 @@ export class ApprovalHandlingComponent {
     <div class="chat-container">
       <div class="chat-messages" #messageContainer>
         @for (message of messages(); track message.id) {
-          <div class="message" [attr.data-sender]="message.sender">
-            <div class="message-avatar">
-              {{ message.sender === 'user' ? 'You' : 'AI' }}
-            </div>
-            <div class="message-content">
-              <p>{{ message.content }}</p>
-              <span class="message-time">{{ message.timestamp | date:'short' }}</span>
-            </div>
+        <div class="message" [attr.data-sender]="message.sender">
+          <div class="message-avatar">
+            {{ message.sender === 'user' ? 'You' : 'AI' }}
           </div>
-        }
-
-        @if (typing()) {
-          <div class="typing-indicator">
-            <span></span><span></span><span></span>
+          <div class="message-content">
+            <p>{{ message.content }}</p>
+            <span class="message-time">{{ message.timestamp | date : 'short' }}</span>
           </div>
+        </div>
+        } @if (typing()) {
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
         }
       </div>
 
@@ -775,12 +771,7 @@ export class ApprovalHandlingComponent {
           (keydown.enter)="$event.shiftKey ? null : sendMessage()"
           [disabled]="loading()"
         ></textarea>
-        <button
-          (click)="sendMessage()"
-          [disabled]="!userInput.trim() || loading()"
-        >
-          Send
-        </button>
+        <button (click)="sendMessage()" [disabled]="!userInput.trim() || loading()">Send</button>
       </div>
 
       <div class="chat-stats">
@@ -789,87 +780,95 @@ export class ApprovalHandlingComponent {
       </div>
     </div>
   `,
-  styles: [`
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 600px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+  styles: [
+    `
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
 
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-    }
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
 
-    .message {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+      .message {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
 
-    .message[data-sender="user"] {
-      flex-direction: row-reverse;
-    }
+      .message[data-sender='user'] {
+        flex-direction: row-reverse;
+      }
 
-    .message-content {
-      background: #f0f0f0;
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
-      max-width: 70%;
-    }
+      .message-content {
+        background: #f0f0f0;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        max-width: 70%;
+      }
 
-    .message[data-sender="user"] .message-content {
-      background: #3498db;
-      color: white;
-    }
+      .message[data-sender='user'] .message-content {
+        background: #3498db;
+        color: white;
+      }
 
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      padding: 1rem;
-    }
+      .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 1rem;
+      }
 
-    .typing-indicator span {
-      width: 8px;
-      height: 8px;
-      background: #999;
-      border-radius: 50%;
-      animation: typing 1.4s ease-in-out infinite;
-    }
+      .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #999;
+        border-radius: 50%;
+        animation: typing 1.4s ease-in-out infinite;
+      }
 
-    .typing-indicator span:nth-child(2) {
-      animation-delay: 0.2s;
-    }
+      .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
 
-    .typing-indicator span:nth-child(3) {
-      animation-delay: 0.4s;
-    }
+      .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
 
-    @keyframes typing {
-      0%, 60%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-10px); }
-    }
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-10px);
+        }
+      }
 
-    .chat-input {
-      display: flex;
-      gap: 0.5rem;
-      padding: 1rem;
-      border-top: 1px solid #ddd;
-    }
+      .chat-input {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-top: 1px solid #ddd;
+      }
 
-    .chat-input textarea {
-      flex: 1;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      resize: none;
-      min-height: 60px;
-    }
-  `]
+      .chat-input textarea {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: none;
+        min-height: 60px;
+      }
+    `,
+  ],
 })
 export class ChatInterfaceComponent implements AfterViewInit {
   @ViewChild('messageContainer') messageContainer!: ElementRef;
@@ -894,11 +893,11 @@ export class ChatInterfaceComponent implements AfterViewInit {
       id: Date.now().toString(),
       sender: 'user',
       content: this.userInput,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Optimistic update - add user message immediately
-    this.messages.update(msgs => [...msgs, userMessage]);
+    this.messages.update((msgs) => [...msgs, userMessage]);
     this.userInput = '';
     this.loading.set(true);
     this.typing.set(true);
@@ -919,11 +918,11 @@ export class ChatInterfaceComponent implements AfterViewInit {
             id: (Date.now() + 1).toString(),
             sender: 'ai',
             content: response.message,
-            timestamp: new Date()
+            timestamp: new Date(),
           };
 
-          this.messages.update(msgs => [...msgs, aiMessage]);
-          this.totalTokens.update(t => t + response.tokens);
+          this.messages.update((msgs) => [...msgs, aiMessage]);
+          this.totalTokens.update((t) => t + response.tokens);
           this.loading.set(false);
           this.scrollToBottom();
         },
@@ -931,7 +930,7 @@ export class ChatInterfaceComponent implements AfterViewInit {
           this.typing.set(false);
           this.loading.set(false);
           console.error('Chat error:', err);
-        }
+        },
       });
   }
 
@@ -945,6 +944,7 @@ export class ChatInterfaceComponent implements AfterViewInit {
 ```
 
 **Key Insights**:
+
 - Optimistic updates improve perceived performance
 - Token buffering creates smooth streaming experience
 - Auto-scroll keeps latest messages visible
@@ -958,6 +958,7 @@ export class ChatInterfaceComponent implements AfterViewInit {
 **Purpose**: Demonstrate handling all 16 AG-UI event types with comprehensive event visualization.
 
 **Features Demonstrated**:
+
 - All 16 AG-UI event types
 - Event timeline visualization
 - Event filtering by type
@@ -998,62 +999,55 @@ export class ChatInterfaceComponent implements AfterViewInit {
       <!-- Event Timeline -->
       <div class="event-timeline">
         @for (event of filteredEvents(); track event.id) {
-          <div class="event-item" [attr.data-type]="event.type">
-            <div class="event-indicator"></div>
-            <div class="event-content">
-              <div class="event-header">
-                <span class="event-type">{{ event.type }}</span>
-                <span class="event-time">{{ event.timestamp | date:'HH:mm:ss.SSS' }}</span>
-              </div>
+        <div class="event-item" [attr.data-type]="event.type">
+          <div class="event-indicator"></div>
+          <div class="event-content">
+            <div class="event-header">
+              <span class="event-type">{{ event.type }}</span>
+              <span class="event-time">{{ event.timestamp | date : 'HH:mm:ss.SSS' }}</span>
+            </div>
 
-              @switch (event.type) {
-                @case ('state_update') {
-                  <div class="state-update">
-                    <h4>State Changed</h4>
-                    <pre>{{ event.data.state | json }}</pre>
-                  </div>
-                }
-                @case ('tool_call') {
-                  <div class="tool-call">
-                    <h4>Tool: {{ event.data.toolName }}</h4>
-                    <p><strong>Arguments:</strong></p>
-                    <pre>{{ event.data.arguments | json }}</pre>
-                  </div>
-                }
-                @case ('tool_result') {
-                  <div class="tool-result">
-                    <h4>Tool Result</h4>
-                    <pre>{{ event.data.result | json }}</pre>
-                  </div>
-                }
-                @case ('approval_required') {
-                  <div class="approval-required">
-                    <h4>Approval Required</h4>
-                    <p>{{ event.data.reason }}</p>
-                  </div>
-                }
-                @case ('error') {
-                  <div class="error-event">
-                    <h4>Error Occurred</h4>
-                    <p class="error-message">{{ event.data.message }}</p>
-                    @if (event.data.stack) {
-                      <details>
-                        <summary>Stack Trace</summary>
-                        <pre>{{ event.data.stack }}</pre>
-                      </details>
-                    }
-                  </div>
-                }
-                @case ('workflow_complete') {
-                  <div class="workflow-complete">
-                    <h4>✓ Workflow Complete</h4>
-                    <p><strong>Final Output:</strong></p>
-                    <pre>{{ event.data.output | json }}</pre>
-                  </div>
-                }
+            @switch (event.type) { @case ('state_update') {
+            <div class="state-update">
+              <h4>State Changed</h4>
+              <pre>{{ event.data.state | json }}</pre>
+            </div>
+            } @case ('tool_call') {
+            <div class="tool-call">
+              <h4>Tool: {{ event.data.toolName }}</h4>
+              <p><strong>Arguments:</strong></p>
+              <pre>{{ event.data.arguments | json }}</pre>
+            </div>
+            } @case ('tool_result') {
+            <div class="tool-result">
+              <h4>Tool Result</h4>
+              <pre>{{ event.data.result | json }}</pre>
+            </div>
+            } @case ('approval_required') {
+            <div class="approval-required">
+              <h4>Approval Required</h4>
+              <p>{{ event.data.reason }}</p>
+            </div>
+            } @case ('error') {
+            <div class="error-event">
+              <h4>Error Occurred</h4>
+              <p class="error-message">{{ event.data.message }}</p>
+              @if (event.data.stack) {
+              <details>
+                <summary>Stack Trace</summary>
+                <pre>{{ event.data.stack }}</pre>
+              </details>
               }
             </div>
+            } @case ('workflow_complete') {
+            <div class="workflow-complete">
+              <h4>✓ Workflow Complete</h4>
+              <p><strong>Final Output:</strong></p>
+              <pre>{{ event.data.output | json }}</pre>
+            </div>
+            } }
           </div>
+        </div>
         }
       </div>
 
@@ -1061,10 +1055,10 @@ export class ChatInterfaceComponent implements AfterViewInit {
       <div class="state-snapshots">
         <h3>State Snapshots</h3>
         @for (snapshot of stateSnapshots(); track snapshot.id) {
-          <div class="snapshot">
-            <span class="snapshot-time">{{ snapshot.timestamp | date:'HH:mm:ss' }}</span>
-            <pre>{{ snapshot.state | json }}</pre>
-          </div>
+        <div class="snapshot">
+          <span class="snapshot-time">{{ snapshot.timestamp | date : 'HH:mm:ss' }}</span>
+          <pre>{{ snapshot.state | json }}</pre>
+        </div>
         }
       </div>
 
@@ -1096,97 +1090,99 @@ export class ChatInterfaceComponent implements AfterViewInit {
       </div>
     </div>
   `,
-  styles: [`
-    .event-timeline {
-      position: relative;
-      padding-left: 2rem;
-    }
+  styles: [
+    `
+      .event-timeline {
+        position: relative;
+        padding-left: 2rem;
+      }
 
-    .event-timeline::before {
-      content: '';
-      position: absolute;
-      left: 8px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: #ddd;
-    }
+      .event-timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ddd;
+      }
 
-    .event-item {
-      position: relative;
-      padding: 1rem 0;
-    }
+      .event-item {
+        position: relative;
+        padding: 1rem 0;
+      }
 
-    .event-indicator {
-      position: absolute;
-      left: -24px;
-      top: 1.5rem;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #3498db;
-      border: 2px solid white;
-      box-shadow: 0 0 0 2px #3498db;
-    }
+      .event-indicator {
+        position: absolute;
+        left: -24px;
+        top: 1.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #3498db;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #3498db;
+      }
 
-    .event-item[data-type="error"] .event-indicator {
-      background: #e74c3c;
-      box-shadow: 0 0 0 2px #e74c3c;
-    }
+      .event-item[data-type='error'] .event-indicator {
+        background: #e74c3c;
+        box-shadow: 0 0 0 2px #e74c3c;
+      }
 
-    .event-item[data-type="workflow_complete"] .event-indicator {
-      background: #2ecc71;
-      box-shadow: 0 0 0 2px #2ecc71;
-    }
+      .event-item[data-type='workflow_complete'] .event-indicator {
+        background: #2ecc71;
+        box-shadow: 0 0 0 2px #2ecc71;
+      }
 
-    .event-content {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 1rem;
-    }
+      .event-content {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+      }
 
-    .event-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 0.5rem;
-    }
+      .event-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
 
-    .event-type {
-      font-weight: 600;
-      color: #3498db;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-    }
+      .event-type {
+        font-weight: 600;
+        color: #3498db;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+      }
 
-    pre {
-      background: #f8f9fa;
-      padding: 0.75rem;
-      border-radius: 4px;
-      overflow-x: auto;
-      font-size: 0.9rem;
-    }
+      pre {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
 
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-    }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+      }
 
-    .summary-item {
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
+      .summary-item {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+      }
 
-    .summary-item .value {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #3498db;
-    }
-  `]
+      .summary-item .value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #3498db;
+      }
+    `,
+  ],
 })
 export class CompleteLifecycleComponent {
   events = signal<WorkflowEvent[]>([]);
@@ -1198,22 +1194,16 @@ export class CompleteLifecycleComponent {
   showErrorEvents = true;
 
   // Event counts
-  stateEventCount = computed(() =>
-    this.events().filter(e => e.type.includes('state')).length
+  stateEventCount = computed(() => this.events().filter((e) => e.type.includes('state')).length);
+  toolEventCount = computed(() => this.events().filter((e) => e.type.includes('tool')).length);
+  approvalEventCount = computed(
+    () => this.events().filter((e) => e.type.includes('approval')).length
   );
-  toolEventCount = computed(() =>
-    this.events().filter(e => e.type.includes('tool')).length
-  );
-  approvalEventCount = computed(() =>
-    this.events().filter(e => e.type.includes('approval')).length
-  );
-  errorEventCount = computed(() =>
-    this.events().filter(e => e.type === 'error').length
-  );
+  errorEventCount = computed(() => this.events().filter((e) => e.type === 'error').length);
 
   // Filtered events based on checkboxes
   filteredEvents = computed(() => {
-    return this.events().filter(event => {
+    return this.events().filter((event) => {
       if (event.type.includes('state') && !this.showStateEvents) return false;
       if (event.type.includes('tool') && !this.showToolEvents) return false;
       if (event.type.includes('approval') && !this.showApprovalEvents) return false;
@@ -1241,18 +1231,18 @@ export class CompleteLifecycleComponent {
       .mockExecution<LifecycleOutput>(LIFECYCLE_WORKFLOW.id, {})
       .pipe(
         // Capture all events
-        tap(event => {
-          this.events.update(events => [...events, event]);
+        tap((event) => {
+          this.events.update((events) => [...events, event]);
 
           // Track state snapshots
           if (event.type === 'state_update') {
-            this.stateSnapshots.update(snapshots => [
+            this.stateSnapshots.update((snapshots) => [
               ...snapshots,
               {
                 id: event.id,
                 timestamp: event.timestamp,
-                state: event.data.state
-              }
+                state: event.data.state,
+              },
             ]);
           }
         })
@@ -1263,6 +1253,7 @@ export class CompleteLifecycleComponent {
 ```
 
 **Key Insights**:
+
 - Event filtering enables focused debugging
 - Timeline visualization shows execution flow
 - State snapshots track workflow progression
@@ -1320,11 +1311,11 @@ export const BLOG_POST_WORKFLOW: WorkflowDefinition<BlogInput, BlogOutput> = {
     agents: [
       { id: 'outliner', name: 'Content Outliner', role: 'planning' },
       { id: 'writer', name: 'Draft Writer', role: 'generation' },
-      { id: 'editor', name: 'Content Editor', role: 'revision' }
+      { id: 'editor', name: 'Content Editor', role: 'revision' },
     ],
     category: 'content-generation',
-    tags: ['blog', 'content', 'multi-stage', 'seo']
-  }
+    tags: ['blog', 'content', 'multi-stage', 'seo'],
+  },
 };
 ```
 
@@ -1368,96 +1359,77 @@ export const BLOG_POST_WORKFLOW: WorkflowDefinition<BlogInput, BlogOutput> = {
           </select>
         </div>
 
-        <button (click)="generate()" [disabled]="loading()">
-          Generate Blog Post
-        </button>
+        <button (click)="generate()" [disabled]="loading()">Generate Blog Post</button>
       </form>
 
       <!-- Progress Indicator -->
       @if (loading()) {
-        <div class="progress-indicator">
-          <div class="stage" [class.active]="currentStage() === 'outline'">
-            <span class="stage-number">1</span>
-            <span class="stage-name">Outlining</span>
-          </div>
-          <div class="stage" [class.active]="currentStage() === 'draft'">
-            <span class="stage-number">2</span>
-            <span class="stage-name">Drafting</span>
-          </div>
-          <div class="stage" [class.active]="currentStage() === 'revision'">
-            <span class="stage-number">3</span>
-            <span class="stage-name">Revising</span>
-          </div>
+      <div class="progress-indicator">
+        <div class="stage" [class.active]="currentStage() === 'outline'">
+          <span class="stage-number">1</span>
+          <span class="stage-name">Outlining</span>
         </div>
+        <div class="stage" [class.active]="currentStage() === 'draft'">
+          <span class="stage-number">2</span>
+          <span class="stage-name">Drafting</span>
+        </div>
+        <div class="stage" [class.active]="currentStage() === 'revision'">
+          <span class="stage-number">3</span>
+          <span class="stage-name">Revising</span>
+        </div>
+      </div>
       }
 
       <!-- Result Display -->
       @if (result()) {
-        <div class="result-tabs">
-          <button
-            [class.active]="activeTab === 'outline'"
-            (click)="activeTab = 'outline'"
-          >
-            Outline
-          </button>
-          <button
-            [class.active]="activeTab === 'draft'"
-            (click)="activeTab = 'draft'"
-          >
-            Draft
-          </button>
-          <button
-            [class.active]="activeTab === 'final'"
-            (click)="activeTab = 'final'"
-          >
-            Final
-          </button>
-        </div>
+      <div class="result-tabs">
+        <button [class.active]="activeTab === 'outline'" (click)="activeTab = 'outline'">
+          Outline
+        </button>
+        <button [class.active]="activeTab === 'draft'" (click)="activeTab = 'draft'">Draft</button>
+        <button [class.active]="activeTab === 'final'" (click)="activeTab = 'final'">Final</button>
+      </div>
 
-        <div class="tab-content">
-          @switch (activeTab) {
-            @case ('outline') {
-              <div class="outline-view">
-                <h3>{{ result()!.outline.title }}</h3>
-                @for (section of result()!.outline.sections; track section.heading) {
-                  <div class="section">
-                    <h4>{{ section.heading }}</h4>
-                    <ul>
-                      @for (point of section.points; track point) {
-                        <li>{{ point }}</li>
-                      }
-                    </ul>
-                  </div>
-                }
-              </div>
-            }
-            @case ('draft') {
-              <div class="draft-view">
-                <h3>{{ result()!.draft.title }}</h3>
-                <p class="word-count">Word Count: {{ result()!.draft.wordCount }}</p>
-                <div class="content" [innerHTML]="formatContent(result()!.draft.content)"></div>
-              </div>
-            }
-            @case ('final') {
-              <div class="final-view">
-                <h3>{{ result()!.finalVersion.title }}</h3>
-                <div class="meta-info">
-                  <span>Reading Time: {{ result()!.finalVersion.meta.readingTime }} min</span>
-                  <div class="keywords">
-                    <span>SEO Keywords:</span>
-                    @for (keyword of result()!.finalVersion.meta.seoKeywords; track keyword) {
-                      <span class="keyword-tag">{{ keyword }}</span>
-                    }
-                  </div>
-                </div>
-                <div class="content" [innerHTML]="formatContent(result()!.finalVersion.content)"></div>
-              </div>
-            }
+      <div class="tab-content">
+        @switch (activeTab) { @case ('outline') {
+        <div class="outline-view">
+          <h3>{{ result()!.outline.title }}</h3>
+          @for (section of result()!.outline.sections; track section.heading) {
+          <div class="section">
+            <h4>{{ section.heading }}</h4>
+            <ul>
+              @for (point of section.points; track point) {
+              <li>{{ point }}</li>
+              }
+            </ul>
+          </div>
           }
         </div>
+        } @case ('draft') {
+        <div class="draft-view">
+          <h3>{{ result()!.draft.title }}</h3>
+          <p class="word-count">Word Count: {{ result()!.draft.wordCount }}</p>
+          <div class="content" [innerHTML]="formatContent(result()!.draft.content)"></div>
+        </div>
+        } @case ('final') {
+        <div class="final-view">
+          <h3>{{ result()!.finalVersion.title }}</h3>
+          <div class="meta-info">
+            <span>Reading Time: {{ result()!.finalVersion.meta.readingTime }} min</span>
+            <div class="keywords">
+              <span>SEO Keywords:</span>
+              @for (keyword of result()!.finalVersion.meta.seoKeywords; track keyword) {
+              <span class="keyword-tag">{{ keyword }}</span>
+              }
+            </div>
+          </div>
+          <div class="content" [innerHTML]="formatContent(result()!.finalVersion.content)"></div>
+        </div>
+        } }
+      </div>
       }
     </div>
-  `
+  `,
 })
 export class BlogPostGeneratorComponent {
   workflow = BLOG_POST_WORKFLOW;
@@ -1466,7 +1438,7 @@ export class BlogPostGeneratorComponent {
     topic: '',
     targetAudience: '',
     tone: 'professional',
-    length: 'medium'
+    length: 'medium',
   };
 
   loading = signal(false);
@@ -1484,7 +1456,7 @@ export class BlogPostGeneratorComponent {
     this.mockExecution
       .mockExecution<BlogOutput>(this.workflow.id, this.input)
       .pipe(
-        tap(event => {
+        tap((event) => {
           // Update stage based on event
           if (event.type === 'agent_start') {
             const stage = this.getStageFromAgent(event.data.agentId);
@@ -1501,7 +1473,7 @@ export class BlogPostGeneratorComponent {
         error: (err) => {
           console.error('Generation error:', err);
           this.loading.set(false);
-        }
+        },
       });
   }
 
@@ -1513,14 +1485,13 @@ export class BlogPostGeneratorComponent {
 
   formatContent(content: string): string {
     // Convert markdown-like formatting to HTML
-    return content
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(.+)$/, '<p>$1</p>');
+    return content.replace(/\n\n/g, '</p><p>').replace(/^(.+)$/, '<p>$1</p>');
   }
 }
 ```
 
 **Key Insights**:
+
 - Multi-stage workflows provide progressive refinement
 - Stage indicators show progress through complex workflows
 - Tabbed interface enables comparison of stages
@@ -1662,70 +1633,64 @@ export class BlogPostGeneratorComponent {
       <!-- Approval Chain Visualization -->
       <div class="approval-chain">
         @for (gate of approvalGates; track gate.id) {
-          <div class="approval-gate" [attr.data-status]="gate.status">
-            <div class="gate-indicator">
-              @switch (gate.status) {
-                @case ('pending') { ⏳ }
-                @case ('approved') { ✓ }
-                @case ('rejected') { ✗ }
-                @case ('skipped') { → }
-              }
-            </div>
-            <div class="gate-info">
-              <h4>{{ gate.name }}</h4>
-              <p>{{ gate.role }}</p>
-              @if (gate.approver) {
-                <span class="approver">{{ gate.approver }}</span>
-              }
-              @if (gate.timestamp) {
-                <span class="timestamp">{{ gate.timestamp | date:'short' }}</span>
-              }
-            </div>
+        <div class="approval-gate" [attr.data-status]="gate.status">
+          <div class="gate-indicator">
+            @switch (gate.status) { @case ('pending') { ⏳ } @case ('approved') { ✓ } @case
+            ('rejected') { ✗ } @case ('skipped') { → } }
           </div>
-          @if (!$last) {
-            <div class="chain-connector"></div>
-          }
-        }
+          <div class="gate-info">
+            <h4>{{ gate.name }}</h4>
+            <p>{{ gate.role }}</p>
+            @if (gate.approver) {
+            <span class="approver">{{ gate.approver }}</span>
+            } @if (gate.timestamp) {
+            <span class="timestamp">{{ gate.timestamp | date : 'short' }}</span>
+            }
+          </div>
+        </div>
+        @if (!$last) {
+        <div class="chain-connector"></div>
+        } }
       </div>
 
       <!-- Current Approval -->
       @if (currentApprovalGate()) {
-        <div class="current-approval">
-          <h3>Approval Required: {{ currentApprovalGate()!.name }}</h3>
-          <p>{{ currentApprovalGate()!.description }}</p>
+      <div class="current-approval">
+        <h3>Approval Required: {{ currentApprovalGate()!.name }}</h3>
+        <p>{{ currentApprovalGate()!.description }}</p>
 
-          <div class="approval-actions">
-            <button (click)="approve()">Approve</button>
-            <button (click)="reject()">Reject</button>
-            <button (click)="escalate()">Escalate</button>
-          </div>
+        <div class="approval-actions">
+          <button (click)="approve()">Approve</button>
+          <button (click)="reject()">Reject</button>
+          <button (click)="escalate()">Escalate</button>
         </div>
+      </div>
       }
 
       <!-- Approval History -->
       <div class="approval-history">
         <h3>Approval History</h3>
         @for (record of approvalHistory(); track record.id) {
-          <div class="history-record">
-            <span class="gate-name">{{ record.gateName }}</span>
-            <span class="decision">{{ record.decision }}</span>
-            <span class="approver">{{ record.approver }}</span>
-            <span class="timestamp">{{ record.timestamp | date:'short' }}</span>
-            @if (record.comment) {
-              <p class="comment">{{ record.comment }}</p>
-            }
-          </div>
+        <div class="history-record">
+          <span class="gate-name">{{ record.gateName }}</span>
+          <span class="decision">{{ record.decision }}</span>
+          <span class="approver">{{ record.approver }}</span>
+          <span class="timestamp">{{ record.timestamp | date : 'short' }}</span>
+          @if (record.comment) {
+          <p class="comment">{{ record.comment }}</p>
+          }
+        </div>
         }
       </div>
     </div>
-  `
+  `,
 })
 export class MultiStepApprovalsComponent {
   approvalGates: ApprovalGate[] = [
     { id: '1', name: 'Technical Review', role: 'Senior Developer', status: 'pending' },
     { id: '2', name: 'Security Review', role: 'Security Team', status: 'pending' },
     { id: '3', name: 'Manager Approval', role: 'Engineering Manager', status: 'pending' },
-    { id: '4', name: 'Final Sign-off', role: 'Director', status: 'pending' }
+    { id: '4', name: 'Final Sign-off', role: 'Director', status: 'pending' },
   ];
 
   currentApprovalGate = signal<ApprovalGate | null>(this.approvalGates[0]);
@@ -1739,15 +1704,15 @@ export class MultiStepApprovalsComponent {
     gate.timestamp = new Date();
     gate.approver = 'Current User';
 
-    this.approvalHistory.update(history => [
+    this.approvalHistory.update((history) => [
       ...history,
       {
         id: gate.id,
         gateName: gate.name,
         decision: 'approved',
         approver: 'Current User',
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     ]);
 
     // Move to next gate
@@ -1807,7 +1772,7 @@ export const blogInputSchema = z.object({
   topic: z.string().min(3).max(200),
   targetAudience: z.string().min(3).max(100),
   tone: z.enum(['professional', 'casual', 'technical']),
-  length: z.enum(['short', 'medium', 'long'])
+  length: z.enum(['short', 'medium', 'long']),
 });
 
 export type BlogInput = z.infer<typeof blogInputSchema>;
@@ -1842,11 +1807,11 @@ export const BLOG_POST_WORKFLOW: WorkflowDefinition<BlogInput, BlogOutput> = {
     agents: [
       { id: 'outliner', name: 'Content Outliner', role: 'planning' },
       { id: 'writer', name: 'Draft Writer', role: 'generation' },
-      { id: 'editor', name: 'Content Editor', role: 'revision' }
+      { id: 'editor', name: 'Content Editor', role: 'revision' },
     ],
     category: 'content-generation',
-    tags: ['blog', 'content', 'multi-stage', 'seo']
-  }
+    tags: ['blog', 'content', 'multi-stage', 'seo'],
+  },
 };
 
 // Export all content workflows
@@ -1855,11 +1820,12 @@ export const CONTENT_WORKFLOWS = [
   SOCIAL_MEDIA_WORKFLOW,
   EMAIL_TEMPLATE_WORKFLOW,
   PRODUCT_DESCRIPTION_WORKFLOW,
-  MARKETING_COPY_WORKFLOW
+  MARKETING_COPY_WORKFLOW,
 ];
 ```
 
 **Key Principles**:
+
 - All workflows fully typed with TypeScript
 - Zod schemas for runtime validation
 - Metadata includes agent information
@@ -1890,24 +1856,16 @@ export class MockExecutionService {
     input: any,
     options: MockExecutionOptions = {}
   ): Observable<TOutput> {
-    const {
-      delayMs = this.getRandomDelay(),
-      failureRate = 0.05,
-      generateOutput = true
-    } = options;
+    const { delayMs = this.getRandomDelay(), failureRate = 0.05, generateOutput = true } = options;
 
     // Simulate random failures
     if (Math.random() < failureRate) {
-      return throwError(() => new Error('Mock execution failed')).pipe(
-        delay(delayMs / 2)
-      );
+      return throwError(() => new Error('Mock execution failed')).pipe(delay(delayMs / 2));
     }
 
     // Generate realistic output based on workflow ID
     if (generateOutput) {
-      return of(this.generateMockOutput<TOutput>(workflowId, input)).pipe(
-        delay(delayMs)
-      );
+      return of(this.generateMockOutput<TOutput>(workflowId, input)).pipe(delay(delayMs));
     }
 
     return of(input as TOutput).pipe(delay(delayMs));
@@ -1933,7 +1891,7 @@ export class MockExecutionService {
       default:
         return {
           message: `Processed: ${JSON.stringify(input)}`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         } as TOutput;
     }
   }
@@ -1945,42 +1903,26 @@ export class MockExecutionService {
         sections: [
           {
             heading: 'Introduction',
-            points: [
-              `Overview of ${input.topic}`,
-              'Why this matters',
-              'What you will learn'
-            ]
+            points: [`Overview of ${input.topic}`, 'Why this matters', 'What you will learn'],
           },
           {
             heading: 'Core Concepts',
-            points: [
-              'Fundamental principles',
-              'Key terminology',
-              'Common misconceptions'
-            ]
+            points: ['Fundamental principles', 'Key terminology', 'Common misconceptions'],
           },
           {
             heading: 'Practical Applications',
-            points: [
-              'Real-world examples',
-              'Implementation strategies',
-              'Best practices'
-            ]
+            points: ['Real-world examples', 'Implementation strategies', 'Best practices'],
           },
           {
             heading: 'Conclusion',
-            points: [
-              'Key takeaways',
-              'Next steps',
-              'Additional resources'
-            ]
-          }
-        ]
+            points: ['Key takeaways', 'Next steps', 'Additional resources'],
+          },
+        ],
       },
       draft: {
         title: `Complete Guide to ${input.topic}`,
         content: this.generateBlogContent(input),
-        wordCount: Math.floor(Math.random() * 500) + 800
+        wordCount: Math.floor(Math.random() * 500) + 800,
       },
       finalVersion: {
         title: `Complete Guide to ${input.topic}`,
@@ -1990,13 +1932,11 @@ export class MockExecutionService {
             input.topic,
             `${input.topic} guide`,
             `learn ${input.topic}`,
-            `${input.topic} tutorial`
+            `${input.topic} tutorial`,
           ],
-          readingTime: Math.ceil(
-            (Math.floor(Math.random() * 500) + 800) / 200
-          )
-        }
-      }
+          readingTime: Math.ceil((Math.floor(Math.random() * 500) + 800) / 200),
+        },
+      },
     };
   }
 
@@ -2034,6 +1974,7 @@ interface MockExecutionOptions {
 ```
 
 **Key Features**:
+
 - Realistic delays (500-3000ms)
 - Configurable failure rates
 - Workflow-specific output generation
@@ -2057,7 +1998,7 @@ import {
   finalize,
   tap,
   catchError,
-  timeout as rxTimeout
+  timeout as rxTimeout,
 } from 'rxjs/operators';
 
 /**
@@ -2070,7 +2011,7 @@ export function retryWithBackoff<T>(
 ) {
   return (source: Observable<T>) =>
     source.pipe(
-      retryWhen(errors =>
+      retryWhen((errors) =>
         errors.pipe(
           mergeMap((error, index) => {
             const attempt = index + 1;
@@ -2079,10 +2020,7 @@ export function retryWithBackoff<T>(
               return throwError(() => error);
             }
 
-            const delayTime = Math.min(
-              initialDelay * Math.pow(2, index),
-              maxDelay
-            );
+            const delayTime = Math.min(initialDelay * Math.pow(2, index), maxDelay);
 
             console.log(`Retry attempt ${attempt}/${maxAttempts} after ${delayTime}ms`);
 
@@ -2096,18 +2034,15 @@ export function retryWithBackoff<T>(
 /**
  * Add timeout with custom error message
  */
-export function withTimeout<T>(
-  timeoutMs: number,
-  errorMessage?: string
-) {
+export function withTimeout<T>(timeoutMs: number, errorMessage?: string) {
   return (source: Observable<T>) =>
     source.pipe(
       rxTimeout(timeoutMs),
-      catchError(err => {
+      catchError((err) => {
         if (err.name === 'TimeoutError') {
-          return throwError(() => new Error(
-            errorMessage || `Workflow timed out after ${timeoutMs}ms`
-          ));
+          return throwError(
+            () => new Error(errorMessage || `Workflow timed out after ${timeoutMs}ms`)
+          );
         }
         return throwError(() => err);
       })
@@ -2121,9 +2056,9 @@ export function logWorkflowExecution<T>(label: string) {
   return (source: Observable<T>) =>
     source.pipe(
       tap({
-        next: value => console.log(`[${label}] Next:`, value),
-        error: err => console.error(`[${label}] Error:`, err),
-        complete: () => console.log(`[${label}] Complete`)
+        next: (value) => console.log(`[${label}] Next:`, value),
+        error: (err) => console.error(`[${label}] Error:`, err),
+        complete: () => console.log(`[${label}] Complete`),
       })
     );
 }
@@ -2131,9 +2066,7 @@ export function logWorkflowExecution<T>(label: string) {
 /**
  * Track execution time
  */
-export function trackExecutionTime<T>(
-  callback: (duration: number) => void
-) {
+export function trackExecutionTime<T>(callback: (duration: number) => void) {
   return (source: Observable<T>) => {
     let startTime: number;
 
@@ -2165,15 +2098,12 @@ export function formatDuration(ms: number): string {
 /**
  * Validate workflow input against schema
  */
-export function validateWorkflowInput<T>(
-  input: unknown,
-  schema: z.ZodSchema<T>
-): T {
+export function validateWorkflowInput<T>(input: unknown, schema: z.ZodSchema<T>): T {
   const result = schema.safeParse(input);
 
   if (!result.success) {
     throw new Error(
-      `Invalid workflow input: ${result.error.errors.map(e => e.message).join(', ')}`
+      `Invalid workflow input: ${result.error.errors.map((e) => e.message).join(', ')}`
     );
   }
 
@@ -2219,15 +2149,13 @@ export function validateWorkflowInput<T>(
       <!-- Category Grid -->
       <div class="categories-grid">
         @for (category of categories; track category.id) {
-          <div class="category-card">
-            <div class="category-icon">{{ category.icon }}</div>
-            <h2>{{ category.name }}</h2>
-            <p>{{ category.description }}</p>
-            <span class="example-count">{{ category.examples.length }} examples</span>
-            <button [routerLink]="['/examples', category.id]">
-              Browse Examples
-            </button>
-          </div>
+        <div class="category-card">
+          <div class="category-icon">{{ category.icon }}</div>
+          <h2>{{ category.name }}</h2>
+          <p>{{ category.description }}</p>
+          <span class="example-count">{{ category.examples.length }} examples</span>
+          <button [routerLink]="['/examples', category.id]">Browse Examples</button>
+        </div>
         }
       </div>
 
@@ -2237,148 +2165,148 @@ export function validateWorkflowInput<T>(
 
         <div class="examples-grid">
           @for (example of filteredExamples(); track example.id) {
-            <div class="example-card" [routerLink]="example.route">
-              <div class="example-header">
-                <h3>{{ example.name }}</h3>
-                <span class="category-badge">{{ example.category }}</span>
-              </div>
-
-              <p class="example-description">{{ example.description }}</p>
-
-              <div class="example-meta">
-                <div class="tags">
-                  @for (tag of example.tags.slice(0, 3); track tag) {
-                    <span class="tag">{{ tag }}</span>
-                  }
-                </div>
-                <span class="complexity" [attr.data-level]="example.complexity">
-                  {{ example.complexity }}
-                </span>
-              </div>
-
-              <div class="features-list">
-                <span class="features-label">Features:</span>
-                <ul>
-                  @for (feature of example.features.slice(0, 3); track feature) {
-                    <li>{{ feature }}</li>
-                  }
-                </ul>
-              </div>
+          <div class="example-card" [routerLink]="example.route">
+            <div class="example-header">
+              <h3>{{ example.name }}</h3>
+              <span class="category-badge">{{ example.category }}</span>
             </div>
+
+            <p class="example-description">{{ example.description }}</p>
+
+            <div class="example-meta">
+              <div class="tags">
+                @for (tag of example.tags.slice(0, 3); track tag) {
+                <span class="tag">{{ tag }}</span>
+                }
+              </div>
+              <span class="complexity" [attr.data-level]="example.complexity">
+                {{ example.complexity }}
+              </span>
+            </div>
+
+            <div class="features-list">
+              <span class="features-label">Features:</span>
+              <ul>
+                @for (feature of example.features.slice(0, 3); track feature) {
+                <li>{{ feature }}</li>
+                }
+              </ul>
+            </div>
+          </div>
           }
         </div>
 
         @if (filteredExamples().length === 0) {
-          <div class="no-results">
-            <p>No examples found matching "{{ searchTerm }}"</p>
-            <button (click)="searchTerm = ''; filterExamples()">
-              Clear Search
-            </button>
-          </div>
+        <div class="no-results">
+          <p>No examples found matching "{{ searchTerm }}"</p>
+          <button (click)="searchTerm = ''; filterExamples()">Clear Search</button>
+        </div>
         }
       </div>
     </div>
   `,
-  styles: [`
-    .examples-landing {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
+  styles: [
+    `
+      .examples-landing {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
 
-    .landing-header {
-      text-align: center;
-      margin-bottom: 3rem;
-    }
+      .landing-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
 
-    .landing-header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-    }
+      .landing-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
 
-    .subtitle {
-      font-size: 1.2rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
+      .subtitle {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 2rem;
+      }
 
-    .search-bar input {
-      width: 100%;
-      max-width: 600px;
-      padding: 1rem;
-      font-size: 1rem;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-    }
+      .search-bar input {
+        width: 100%;
+        max-width: 600px;
+        padding: 1rem;
+        font-size: 1rem;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+      }
 
-    .categories-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 3rem;
-    }
+      .categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+      }
 
-    .category-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
+      .category-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.2s;
+      }
 
-    .category-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+      .category-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
 
-    .category-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-    }
+      .category-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
 
-    .examples-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 1.5rem;
-    }
+      .examples-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+      }
 
-    .example-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      border: 1px solid #e0e0e0;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+      .example-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
 
-    .example-card:hover {
-      border-color: #3498db;
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
-    }
+      .example-card:hover {
+        border-color: #3498db;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+      }
 
-    .complexity {
-      padding: 0.25rem 0.75rem;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
+      .complexity {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
 
-    .complexity[data-level="beginner"] {
-      background: #d4edda;
-      color: #155724;
-    }
+      .complexity[data-level='beginner'] {
+        background: #d4edda;
+        color: #155724;
+      }
 
-    .complexity[data-level="intermediate"] {
-      background: #fff3cd;
-      color: #856404;
-    }
+      .complexity[data-level='intermediate'] {
+        background: #fff3cd;
+        color: #856404;
+      }
 
-    .complexity[data-level="advanced"] {
-      background: #f8d7da;
-      color: #721c24;
-    }
-  `]
+      .complexity[data-level='advanced'] {
+        background: #f8d7da;
+        color: #721c24;
+      }
+    `,
+  ],
 })
 export class ExamplesNavigationComponent {
   searchTerm = '';
@@ -2389,36 +2317,36 @@ export class ExamplesNavigationComponent {
       name: 'Basic Integration',
       description: 'Core library features and fundamental patterns',
       icon: '🚀',
-      examples: BASIC_EXAMPLES
+      examples: BASIC_EXAMPLES,
     },
     {
       id: 'content-generation',
       name: 'Content Generation',
       description: 'AI-powered content creation workflows',
       icon: '✍️',
-      examples: CONTENT_EXAMPLES
+      examples: CONTENT_EXAMPLES,
     },
     {
       id: 'data-analysis',
       name: 'Data Analysis',
       description: 'Data processing and analysis patterns',
       icon: '📊',
-      examples: DATA_EXAMPLES
+      examples: DATA_EXAMPLES,
     },
     {
       id: 'code-review',
       name: 'Code Review',
       description: 'Automated code analysis and review',
       icon: '🔍',
-      examples: CODE_EXAMPLES
+      examples: CODE_EXAMPLES,
     },
     {
       id: 'advanced',
       name: 'Advanced Patterns',
       description: 'Complex workflows and edge cases',
       icon: '⚡',
-      examples: ADVANCED_EXAMPLES
-    }
+      examples: ADVANCED_EXAMPLES,
+    },
   ];
 
   allExamples = signal(this.getAllExamples());
@@ -2432,18 +2360,19 @@ export class ExamplesNavigationComponent {
       return;
     }
 
-    const filtered = this.allExamples().filter(example =>
-      example.name.toLowerCase().includes(term) ||
-      example.description.toLowerCase().includes(term) ||
-      example.category.toLowerCase().includes(term) ||
-      example.tags.some(tag => tag.toLowerCase().includes(term))
+    const filtered = this.allExamples().filter(
+      (example) =>
+        example.name.toLowerCase().includes(term) ||
+        example.description.toLowerCase().includes(term) ||
+        example.category.toLowerCase().includes(term) ||
+        example.tags.some((tag) => tag.toLowerCase().includes(term))
     );
 
     this.filteredExamples.set(filtered);
   }
 
   private getAllExamples(): Example[] {
-    return this.categories.flatMap(cat => cat.examples);
+    return this.categories.flatMap((cat) => cat.examples);
   }
 }
 ```
@@ -2469,9 +2398,7 @@ export const EXAMPLES_ROUTES: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('./examples-navigation.component').then(
-            m => m.ExamplesNavigationComponent
-          )
+          import('./examples-navigation.component').then((m) => m.ExamplesNavigationComponent),
       },
 
       // Basic Integration Examples
@@ -2480,16 +2407,16 @@ export const EXAMPLES_ROUTES: Routes = [
         title: 'Simple Execution - Examples',
         loadComponent: () =>
           import('./basic/simple-execution/simple-execution.component').then(
-            m => m.SimpleExecutionComponent
-          )
+            (m) => m.SimpleExecutionComponent
+          ),
       },
       {
         path: 'basic/custom-rendering',
         title: 'Custom Rendering - Examples',
         loadComponent: () =>
           import('./basic/custom-rendering/custom-rendering.component').then(
-            m => m.CustomRenderingComponent
-          )
+            (m) => m.CustomRenderingComponent
+          ),
       },
 
       // ... all 25 example routes
@@ -2497,10 +2424,10 @@ export const EXAMPLES_ROUTES: Routes = [
       // Redirect unknown paths
       {
         path: '**',
-        redirectTo: ''
-      }
-    ]
-  }
+        redirectTo: '',
+      },
+    ],
+  },
 ];
 ```
 
@@ -2523,19 +2450,19 @@ describe('ExampleComponent', () => {
 
   beforeEach(async () => {
     const mockService = {
-      mockExecution: jest.fn()
+      mockExecution: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [ExampleComponent],
-      providers: [
-        { provide: MockExecutionService, useValue: mockService }
-      ]
+      providers: [{ provide: MockExecutionService, useValue: mockService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExampleComponent);
     component = fixture.componentInstance;
-    mockExecutionService = TestBed.inject(MockExecutionService) as jest.Mocked<MockExecutionService>;
+    mockExecutionService = TestBed.inject(
+      MockExecutionService
+    ) as jest.Mocked<MockExecutionService>;
     fixture.detectChanges();
   });
 
@@ -2544,7 +2471,9 @@ describe('ExampleComponent', () => {
   });
 
   it('should execute workflow successfully', (done) => {
-    const mockResult = { /* ... */ };
+    const mockResult = {
+      /* ... */
+    };
     mockExecutionService.mockExecution.mockReturnValue(of(mockResult));
 
     component.execute();
@@ -2558,9 +2487,7 @@ describe('ExampleComponent', () => {
   });
 
   it('should handle errors gracefully', (done) => {
-    mockExecutionService.mockExecution.mockReturnValue(
-      throwError(() => new Error('Test error'))
-    );
+    mockExecutionService.mockExecution.mockReturnValue(throwError(() => new Error('Test error')));
 
     component.execute();
 
@@ -2596,6 +2523,7 @@ describe('ExampleComponent', () => {
 ### TypeScript Compliance
 
 **Requirements**:
+
 - ✅ Zero 'any' types
 - ✅ Strict mode enabled
 - ✅ Full generic type parameters
@@ -2623,6 +2551,7 @@ function execute(workflow: any, input: any): any {
 ### Code Style
 
 **Requirements**:
+
 - ✅ ESLint compliant
 - ✅ Prettier formatted
 - ✅ Consistent naming conventions
@@ -2635,6 +2564,7 @@ function execute(workflow: any, input: any): any {
 **Coverage**: Minimum 80% per example
 
 **Test Categories**:
+
 1. Component creation
 2. Successful execution
 3. Error handling
@@ -2649,6 +2579,7 @@ function execute(workflow: any, input: any): any {
 ### What to Extract
 
 **From DevBrand Implementation**:
+
 1. Generic workflow patterns → Examples
 2. Reusable UI components → Shared library components
 3. Agent visualization patterns → Custom rendering example
@@ -2657,6 +2588,7 @@ function execute(workflow: any, input: any): any {
 ### What to Remove
 
 **DevBrand-Specific Code**:
+
 - ❌ Hardcoded agent names (github-analyzer, brand-strategist)
 - ❌ DevBrand API endpoints (/devbrand/execute)
 - ❌ DevBrand-specific metadata displays
@@ -2676,26 +2608,27 @@ function execute(workflow: any, input: any): any {
 
 ### Documentation Completeness
 
-| Section | Status |
-|---------|--------|
-| Overview | ✅ Complete |
-| Architecture | ✅ Complete |
-| Basic Integration Examples (5) | ✅ Complete |
+| Section                         | Status      |
+| ------------------------------- | ----------- |
+| Overview                        | ✅ Complete |
+| Architecture                    | ✅ Complete |
+| Basic Integration Examples (5)  | ✅ Complete |
 | Content Generation Examples (5) | ✅ Complete |
-| Data Analysis Examples (5) | ✅ Complete |
-| Code Review Examples (5) | ✅ Complete |
-| Advanced Patterns Examples (5) | ✅ Complete |
-| Shared Infrastructure | ✅ Complete |
-| Navigation & Routing | ✅ Complete |
-| Testing Infrastructure | ✅ Complete |
-| Quality Standards | ✅ Complete |
-| Migration Guide | ✅ Complete |
+| Data Analysis Examples (5)      | ✅ Complete |
+| Code Review Examples (5)        | ✅ Complete |
+| Advanced Patterns Examples (5)  | ✅ Complete |
+| Shared Infrastructure           | ✅ Complete |
+| Navigation & Routing            | ✅ Complete |
+| Testing Infrastructure          | ✅ Complete |
+| Quality Standards               | ✅ Complete |
+| Migration Guide                 | ✅ Complete |
 
 ---
 
 ### Quality Metrics
 
 **Documentation Quality**:
+
 - ✅ All 25 examples documented with code snippets
 - ✅ Complete directory structure proposed
 - ✅ Implementation patterns provided
@@ -2704,12 +2637,14 @@ function execute(workflow: any, input: any): any {
 - ✅ Migration guide included
 
 **DevBrand References**:
+
 - ✅ Migration section mentions DevBrand (allowed for context)
 - ✅ Zero DevBrand references in example code snippets
 - ✅ All workflow IDs are generic
 - ✅ No hardcoded agent names in examples
 
 **Generic Patterns**:
+
 - ✅ 25 workflow definitions documented
 - ✅ All examples use WorkflowRegistry lookup
 - ✅ Signal-based state management throughout
@@ -2731,11 +2666,13 @@ function execute(workflow: any, input: any): any {
 5. **Document Well**: Each example needs comprehensive README
 
 **Time Estimates**:
+
 - Infrastructure setup: Already complete (if following existing work)
 - Per example implementation: 45-50 minutes
 - Total implementation time: ~20 hours for all 25 examples
 
 **Implementation Order**:
+
 1. Shared infrastructure (workflows, mock services, utilities)
 2. Basic Integration (5 examples - establish patterns)
 3. Content Generation (5 examples)

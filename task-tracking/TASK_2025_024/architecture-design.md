@@ -14,6 +14,7 @@
 **Pattern Source**: `apps/dev-brand-ui/src/app/features/landing-page/sections/chromadb-section.component.ts`
 
 **Evidence Discovery**:
+
 1. Analyzed ChromaDB section component (500 lines) - Complete working implementation
 2. Verified scroll directives:
    - `HijackedScrollTimelineComponent` (line 4) - Timeline container
@@ -28,6 +29,7 @@
    - `library-analysis.md` - Business value content source
 
 **Pattern Verification**:
+
 - ✅ All imports verified in codebase
 - ✅ Component structure matches Angular 19 standalone pattern
 - ✅ Signal-based reactivity confirmed (line 2, 390, 416, 482)
@@ -79,13 +81,13 @@ export class ChromadbSectionComponent {
   /**
    * Ecosystem section opacity control
    */
-  readonly ecosystemOpacity = signal(0);  // Line 390
+  readonly ecosystemOpacity = signal(0); // Line 390
 
   constructor() {
     // Fade in ecosystem after mount
     setTimeout(() => {
       this.ecosystemOpacity.set(1);
-    }, 500);  // Line 396
+    }, 500); // Line 396
   }
 
   /**
@@ -93,14 +95,15 @@ export class ChromadbSectionComponent {
    */
   readonly codeTimeline = signal<TimelineStep[]>([
     {
-      id: 'step-id',              // Unique identifier
-      step: 1,                    // Step number
-      title: 'Business Value',    // User-facing benefit
-      description: '150-200 word description',  // Full paragraph
+      id: 'step-id', // Unique identifier
+      step: 1, // Step number
+      title: 'Business Value', // User-facing benefit
+      description: '150-200 word description', // Full paragraph
       code: 'assets/images/libraries/{library}_step_{N}.png',
-      language: 'image',          // Use 'image' for PNG assets
-      layout: 'left',             // Alternating: left/right
-      notes: [                    // 4 bullet points
+      language: 'image', // Use 'image' for PNG assets
+      layout: 'left', // Alternating: left/right
+      notes: [
+        // 4 bullet points
         'Benefit 1 (10-15 words)',
         'Benefit 2 (10-15 words)',
         'Benefit 3 (10-15 words)',
@@ -108,19 +111,19 @@ export class ChromadbSectionComponent {
       ],
     },
     // ... 3 more steps
-  ]);  // Line 416-477
+  ]); // Line 416-477
 
   /**
    * Integration ecosystem cards - 3 per library
    */
   readonly integrations = signal([
     {
-      icon: '🧠',                 // Emoji icon
+      icon: '🧠', // Emoji icon
       name: 'Module Name',
       description: '8-12 word integration description',
     },
     // ... 2 more integrations
-  ]);  // Line 482-498
+  ]); // Line 482-498
 }
 ```
 
@@ -467,6 +470,7 @@ styles: [
 **Pattern**: `{library-name}-section.component.ts`
 
 **Examples**:
+
 - `neo4j-section.component.ts`
 - `langgraph-core-section.component.ts`
 - `langgraph-memory-section.component.ts`
@@ -573,14 +577,14 @@ export class {LibraryName}SectionComponent {
 
 ```typescript
 interface TimelineStep {
-  id: string;              // Unique step identifier
-  step: number;            // Step number (1-4)
-  title: string;           // Business value title (from library-analysis.md)
-  description: string;     // 150-200 word business value description
-  code: string;            // Image path: 'assets/images/libraries/{library}_step_{N}.png'
-  language: string;        // Always 'image' for PNG assets
+  id: string; // Unique step identifier
+  step: number; // Step number (1-4)
+  title: string; // Business value title (from library-analysis.md)
+  description: string; // 150-200 word business value description
+  code: string; // Image path: 'assets/images/libraries/{library}_step_{N}.png'
+  language: string; // Always 'image' for PNG assets
   layout: 'left' | 'right'; // Alternating per step
-  notes: string[];         // 4 bullet points (10-15 words each)
+  notes: string[]; // 4 bullet points (10-15 words each)
 }
 ```
 
@@ -588,9 +592,9 @@ interface TimelineStep {
 
 ```typescript
 interface IntegrationCard {
-  icon: string;            // Emoji icon (e.g., '🧠', '🔄', '📊')
-  name: string;            // Module name (e.g., 'Memory Module')
-  description: string;     // 8-12 word integration description
+  icon: string; // Emoji icon (e.g., '🧠', '🔄', '📊')
+  name: string; // Module name (e.g., 'Memory Module')
+  description: string; // 8-12 word integration description
 }
 ```
 
@@ -613,6 +617,7 @@ interface IntegrationCard {
 **Example Mapping (Neo4j)**:
 
 **Library Analysis (Lines 58-106)**:
+
 ```
 ### 2. @hive-academy/nestjs-neo4j
 
@@ -754,9 +759,9 @@ scrollAnimation [scrollConfig]="{
 
 ```typescript
 interface LibraryMetric {
-  value: string;        // Metric value (e.g., 'Sub-100ms', '70%', '10K+')
-  label: string;        // Metric label (e.g., 'Vector Search')
-  color: 'indigo' | 'purple' | 'pink';  // Color gradient
+  value: string; // Metric value (e.g., 'Sub-100ms', '70%', '10K+')
+  label: string; // Metric label (e.g., 'Vector Search')
+  color: 'indigo' | 'purple' | 'pink'; // Color gradient
 }
 
 // Example for Neo4j
@@ -786,7 +791,7 @@ const neo4jMetrics: LibraryMetric[] = [
 
 ```typescript
 const layerBadges: Record<string, { icon: string; label: string }> = {
-  'neo4j': { icon: 'database', label: 'DATA FOUNDATION LAYER' },
+  neo4j: { icon: 'database', label: 'DATA FOUNDATION LAYER' },
   'langgraph-core': { icon: 'cube', label: 'CORE FOUNDATION' },
   'langgraph-memory': { icon: 'brain', label: 'ORCHESTRATION LAYER' },
   'langgraph-workflow-engine': { icon: 'cogs', label: 'ORCHESTRATION LAYER' },
@@ -807,15 +812,34 @@ const layerBadges: Record<string, { icon: string; label: string }> = {
 **Evidence**: chromadb-section.component.ts:177-216
 
 ```typescript
-const decorativePatterns: Record<number, { pattern: string; position: string; size: string; color: string }> = {
+const decorativePatterns: Record<
+  number,
+  { pattern: string; position: string; size: string; color: string }
+> = {
   0: { pattern: 'data-flow', position: 'left-0', size: 'w-full h-96', color: 'purple-400' },
-  1: { pattern: 'network-nodes', position: 'right-[-10%]', size: 'w-[600px] h-[600px]', color: 'indigo-400' },
-  2: { pattern: 'circuit-board', position: 'left-[-5%]', size: 'w-[500px] h-[500px]', color: 'purple-300' },
-  3: { pattern: 'gradient-blob', position: 'right-[-5%]', size: 'w-[400px] h-[400px]', color: 'indigo-300' },
+  1: {
+    pattern: 'network-nodes',
+    position: 'right-[-10%]',
+    size: 'w-[600px] h-[600px]',
+    color: 'indigo-400',
+  },
+  2: {
+    pattern: 'circuit-board',
+    position: 'left-[-5%]',
+    size: 'w-[500px] h-[500px]',
+    color: 'purple-300',
+  },
+  3: {
+    pattern: 'gradient-blob',
+    position: 'right-[-5%]',
+    size: 'w-[400px] h-[400px]',
+    color: 'indigo-300',
+  },
 };
 ```
 
 **Pattern Rotation Strategy**:
+
 - Step 1: Left side, larger pattern
 - Step 2: Right side, medium pattern
 - Step 3: Left side, smaller pattern
@@ -839,17 +863,21 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 #### Phase 2: Sticky Header Customization (10 minutes per component)
 
 1. **Update Layer Badge**:
+
    - Copy badge HTML from ChromaDB
    - Replace label with library-specific layer (from layerBadges mapping)
    - Update icon if needed (database → cube/brain/cogs/etc.)
 
 2. **Update Headline**:
+
    - Replace "ChromaDB" with library name (e.g., "Neo4j", "LangGraph Core")
 
 3. **Update Subtitle**:
+
    - Replace with library-specific tagline from library-analysis.md
 
 4. **Update Metrics**:
+
    - Replace 3 metrics with library-specific values from library-analysis.md
    - Update metric colors (indigo/purple/pink gradients)
 
@@ -859,24 +887,29 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 #### Phase 3: Timeline Data Population (20 minutes per component)
 
 1. **Read Library Analysis Section**:
+
    - Open library-analysis.md
    - Find library section (e.g., "### 2. @hive-academy/nestjs-neo4j")
 
 2. **Extract Business Value Steps**:
+
    - Copy 4 business value propositions from "Business Value Proposition" section
    - Transform into step titles
 
 3. **Write Step Descriptions**:
+
    - Extract technical capabilities from "Key Technical Capabilities"
    - Expand into 150-200 word business-focused descriptions
    - Emphasize user benefits over technical details
 
 4. **Create Bullet Notes**:
+
    - Extract 4 key points per step
    - Keep each bullet 10-15 words
    - Focus on tangible benefits
 
 5. **Assign Image Paths**:
+
    - Use pattern: `assets/images/libraries/{library}_step_{N}.png`
    - Set `language: 'image'` for all steps
 
@@ -889,9 +922,11 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 #### Phase 4: Integration Cards Configuration (5 minutes per component)
 
 1. **Read Integration Points**:
+
    - Extract from "Integration Points" section in library-analysis.md
 
 2. **Create 3 Integration Cards**:
+
    - Card 1: Primary integration (most important module)
    - Card 2: Secondary integration
    - Card 3: Tertiary integration
@@ -902,6 +937,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 #### Phase 5: Decorative Pattern Assignment (5 minutes per component)
 
 1. **Assign Patterns Per Step**:
+
    - Step 1: Choose pattern from task-description.md requirements
    - Step 2: Alternate position (left → right)
    - Step 3: Alternate position (right → left)
@@ -916,18 +952,21 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 #### Phase 6: Validation (5 minutes per component)
 
 1. **Visual Validation**:
+
    - [ ] Sticky header displays correctly
    - [ ] 3 metrics show library-specific values
    - [ ] Layer badge shows correct category
    - [ ] Hero decorative pattern animates on scroll
 
 2. **Timeline Validation**:
+
    - [ ] 4 steps display with correct data
    - [ ] Images load correctly (after asset generation)
    - [ ] Alternating layouts work (left/right/left/right)
    - [ ] Notes display 4 bullet points per step
 
 3. **Animation Validation**:
+
    - [ ] Text slides from correct direction (left steps slide right, right steps slide left)
    - [ ] Images slide from opposite direction (parallax effect)
    - [ ] Decorative patterns animate smoothly
@@ -943,12 +982,14 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 ### Validation Checklist (Per Component)
 
 **Component Structure**:
+
 - [ ] File named correctly (`{library}-section.component.ts`)
 - [ ] Component selector correct (`app-{library}-section`)
 - [ ] All imports present (CommonModule, directives, components)
 - [ ] Signals defined (ecosystemOpacity, codeTimeline, integrations)
 
 **Sticky Header**:
+
 - [ ] Layer badge shows correct category
 - [ ] Library name in headline
 - [ ] Subtitle matches library purpose
@@ -957,6 +998,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 - [ ] Hero decorative pattern unique per library
 
 **Timeline Steps**:
+
 - [ ] 4 steps defined in codeTimeline signal
 - [ ] Each step has unique id
 - [ ] Step numbers 1-4
@@ -968,6 +1010,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 - [ ] 4 bullet notes per step (10-15 words each)
 
 **Integration Cards**:
+
 - [ ] 3 integration cards defined in integrations signal
 - [ ] Emoji icons assigned
 - [ ] Module names correct
@@ -975,6 +1018,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 - [ ] Descriptions match library-analysis.md integration points
 
 **Decorative Patterns**:
+
 - [ ] Step 1: Pattern assigned (from requirements)
 - [ ] Step 2: Pattern assigned, opposite position
 - [ ] Step 3: Pattern assigned, opposite position
@@ -982,6 +1026,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 - [ ] Colors: purple-400, indigo-400, purple-300, indigo-300
 
 **Animations**:
+
 - [ ] Sticky header: start 'top top', end '+=4000', scrub 0.5
 - [ ] Text: start 'top 80%', end 'top 30%', scrub 1
 - [ ] Images: start 'top 75%', end 'top 25%', scrub 1
@@ -989,6 +1034,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 - [ ] Integration cards: fade in after 500ms
 
 **TypeScript Quality**:
+
 - [ ] Zero `any` types
 - [ ] All signals properly typed
 - [ ] TimelineStep interface satisfied
@@ -1046,24 +1092,28 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 ### Testing Strategy (Per Component)
 
 **Unit Tests** (Optional - components are primarily presentational):
+
 - Test signal initialization
 - Test ecosystemOpacity timer
 - Test codeTimeline length (should be 4)
 - Test integrations length (should be 3)
 
 **Visual Regression Tests** (Recommended):
+
 - Screenshot sticky header at scroll position 0
 - Screenshot timeline step 1 at scroll position 1000
 - Screenshot timeline step 2 at scroll position 2000
 - Screenshot sticky bottom cards (visible state)
 
 **Performance Tests**:
+
 - Lighthouse performance score > 90
 - Scroll animation FPS > 50 (60 target)
 - Image lazy loading working
 - No layout shift during scroll
 
 **Accessibility Tests**:
+
 - WCAG 2.1 AA compliance
 - Screen reader compatibility
 - Keyboard navigation support
@@ -1107,18 +1157,21 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 ### Patterns Identified for Code Reuse
 
 **Template Patterns** (100% reusable):
+
 - Sticky header structure (lines 46-165)
 - Scroll-jacked timeline wrapper (lines 167-363)
 - Integration card grid (lines 336-360)
 - CSS keyframe animations (lines 366-383)
 
 **Data Patterns** (parameterized):
+
 - TimelineStep interface (4 steps per library)
 - IntegrationCard interface (3 cards per library)
 - LibraryMetric interface (3 metrics per library)
 - Layer badge configuration (per library category)
 
 **Animation Patterns** (configuration-based):
+
 - Sticky header scroll config
 - Text content scroll config
 - Image/visual scroll config
@@ -1132,6 +1185,7 @@ const decorativePatterns: Record<number, { pattern: string; position: string; si
 **Implementation Guidance**: ✅ COMPLETE
 
 **Deliverables**:
+
 1. ✅ architecture-design.md - This document (complete architectural blueprint)
 2. ⏳ content-mapping.md - Detailed content extraction per library (next document)
 3. ⏳ implementation-plan.md - Developer handoff with step-by-step instructions (next document)

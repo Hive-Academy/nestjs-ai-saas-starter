@@ -63,6 +63,7 @@ export class WorkflowController {
 ### Before vs After
 
 **Before (75+ lines):**
+
 ```typescript
 @Controller('workflow')
 export class WorkflowController {
@@ -100,6 +101,7 @@ export class WorkflowController {
 ```
 
 **After (10 lines):**
+
 ```typescript
 @Controller('workflow')
 export class WorkflowController {

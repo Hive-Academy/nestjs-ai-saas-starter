@@ -39,9 +39,10 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             once: true
           }"
         >
-          TypeScript developers building AI applications face a painful choice: use Python-style
-          frameworks like LangGraph (pattern mismatch), stitch together raw SDKs (integration hell),
-          or spend months building production infrastructure (multi-tenancy, monitoring, approvals).
+          TypeScript developers building AI applications face a painful choice:
+          use Python-style frameworks like LangGraph (pattern mismatch), stitch
+          together raw SDKs (integration hell), or spend months building
+          production infrastructure (multi-tenancy, monitoring, approvals).
         </p>
 
         <!-- Solution Card -->
@@ -59,10 +60,11 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             Our Solution: NestJS Patterns for AI/ML
           </h3>
           <p class="text-lg md:text-xl text-gray-600 leading-relaxed">
-            NestJS AI SaaS Starter applies familiar NestJS patterns (decorators, dependency injection,
-            modules) to AI/ML operations. ChromaDB and Neo4j get TypeORM-style repositories. LangGraph
-            workflows become declarative classes with @Node and @Edge decorators. Enterprise features
-            (monitoring, approvals, streaming) work out-of-the-box.
+            NestJS AI SaaS Starter applies familiar NestJS patterns (decorators,
+            dependency injection, modules) to AI/ML operations. ChromaDB and
+            Neo4j get TypeORM-style repositories. LangGraph workflows become
+            declarative classes with @Node and @Edge decorators. Enterprise
+            features (monitoring, approvals, streaming) work out-of-the-box.
           </p>
         </div>
 
@@ -80,39 +82,45 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           }"
         >
           @for (metric of metrics; track metric.value) {
-            <div class="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <div class="text-5xl md:text-6xl font-bold text-indigo-600 mb-4">{{ metric.value }}</div>
-              <div class="text-lg text-gray-900 font-semibold mb-2">{{ metric.label }}</div>
-              <div class="text-sm text-gray-500">{{ metric.description }}</div>
+          <div
+            class="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-xl hover:scale-105 transition-all duration-300"
+          >
+            <div class="text-5xl md:text-6xl font-bold text-indigo-600 mb-4">
+              {{ metric.value }}
             </div>
+            <div class="text-lg text-gray-900 font-semibold mb-2">
+              {{ metric.label }}
+            </div>
+            <div class="text-sm text-gray-500">{{ metric.description }}</div>
+          </div>
           }
         </div>
       </div>
     </section>
   `,
-  styles: []
+  styles: [],
 })
 export class ProblemSolutionSectionComponent {
   readonly metrics = [
     {
       value: '90%',
       label: 'Code Reduction',
-      description: 'Vector operations: 50 lines → 5 lines'
+      description: 'Vector operations: 50 lines → 5 lines',
     },
     {
       value: '60%',
       label: 'Less Approval Overhead',
-      description: 'ML confidence scoring auto-approves high-confidence tasks'
+      description: 'ML confidence scoring auto-approves high-confidence tasks',
     },
     {
       value: '75+',
       label: 'Lines → 1 Line',
-      description: 'WorkflowStreamingOrchestrator one-liner execution'
+      description: 'WorkflowStreamingOrchestrator one-liner execution',
     },
     {
       value: '$262K',
       label: 'ROI Savings',
-      description: '11 weeks infrastructure development eliminated'
-    }
+      description: '11 weeks infrastructure development eliminated',
+    },
   ];
 }

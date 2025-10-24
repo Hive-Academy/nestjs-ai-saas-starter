@@ -27,7 +27,9 @@ import { Component, input, signal } from '@angular/core';
     <div class="relative group">
       <!-- Code Block - Clean and Minimal -->
       <div class="bg-gray-50 rounded-xl p-6 shadow-md overflow-x-auto">
-        <pre class="text-xs font-mono text-gray-700 leading-relaxed m-0 whitespace-pre-wrap break-words"><code>{{ code() }}</code></pre>
+        <pre
+          class="text-xs font-mono text-gray-700 leading-relaxed m-0 whitespace-pre-wrap break-words"
+        ><code>{{ code() }}</code></pre>
       </div>
 
       <!-- Copy Button - Appears on Hover -->
@@ -42,19 +44,22 @@ import { Component, input, signal } from '@angular/core';
       </button>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
+  styles: [
+    `
+      :host {
+        display: block;
+      }
 
-    pre {
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
-    }
+      pre {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New',
+          monospace;
+      }
 
-    code {
-      font-family: inherit;
-    }
-  `],
+      code {
+        font-family: inherit;
+      }
+    `,
+  ],
 })
 export class CodeSnippetComponent {
   readonly code = input.required<string>();

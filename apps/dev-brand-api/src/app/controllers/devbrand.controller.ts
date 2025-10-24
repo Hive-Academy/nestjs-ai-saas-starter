@@ -187,14 +187,15 @@ export class DevBrandController {
 
     // Use WorkflowStreamingOrchestrator for one-liner workflow execution + streaming
     // This replaces the manual startWorkflowInBackground() method
-    const workflowInfo = await this.streamingOrchestrator.startWorkflowWithStreaming({
-      workflow: this.devBrandWorkflow,
-      input: {
-        userId,
-        githubUsername: dto.githubUsername,
-      },
-      executionId,
-    });
+    const workflowInfo =
+      await this.streamingOrchestrator.startWorkflowWithStreaming({
+        workflow: this.devBrandWorkflow,
+        input: {
+          userId,
+          githubUsername: dto.githubUsername,
+        },
+        executionId,
+      });
 
     // Return enriched response with additional instructions
     return {
@@ -205,7 +206,9 @@ export class DevBrandController {
       websocketInstructions: {
         connect:
           'io("ws://localhost:8080/streaming", { transports: ["websocket", "polling"] })',
-        subscribe: `socket.emit("${workflowInfo.subscriptionInfo.event}", ${JSON.stringify(workflowInfo.subscriptionInfo.payload)})`,
+        subscribe: `socket.emit("${
+          workflowInfo.subscriptionInfo.event
+        }", ${JSON.stringify(workflowInfo.subscriptionInfo.payload)})`,
         events: [
           'stream_update - Workflow state changes (agent started, completed, routing)',
           'token_update - Real-time LLM token streaming (character-by-character)',

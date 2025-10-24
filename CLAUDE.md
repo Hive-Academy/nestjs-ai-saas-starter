@@ -255,14 +255,14 @@ Orchestrator: "INVOKE senior-tester"
 
 ### Agent Selection Matrix
 
-| Request Type | Agent Path                                          | Trigger             |
-| ------------ | --------------------------------------------------- | ------------------- |
-| Implement X  | project-manager → architect → team-leader → dev    | New features        |
-| Fix bug      | team-leader → dev → test → review                  | Bug reports         |
-| Research X   | researcher-expert → architect                       | Technical questions |
-| Review code  | code-reviewer                                       | Quality checks      |
-| Test X       | senior-tester                                       | Testing             |
-| Architecture | software-architect                                  | Design              |
+| Request Type | Agent Path                                      | Trigger             |
+| ------------ | ----------------------------------------------- | ------------------- |
+| Implement X  | project-manager → architect → team-leader → dev | New features        |
+| Fix bug      | team-leader → dev → test → review               | Bug reports         |
+| Research X   | researcher-expert → architect                   | Technical questions |
+| Review code  | code-reviewer                                   | Quality checks      |
+| Test X       | senior-tester                                   | Testing             |
+| Architecture | software-architect                              | Design              |
 
 **Default**: When uncertain, use `/orchestrate`
 
@@ -388,7 +388,53 @@ All commits automatically run:
 2. **typecheck:affected**: Type-check changed libraries
 3. **commitlint**: Validate commit message format
 
-If pre-commit fails, manually fix issues before retrying commit.
+#### Commit Hook Failure Protocol
+
+**CRITICAL**: When a commit hook fails, ALWAYS stop and ask the user to choose:
+
+```
+⚠️ Pre-commit hook failed: [specific error]
+
+Please choose how to proceed:
+
+1. **Fix Issue** - I'll fix the issue if it's related to current work
+   (Use for: lint errors, type errors, commit message format issues in current changes)
+
+2. **Bypass Hook** - Commit with --no-verify flag
+   (Use for: Unrelated errors in other files, blocking issues outside current scope)
+
+3. **Stop & Report** - Mark as blocker and escalate
+   (Use for: Critical infrastructure issues, complex errors requiring investigation)
+
+Which option would you like? (1/2/3)
+```
+
+**Agent Behavior**:
+
+- NEVER automatically bypass hooks with --no-verify
+- NEVER automatically fix issues without user consent
+- NEVER proceed with alternative approaches without user decision
+- ALWAYS present the 3 options and wait for user choice
+- Document the chosen option in task tracking if option 2 or 3 is selected
+
+**Example Scenarios**:
+
+```bash
+# Scenario 1: Lint error in current file
+User chooses: Option 1 (Fix Issue)
+Action: Run npm run lint:fix, verify, retry commit
+
+# Scenario 2: Type error in unrelated library
+User chooses: Option 2 (Bypass Hook)
+Action: git commit --no-verify -m "message"
+Document: Add note to tasks.md about bypassed hook
+
+# Scenario 3: Complex build failure
+User chooses: Option 3 (Stop & Report)
+Action: Mark current task as blocked, create detailed error report
+```
+
+**NEVER run destructive git commands** (reset, force push, rebase --hard, etc.) that cause data loss.
 
 ---
 

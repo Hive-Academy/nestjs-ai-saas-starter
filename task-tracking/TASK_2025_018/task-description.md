@@ -9,6 +9,7 @@ TASK_2025_018 is a **coordinating meta-task** that orchestrates the comprehensiv
 **Business Context**: The current documentation contains hardcoded DevBrand-specific implementations that limit the library's reusability and market appeal. This rewrite transforms the library into a generic Angular LangGraph integration framework that can support ANY AI workflow domain through content projection, templates, and a WorkflowRegistry pattern.
 
 **Value Proposition**:
+
 - **Market Opportunity**: Position as Angular's answer to CopilotKit (which is React-only)
 - **Developer Experience**: Enable developers to build custom AI workflows without modifying library code
 - **Maintainability**: Separate generic infrastructure from domain-specific examples
@@ -29,6 +30,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Scope**: Sections covering core services, protocol implementation, state management, and TypeScript models
 
 **Objectives**:
+
 1. Genericize LangGraphConnectionService - remove hardcoded `/devbrand/execute` endpoint
 2. Implement WorkflowRegistry pattern for multi-workflow support
 3. Make LangGraphProtocolService workflow-agnostic
@@ -38,12 +40,14 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Specific Deliverables**:
 
 1. **Generic Connection Service**:
+
    - Remove hardcoded endpoint: `POST /devbrand/execute`
    - Replace with configurable workflow executor: `POST /:workflowId/execute`
    - Support dynamic WebSocket subscription paths
    - Generic authentication token handling
 
 2. **WorkflowRegistry Implementation**:
+
    ```typescript
    export interface WorkflowDefinition<TInput, TOutput> {
      id: string;
@@ -78,6 +82,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Dependencies**: None (First task in sequence)
 
 **Effort Estimate**: L (10-12 hours)
+
 - Service documentation rewrite: 4h
 - WorkflowRegistry design & documentation: 3h
 - Models genericization: 2h
@@ -90,6 +95,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Scope**: All Angular components (chat, workflow visualizer, HITL, shared) and directives
 
 **Objectives**:
+
 1. Convert all components to use content projection instead of hardcoded templates
 2. Remove DevBrand-specific component examples
 3. Add slot-based customization patterns
@@ -99,6 +105,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Specific Deliverables**:
 
 1. **Generic Chat Component**:
+
    ```typescript
    @Component({
      selector: 'lg-chat',
@@ -107,12 +114,12 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
          <ng-content select="[lgChatHeader]" />
          <div class="lg-chat-messages">
            @for (message of messages(); track message.id) {
-             <ng-container *ngTemplateOutlet="messageTemplate; context: { $implicit: message }" />
+           <ng-container *ngTemplateOutlet="messageTemplate; context: { $implicit: message }" />
            }
          </div>
          <ng-content select="[lgChatInput]" />
        </div>
-     `
+     `,
    })
    export class LgChatComponent<TMessage = Message> {
      messageTemplate = input.required<TemplateRef<{ $implicit: TMessage }>>();
@@ -122,6 +129,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
    ```
 
 2. **Content Projection Slots**:
+
    - `[lgChatHeader]` - Custom header content
    - `[lgChatInput]` - Custom input component
    - `[lgWorkflowStatus]` - Custom status display
@@ -129,6 +137,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
    - `[lgAgentAvatar]` - Custom agent visualization
 
 3. **Template Variable Exposure**:
+
    - Document all context variables available in templates
    - Provide TypeScript interfaces for template contexts
    - Show how to access workflow state in custom templates
@@ -148,6 +157,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Dependencies**: TASK_2025_019 (requires generic models)
 
 **Effort Estimate**: L (10-12 hours)
+
 - Chat component rewrite: 3h
 - Workflow visualizer rewrite: 2h
 - HITL components rewrite: 2h
@@ -161,6 +171,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Scope**: All composable functions (Angular inject pattern) and provider functions
 
 **Objectives**:
+
 1. Make all composables workflow-type-agnostic
 2. Add generic type parameters to all hooks
 3. Document provider configuration patterns
@@ -169,6 +180,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Specific Deliverables**:
 
 1. **Generic Workflow Composable**:
+
    ```typescript
    export function useLangGraphWorkflow<TInput, TState, TOutput>(
      workflowId: string,
@@ -182,19 +194,20 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
      return {
        execute: (input: TInput) => connection.executeWorkflow(workflow, input),
        state: toSignal(connection.on<TState>('state_snapshot')),
-       result: toSignal(connection.on<TOutput>('run_finished'))
+       result: toSignal(connection.on<TOutput>('run_finished')),
      };
    }
    ```
 
 2. **Provider Configuration**:
+
    ```typescript
    export function provideLangGraph(config: LangGraphConfig) {
      return [
        { provide: LANGGRAPH_CONFIG, useValue: config },
        LangGraphConnectionService,
        LangGraphProtocolService,
-       WorkflowRegistry
+       WorkflowRegistry,
      ];
    }
 
@@ -204,7 +217,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
      return {
        provide: LANGGRAPH_WORKFLOWS,
        multi: true,
-       useValue: workflow
+       useValue: workflow,
      };
    }
    ```
@@ -225,6 +238,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Dependencies**: TASK_2025_019 (requires WorkflowRegistry), TASK_2025_020 (may reference components)
 
 **Effort Estimate**: M (6-8 hours)
+
 - Composables rewrite: 3h
 - Provider functions documentation: 2h
 - Type inference examples: 2-3h
@@ -236,6 +250,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Scope**: Create separate examples package demonstrating real-world implementations
 
 **Objectives**:
+
 1. Extract DevBrand workflow into standalone example
 2. Create 2-3 additional workflow type examples
 3. Show integration patterns for different domains
@@ -244,6 +259,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Specific Deliverables**:
 
 1. **Examples Package Structure**:
+
    ```
    examples/
    ├── devbrand-workflow/
@@ -264,6 +280,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
    ```
 
 2. **Example: DevBrand Workflow** (Migrated from docs):
+
    ```typescript
    // devbrand.workflow.ts
    import { WorkflowDefinition } from '@hive-academy/langgraph-angular';
@@ -279,16 +296,17 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
      endpoint: '/devbrand/execute',
      inputSchema: z.object({
        githubUsername: z.string(),
-       userId: z.string().optional()
+       userId: z.string().optional(),
      }),
      outputSchema: z.object({
        brandData: z.custom<BrandData>(),
-       recommendations: z.array(z.string())
-     })
+       recommendations: z.array(z.string()),
+     }),
    };
    ```
 
 3. **Example: Content Generation Workflow**:
+
    - Blog post generation with outline → draft → revision steps
    - Custom editor component with markdown preview
    - HITL approval for draft stages
@@ -308,6 +326,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Dependencies**: TASK_2025_019, TASK_2025_020, TASK_2025_021 (requires all generic infrastructure)
 
 **Effort Estimate**: L (10-12 hours)
+
 - DevBrand example extraction: 3h
 - Content generation example: 3h
 - Data analysis example: 3h
@@ -320,6 +339,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Scope**: Update main documentation structure, add migration guide, final quality check
 
 **Objectives**:
+
 1. Reorganize angular-langgraph.md with new generic structure
 2. Create migration guide for existing DevBrand implementations
 3. Add "Getting Started" guide for new users
@@ -329,51 +349,61 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Specific Deliverables**:
 
 1. **Updated Documentation Structure**:
+
    ```markdown
    # LangGraph Angular Integration Library
 
    ## Getting Started (NEW)
+
    - Installation
    - Quick Start (generic example)
    - Core Concepts
 
    ## Core Architecture (UPDATED)
+
    - WorkflowRegistry Pattern
    - Generic Type System
    - Connection & Protocol Services
 
    ## Components & UI (UPDATED)
+
    - Generic Components with Content Projection
    - Template Customization
    - Styling & Theming
 
    ## Composables & Hooks (UPDATED)
+
    - Type-Safe Workflow Hooks
    - Provider Configuration
    - Multi-Workflow Setup
 
    ## Examples (NEW SECTION)
+
    - Link to examples package
    - Overview of available examples
    - How to create custom workflows
 
    ## Migration Guide (NEW)
+
    - Upgrading from DevBrand-specific version
    - Breaking changes checklist
    - Code transformation examples
 
    ## API Reference (UPDATED)
+
    - All interfaces with generic signatures
    - Configuration options
    - Event type definitions
    ```
 
 2. **Migration Guide**:
+
    - Step-by-step transformation from hardcoded to registry pattern
    - Code diff examples showing before/after
    - Troubleshooting common migration issues
 
 3. **Architecture Diagrams**:
+
    - WorkflowRegistry flow diagram
    - Component content projection slots
    - Type parameter propagation through layers
@@ -398,6 +428,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 **Dependencies**: TASK_2025_019, TASK_2025_020, TASK_2025_021, TASK_2025_022 (requires all prior tasks complete)
 
 **Effort Estimate**: M (6-8 hours)
+
 - Documentation restructure: 2h
 - Migration guide creation: 2h
 - Architecture diagrams: 1h
@@ -410,6 +441,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 1. Target ALL Features Without Bypassing Details
 
 **Application**:
+
 - TASK_2025_019: All 16 AG-UI event types remain supported
 - TASK_2025_020: All components (chat, workflow viz, HITL, etc.) preserved with generic implementations
 - TASK_2025_021: All composables (workflow, chat, approval, streaming) maintained with generic signatures
@@ -421,6 +453,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 2. 100% Generic - Zero Specific Use-Case Implementations
 
 **Application**:
+
 - TASK_2025_019: Remove `/devbrand/execute` endpoint, replace with `/:workflowId/execute`
 - TASK_2025_020: Remove `title = input('DevBrand Workflow')`, replace with `title = input.required<string>()`
 - TASK_2025_021: All composables accept `workflowId` parameter instead of hardcoded workflow
@@ -432,6 +465,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 3. Support All Features Through Generic Infrastructure
 
 **Application**:
+
 - TASK_2025_019: WorkflowRegistry enables unlimited workflow types
 - TASK_2025_020: Content projection enables custom UI for any workflow
 - TASK_2025_021: Generic type parameters enable type-safe workflow development
@@ -443,6 +477,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 4. Remove ALL DevBrand-Specific Code
 
 **Eliminated Elements**:
+
 - Hardcoded endpoint: `POST /devbrand/execute` → `POST /:workflowId/execute`
 - Component example: `DevBrandWorkflowComponent` → Moved to examples/devbrand-workflow/
 - Hardcoded title: `'DevBrand Workflow'` → `title = input.required<string>()`
@@ -454,6 +489,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 5. Add WorkflowRegistry for Multi-Workflow Support
 
 **Implementation Plan**:
+
 - TASK_2025_019: Design and document WorkflowRegistry service
 - TASK_2025_020: Components consume workflows from registry
 - TASK_2025_021: Providers enable workflow registration at bootstrap
@@ -465,6 +501,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 6. Use Content Projection & Templates for Customization
 
 **Implementation Plan**:
+
 - TASK_2025_020: Convert all components to slot-based architecture
 - TASK_2025_021: Composables expose template contexts
 - TASK_2025_022: Examples show advanced template customization
@@ -475,6 +512,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### 7. Create Separate Examples Package
 
 **Implementation Plan**:
+
 - TASK_2025_022: Primary responsibility
 - TASK_2025_023: Link examples from main documentation
 - Structure: `examples/` directory with 3+ complete workflow implementations
@@ -501,6 +539,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### Technical Risks
 
 #### Risk: Generic Type Complexity
+
 - **Probability**: Medium
 - **Impact**: High (Developer experience degradation)
 - **Mitigation**:
@@ -510,6 +549,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 - **Contingency**: Provide helper types to simplify common patterns
 
 #### Risk: Content Projection Over-Engineering
+
 - **Probability**: Medium
 - **Impact**: Medium (API complexity)
 - **Mitigation**:
@@ -519,6 +559,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 - **Contingency**: Provide pre-built templates for common use cases
 
 #### Risk: Breaking Changes Impact
+
 - **Probability**: High (Intentional complete rewrite)
 - **Impact**: Critical (Existing DevBrand implementation breaks)
 - **Mitigation**:
@@ -530,6 +571,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### Business Risks
 
 #### Risk: Scope Creep During Rewrite
+
 - **Probability**: Medium
 - **Impact**: High (Timeline extension)
 - **Mitigation**:
@@ -539,6 +581,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 - **Contingency**: Park new features in "future-enhancements.md" for post-rewrite
 
 #### Risk: Documentation Becomes Too Abstract
+
 - **Probability**: Medium
 - **Impact**: High (Developer adoption barrier)
 - **Mitigation**:
@@ -550,6 +593,7 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### Integration Risks
 
 #### Risk: WorkflowRegistry Pattern Mismatch with Existing Infrastructure
+
 - **Probability**: Low
 - **Impact**: Critical (Architecture redesign required)
 - **Mitigation**:
@@ -565,21 +609,25 @@ Rather than a single monolithic rewrite, this task coordinates **5 focused sub-t
 ### Recommended Sequence
 
 **Week 1**: Foundation
+
 - TASK_2025_019: Core Services & Models (10-12h)
 - Validation: business-analyst reviews WorkflowRegistry design
 - **Checkpoint**: Generic infrastructure designed and documented
 
 **Week 2**: UI Layer
+
 - TASK_2025_020: Components & Directives (10-12h)
 - Validation: business-analyst reviews content projection patterns
 - **Checkpoint**: All UI components genericized
 
 **Week 3**: Developer API
+
 - TASK_2025_021: Composables & Providers (6-8h)
 - Validation: business-analyst reviews type safety
 - **Checkpoint**: Developer-facing API complete
 
 **Week 4**: Examples & Validation
+
 - TASK_2025_022: Examples Package (10-12h)
 - TASK_2025_023: Documentation Consolidation (6-8h)
 - Validation: business-analyst final quality gate
@@ -628,20 +676,24 @@ The rewrite separates "how the library works" (main documentation) from "what yo
 ## Dependencies & Constraints
 
 ### External Dependencies
+
 - None - self-contained documentation rewrite
 
 ### Internal Dependencies
+
 - All sub-tasks depend on prior sub-tasks completing (strict sequential dependency)
 - TASK_2025_022 requires all prior tasks (019, 020, 021) complete
 - TASK_2025_023 requires all prior tasks complete
 
 ### Constraints
+
 - **Scope Limitation**: Rewrite documentation only - no implementation code changes (implementation is future work)
 - **Feature Preservation**: All 16 AG-UI event types, all components, all composables must remain documented
 - **Backward Compatibility**: ZERO backward compatibility - this is a breaking change release
 - **Timeline**: Recommended 4-week sequential execution, minimum 3 weeks if parallelism exploited
 
 ### Assumptions
+
 - WorkflowRegistry pattern is architecturally sound (validated in TASK_2025_019)
 - Content projection provides sufficient customization (validated in TASK_2025_020)
 - TypeScript generics don't degrade DX (validated in TASK_2025_021)
@@ -654,30 +706,35 @@ The rewrite separates "how the library works" (main documentation) from "what yo
 Each sub-task must pass business-analyst validation before next sub-task begins:
 
 ### TASK_2025_019 Quality Gate
+
 - [ ] WorkflowRegistry design reviewed and approved
 - [ ] Zero hardcoded endpoints in documented service code
 - [ ] Generic type signatures validated for correctness
 - [ ] Configuration interfaces support multi-workflow registration
 
 ### TASK_2025_020 Quality Gate
+
 - [ ] All components use content projection (minimum 2 slots each)
 - [ ] Zero hardcoded UI strings in component examples
 - [ ] Template contexts fully documented with TypeScript interfaces
 - [ ] Component API uses generic type parameters
 
 ### TASK_2025_021 Quality Gate
+
 - [ ] All composables accept workflow ID parameter
 - [ ] Type inference works correctly in documented examples
 - [ ] Provider tree supports multi-workflow registration
 - [ ] Zero hardcoded workflow logic in composables
 
 ### TASK_2025_022 Quality Gate
+
 - [ ] DevBrand example extracted completely from main docs
 - [ ] Minimum 3 domain examples with READMEs
 - [ ] All examples use WorkflowRegistry pattern
 - [ ] Examples demonstrate full library feature set
 
 ### TASK_2025_023 Quality Gate (Final)
+
 - [ ] Zero "DevBrand" matches in library documentation (automated check)
 - [ ] Getting started guide shows workflow in <50 lines
 - [ ] Migration guide covers all breaking changes
@@ -689,14 +746,17 @@ Each sub-task must pass business-analyst validation before next sub-task begins:
 ## Future Recommendations
 
 ### Immediate Actions (Post-Rewrite)
+
 1. **Implementation Phase**: Apply documentation changes to actual library code
 2. **Beta Release**: Test with DevBrand migration
 3. **Community Feedback**: Beta test with 2-3 other workflow types
 
 ### Technical Debt
+
 None introduced - this is a documentation rewrite that eliminates technical debt from hardcoded implementations.
 
 ### Enhancement Opportunities
+
 1. **Workflow Generator CLI**: Tool to scaffold new workflows from templates
 2. **Visual Workflow Builder**: Drag-and-drop workflow configuration UI
 3. **Workflow Marketplace**: Share and discover community workflows
@@ -707,7 +767,7 @@ None introduced - this is a documentation rewrite that eliminates technical debt
 ## Appendix: Task Coordination Matrix
 
 | Sub-Task ID   | Focus Area          | Depends On    | Blocks        | Effort | Week |
-|---------------|---------------------|---------------|---------------|--------|------|
+| ------------- | ------------------- | ------------- | ------------- | ------ | ---- |
 | TASK_2025_019 | Services & Models   | None          | 020, 021, 022 | L      | 1    |
 | TASK_2025_020 | Components & UI     | 019           | 021, 022      | L      | 2    |
 | TASK_2025_021 | Composables & Hooks | 019, 020      | 022, 023      | M      | 3    |
@@ -723,6 +783,7 @@ None introduced - this is a documentation rewrite that eliminates technical debt
 **Next Step**: USER VALIDATION of split strategy
 
 **Awaiting User Decision**:
+
 1. Approve 5-task split approach
 2. Request modifications to sub-task breakdown
 3. Prefer alternative approach (e.g., fewer/more tasks)

@@ -38,7 +38,9 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     ScrollAnimationDirective,
   ],
   template: `
-    <div class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden">
+    <div
+      class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden"
+    >
       <!-- Content Container -->
       <div class="container mx-auto px-8 py-12">
         <!-- Section Hero with Integrated Network Nodes - Becomes sticky -->
@@ -73,143 +75,160 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
           </div>
 
           <!-- Hero Content (layered on top) -->
-        <div class="relative z-10">
-        <!-- Layer Badge -->
-        <div
-          class="inline-block"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 80%',
-            end: 'top 40%',
-            scrub: 0.8,
-            from: { opacity: 0, scale: 0.8 },
-            to: { opacity: 1, scale: 1 }
-          }"
-        >
-          <span class="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-full text-sm font-semibold text-indigo-700 mb-6">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
-              <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
-              <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
-            </svg>
-            DATA FOUNDATION LAYER
-          </span>
+          <div class="relative z-10">
+            <!-- Layer Badge -->
+            <div
+              class="inline-block"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 80%',
+                end: 'top 40%',
+                scrub: 0.8,
+                from: { opacity: 0, scale: 0.8 },
+                to: { opacity: 1, scale: 1 }
+              }"
+            >
+              <span
+                class="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-full text-sm font-semibold text-indigo-700 mb-6"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"
+                  />
+                  <path
+                    d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"
+                  />
+                  <path
+                    d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"
+                  />
+                </svg>
+                DATA FOUNDATION LAYER
+              </span>
+            </div>
+
+            <!-- Main Headline -->
+            <h2
+              class="text-7xl font-bold text-gray-900 mb-6 leading-tight text-3d-extruded"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 75%',
+                end: 'top 35%',
+                scrub: 1,
+                from: { opacity: 0, y: 50 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              Neo4j
+            </h2>
+
+            <!-- Subtitle -->
+            <p
+              class="text-2xl text-gray-500 leading-relaxed max-w-3xl mx-auto"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 70%',
+                end: 'top 30%',
+                scrub: 1,
+                from: { opacity: 0, y: 30 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              Enterprise-grade graph relationships for AI knowledge graphs
+              <span class="block mt-2 text-indigo-600 font-semibold">
+                Model complex relationships for AI decision-making
+              </span>
+            </p>
+
+            <!-- Floating Metrics -->
+            <div
+              class="flex justify-center gap-12 mt-12"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 65%',
+                end: 'top 25%',
+                scrub: 0.8,
+                from: { opacity: 0, y: 40 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              <div class="text-center">
+                <div class="text-4xl font-bold text-indigo-600 mb-2">
+                  7 Decorators
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  CRUD System
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-4xl font-bold text-purple-600 mb-2">
+                  100+ Connections
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  Concurrent Pool
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-4xl font-bold text-pink-600 mb-2">
+                  1000+ Nodes/sec
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  Graph Traversal
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Main Headline -->
-        <h2
-          class="text-7xl font-bold text-gray-900 mb-6 leading-tight text-3d-extruded"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 75%',
-            end: 'top 35%',
-            scrub: 1,
-            from: { opacity: 0, y: 50 },
-            to: { opacity: 1, y: 0 }
-          }"
+        <!-- Progressive Code Timeline with Content Projection -->
+        <app-hijacked-scroll-timeline
+          [scrollHeightPerStep]="1000"
+          [start]="'top top'"
         >
-          Neo4j
-        </h2>
-
-        <!-- Subtitle -->
-        <p
-          class="text-2xl text-gray-500 leading-relaxed max-w-3xl mx-auto"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 70%',
-            end: 'top 30%',
-            scrub: 1,
-            from: { opacity: 0, y: 30 },
-            to: { opacity: 1, y: 0 }
-          }"
-        >
-          Enterprise-grade graph relationships for AI knowledge graphs
-          <span class="block mt-2 text-indigo-600 font-semibold">
-            Model complex relationships for AI decision-making
-          </span>
-        </p>
-
-        <!-- Floating Metrics -->
-        <div
-          class="flex justify-center gap-12 mt-12"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 65%',
-            end: 'top 25%',
-            scrub: 0.8,
-            from: { opacity: 0, y: 40 },
-            to: { opacity: 1, y: 0 }
-          }"
-        >
-          <div class="text-center">
-            <div class="text-4xl font-bold text-indigo-600 mb-2">7 Decorators</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">CRUD System</div>
-          </div>
-          <div class="text-center">
-            <div class="text-4xl font-bold text-purple-600 mb-2">100+ Connections</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Concurrent Pool</div>
-          </div>
-          <div class="text-center">
-            <div class="text-4xl font-bold text-pink-600 mb-2">1000+ Nodes/sec</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Graph Traversal</div>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      <!-- Progressive Code Timeline with Content Projection -->
-      <app-hijacked-scroll-timeline
-        [scrollHeightPerStep]="1000"
-        [start]="'top top'"
-      >
-        @for (step of codeTimeline(); track step.id; let i = $index) {
+          @for (step of codeTimeline(); track step.id; let i = $index) {
           <div hijackedScrollItem [slideDirection]="'none'">
             <!-- Step Container with Decoration -->
             <div class="relative  flex items-start">
               <!-- Decoration: Alternating patterns per step with scroll animations -->
               @if (i === 0) {
-                <div
-                  class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30 decoration-step-0"
-                  [attr.data-decoration-index]="i"
-                >
-                  <div class="w-full h-full text-purple-400 decoration-inner">
-                    <app-decorative-pattern [pattern]="'network-nodes'" />
-                  </div>
+              <div
+                class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30 decoration-step-0"
+                [attr.data-decoration-index]="i"
+              >
+                <div class="w-full h-full text-purple-400 decoration-inner">
+                  <app-decorative-pattern [pattern]="'network-nodes'" />
                 </div>
-              }
-              @if (i === 1) {
-                <div
-                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30 decoration-step-1"
-                  [attr.data-decoration-index]="i"
-                >
-                  <div class="w-full h-full text-indigo-400 decoration-inner">
-                    <app-decorative-pattern [pattern]="'circuit-board'" />
-                  </div>
+              </div>
+              } @if (i === 1) {
+              <div
+                class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30 decoration-step-1"
+                [attr.data-decoration-index]="i"
+              >
+                <div class="w-full h-full text-indigo-400 decoration-inner">
+                  <app-decorative-pattern [pattern]="'circuit-board'" />
                 </div>
-              }
-              @if (i === 2) {
-                <div
-                  class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-2"
-                  [attr.data-decoration-index]="i"
-                >
-                  <div class="w-full h-full text-purple-300 decoration-inner">
-                    <app-decorative-pattern [pattern]="'data-flow'" />
-                  </div>
+              </div>
+              } @if (i === 2) {
+              <div
+                class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-2"
+                [attr.data-decoration-index]="i"
+              >
+                <div class="w-full h-full text-purple-300 decoration-inner">
+                  <app-decorative-pattern [pattern]="'data-flow'" />
                 </div>
-              }
-              @if (i === 3) {
-                <div
-                  class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-3"
-                  [attr.data-decoration-index]="i"
-                >
-                  <div class="w-full h-full text-indigo-300 decoration-inner">
-                    <app-decorative-pattern [pattern]="'gradient-blob'" />
-                  </div>
+              </div>
+              } @if (i === 3) {
+              <div
+                class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30 decoration-step-3"
+                [attr.data-decoration-index]="i"
+              >
+                <div class="w-full h-full text-indigo-300 decoration-inner">
+                  <app-decorative-pattern [pattern]="'gradient-blob'" />
                 </div>
+              </div>
               }
 
               <!-- Content -->
@@ -225,7 +244,11 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                       start: 'top 80%',
                       end: 'top 30%',
                       scrub: 1,
-                      from: { opacity: 0, x: step.layout === 'left' ? -60 : 60, y: 20 },
+                      from: {
+                        opacity: 0,
+                        x: step.layout === 'left' ? -60 : 60,
+                        y: 20
+                      },
                       to: { opacity: 1, x: 0, y: 0 }
                     }"
                   >
@@ -242,7 +265,9 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                     </div>
 
                     <!-- Title -->
-                    <h3 class="text-4xl font-bold text-gray-900 mb-4 leading-tight text-3d">
+                    <h3
+                      class="text-4xl font-bold text-gray-900 mb-4 leading-tight text-3d"
+                    >
                       {{ step.title }}
                     </h3>
 
@@ -253,26 +278,26 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
 
                     <!-- Notes -->
                     @if (step.notes && step.notes.length > 0) {
-                      <div class="space-y-3">
-                        @for (note of step.notes; track $index) {
-                          <div class="flex items-start gap-3">
-                            <svg
-                              class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            <p class="text-sm text-gray-700">{{ note }}</p>
-                          </div>
-                        }
+                    <div class="space-y-3">
+                      @for (note of step.notes; track $index) {
+                      <div class="flex items-start gap-3">
+                        <svg
+                          class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <p class="text-sm text-gray-700">{{ note }}</p>
                       </div>
+                      }
+                    </div>
                     }
                   </div>
 
@@ -286,55 +311,67 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                       start: 'top 75%',
                       end: 'top 25%',
                       scrub: 1,
-                      from: { opacity: 0, x: step.layout === 'left' ? 80 : -80, scale: 0.95 },
+                      from: {
+                        opacity: 0,
+                        x: step.layout === 'left' ? 80 : -80,
+                        scale: 0.95
+                      },
                       to: { opacity: 1, x: 0, scale: 1 }
                     }"
                   >
                     @if (step.language === 'image') {
-                      <!-- AI-Generated Business Value Image -->
-                      <div class="relative group pt-5">
-                        <img
-                          [src]="step.code"
-                          [alt]="step.title"
-                          class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-                          loading="lazy"
-                        />
-                      </div>
+                    <!-- AI-Generated Business Value Image -->
+                    <div class="relative group pt-5">
+                      <img
+                        [src]="step.code"
+                        [alt]="step.title"
+                        class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
+                      />
+                    </div>
                     }
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        }
+          }
 
-        <!-- Integration Ecosystem - Sticky at bottom, always visible -->
-        <div
-          class="fixed bottom-0 left-0 right-0 z-0 pointer-events-none"
-          [style.opacity]="ecosystemOpacity()"
-        >
-            <div class="container mx-auto px-8 relative z-10 pointer-events-auto">
+          <!-- Integration Ecosystem - Sticky at bottom, always visible -->
+          <div
+            class="fixed bottom-0 left-0 right-0 z-0 pointer-events-none"
+            [style.opacity]="ecosystemOpacity()"
+          >
+            <div
+              class="container mx-auto px-8 relative z-10 pointer-events-auto"
+            >
               <div class="max-w-5xl mx-auto py-6">
-                <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center animate-fade-in-up">
+                <h3
+                  class="text-2xl font-bold text-gray-900 mb-4 text-center animate-fade-in-up"
+                >
                   LangGraph Ecosystem Integration
                 </h3>
                 <div class="grid grid-cols-3 gap-4">
-                  @for (integration of integrations(); track integration.name; let i = $index) {
-                    <div
-                      class="bg-white/95 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
-                      [style.animation-delay]="(i * 100) + 'ms'"
-                    >
-                      <div class="text-3xl mb-2">{{ integration.icon }}</div>
-                      <h4 class="text-base font-bold text-gray-900 mb-1">{{ integration.name }}</h4>
-                      <p class="text-xs text-gray-500">{{ integration.description }}</p>
-                    </div>
+                  @for (integration of integrations(); track integration.name;
+                  let i = $index) {
+                  <div
+                    class="bg-white/95 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
+                    [style.animation-delay]="i * 100 + 'ms'"
+                  >
+                    <div class="text-3xl mb-2">{{ integration.icon }}</div>
+                    <h4 class="text-base font-bold text-gray-900 mb-1">
+                      {{ integration.name }}
+                    </h4>
+                    <p class="text-xs text-gray-500">
+                      {{ integration.description }}
+                    </p>
+                  </div>
                   }
                 </div>
               </div>
             </div>
-        </div>
-      </app-hijacked-scroll-timeline>
-
+          </div>
+        </app-hijacked-scroll-timeline>
       </div>
     </div>
   `,
@@ -379,7 +416,8 @@ export class Neo4jSectionComponent {
       id: 'complex-relationships',
       step: 1,
       title: 'Model Complex Relationships',
-      description: 'Revolutionary 7-decorator Entity CRUD system (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity) reduces boilerplate code by 90%. Build sophisticated knowledge graphs and relationship models for AI decision-making with type-safe queries, enterprise-grade Neo4jQueryBuilder, and intelligent graph traversal algorithms.',
+      description:
+        'Revolutionary 7-decorator Entity CRUD system (@FindOne, @FindMany, @CreateEntity, @UpdateEntity, @DeleteEntity, @CountEntities, @ExistsEntity) reduces boilerplate code by 90%. Build sophisticated knowledge graphs and relationship models for AI decision-making with type-safe queries, enterprise-grade Neo4jQueryBuilder, and intelligent graph traversal algorithms.',
       code: 'assets/images/libraries/neo4j_step_1.png',
       language: 'image',
       layout: 'left',
@@ -394,7 +432,8 @@ export class Neo4jSectionComponent {
       id: 'enterprise-security',
       step: 2,
       title: 'Enterprise Security Built-In',
-      description: 'Comprehensive 5-decorator security layer provides enterprise-grade protection: @Safe for input sanitization, @Authorize for role-based access control, @ValidateInput for schema validation, @AuditLog for compliance tracking, and @RateLimit for DoS protection. Type-safe query builder prevents injection attacks while maintaining developer productivity with full TypeScript support.',
+      description:
+        'Comprehensive 5-decorator security layer provides enterprise-grade protection: @Safe for input sanitization, @Authorize for role-based access control, @ValidateInput for schema validation, @AuditLog for compliance tracking, and @RateLimit for DoS protection. Type-safe query builder prevents injection attacks while maintaining developer productivity with full TypeScript support.',
       code: 'assets/images/libraries/neo4j_step_2.png',
       language: 'image',
       layout: 'right',
@@ -409,7 +448,8 @@ export class Neo4jSectionComponent {
       id: 'graph-algorithms',
       step: 3,
       title: 'Graph Algorithms for AI',
-      description: 'Specialized GraphRepository provides advanced algorithms for AI applications: centrality analysis identifies key nodes in knowledge graphs, community detection discovers relationships patterns, shortest path finds optimal connections. Perfect for knowledge graphs, recommendation engines, relationship analysis, and network intelligence for AI decision-making systems.',
+      description:
+        'Specialized GraphRepository provides advanced algorithms for AI applications: centrality analysis identifies key nodes in knowledge graphs, community detection discovers relationships patterns, shortest path finds optimal connections. Perfect for knowledge graphs, recommendation engines, relationship analysis, and network intelligence for AI decision-making systems.',
       code: 'assets/images/libraries/neo4j_step_3.png',
       language: 'image',
       layout: 'left',
@@ -424,7 +464,8 @@ export class Neo4jSectionComponent {
       id: 'multi-tenant-isolation',
       step: 4,
       title: 'Multi-Tenant Graph Isolation',
-      description: 'Database-per-tenant architecture provides complete data isolation for SaaS applications. Automatic tenant routing ensures each customer data remains separate with zero cross-contamination risk. ACID transactions, connection pooling, and intelligent caching optimize performance while maintaining enterprise-grade security and compliance standards.',
+      description:
+        'Database-per-tenant architecture provides complete data isolation for SaaS applications. Automatic tenant routing ensures each customer data remains separate with zero cross-contamination risk. ACID transactions, connection pooling, and intelligent caching optimize performance while maintaining enterprise-grade security and compliance standards.',
       code: 'assets/images/libraries/neo4j_step_4.png',
       language: 'image',
       layout: 'right',

@@ -77,21 +77,21 @@ The dev-brand-api backend provides a sophisticated multi-agent LangGraph workflo
 
 #### Client Messages (Outgoing)
 
-| Message | Payload | Purpose |
-|---------|---------|---------|
+| Message               | Payload           | Purpose                      |
+| --------------------- | ----------------- | ---------------------------- |
 | `subscribe_execution` | `{ executionId }` | Subscribe to workflow stream |
-| `ping` | - | Heartbeat |
-| `get_status` | - | Get connection info |
+| `ping`                | -                 | Heartbeat                    |
+| `get_status`          | -                 | Get connection info          |
 
 #### Server Messages (Incoming)
 
-| Message | Data | Description |
-|---------|------|-------------|
-| `connection_status` | `{ connectionId, status, serverTime }` | Connection established |
-| `subscription_confirmed` | `{ type, executionId, timestamp }` | Subscription successful |
-| `stream_update` | `{ type, data: { update }, timestamp }` | Workflow events |
-| `token_update` | `{ type, data: { token, executionId, nodeId }, timestamp }` | LLM tokens |
-| `error` | `{ message }` | Errors |
+| Message                  | Data                                                        | Description             |
+| ------------------------ | ----------------------------------------------------------- | ----------------------- |
+| `connection_status`      | `{ connectionId, status, serverTime }`                      | Connection established  |
+| `subscription_confirmed` | `{ type, executionId, timestamp }`                          | Subscription successful |
+| `stream_update`          | `{ type, data: { update }, timestamp }`                     | Workflow events         |
+| `token_update`           | `{ type, data: { token, executionId, nodeId }, timestamp }` | LLM tokens              |
+| `error`                  | `{ message }`                                               | Errors                  |
 
 #### Event Routing Architecture
 
@@ -310,14 +310,17 @@ async executeWithStreaming(input: {
 **GitHub Integration Tools** (4 tools):
 
 1. **github-analyzer** - Analyzes GitHub repositories
+
    - Input: `{ username, timeframe, repositories?, includePrivate? }`
    - Output: `GitHubAnalysisResponse`
 
 2. **achievement-extractor** - Extracts achievements from commits
+
    - Input: `{ commits, repositories, analysisDepth }`
    - Output: `CodeAchievement[]`
 
 3. **developer-insights** - Generates developer insights
+
    - Input: `{ username, commits, repositories }`
    - Output: `{ developerId, technicalExpertise, workingPatterns, ... }`
 
@@ -399,6 +402,7 @@ export interface StreamMetadata {
 **Example**: `devbrand/github-analysis/extract-achievements/performance`
 
 **Parsed Components**:
+
 - `domain`: devbrand
 - `phase`: github-analysis
 - `activity`: extract-achievements
@@ -417,8 +421,8 @@ const response = await fetch('http://localhost:3000/devbrand/execute', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     githubUsername: 'octocat',
-    userId: 'user-123'
-  })
+    userId: 'user-123',
+  }),
 });
 
 const { executionId, websocketUrl } = await response.json();
@@ -428,7 +432,7 @@ const { executionId, websocketUrl } = await response.json();
 import { io } from 'socket.io-client';
 
 const socket = io(websocketUrl, {
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
 });
 
 // Step 3: Subscribe to execution
@@ -564,12 +568,14 @@ export interface ContentCreationResult {
 ## Phase A Acceptance Criteria - Validation
 
 ✅ **A1**: Complete REST endpoint discovery
+
 - Endpoint: POST /devbrand/execute
 - Request DTO: ExecuteDevBrandDto with validation rules
 - Response DTO: ExecuteDevBrandResponseDto with WebSocket instructions
 - Execution ID format: devbrand-{timestamp}
 
 ✅ **A2**: Complete WebSocket architecture discovery
+
 - Server endpoint: ws://localhost:8080/streaming
 - Connection lifecycle: connect → subscribe → receive events → disconnect
 - StreamingWebSocketService configuration
@@ -577,6 +583,7 @@ export interface ContentCreationResult {
 - Event emission chain documented
 
 ✅ **A3**: Complete LangGraph workflow discovery
+
 - DevBrandSupervisorWorkflow structure
 - SUPERVISOR topology with LLM routing
 - 3 worker agents: GitHub Analyzer, Brand Strategist, Content Creator
@@ -586,6 +593,7 @@ export interface ContentCreationResult {
 - Checkpointing enabled
 
 ✅ **A4**: Complete AI agent system discovery
+
 - GitHubCodeAnalyzerAgent: 6-step workflow, 4 tools, HITL at finalize
 - PersonalBrandStrategistAgent: 6-step workflow with decision node, HITL at finalize
 - ContentCreatorAgent: 6-step workflow, 2 platforms, HITL at finalize
@@ -593,6 +601,7 @@ export interface ContentCreationResult {
 - All agents have workflow-agent type
 
 ✅ **A5**: Complete tool calling & event type discovery
+
 - 4 GitHub integration tools documented with schemas
 - StreamEventType enumeration (16 event types)
 - StreamUpdate interface structure
@@ -607,10 +616,12 @@ export interface ContentCreationResult {
 ### Technical Risks
 
 1. **WebSocket Connection Management**
+
    - Risk: Connection drops during long-running workflows
    - Mitigation: Implement reconnection logic with state recovery
 
 2. **Event Ordering**
+
    - Risk: Out-of-order events due to network latency
    - Mitigation: Use sequenceNumber metadata for ordering
 
@@ -621,10 +632,12 @@ export interface ContentCreationResult {
 ### Integration Challenges
 
 1. **Real-time UI Updates**
+
    - Challenge: Efficiently render high-frequency token updates
    - Solution: Debounce/throttle token updates, batch rendering
 
 2. **State Synchronization**
+
    - Challenge: Keep UI in sync with backend workflow state
    - Solution: Use sequenceNumber to detect gaps, request missed events
 
@@ -639,9 +652,11 @@ export interface ContentCreationResult {
 ### Phase B: Angular Service Architecture
 
 1. **DevBrandApiService** - REST API integration
+
    - `executeWorkflow(githubUsername, userId): Observable<ExecuteResponse>`
 
 2. **DevBrandWebSocketService** - WebSocket management
+
    - Connection lifecycle
    - Subscription management
    - Event stream as Observable

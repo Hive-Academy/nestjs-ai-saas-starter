@@ -42,6 +42,7 @@ This implementation plan designs a production-ready Angular POC to validate the 
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/services/devbrand-api.service.ts`
 
 **Evidence-Based Design**:
+
 - Environment config pattern: `apps/dev-brand-ui/src/environments/environment.ts:3-4`
 - Service pattern: `apps/dev-brand-ui/src/app/core/angular-3d/services/animation.service.ts:63-65`
 - Modern Angular: Uses `inject()` function instead of constructor injection
@@ -57,13 +58,8 @@ export class DevBrandApiService {
    * Execute DevBrand workflow
    * @evidence Backend: apps/dev-brand-api/src/app/controllers/devbrand.controller.ts:143-210
    */
-  executeWorkflow(
-    request: ExecuteDevBrandRequest
-  ): Observable<ExecuteDevBrandResponse> {
-    return this.http.post<ExecuteDevBrandResponse>(
-      `${this.apiUrl}/devbrand/execute`,
-      request
-    ).pipe(
+  executeWorkflow(request: ExecuteDevBrandRequest): Observable<ExecuteDevBrandResponse> {
+    return this.http.post<ExecuteDevBrandResponse>(`${this.apiUrl}/devbrand/execute`, request).pipe(
       timeout(30000), // environment.ts:29
       retry({ count: 2, delay: 1000 }),
       catchError(this.handleError)
@@ -81,16 +77,16 @@ export class DevBrandApiService {
 ```typescript
 // Evidence: apps/dev-brand-api/src/app/controllers/devbrand.controller.ts:50-66
 export interface ExecuteDevBrandRequest {
-  githubUsername: string;  // REQUIRED
-  userId?: string;         // OPTIONAL (defaults to "anonymous")
+  githubUsername: string; // REQUIRED
+  userId?: string; // OPTIONAL (defaults to "anonymous")
 }
 
 // Evidence: apps/dev-brand-api/src/app/controllers/devbrand.controller.ts:68-112
 export interface ExecuteDevBrandResponse {
-  executionId: string;          // Format: "devbrand-{timestamp}"
+  executionId: string; // Format: "devbrand-{timestamp}"
   status: 'started';
   message: string;
-  websocketUrl: string;         // "ws://localhost:8080/streaming"
+  websocketUrl: string; // "ws://localhost:8080/streaming"
   websocketInstructions: {
     connect: string;
     subscribe: string;
@@ -108,6 +104,7 @@ export interface ExecuteDevBrandResponse {
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/services/devbrand-websocket.service.ts`
 
 **Evidence-Based Design**:
+
 - WebSocket server: `libs/langgraph-modules/streaming/src/lib/services/streaming-websocket.service.ts:108-121`
 - Connection flow: `research-websocket.md:65-109`
 - Environment config: `environment.ts:5,14-21`
@@ -137,9 +134,7 @@ export class DevBrandWebSocketService {
   readonly errors$ = this._errors.asObservable();
 
   // Computed state
-  readonly isConnected = computed(() =>
-    this.connectionState().status === 'connected'
-  );
+  readonly isConnected = computed(() => this.connectionState().status === 'connected');
 
   /**
    * Connect to WebSocket server
@@ -151,9 +146,9 @@ export class DevBrandWebSocketService {
       return;
     }
 
-    this._connectionState.update(state => ({
+    this._connectionState.update((state) => ({
       ...state,
-      status: 'connecting'
+      status: 'connecting',
     }));
 
     // Socket.io client configuration
@@ -161,9 +156,9 @@ export class DevBrandWebSocketService {
     this.socket = io(websocketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,      // environment.ts:15
-      reconnectionDelay: 3000,       // environment.ts:16
-      timeout: 30000,                // environment.ts:39
+      reconnectionAttempts: 10, // environment.ts:15
+      reconnectionDelay: 3000, // environment.ts:16
+      timeout: 30000, // environment.ts:39
     });
 
     this.registerSocketListeners();
@@ -208,7 +203,7 @@ export class DevBrandWebSocketService {
 
     // Connection status (evidence: research-websocket.md:99-109)
     this.socket.on('connection_status', (data: ConnectionStatus) => {
-      this._connectionState.update(state => ({
+      this._connectionState.update((state) => ({
         ...state,
         status: 'connected',
         connectionId: data.connectionId,
@@ -245,7 +240,7 @@ export class DevBrandWebSocketService {
 
     // Disconnection
     this.socket.on('disconnect', (reason: string) => {
-      this._connectionState.update(state => ({
+      this._connectionState.update((state) => ({
         ...state,
         status: 'disconnected',
         lastError: reason,
@@ -254,7 +249,7 @@ export class DevBrandWebSocketService {
 
     // Reconnection attempts
     this.socket.on('reconnect_attempt', (attemptNumber: number) => {
-      this._connectionState.update(state => ({
+      this._connectionState.update((state) => ({
         ...state,
         status: 'reconnecting',
         reconnectAttempts: attemptNumber,
@@ -316,6 +311,7 @@ export interface SubscriptionConfirmed {
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/services/devbrand-workflow-state.service.ts`
 
 **Evidence-Based Design**:
+
 - Signal pattern: `animation.service.ts:71-84` (signal-based state)
 - Computed properties: `animation.service.ts:97-116`
 - State management: RxJS BehaviorSubject for complex workflows
@@ -355,29 +351,23 @@ export class DevBrandWorkflowStateService {
   readonly eventHistory$ = this._eventHistory.asObservable();
 
   // Computed properties
-  readonly isExecuting = computed(() =>
-    this.executionState().status === 'running'
-  );
+  readonly isExecuting = computed(() => this.executionState().status === 'running');
 
   readonly currentAgent = computed(() => {
     const agents = this.agentProgress();
-    return Object.entries(agents).find(([_, progress]) =>
-      progress.status === 'active'
-    )?.[0] || null;
+    return (
+      Object.entries(agents).find(([_, progress]) => progress.status === 'active')?.[0] || null
+    );
   });
 
   readonly workflowProgress = computed(() => {
     const agents = this.agentProgress();
     const total = Object.keys(agents).length;
-    const completed = Object.values(agents).filter(
-      a => a.status === 'completed'
-    ).length;
+    const completed = Object.values(agents).filter((a) => a.status === 'completed').length;
     return Math.round((completed / total) * 100);
   });
 
-  readonly hasPendingApprovals = computed(() =>
-    this.hitlQueue().length > 0
-  );
+  readonly hasPendingApprovals = computed(() => this.hitlQueue().length > 0);
 
   constructor() {
     this.subscribeToWebSocketEvents();
@@ -396,13 +386,13 @@ export class DevBrandWorkflowStateService {
     });
 
     // Reset agent progress
-    this._agentProgress.update(agents => {
+    this._agentProgress.update((agents) => {
       const reset: AgentProgressMap = {};
-      Object.keys(agents).forEach(agentId => {
+      Object.keys(agents).forEach((agentId) => {
         reset[agentId] = {
           status: 'pending',
           currentStep: null,
-          completedSteps: []
+          completedSteps: [],
         };
       });
       return reset;
@@ -418,19 +408,19 @@ export class DevBrandWorkflowStateService {
    */
   private subscribeToWebSocketEvents(): void {
     // Stream updates
-    this.wsService.streamUpdates$.subscribe(update => {
+    this.wsService.streamUpdates$.subscribe((update) => {
       this.processStreamUpdate(update);
       this.addToEventHistory(update);
     });
 
     // Token updates
-    this.wsService.tokenUpdates$.subscribe(token => {
+    this.wsService.tokenUpdates$.subscribe((token) => {
       this.processTokenUpdate(token);
     });
 
     // Errors
-    this.wsService.errors$.subscribe(error => {
-      this._executionState.update(state => ({
+    this.wsService.errors$.subscribe((error) => {
+      this._executionState.update((state) => ({
         ...state,
         status: 'error',
         error: error.message,
@@ -445,14 +435,14 @@ export class DevBrandWorkflowStateService {
   private processStreamUpdate(update: StreamUpdate): void {
     switch (update.type) {
       case StreamEventType.WORKFLOW_START:
-        this._executionState.update(state => ({
+        this._executionState.update((state) => ({
           ...state,
           status: 'running',
         }));
         break;
 
       case StreamEventType.WORKFLOW_END:
-        this._executionState.update(state => ({
+        this._executionState.update((state) => ({
           ...state,
           status: 'completed',
           completedAt: new Date(),
@@ -487,7 +477,7 @@ export class DevBrandWorkflowStateService {
     const agentId = this.extractAgentId(update.metadata?.nodeId);
     if (!agentId) return;
 
-    this._agentProgress.update(agents => ({
+    this._agentProgress.update((agents) => ({
       ...agents,
       [agentId]: {
         ...agents[agentId],
@@ -504,15 +494,12 @@ export class DevBrandWorkflowStateService {
     const agentId = this.extractAgentId(update.metadata?.nodeId);
     if (!agentId) return;
 
-    this._agentProgress.update(agents => ({
+    this._agentProgress.update((agents) => ({
       ...agents,
       [agentId]: {
         status: 'completed',
         currentStep: null,
-        completedSteps: [
-          ...agents[agentId].completedSteps,
-          update.metadata?.activity || 'unknown',
-        ],
+        completedSteps: [...agents[agentId].completedSteps, update.metadata?.activity || 'unknown'],
       },
     }));
   }
@@ -553,9 +540,7 @@ export class DevBrandWorkflowStateService {
 
       if (lastSeq !== undefined && currentSeq !== undefined) {
         if (currentSeq !== lastSeq + 1) {
-          console.warn(
-            `Sequence gap detected: expected ${lastSeq + 1}, got ${currentSeq}`
-          );
+          console.warn(`Sequence gap detected: expected ${lastSeq + 1}, got ${currentSeq}`);
         }
       }
     }
@@ -568,14 +553,14 @@ export class DevBrandWorkflowStateService {
    * Get filtered events by type
    */
   getEventsByType(type: StreamEventType): StreamUpdate[] {
-    return this._eventHistory.value.filter(e => e.type === type);
+    return this._eventHistory.value.filter((e) => e.type === type);
   }
 
   /**
    * Get events by agent
    */
   getEventsByAgent(agentId: string): StreamUpdate[] {
-    return this._eventHistory.value.filter(e => {
+    return this._eventHistory.value.filter((e) => {
       const extractedId = this.extractAgentId(e.metadata?.nodeId);
       return extractedId === agentId;
     });
@@ -602,12 +587,7 @@ export class DevBrandWorkflowStateService {
 **State Type Definitions**:
 
 ```typescript
-export type ExecutionStatus =
-  | 'idle'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'error';
+export type ExecutionStatus = 'idle' | 'running' | 'paused' | 'completed' | 'error';
 
 export interface ExecutionState {
   status: ExecutionStatus;
@@ -617,11 +597,7 @@ export interface ExecutionState {
   error: string | null;
 }
 
-export type AgentStatus =
-  | 'pending'
-  | 'active'
-  | 'completed'
-  | 'error';
+export type AgentStatus = 'pending' | 'active' | 'completed' | 'error';
 
 export interface AgentProgress {
   status: AgentStatus;
@@ -675,6 +651,7 @@ DevBrandPOCPageComponent (smart container)
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/components/execution-control.component.ts`
 
 **Evidence-Based Design**:
+
 - Standalone pattern: `chromadb-section.component.ts:31-41`
 - Signal-based state: Angular best practices
 - Reactive forms: Modern Angular (typed forms)
@@ -694,9 +671,7 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">
-        Workflow Execution Control
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Workflow Execution Control</h3>
 
       <form [formGroup]="executionForm" (ngSubmit)="onExecute()">
         <!-- GitHub Username Input -->
@@ -716,10 +691,8 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
             "
           />
           @if (executionForm.get('githubUsername')?.invalid &&
-               executionForm.get('githubUsername')?.touched) {
-            <p class="text-red-500 text-sm mt-1">
-              GitHub username is required
-            </p>
+          executionForm.get('githubUsername')?.touched) {
+          <p class="text-red-500 text-sm mt-1">GitHub username is required</p>
           }
         </div>
 
@@ -744,53 +717,56 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
           class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           @if (isExecuting()) {
-            <span class="flex items-center justify-center">
-              <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Executing...
-            </span>
-          } @else {
-            Execute Workflow
-          }
+          <span class="flex items-center justify-center">
+            <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+                fill="none"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Executing...
+          </span>
+          } @else { Execute Workflow }
         </button>
       </form>
 
       <!-- Execution Status -->
       @if (executionId()) {
-        <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-          <p class="text-sm font-medium text-green-800">
-            Workflow Started
-          </p>
-          <p class="text-xs text-green-600 mt-1">
-            Execution ID: <code class="bg-green-100 px-2 py-1 rounded">{{ executionId() }}</code>
-          </p>
-        </div>
+      <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+        <p class="text-sm font-medium text-green-800">Workflow Started</p>
+        <p class="text-xs text-green-600 mt-1">
+          Execution ID: <code class="bg-green-100 px-2 py-1 rounded">{{ executionId() }}</code>
+        </p>
+      </div>
       }
 
       <!-- Error Display -->
       @if (error()) {
-        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-          <p class="text-sm font-medium text-red-800">
-            Error
-          </p>
-          <p class="text-xs text-red-600 mt-1">
-            {{ error() }}
-          </p>
-          <button
-            (click)="clearError()"
-            class="mt-2 text-xs text-red-700 underline"
-          >
-            Dismiss
-          </button>
-        </div>
+      <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+        <p class="text-sm font-medium text-red-800">Error</p>
+        <p class="text-xs text-red-600 mt-1">
+          {{ error() }}
+        </p>
+        <button (click)="clearError()" class="mt-2 text-xs text-red-700 underline">Dismiss</button>
+      </div>
       }
     </div>
   `,
-  styles: [`
-    /* Component-specific styles */
-  `],
+  styles: [
+    `
+      /* Component-specific styles */
+    `,
+  ],
 })
 export class ExecutionControlComponent {
   private readonly fb = inject(FormBuilder);
@@ -830,9 +806,7 @@ export class ExecutionControlComponent {
         this.executionStarted.emit(response.executionId);
       },
       error: (error) => {
-        this._error.set(
-          error.error?.message || 'Failed to start workflow execution'
-        );
+        this._error.set(error.error?.message || 'Failed to start workflow execution');
         this._executionId.set(null);
       },
     });
@@ -853,6 +827,7 @@ export class ExecutionControlComponent {
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/components/progress-visualization.component.ts`
 
 **Evidence-Based Design**:
+
 - 3 agents: `research-summary.md:148-302` (agent analysis)
 - Sequential workflow: Supervisor topology
 - Progress tracking: Agent status + step completion
@@ -870,9 +845,7 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
   imports: [CommonModule],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-6">
-        Workflow Progress
-      </h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-6">Workflow Progress</h3>
 
       <!-- Overall Progress Bar -->
       <div class="mb-6">
@@ -891,92 +864,108 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
       <!-- Agent Progress Cards (3 agents) -->
       <div class="space-y-4">
         @for (agent of agents; track agent.id) {
-          <div
-            class="border rounded-lg p-4 transition"
-            [class.border-indigo-500]="agent.progress.status === 'active'"
-            [class.bg-indigo-50]="agent.progress.status === 'active'"
-            [class.border-green-500]="agent.progress.status === 'completed'"
-            [class.bg-green-50]="agent.progress.status === 'completed'"
-            [class.border-gray-200]="agent.progress.status === 'pending'"
-          >
-            <!-- Agent Header -->
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-3">
-                <!-- Status Icon -->
-                @switch (agent.progress.status) {
-                  @case ('pending') {
-                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                      <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                      </svg>
-                    </div>
-                  }
-                  @case ('active') {
-                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
-                      <svg class="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    </div>
-                  }
-                  @case ('completed') {
-                    <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
-                      <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                      </svg>
-                    </div>
-                  }
-                }
-
-                <!-- Agent Name -->
-                <div>
-                  <h4 class="font-semibold text-gray-900">
-                    {{ agent.name }}
-                  </h4>
-                  <p class="text-xs text-gray-500">
-                    {{ agent.description }}
-                  </p>
-                </div>
+        <div
+          class="border rounded-lg p-4 transition"
+          [class.border-indigo-500]="agent.progress.status === 'active'"
+          [class.bg-indigo-50]="agent.progress.status === 'active'"
+          [class.border-green-500]="agent.progress.status === 'completed'"
+          [class.bg-green-50]="agent.progress.status === 'completed'"
+          [class.border-gray-200]="agent.progress.status === 'pending'"
+        >
+          <!-- Agent Header -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <!-- Status Icon -->
+              @switch (agent.progress.status) { @case ('pending') {
+              <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
               </div>
+              } @case ('active') {
+              <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+                <svg class="animate-spin w-4 h-4 text-white" viewBox="0 0 24 24">
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    fill="none"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </div>
+              } @case ('completed') {
+              <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              } }
 
-              <!-- Status Badge -->
-              <span
-                class="px-3 py-1 text-xs font-semibold rounded-full"
-                [class.bg-gray-200]="agent.progress.status === 'pending'"
-                [class.text-gray-700]="agent.progress.status === 'pending'"
-                [class.bg-indigo-600]="agent.progress.status === 'active'"
-                [class.text-white]="agent.progress.status === 'active'"
-                [class.bg-green-600]="agent.progress.status === 'completed'"
-                [class.text-white]="agent.progress.status === 'completed'"
-              >
-                {{ agent.progress.status | uppercase }}
-              </span>
+              <!-- Agent Name -->
+              <div>
+                <h4 class="font-semibold text-gray-900">
+                  {{ agent.name }}
+                </h4>
+                <p class="text-xs text-gray-500">
+                  {{ agent.description }}
+                </p>
+              </div>
             </div>
 
-            <!-- Current Step -->
-            @if (agent.progress.currentStep) {
-              <div class="mb-2 text-sm text-indigo-700 font-medium">
-                Current: {{ agent.progress.currentStep }}
-              </div>
-            }
-
-            <!-- Completed Steps -->
-            @if (agent.progress.completedSteps.length > 0) {
-              <div class="text-xs text-gray-600">
-                Completed: {{ agent.progress.completedSteps.length }} steps
-              </div>
-            }
+            <!-- Status Badge -->
+            <span
+              class="px-3 py-1 text-xs font-semibold rounded-full"
+              [class.bg-gray-200]="agent.progress.status === 'pending'"
+              [class.text-gray-700]="agent.progress.status === 'pending'"
+              [class.bg-indigo-600]="agent.progress.status === 'active'"
+              [class.text-white]="agent.progress.status === 'active'"
+              [class.bg-green-600]="agent.progress.status === 'completed'"
+              [class.text-white]="agent.progress.status === 'completed'"
+            >
+              {{ agent.progress.status | uppercase }}
+            </span>
           </div>
+
+          <!-- Current Step -->
+          @if (agent.progress.currentStep) {
+          <div class="mb-2 text-sm text-indigo-700 font-medium">
+            Current: {{ agent.progress.currentStep }}
+          </div>
+          }
+
+          <!-- Completed Steps -->
+          @if (agent.progress.completedSteps.length > 0) {
+          <div class="text-xs text-gray-600">
+            Completed: {{ agent.progress.completedSteps.length }} steps
+          </div>
+          }
+        </div>
         }
       </div>
 
       <!-- Current Agent Indicator -->
       @if (currentAgent()) {
-        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p class="text-sm text-blue-800">
-            <strong>Active:</strong> {{ getAgentName(currentAgent()!) }}
-          </p>
-        </div>
+      <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <p class="text-sm text-blue-800">
+          <strong>Active:</strong> {{ getAgentName(currentAgent()!) }}
+        </p>
+      </div>
       }
     </div>
   `,
@@ -1015,7 +1004,7 @@ export class ProgressVisualizationComponent {
   });
 
   getAgentName(agentId: string): string {
-    const agent = this.agents().find(a => a.id === agentId);
+    const agent = this.agents().find((a) => a.id === agentId);
     return agent?.name || agentId;
   }
 }
@@ -1030,6 +1019,7 @@ export class ProgressVisualizationComponent {
 **File**: `apps/dev-brand-ui/src/app/features/devbrand-poc/components/event-stream.component.ts`
 
 **Evidence-Based Design**:
+
 - Event types: `research-summary.md:332-366` (16 StreamEventType values)
 - Virtual scrolling: Performance requirement for 10k+ events
 - Filtering: By event type and node ID
@@ -1062,15 +1052,15 @@ import { StreamEventType } from '../models/stream-events.model';
         <!-- Event Type Filters -->
         <div class="flex flex-wrap gap-2">
           @for (type of eventTypes; track type) {
-            <label class="inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                [checked]="selectedTypes().includes(type)"
-                (change)="toggleEventType(type)"
-                class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-              />
-              <span class="ml-2 text-sm text-gray-700">{{ type }}</span>
-            </label>
+          <label class="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              [checked]="selectedTypes().includes(type)"
+              (change)="toggleEventType(type)"
+              class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            />
+            <span class="ml-2 text-sm text-gray-700">{{ type }}</span>
+          </label>
           }
         </div>
 
@@ -1085,10 +1075,7 @@ import { StreamEventType } from '../models/stream-events.model';
 
       <!-- Event List with Virtual Scrolling -->
       <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <cdk-virtual-scroll-viewport
-          itemSize="80"
-          class="h-[600px]"
-        >
+        <cdk-virtual-scroll-viewport itemSize="80" class="h-[600px]">
           <div
             *cdkVirtualFor="let event of filteredEvents(); trackBy: trackBySequence"
             class="border-b border-gray-100 p-4 hover:bg-gray-50 transition"
@@ -1105,27 +1092,25 @@ import { StreamEventType } from '../models/stream-events.model';
 
               <!-- Timestamp -->
               <span class="text-xs text-gray-500">
-                {{ event.metadata?.timestamp | date:'HH:mm:ss.SSS' }}
+                {{ event.metadata?.timestamp | date : 'HH:mm:ss.SSS' }}
               </span>
             </div>
 
             <!-- Node ID -->
             @if (event.metadata?.nodeId) {
-              <div class="text-xs text-gray-600 mb-1">
-                Node: <code class="bg-gray-100 px-1 rounded">{{ event.metadata.nodeId }}</code>
-              </div>
+            <div class="text-xs text-gray-600 mb-1">
+              Node: <code class="bg-gray-100 px-1 rounded">{{ event.metadata.nodeId }}</code>
+            </div>
             }
 
             <!-- Sequence Number -->
-            <div class="text-xs text-gray-500">
-              Sequence: #{{ event.metadata?.sequenceNumber }}
-            </div>
+            <div class="text-xs text-gray-500">Sequence: #{{ event.metadata?.sequenceNumber }}</div>
 
             <!-- Event Data (expandable) -->
             @if (expandedEvents().includes(event.metadata?.sequenceNumber || 0)) {
-              <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
-                <pre class="overflow-x-auto">{{ event.data | json }}</pre>
-              </div>
+            <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+              <pre class="overflow-x-auto">{{ event.data | json }}</pre>
+            </div>
             }
 
             <!-- Expand/Collapse Button -->
@@ -1133,7 +1118,11 @@ import { StreamEventType } from '../models/stream-events.model';
               (click)="toggleEventExpansion(event.metadata?.sequenceNumber || 0)"
               class="mt-2 text-xs text-indigo-600 hover:text-indigo-800"
             >
-              {{ expandedEvents().includes(event.metadata?.sequenceNumber || 0) ? 'Collapse' : 'Expand' }}
+              {{
+                expandedEvents().includes(event.metadata?.sequenceNumber || 0)
+                  ? 'Collapse'
+                  : 'Expand'
+              }}
             </button>
           </div>
         </cdk-virtual-scroll-viewport>
@@ -1168,15 +1157,13 @@ export class EventStreamComponent {
     if (selected.length === 0) {
       return this.stateService.eventHistory$.value;
     }
-    return this.stateService.eventHistory$.value.filter(
-      e => selected.includes(e.type)
-    );
+    return this.stateService.eventHistory$.value.filter((e) => selected.includes(e.type));
   });
 
   toggleEventType(type: StreamEventType): void {
-    this._selectedTypes.update(types => {
+    this._selectedTypes.update((types) => {
       if (types.includes(type)) {
-        return types.filter(t => t !== type);
+        return types.filter((t) => t !== type);
       }
       return [...types, type];
     });
@@ -1187,9 +1174,9 @@ export class EventStreamComponent {
   }
 
   toggleEventExpansion(sequenceNumber: number): void {
-    this._expandedEvents.update(expanded => {
+    this._expandedEvents.update((expanded) => {
       if (expanded.includes(sequenceNumber)) {
-        return expanded.filter(n => n !== sequenceNumber);
+        return expanded.filter((n) => n !== sequenceNumber);
       }
       return [...expanded, sequenceNumber];
     });
@@ -1311,17 +1298,19 @@ export interface StreamUpdate<T = unknown> {
  */
 import { z } from 'zod';
 
-export const StreamMetadataSchema = z.object({
-  timestamp: z.coerce.date(),
-  sequenceNumber: z.number(),
-  executionId: z.string(),
-  nodeId: z.string().optional(),
-  agentType: z.string().optional(),
-  domain: z.string().optional(),
-  phase: z.string().optional(),
-  activity: z.string().optional(),
-  detail: z.string().optional(),
-}).passthrough();
+export const StreamMetadataSchema = z
+  .object({
+    timestamp: z.coerce.date(),
+    sequenceNumber: z.number(),
+    executionId: z.string(),
+    nodeId: z.string().optional(),
+    agentType: z.string().optional(),
+    domain: z.string().optional(),
+    phase: z.string().optional(),
+    activity: z.string().optional(),
+    detail: z.string().optional(),
+  })
+  .passthrough();
 
 export const StreamUpdateSchema = z.object({
   type: z.nativeEnum(StreamEventType),
@@ -1357,6 +1346,7 @@ export interface WebSocketError {
 **Chosen Approach**: RxJS BehaviorSubjects + Angular Signals (Hybrid)
 
 **Rationale**:
+
 1. **POC-Appropriate**: Simpler than NgRx/Akita, faster to implement
 2. **Real-time Optimized**: BehaviorSubjects ideal for WebSocket streams
 3. **Modern Angular**: Signals for reactive UI updates (computed properties)
@@ -1403,6 +1393,7 @@ export interface WebSocketError {
 ```
 
 **State Flow**:
+
 1. User triggers execution → ExecutionControlComponent
 2. API call → DevBrandApiService → Backend REST
 3. Execution ID received → WorkflowStateService.startExecution()
@@ -1417,16 +1408,19 @@ export interface WebSocketError {
 **Error Categories**:
 
 1. **WebSocket Connection Errors**
+
    - **Detection**: Socket.io 'disconnect' event
    - **Recovery**: Automatic reconnection (max 10 attempts, 3s delay)
    - **User Feedback**: Connection status signal updates UI
 
 2. **REST API Errors**
+
    - **Validation (400)**: Display field-specific errors in form
    - **Server (500)**: Retry with exponential backoff (2 retries max)
    - **Network**: Timeout after 30s, show retry button
 
 3. **Workflow Interruption**
+
    - **HITL Timeout**: Display timeout message, allow manual retry
    - **Agent Failure**: Mark agent as 'error', show error details
    - **Sequence Gaps**: Log warning, continue processing
@@ -1543,9 +1537,7 @@ export const devbrandPocRoutes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./pages/devbrand-poc-page.component').then(
-        m => m.DevBrandPOCPageComponent
-      ),
+      import('./pages/devbrand-poc-page.component').then((m) => m.DevBrandPOCPageComponent),
   },
 ];
 ```
@@ -1559,9 +1551,7 @@ export const appRoutes: Route[] = [
   {
     path: 'devbrand-poc',
     loadChildren: () =>
-      import('./features/devbrand-poc/devbrand-poc.routes').then(
-        m => m.devbrandPocRoutes
-      ),
+      import('./features/devbrand-poc/devbrand-poc.routes').then((m) => m.devbrandPocRoutes),
   },
 ];
 ```
@@ -1573,6 +1563,7 @@ export const appRoutes: Route[] = [
 ### CRITICAL FINDING: Backend DOES NOT Emit Dedicated Tool Call Events
 
 **Investigation Scope**:
+
 - Searched entire libs/langgraph-modules codebase for TOOL_CALL|ToolStart|ToolEnd patterns
 - Analyzed StreamEventType enumeration in streaming/src/lib/constants.ts
 - Examined monitoring/trace.provider.ts for LangChain callbacks
@@ -1581,6 +1572,7 @@ export const appRoutes: Route[] = [
 **Evidence**:
 
 **StreamEventType Enumeration** (libs/langgraph-modules/streaming/src/lib/constants.ts:8-40):
+
 ```typescript
 export enum StreamEventType {
   // Workflow lifecycle events
@@ -1589,8 +1581,8 @@ export enum StreamEventType {
   WORKFLOW_ERROR = 'workflow:error',
 
   // Node events
-  NODE_START = 'node:start',      // ← Can track agent execution start
-  NODE_END = 'node:end',          // ← Can track agent execution end
+  NODE_START = 'node:start', // ← Can track agent execution start
+  NODE_END = 'node:end', // ← Can track agent execution end
   NODE_ERROR = 'node:error',
   NODE_COMPLETE = 'node:complete',
 
@@ -1618,6 +1610,7 @@ export enum StreamEventType {
 ```
 
 **Findings**:
+
 1. ❌ NO dedicated TOOL_CALL_START or TOOL_CALL_END event types
 2. ❌ NO explicit tool call event streaming in current architecture
 3. ✅ LangChain callbacks exist (handleToolStart/handleToolEnd) but ONLY for logging
@@ -1638,6 +1631,7 @@ export enum StreamEventType {
 ### Backend Enhancement Required for Tool Call Tracking
 
 **Current Workaround**:
+
 - **Option 1 (RECOMMENDED)**: Use NODE_START/NODE_END with metadata to infer tool calls
   - Agents emit NODE_START when starting execution
   - Tool calls happen within agent execution
@@ -1645,6 +1639,7 @@ export enum StreamEventType {
   - **Evidence**: implementation-plan.md:486-499 (handleNodeStart tracks agent activation)
 
 **Example Workaround**:
+
 ```typescript
 // Frontend can infer tool calls from node events
 private handleNodeStart(update: StreamUpdate): void {
@@ -1668,6 +1663,7 @@ private handleNodeStart(update: StreamUpdate): void {
 ```
 
 **Option 2 (FUTURE)**: Backend enhancement to emit dedicated tool events
+
 - **NOT in scope for this POC** (no backend modifications allowed)
 - **Future work**: Add TOOL_CALL_START/TOOL_CALL_END to StreamEventType
 - **Future work**: Integrate LangChain handleToolStart/End callbacks with event emission
@@ -1676,6 +1672,7 @@ private handleNodeStart(update: StreamUpdate): void {
 ### POC Implementation Strategy
 
 **For This POC**:
+
 1. ✅ Use NODE_START/NODE_END events with metadata parsing
 2. ✅ Display agent-level activity tracking (shows when agents execute, which includes tools)
 3. ✅ Implement "Tool Activity Inference" section in UI
@@ -1685,6 +1682,7 @@ private handleNodeStart(update: StreamUpdate): void {
 4. ✅ Document limitation: "Tool calls inferred from agent execution, not direct events"
 
 **For @hive-academy/langgraph-angular Library** (Future Work):
+
 - Recommend adding TOOL_CALL event types to StreamEventType
 - Recommend LangChain callback integration with event emitter
 - Design tool call event schema based on POC learnings
@@ -1692,11 +1690,13 @@ private handleNodeStart(update: StreamUpdate): void {
 ### Updated Implementation Plan Impact
 
 **Modified Requirements**:
+
 - ~~Requirement B5: Tool Call Tracking~~ → **Agent Activity Tracking with Tool Inference**
 - ~~Display tool invocations directly~~ → **Infer tool activity from node execution metadata**
 - ~~Track tool call lifecycle~~ → **Track agent execution lifecycle (includes tools)**
 
 **New UI Component**:
+
 - **AgentActivityTrackerComponent** (replaces ToolCallTrackerComponent)
   - Displays agent execution timeline
   - Highlights potential tool activity (based on nodeId parsing)
@@ -1710,6 +1710,7 @@ private handleNodeStart(update: StreamUpdate): void {
 ### CRITICAL FINDING: HITL Module Provides Complete Interruption Infrastructure
 
 **Investigation Scope**:
+
 - Analyzed libs/langgraph-modules/hitl module (26 files)
 - Reviewed user-interruption.service.ts (849 lines)
 - Examined user-interruption.interface.ts
@@ -1718,13 +1719,14 @@ private handleNodeStart(update: StreamUpdate): void {
 **Evidence**:
 
 **UserInterruptionService** (libs/langgraph-modules/hitl/src/lib/services/user-interruption.service.ts):
+
 ```typescript
 @Injectable()
 export class UserInterruptionService {
   /**
    * Request user interruption during workflow execution
    */
-  async requestUserInterruption(context: InterruptionContext): Promise<string>
+  async requestUserInterruption(context: InterruptionContext): Promise<string>;
 
   /**
    * Handle user response to interruption
@@ -1734,13 +1736,13 @@ export class UserInterruptionService {
     shouldContinue: boolean;
     updatedState?: Partial<WorkflowState>;
     error?: string;
-  }>
+  }>;
 
   /**
    * Register stream connection for real-time updates
    * ✅ CRITICAL: Supports real-time WebSocket streaming
    */
-  registerStreamConnection(executionId: string, connection: any): void
+  registerStreamConnection(executionId: string, connection: any): void;
 
   /**
    * Interrupt agent execution with user question
@@ -1750,22 +1752,24 @@ export class UserInterruptionService {
     nodeId: string,
     userQuestion: string,
     userId?: string
-  ): Promise<string>
+  ): Promise<string>;
 }
 ```
 
 **InterruptionType Enum** (user-interruption.interface.ts:7-13):
+
 ```typescript
 export enum InterruptionType {
-  QUESTION = 'question',              // ✅ User asks question during execution
-  CLARIFICATION = 'clarification',    // ✅ Agent requests clarification
-  INPUT_REQUEST = 'input_request',    // ✅ Agent needs user input
+  QUESTION = 'question', // ✅ User asks question during execution
+  CLARIFICATION = 'clarification', // ✅ Agent requests clarification
+  INPUT_REQUEST = 'input_request', // ✅ Agent needs user input
   APPROVAL_REQUEST = 'approval_request', // ✅ Approval required
-  CORRECTION = 'correction',          // ✅ User corrects agent behavior
+  CORRECTION = 'correction', // ✅ User corrects agent behavior
 }
 ```
 
 **UserInterruption Interface** (user-interruption.interface.ts:64-90):
+
 ```typescript
 export interface UserInterruption {
   id: string;
@@ -1788,6 +1792,7 @@ export interface UserInterruption {
 ```
 
 **WebSocket Integration** (user-interruption.service.ts:475-632):
+
 ```typescript
 // Service supports real-time streaming of interruptions
 registerStreamConnection(executionId: string, connection: any): void;
@@ -1832,6 +1837,7 @@ private async streamInterruptionUpdate(
 **Backend Components** (EXISTING - NO MODIFICATION REQUIRED):
 
 1. **UserInterruptionService** (@hive-academy/langgraph-hitl)
+
    - ✅ Handles user questions during execution
    - ✅ Manages interruption lifecycle (pending → responded → resolved)
    - ✅ Supports WebSocket streaming (registerStreamConnection)
@@ -1839,6 +1845,7 @@ private async streamInterruptionUpdate(
    - ✅ EventEmitter2 integration for real-time notifications
 
 2. **HITL Storage** (Neo4j-backed)
+
    - ✅ Persistent interruption storage
    - ✅ Adapter pattern for flexibility
    - ✅ Production-ready with dev-brand-api integration
@@ -1852,6 +1859,7 @@ private async streamInterruptionUpdate(
 **Frontend Components** (NEW - POC IMPLEMENTATION):
 
 1. **UserChatPanelComponent**
+
    - Real-time chat interface during agent execution
    - Message history display
    - Input field for user questions
@@ -1860,6 +1868,7 @@ private async streamInterruptionUpdate(
    - Interruption status badges (pending, responded, timeout)
 
 2. **UserInterruptionService (Frontend)**
+
    - WebSocket-based interruption requests
    - Message queue for user questions
    - Interruption response handling
@@ -1947,6 +1956,7 @@ Display Agent Response in Chat UI
 **UI/UX Design**:
 
 **Chat Panel Layout**:
+
 ```
 ┌───────────────────────────────────────┐
 │ User Chat with Agent                  │
@@ -1977,12 +1987,14 @@ Display Agent Response in Chat UI
 ```
 
 **Status Badges**:
+
 - 🟡 PENDING - Waiting for agent response
 - 🟢 RESPONDED - Agent replied
 - 🔴 TIMEOUT - Agent took too long
 - ⚪ CANCELLED - User cancelled question
 
 **Integration with Streaming Visualization**:
+
 - Chat panel appears as sidebar when execution is active
 - Streaming events continue in main panel
 - Interruptions highlighted in event timeline
@@ -1993,6 +2005,7 @@ Display Agent Response in Chat UI
 **NOT REQUIRED FOR POC** - Backend already supports interruptions
 
 **Potential Future Enhancements**:
+
 1. Add INTERRUPTION_REQUESTED to StreamEventType enum
 2. Auto-stream interruptions without explicit registerStreamConnection
 3. Interruption analytics dashboard
@@ -2006,11 +2019,13 @@ Display Agent Response in Chat UI
 ### Phase C: Service Implementation (6-8 hours)
 
 **C1. DevBrandApiService** (1.5 hours)
+
 - HTTP service with typed DTOs
 - Error handling and retry logic
 - Unit tests with mocked HttpClient
 
 **C2. DevBrandWebSocketService** (3 hours)
+
 - Socket.io client integration
 - Connection lifecycle management
 - Event stream observables
@@ -2018,6 +2033,7 @@ Display Agent Response in Chat UI
 - Unit tests with mock Socket.io
 
 **C3. DevBrandWorkflowStateService** (3 hours)
+
 - Signal-based state management
 - Event processing logic
 - Agent progress tracking
@@ -2025,11 +2041,13 @@ Display Agent Response in Chat UI
 - Unit tests with RxJS TestScheduler
 
 **C4. Type Definitions & Validation** (1 hour)
+
 - TypeScript interfaces (all 16 event types)
 - Zod schemas for runtime validation
 - Type guards and validators
 
 **Acceptance Criteria**:
+
 - ✅ All services pass TypeScript strict mode
 - ✅ >80% unit test coverage
 - ✅ WebSocket reconnection tested with network interruption
@@ -2041,6 +2059,7 @@ Display Agent Response in Chat UI
 ### Phase D: Component Implementation (6-8 hours)
 
 **D1. ExecutionControlComponent** (1.5 hours)
+
 - Reactive form with validation
 - GitHub username + userId inputs
 - Execute button with loading state
@@ -2048,6 +2067,7 @@ Display Agent Response in Chat UI
 - Unit tests
 
 **D2. ProgressVisualizationComponent** (2 hours)
+
 - 3-agent progress cards
 - Sequential workflow timeline
 - Overall progress bar
@@ -2055,6 +2075,7 @@ Display Agent Response in Chat UI
 - Unit tests with signal testing
 
 **D3. EventStreamComponent** (2.5 hours)
+
 - Virtual scrolling (CDK)
 - Event type filters
 - Expandable event details
@@ -2062,17 +2083,20 @@ Display Agent Response in Chat UI
 - Unit tests
 
 **D4. DevBrandPOCPageComponent** (1 hour)
+
 - Smart container component
 - Service coordination
 - Layout and routing
 - Unit tests
 
 **D5. Additional Components** (1 hour)
+
 - AgentProgressCardComponent
 - EventFilterComponent
 - ResultsDisplayComponent
 
 **Acceptance Criteria**:
+
 - ✅ All components use standalone pattern
 - ✅ All components use signals for state
 - ✅ Modern control flow (@if, @for) used
@@ -2085,6 +2109,7 @@ Display Agent Response in Chat UI
 ### Phase E: Integration Testing (3-4 hours)
 
 **E1. End-to-End Flow Testing** (2 hours)
+
 - Start workflow via REST API
 - WebSocket connection and subscription
 - Event stream processing
@@ -2092,18 +2117,21 @@ Display Agent Response in Chat UI
 - Workflow completion
 
 **E2. Performance Validation** (1 hour)
+
 - Virtual scrolling with 10k+ events
 - Memory profiling (<50MB growth)
 - Frame rate monitoring (60fps target)
 - Event latency measurement (<100ms)
 
 **E3. Error Scenario Testing** (1 hour)
+
 - WebSocket disconnection/reconnection
 - REST API failures (400, 500)
 - Invalid event structures
 - Sequence number gaps
 
 **Acceptance Criteria**:
+
 - ✅ Complete workflow executes end-to-end
 - ✅ All 16 event types received and displayed
 - ✅ 3 agents tracked through execution
@@ -2118,36 +2146,42 @@ Display Agent Response in Chat UI
 ### Phase B Criteria (Architecture) ✅
 
 **B1. Service Layer Architecture** ✅
+
 - ✅ REST API service: DevBrandApiService with ExecuteDevBrandDto
 - ✅ WebSocket service: DevBrandWebSocketService with Socket.io
 - ✅ State management: DevBrandWorkflowStateService with signals
 - ✅ Error handling: Typed errors with retry logic
 
 **B2. Component Architecture** ✅
+
 - ✅ ExecutionControlComponent: Workflow trigger with form validation
 - ✅ ProgressVisualizationComponent: 3-agent progress with timeline
 - ✅ EventStreamComponent: Real-time feed with virtual scrolling
 - ✅ Component hierarchy: Smart container + presentational components
 
 **B3. State Management Strategy** ✅
+
 - ✅ Chosen: RxJS BehaviorSubjects + Angular Signals
 - ✅ Justification: POC-appropriate, real-time optimized, testable
 - ✅ State structure: executionState, agentProgress, eventHistory
 - ✅ Event processing: Reactive streams with signal updates
 
 **B4. Type System** ✅
+
 - ✅ Complete TypeScript interfaces from backend research
 - ✅ Discriminated unions for StreamEventType (16 types)
 - ✅ Zod schemas for runtime validation
 - ✅ DTO mappings: ExecuteDevBrandRequest/Response
 
 **B5. Real-Time Integration** ✅
+
 - ✅ WebSocket connection lifecycle documented
 - ✅ Event routing: Socket.io → Service → State → UI
 - ✅ Room subscription: subscribe_execution with executionId
 - ✅ Reconnection strategy: Automatic + manual fallback
 
 **B6. Error Handling** ✅
+
 - ✅ Error categories: WebSocket, REST, validation, workflow
 - ✅ Recovery mechanisms: Retry, reconnection, timeout handling
 - ✅ User feedback: Toasts, banners, inline errors, status indicators
@@ -2159,24 +2193,28 @@ Display Agent Response in Chat UI
 ### Technical Risks
 
 **Risk 1: WebSocket Connection Stability**
+
 - **Probability**: Medium
 - **Impact**: High
 - **Mitigation**: Automatic reconnection (10 attempts, 3s delay), sequence gap detection
 - **Contingency**: Manual reconnect button, cached event display
 
 **Risk 2: Real-time Performance (High Event Frequency)**
+
 - **Probability**: Medium
 - **Impact**: High
 - **Mitigation**: Virtual scrolling (CDK), web worker offloading (future), debounced updates
 - **Contingency**: Performance mode toggle (reduced UI updates)
 
 **Risk 3: Type Safety Violations (Malformed Events)**
+
 - **Probability**: Low
 - **Impact**: High
 - **Mitigation**: Zod runtime validation, comprehensive error boundaries
 - **Contingency**: Catch-all error handler, log malformed events, continue stream
 
 **Risk 4: Angular Best Practices Compliance**
+
 - **Probability**: Low
 - **Impact**: Medium
 - **Mitigation**: Follow Angular 18+ patterns (standalone, signals, inject())
@@ -2193,12 +2231,14 @@ Display Agent Response in Chat UI
 ### Implementation Order
 
 1. **Phase C1-C4**: Service layer (6-8 hours)
+
    - Start with type definitions (models)
    - Build API service (simplest)
    - Build WebSocket service (complex)
    - Build state service (most complex)
 
 2. **Phase D1-D5**: Component layer (6-8 hours)
+
    - Start with ExecutionControlComponent (isolated)
    - Build ProgressVisualizationComponent
    - Build EventStreamComponent (most complex)
@@ -2231,12 +2271,14 @@ Display Agent Response in Chat UI
 ### Quality Assurance
 
 **Pre-Implementation**:
+
 - [ ] All research documents read and understood
 - [ ] Backend API verified as running and accessible
 - [ ] WebSocket tested with external client (Postman)
 - [ ] Type definitions extracted and validated
 
 **During Implementation**:
+
 - [ ] TypeScript strict mode enabled (no 'any' types)
 - [ ] Unit tests written alongside code (>80% coverage)
 - [ ] Signals used for component state (not ngOnInit)
@@ -2244,6 +2286,7 @@ Display Agent Response in Chat UI
 - [ ] Modern control flow (@if, @for, not *ngIf, *ngFor)
 
 **Post-Implementation**:
+
 - [ ] All acceptance criteria met
 - [ ] Performance metrics validated (60fps, <100ms latency)
 - [ ] Error scenarios tested (disconnection, failures)

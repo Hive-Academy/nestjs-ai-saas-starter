@@ -9,6 +9,7 @@ TASK_2025_022 transitions from documentation to **actual implementation** by cre
 **Critical Scope Change**: This task creates **ACTUAL WORKING COMPONENTS** in the dev-brand-ui application, NOT just documentation. Every example is a runnable TypeScript implementation demonstrating library features.
 
 **Value Proposition**:
+
 - **Live Demonstrations**: Developers see working examples instead of abstract documentation
 - **Copy-Paste Ready**: Complete implementations ready for adaptation
 - **Best Practices Showcase**: Examples demonstrate proper usage patterns
@@ -19,11 +20,13 @@ TASK_2025_022 transitions from documentation to **actual implementation** by cre
 ### Dependencies
 
 **Required Predecessors** (ALL COMPLETED):
+
 - **TASK_2025_019**: WorkflowRegistry, LangGraphConnectionService, Provider functions, 16 AG-UI event types
 - **TASK_2025_020**: Components (WorkflowVisualizer, ApprovalModal, Chat), Directives, Template contexts
 - **TASK_2025_021**: Composables (useLangGraphWorkflow, useLangGraphChat, useLangGraphApproval), RxJS operators, Type guards
 
 **Critical Integration Requirements**:
+
 - Examples MUST use generic library APIs (WorkflowRegistry, provideLangGraphWorkflow)
 - Examples MUST demonstrate content projection patterns from TASK_2025_020
 - Examples MUST use composables and RxJS operators from TASK_2025_021
@@ -42,6 +45,7 @@ Create **ACTUAL WORKING IMPLEMENTATIONS** of 25+ example applications organized 
 **Location**: `apps/dev-brand-ui/src/app/examples/`
 
 **Estimated Implementation Output**:
+
 - ~2,000 lines of TypeScript component code
 - ~500 lines of workflow definitions
 - ~800 lines of mock data and utilities
@@ -127,6 +131,7 @@ apps/dev-brand-ui/src/app/examples/
 ```
 
 **File Count**:
+
 - 25 example components (25 × 4 files = 100 files)
 - Shared utilities (~10 files)
 - **Total**: ~110 TypeScript/Markdown files
@@ -142,6 +147,7 @@ apps/dev-brand-ui/src/app/examples/
 **Purpose**: Demonstrate minimal workflow setup and execution
 
 **Features Demonstrated**:
+
 - WorkflowRegistry registration
 - Component with single workflow execution
 - State tracking with signals
@@ -170,36 +176,25 @@ apps/dev-brand-ui/src/app/examples/
       <h2>Simple Workflow Execution</h2>
 
       @if (loading()) {
-        <p>Executing workflow...</p>
+      <p>Executing workflow...</p>
+      } @if (result()) {
+      <div class="result">
+        <h3>Result:</h3>
+        <pre>{{ result() | json }}</pre>
+      </div>
+      } @if (error()) {
+      <div class="error">
+        <p>Error: {{ error() }}</p>
+        <button (click)="retry()">Retry</button>
+      </div>
       }
 
-      @if (result()) {
-        <div class="result">
-          <h3>Result:</h3>
-          <pre>{{ result() | json }}</pre>
-        </div>
-      }
-
-      @if (error()) {
-        <div class="error">
-          <p>Error: {{ error() }}</p>
-          <button (click)="retry()">Retry</button>
-        </div>
-      }
-
-      <button
-        (click)="execute()"
-        [disabled]="loading()"
-      >
-        Execute Workflow
-      </button>
+      <button (click)="execute()" [disabled]="loading()">Execute Workflow</button>
     </div>
-  `
+  `,
 })
 export class SimpleExecutionComponent {
-  private workflow = useLangGraphWorkflow<SimpleInput, SimpleState, SimpleOutput>(
-    'simple-example'
-  );
+  private workflow = useLangGraphWorkflow<SimpleInput, SimpleState, SimpleOutput>('simple-example');
 
   loading = computed(() => this.workflow.state()?.status === 'running');
   result = this.workflow.result;
@@ -237,12 +232,12 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
   description: 'Demonstrates basic workflow execution',
   endpoint: '/workflows/simple-example/execute',
   inputSchema: z.object({
-    message: z.string()
+    message: z.string(),
   }),
   metadata: {
     category: 'basic',
-    tags: ['simple', 'execution', 'getting-started']
-  }
+    tags: ['simple', 'execution', 'getting-started'],
+  },
 };
 ```
 
@@ -251,6 +246,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Demonstrate content projection for custom agent display
 
 **Features Demonstrated**:
+
 - WorkflowVisualizer component usage
 - Content projection slots (lgAgentDisplay)
 - Custom agent card templates
@@ -274,6 +270,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Demonstrate human-in-the-loop approval workflow
 
 **Features Demonstrated**:
+
 - ApprovalModal component integration
 - useLangGraphApproval composable
 - Custom approval metadata templates
@@ -297,6 +294,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Demonstrate chat-based workflow interaction
 
 **Features Demonstrated**:
+
 - Chat component usage
 - useLangGraphChat composable
 - Message streaming with token updates
@@ -320,6 +318,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Demonstrate full workflow lifecycle with all events
 
 **Features Demonstrated**:
+
 - All 16 AG-UI event types
 - Event timeline visualization
 - State snapshot tracking
@@ -349,6 +348,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Multi-step content generation with outline → draft → revision
 
 **Features Demonstrated**:
+
 - Multi-agent workflow (Outliner → Writer → Editor)
 - Progressive state updates
 - HITL approval after each stage
@@ -372,6 +372,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Platform-specific content generation
 
 **Features Demonstrated**:
+
 - Parallel content generation for multiple platforms
 - Platform-specific formatting rules
 - Character limit validation
@@ -393,16 +394,19 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 #### Example 2.3-2.5: Additional Content Examples
 
 **2.3 Email Template Generator**: (~70 lines total)
+
 - Template selection workflow
 - Variable substitution
 - Preview rendering
 
 **2.4 Product Description Writer**: (~75 lines total)
+
 - Feature extraction
 - Benefit generation
 - SEO optimization
 
 **2.5 Marketing Copy Generator**: (~70 lines total)
+
 - Tone adjustment
 - CTA generation
 - A/B variant creation
@@ -418,6 +422,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Upload, parse, and analyze CSV data
 
 **Features Demonstrated**:
+
 - File upload handling
 - Streaming data processing
 - Statistical analysis display
@@ -441,6 +446,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Transform JSON structure with schema validation
 
 **Features Demonstrated**:
+
 - Schema-based transformation
 - Zod validation integration
 - Before/after comparison
@@ -462,16 +468,19 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 #### Example 3.3-3.5: Additional Data Examples
 
 **3.3 Statistical Analysis**: (~80 lines total)
+
 - Correlation analysis
 - Distribution visualization
 - Outlier detection
 
 **3.4 Data Quality Validator**: (~75 lines total)
+
 - Missing value detection
 - Data type validation
 - Quality score calculation
 
 **3.5 Report Generator**: (~90 lines total)
+
 - Template-based report generation
 - Data aggregation
 - PDF export integration
@@ -487,6 +496,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Scan code for security vulnerabilities
 
 **Features Demonstrated**:
+
 - Code parsing and AST analysis
 - Security rule evaluation
 - Vulnerability severity classification
@@ -510,6 +520,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Check code against style guidelines
 
 **Features Demonstrated**:
+
 - Linting rule application
 - Auto-fix suggestions
 - Style violation grouping
@@ -531,16 +542,19 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 #### Example 4.3-4.5: Additional Code Review Examples
 
 **4.3 Performance Optimizer**: (~85 lines total)
+
 - Performance bottleneck detection
 - Optimization suggestions
 - Benchmark comparison
 
 **4.4 Dependency Auditor**: (~80 lines total)
+
 - Dependency vulnerability check
 - License compliance verification
 - Update recommendation
 
 **4.5 Documentation Coverage**: (~75 lines total)
+
 - JSDoc coverage analysis
 - Missing documentation detection
 - Documentation quality score
@@ -556,6 +570,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Workflow with multiple approval checkpoints
 
 **Features Demonstrated**:
+
 - Sequential approval gates
 - Approval chain visualization
 - Approval history tracking
@@ -579,6 +594,7 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 **Purpose**: Execute multiple workflows concurrently
 
 **Features Demonstrated**:
+
 - Concurrent workflow execution
 - Progress aggregation across workflows
 - Result synchronization
@@ -600,16 +616,19 @@ export const SIMPLE_WORKFLOW: WorkflowDefinition<SimpleInput, SimpleOutput> = {
 #### Example 6.3-6.5: Additional Advanced Examples
 
 **6.3 Workflow Cancellation**: (~85 lines total)
+
 - Graceful cancellation handling
 - Cleanup operations
 - Cancellation reason tracking
 
 **6.4 Error Recovery**: (~90 lines total)
+
 - Automatic retry with exponential backoff
 - Circuit breaker pattern
 - Fallback workflow execution
 
 **6.5 Custom Event Pipeline**: (~95 lines total)
+
 - Custom event type creation
 - Event transformation pipeline
 - Event filtering and routing
@@ -647,11 +666,11 @@ export const BLOG_POST_WORKFLOW: WorkflowDefinition<BlogInput, BlogOutput> = {
     agents: [
       { id: 'outliner', name: 'Content Outliner', role: 'planning' },
       { id: 'writer', name: 'Draft Writer', role: 'generation' },
-      { id: 'editor', name: 'Content Editor', role: 'revision' }
+      { id: 'editor', name: 'Content Editor', role: 'revision' },
     ],
     category: 'content-generation',
-    tags: ['blog', 'content', 'multi-stage']
-  }
+    tags: ['blog', 'content', 'multi-stage'],
+  },
 };
 
 // Export all content generation workflows
@@ -660,7 +679,7 @@ export const CONTENT_WORKFLOWS = [
   SOCIAL_MEDIA_WORKFLOW,
   EMAIL_TEMPLATE_WORKFLOW,
   PRODUCT_DESCRIPTION_WORKFLOW,
-  MARKETING_COPY_WORKFLOW
+  MARKETING_COPY_WORKFLOW,
 ];
 ```
 
@@ -673,7 +692,7 @@ export const SAMPLE_BLOG_TOPICS = [
     topic: 'Getting Started with Angular Signals',
     target_audience: 'Angular developers',
     tone: 'educational',
-    length: 'medium'
+    length: 'medium',
   },
   // ... more samples
 ];
@@ -707,18 +726,15 @@ export function withRetry<T>(
   return execute().pipe(
     retryOnWorkflowError({
       maxAttempts: options.maxAttempts ?? 3,
-      backoffMs: options.backoffMs ?? 1000
+      backoffMs: options.backoffMs ?? 1000,
     })
   );
 }
 
-export function withTimeout<T>(
-  execute: () => Observable<T>,
-  timeoutMs: number
-): Observable<T> {
+export function withTimeout<T>(execute: () => Observable<T>, timeoutMs: number): Observable<T> {
   return execute().pipe(
     timeout(timeoutMs),
-    catchWorkflowError(err => {
+    catchWorkflowError((err) => {
       if (err.name === 'TimeoutError') {
         return throwError(() => new Error('Workflow execution timed out'));
       }
@@ -727,10 +743,7 @@ export function withTimeout<T>(
   );
 }
 
-export function createMockWorkflowResult<T>(
-  data: T,
-  delay: number = 1000
-): Observable<T> {
+export function createMockWorkflowResult<T>(data: T, delay: number = 1000): Observable<T> {
   return of(data).pipe(delay(delay));
 }
 ```
@@ -767,7 +780,7 @@ export const EXAMPLES_ROUTES: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        loadComponent: () => import('./examples-home.component')
+        loadComponent: () => import('./examples-home.component'),
       },
       {
         path: 'basic',
@@ -777,7 +790,7 @@ export const EXAMPLES_ROUTES: Routes = [
           provideLangGraphWorkflow(SIMPLE_WORKFLOW),
           provideLangGraphWorkflow(CUSTOM_RENDERING_WORKFLOW),
           // ... more workflows
-        ]
+        ],
       },
       {
         path: 'content-generation',
@@ -786,11 +799,11 @@ export const EXAMPLES_ROUTES: Routes = [
           provideLangGraphWorkflow(BLOG_POST_WORKFLOW),
           provideLangGraphWorkflow(SOCIAL_MEDIA_WORKFLOW),
           // ... more workflows
-        ]
+        ],
       },
       // ... other categories
-    ]
-  }
+    ],
+  },
 ];
 ```
 
@@ -805,38 +818,33 @@ export const EXAMPLES_ROUTES: Routes = [
       <div class="breadcrumbs">
         <a routerLink="/examples">Examples</a>
         @if (currentCategory()) {
-          <span> / </span>
-          <a [routerLink]="['/examples', currentCategory()]">
-            {{ currentCategory() }}
-          </a>
-        }
-        @if (currentExample()) {
-          <span> / </span>
-          <span>{{ currentExample() }}</span>
+        <span> / </span>
+        <a [routerLink]="['/examples', currentCategory()]">
+          {{ currentCategory() }}
+        </a>
+        } @if (currentExample()) {
+        <span> / </span>
+        <span>{{ currentExample() }}</span>
         }
       </div>
 
       <div class="search">
-        <input
-          [(ngModel)]="searchTerm"
-          placeholder="Search examples..."
-          (input)="onSearch()"
-        />
+        <input [(ngModel)]="searchTerm" placeholder="Search examples..." (input)="onSearch()" />
       </div>
 
       <div class="categories">
         @for (category of categories; track category.id) {
-          <a
-            [routerLink]="['/examples', category.id]"
-            routerLinkActive="active"
-            class="category-link"
-          >
-            {{ category.name }} ({{ category.count }})
-          </a>
+        <a
+          [routerLink]="['/examples', category.id]"
+          routerLinkActive="active"
+          class="category-link"
+        >
+          {{ category.name }} ({{ category.count }})
+        </a>
         }
       </div>
     </nav>
-  `
+  `,
 })
 export class ExamplesNavigationComponent {
   searchTerm = signal('');
@@ -848,7 +856,7 @@ export class ExamplesNavigationComponent {
     { id: 'content-generation', name: 'Content Generation', count: 5 },
     { id: 'data-analysis', name: 'Data Analysis', count: 5 },
     { id: 'code-review', name: 'Code Review', count: 5 },
-    { id: 'advanced', name: 'Advanced Patterns', count: 5 }
+    { id: 'advanced', name: 'Advanced Patterns', count: 5 },
   ];
 
   onSearch() {
@@ -893,11 +901,11 @@ describe('SimpleExecutionComponent', () => {
           mockResults: {
             'simple-example': {
               processedMessage: 'Mock result',
-              timestamp: new Date().toISOString()
-            }
-          }
-        })
-      ]
+              timestamp: new Date().toISOString(),
+            },
+          },
+        }),
+      ],
     }).compileComponents();
 
     component = TestBed.createComponent(SimpleExecutionComponent);
@@ -940,11 +948,13 @@ describe('SimpleExecutionComponent', () => {
 ### Performance Requirements
 
 1. **Component Load Time**:
+
    - Example component lazy load: < 200ms
    - Workflow execution simulation: < 1s with mock data
    - Navigation between examples: < 100ms
 
 2. **Bundle Size**:
+
    - Each example category bundle: < 50KB gzipped
    - Shared utilities bundle: < 15KB gzipped
    - Mock data bundle: < 10KB gzipped
@@ -957,11 +967,13 @@ describe('SimpleExecutionComponent', () => {
 ### Code Quality Requirements
 
 1. **Type Safety**:
+
    - Zero 'any' types in example code
    - All workflow definitions fully typed
    - All mock data type-safe
 
 2. **Code Style**:
+
    - ESLint compliant (no warnings)
    - Prettier formatted
    - Consistent naming conventions
@@ -974,11 +986,13 @@ describe('SimpleExecutionComponent', () => {
 ### Documentation Quality Requirements
 
 1. **README Standards**:
+
    - Each example has README.md
    - README includes: Purpose, Features, Usage, Code Explanation
    - README has diagram/screenshot where applicable
 
 2. **Code Comments**:
+
    - Complex logic has inline comments
    - Type definitions have JSDoc
    - Component purpose documented
@@ -995,18 +1009,21 @@ describe('SimpleExecutionComponent', () => {
 ### Forbidden Patterns
 
 1. **DevBrand-Specific Logic**:
+
    - ❌ NO hardcoded DevBrand agent names in examples
    - ❌ NO DevBrand-specific metadata displays
    - ❌ NO DevBrand API endpoints in workflows
    - ✅ ALL examples MUST be generic and reusable
 
 2. **Code Duplication**:
+
    - ❌ NO copy-paste code between examples
    - ❌ NO duplicate workflow definitions
    - ❌ NO duplicate utility functions
    - ✅ USE shared utilities and workflows
 
 3. **Hardcoded Configuration**:
+
    - ❌ NO hardcoded API URLs in components
    - ❌ NO hardcoded workflow IDs outside workflow definitions
    - ❌ NO hardcoded timeouts or retry logic
@@ -1025,12 +1042,14 @@ describe('SimpleExecutionComponent', () => {
 ### From TASK_2025_019 (Core Services)
 
 **Required Integrations**:
+
 - WorkflowRegistry for workflow lookups
 - LangGraphConnectionService for execution
 - provideLangGraph/provideLangGraphWorkflow for configuration
 - All 16 AG-UI event types for event handling
 
 **Example Usage**:
+
 ```typescript
 // Every example MUST use WorkflowRegistry
 const workflow = inject(WorkflowRegistry).get<TInput, TOutput>('workflow-id');
@@ -1038,19 +1057,21 @@ const workflow = inject(WorkflowRegistry).get<TInput, TOutput>('workflow-id');
 // Every example MUST use provider functions
 providers: [
   provideLangGraph({ apiUrl: environment.apiUrl }),
-  provideLangGraphWorkflow(MY_WORKFLOW)
-]
+  provideLangGraphWorkflow(MY_WORKFLOW),
+];
 ```
 
 ### From TASK_2025_020 (Components & Directives)
 
 **Required Integrations**:
+
 - WorkflowVisualizer for workflow visualization
 - ApprovalModal for HITL workflows
 - Chat component for chat interfaces
 - Structural directives for template logic
 
 **Example Usage**:
+
 ```typescript
 // Examples demonstrating components
 <lg-workflow-visualizer
@@ -1067,12 +1088,14 @@ providers: [
 ### From TASK_2025_021 (Composables & Providers)
 
 **Required Integrations**:
+
 - useLangGraphWorkflow composable for workflow management
 - useLangGraphChat composable for chat functionality
 - useLangGraphApproval composable for HITL
 - RxJS operators for event processing
 
 **Example Usage**:
+
 ```typescript
 // Examples using composables
 private workflow = useLangGraphWorkflow<TInput, TState, TOutput>(
@@ -1096,12 +1119,14 @@ this.workflow.events$.pipe(
 ### Quantitative Metrics
 
 1. **Implementation Completeness**:
+
    - 25 example components implemented: 100%
    - All examples with README: 100%
    - All examples with tests: 100%
    - Test coverage: ≥ 80% per example
 
 2. **Code Quality**:
+
    - Zero 'any' types
    - Zero ESLint warnings
    - Zero DevBrand references (automated validation)
@@ -1116,12 +1141,14 @@ this.workflow.events$.pipe(
 ### Qualitative Metrics
 
 1. **Developer Experience**:
+
    - Examples are copy-paste ready
    - Examples demonstrate clear patterns
    - Examples progress logically (simple → complex)
    - Examples cover diverse use cases
 
 2. **Integration Quality**:
+
    - All library features demonstrated
    - Examples use realistic scenarios
    - Examples follow best practices
@@ -1307,17 +1334,20 @@ this.workflow.events$.pipe(
 **Rationale**:
 
 1. **All Patterns Established**:
+
    - TASK_2025_019: WorkflowRegistry, providers, services
    - TASK_2025_020: Components, content projection, directives
    - TASK_2025_021: Composables, operators, type guards
    - NO NEW architectural patterns needed
 
 2. **Implementation Task**:
+
    - This is pure implementation work applying established patterns
    - Each example follows same structure: component + workflow + spec + README
    - No novel integration patterns required
 
 3. **Clear Requirements**:
+
    - Detailed specifications for all 25 examples
    - Established code structure and patterns
    - Comprehensive acceptance criteria
@@ -1328,6 +1358,7 @@ this.workflow.events$.pipe(
    - Navigation uses standard Angular routing
 
 **Conditions That Would Require Architect**:
+
 - If examples needed novel component composition patterns
 - If shared utilities required complex architecture
 - If integration patterns were unclear or conflicting
@@ -1346,6 +1377,7 @@ this.workflow.events$.pipe(
 **Task Summary**: Implement 25+ working example applications in dev-brand-ui showcasing the generic angular-langgraph library
 
 **Input Artifacts**:
+
 1. This requirements document (task-description.md)
 2. TASK_2025_019 output (angular-langgraph-services-REWRITE.md)
 3. TASK_2025_020 output (angular-langgraph-components-REWRITE.md)
@@ -1355,6 +1387,7 @@ this.workflow.events$.pipe(
 **Expected Deliverables**:
 
 1. **Implementation Files** (~3,800 lines total):
+
    - 25 example components (25 × 40 = 1,000 lines)
    - 25 workflow definitions (25 × 20 = 500 lines)
    - 25 unit test specs (25 × 50 = 1,250 lines)
@@ -1364,11 +1397,13 @@ this.workflow.events$.pipe(
    - Routing configuration (~100 lines)
 
 2. **Documentation Files**:
+
    - 25 README files (25 × 100 = 2,500 lines)
    - Main examples README (~300 lines)
    - Category README files (5 × 50 = 250 lines)
 
 3. **Testing Infrastructure**:
+
    - Test helpers in shared/utilities
    - Mock workflow results
    - Component test templates
@@ -1380,6 +1415,7 @@ this.workflow.events$.pipe(
    - Quality checklist verification
 
 **Success Criteria**:
+
 - All 45 BDD acceptance criteria met
 - All 25 examples implemented and tested
 - Zero DevBrand-specific code in examples
@@ -1388,6 +1424,7 @@ this.workflow.events$.pipe(
 - Test coverage ≥ 80% per example
 
 **Quality Bar**:
+
 - TypeScript strict mode compliance
 - Zero ESLint warnings
 - Consistent code style
@@ -1395,6 +1432,7 @@ this.workflow.events$.pipe(
 - Working examples (copy-paste ready)
 
 **Time Budget**: L effort (10-12 hours)
+
 - Basic examples (5): 2.5h
 - Content generation examples (5): 2.5h
 - Data analysis examples (5): 2h
@@ -1407,6 +1445,7 @@ this.workflow.events$.pipe(
 - Validation: 0.5h
 
 **Implementation Order**:
+
 1. Shared utilities and mock data (foundation)
 2. Basic integration examples (simplest patterns)
 3. Content generation examples

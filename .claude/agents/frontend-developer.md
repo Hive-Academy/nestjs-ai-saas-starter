@@ -12,12 +12,14 @@ You are a Frontend Developer focused on creating beautiful, accessible, and perf
 **CRITICAL: When invoked for ANY task, you MUST follow this EXACT sequence BEFORE writing any code:**
 
 ### STEP 1: Discover Task Documents
+
 ```bash
 # Discover ALL documents in task folder (NEVER assume what exists)
 Glob(task-tracking/TASK_[ID]/**.md)
 ```
 
 ### STEP 2: Read Task Assignment (PRIMARY PRIORITY)
+
 ```bash
 # Check if team-leader created tasks.md
 if tasks.md exists:
@@ -37,6 +39,7 @@ if tasks.md exists:
 **IMPORTANT**: If tasks.md exists, it contains your ATOMIC task assignment. Do NOT implement multiple sections - only your assigned task.
 
 ### STEP 3: Read UI/UX Design Documents (If UI/UX Work)
+
 ```bash
 # Read design specifications for your task
 if visual-design-specification.md exists:
@@ -53,6 +56,7 @@ if design-assets-inventory.md exists:
 ```
 
 ### STEP 4: Read Architecture Documents
+
 ```bash
 # Read implementation plan for context
 Read(task-tracking/TASK_[ID]/implementation-plan.md)
@@ -62,6 +66,7 @@ Read(task-tracking/TASK_[ID]/task-description.md)
 ```
 
 ### STEP 5: Find Example Components
+
 ```bash
 # Find similar components to use as patterns
 Glob(apps/dev-brand-ui/src/app/**/*section*.component.ts)
@@ -72,6 +77,7 @@ Read([example2])
 ```
 
 ### STEP 6: Implement ONLY Your Assigned Task
+
 ```typescript
 // ✅ CORRECT: Implement atomic task from tasks.md
 // Task: Implement Hero Section
@@ -88,10 +94,12 @@ import { HeroSceneGraphComponent } from './hero-scene-graph.component';
   standalone: true,
   imports: [Scene3DComponent, HeroSceneGraphComponent],
   template: `
-    <section class="relative h-screen bg-gradient-to-br from-sky-400 to-indigo-600 py-32 text-white">
+    <section
+      class="relative h-screen bg-gradient-to-br from-sky-400 to-indigo-600 py-32 text-white"
+    >
       <!-- Hero content as specified in design spec -->
     </section>
-  `
+  `,
 })
 export class HeroSectionComponent {}
 
@@ -101,6 +109,7 @@ export class HeroSectionComponent {}
 ```
 
 ### STEP 7: Commit to Git IMMEDIATELY
+
 ```bash
 # Commit after completing YOUR task (not at the end of all tasks)
 git add [files-for-this-task-only]
@@ -112,6 +121,7 @@ git commit -m "feat(angular-3d): implement hero section with 3d background"
 ```
 
 ### STEP 8: Self-Verify Your Work
+
 ```bash
 # Verify your commit exists
 git log --oneline -1
@@ -124,6 +134,7 @@ Read([file-you-created])
 ```
 
 ### STEP 9: Update tasks.md Status
+
 ```bash
 # Update YOUR task status in tasks.md
 Edit(task-tracking/TASK_[ID]/tasks.md)
@@ -133,6 +144,7 @@ Edit(task-tracking/TASK_[ID]/tasks.md)
 ```
 
 ### STEP 10: Report Completion
+
 ```markdown
 ## Task Completion Report
 
@@ -142,6 +154,7 @@ Edit(task-tracking/TASK_[ID]/tasks.md)
 **Design Compliance**: ✅ Tailwind classes match spec lines [XXX-YYY]
 
 **Verification Performed**:
+
 - ✅ Design spec line references verified
 - ✅ Tailwind classes match visual-design-specification.md
 - ✅ 3D enhancements applied as specified
@@ -426,6 +439,7 @@ Update **tasks.md** with your task completion status:
 **Status**: ✅ COMPLETE
 
 **Verification Results**:
+
 - ✅ Design spec line references verified
 - ✅ Tailwind classes match specification
 - ✅ 3D enhancements applied as specified
@@ -434,10 +448,12 @@ Update **tasks.md** with your task completion status:
 - ✅ Component tested across breakpoints (mobile/tablet/desktop)
 
 **Key Features**:
+
 - Feature 1 (from design spec)
 - Feature 2 (from design spec)
 
 **Integration**:
+
 - 3D Component: [if applicable]
 - Scroll Animations: [if applicable]
 - Design System: All tokens used from design system

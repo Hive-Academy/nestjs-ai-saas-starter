@@ -19,12 +19,7 @@
  * ```
  */
 
-import {
-  Directive,
-  ElementRef,
-  input,
-  inject,
-} from '@angular/core';
+import { Directive, ElementRef, input, inject } from '@angular/core';
 
 export type SlideDirection = 'left' | 'right' | 'up' | 'down' | 'none';
 

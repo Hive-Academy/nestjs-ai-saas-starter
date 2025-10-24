@@ -38,7 +38,9 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     ScrollAnimationDirective,
   ],
   template: `
-    <div class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden">
+    <div
+      class="relative w-full bg-gradient-to-b from-white via-indigo-50/30 to-white overflow-hidden"
+    >
       <!-- Content Container -->
       <div class="container mx-auto px-8 py-12">
         <!-- Section Hero - Becomes sticky -->
@@ -73,129 +75,152 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
           </div>
 
           <!-- Hero Content -->
-        <div class="relative z-10">
-        <!-- Layer Badge -->
-        <div
-          class="inline-block"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 80%',
-            end: 'top 40%',
-            scrub: 0.8,
-            from: { opacity: 0, scale: 0.8 },
-            to: { opacity: 1, scale: 1 }
-          }"
-        >
-          <span class="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-full text-sm font-semibold text-indigo-700 mb-6">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-            </svg>
-            ORCHESTRATION LAYER
-          </span>
+          <div class="relative z-10">
+            <!-- Layer Badge -->
+            <div
+              class="inline-block"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 80%',
+                end: 'top 40%',
+                scrub: 0.8,
+                from: { opacity: 0, scale: 0.8 },
+                to: { opacity: 1, scale: 1 }
+              }"
+            >
+              <span
+                class="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-full text-sm font-semibold text-indigo-700 mb-6"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                ORCHESTRATION LAYER
+              </span>
+            </div>
+
+            <!-- Main Headline -->
+            <h2
+              class="text-7xl font-bold text-gray-900 mb-6 leading-tight text-3d-extruded"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 75%',
+                end: 'top 35%',
+                scrub: 1,
+                from: { opacity: 0, y: 50 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              LangGraph Memory
+            </h2>
+
+            <!-- Subtitle -->
+            <p
+              class="text-2xl text-gray-500 leading-relaxed max-w-3xl mx-auto"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 70%',
+                end: 'top 30%',
+                scrub: 1,
+                from: { opacity: 0, y: 30 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              Intelligent memory management for AI agents
+              <span class="block mt-2 text-indigo-600 font-semibold">
+                Hybrid ChromaDB + Neo4j storage for long-term AI memory
+              </span>
+            </p>
+
+            <!-- Floating Metrics -->
+            <div
+              class="flex justify-center gap-12 mt-12"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'custom',
+                start: 'top 65%',
+                end: 'top 25%',
+                scrub: 0.8,
+                from: { opacity: 0, y: 40 },
+                to: { opacity: 1, y: 0 }
+              }"
+            >
+              <div class="text-center">
+                <div class="text-4xl font-bold text-indigo-600 mb-2">
+                  Hybrid Storage
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  Vector + Graph
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-4xl font-bold text-purple-600 mb-2">
+                  Semantic Search
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  Auto-Embeddings
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="text-4xl font-bold text-pink-600 mb-2">
+                  User Patterns
+                </div>
+                <div class="text-sm text-gray-500 uppercase tracking-wide">
+                  HITL Learning
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Main Headline -->
-        <h2
-          class="text-7xl font-bold text-gray-900 mb-6 leading-tight text-3d-extruded"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 75%',
-            end: 'top 35%',
-            scrub: 1,
-            from: { opacity: 0, y: 50 },
-            to: { opacity: 1, y: 0 }
-          }"
+        <!-- Progressive Timeline -->
+        <app-hijacked-scroll-timeline
+          [scrollHeightPerStep]="1000"
+          [start]="'top top'"
         >
-          LangGraph Memory
-        </h2>
-
-        <!-- Subtitle -->
-        <p
-          class="text-2xl text-gray-500 leading-relaxed max-w-3xl mx-auto"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 70%',
-            end: 'top 30%',
-            scrub: 1,
-            from: { opacity: 0, y: 30 },
-            to: { opacity: 1, y: 0 }
-          }"
-        >
-          Intelligent memory management for AI agents
-          <span class="block mt-2 text-indigo-600 font-semibold">
-            Hybrid ChromaDB + Neo4j storage for long-term AI memory
-          </span>
-        </p>
-
-        <!-- Floating Metrics -->
-        <div
-          class="flex justify-center gap-12 mt-12"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'custom',
-            start: 'top 65%',
-            end: 'top 25%',
-            scrub: 0.8,
-            from: { opacity: 0, y: 40 },
-            to: { opacity: 1, y: 0 }
-          }"
-        >
-          <div class="text-center">
-            <div class="text-4xl font-bold text-indigo-600 mb-2">Hybrid Storage</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Vector + Graph</div>
-          </div>
-          <div class="text-center">
-            <div class="text-4xl font-bold text-purple-600 mb-2">Semantic Search</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">Auto-Embeddings</div>
-          </div>
-          <div class="text-center">
-            <div class="text-4xl font-bold text-pink-600 mb-2">User Patterns</div>
-            <div class="text-sm text-gray-500 uppercase tracking-wide">HITL Learning</div>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      <!-- Progressive Timeline -->
-      <app-hijacked-scroll-timeline
-        [scrollHeightPerStep]="1000"
-        [start]="'top top'"
-      >
-        @for (step of codeTimeline(); track step.id; let i = $index) {
+          @for (step of codeTimeline(); track step.id; let i = $index) {
           <div hijackedScrollItem [slideDirection]="'none'">
             <div class="relative flex items-start">
               <!-- Decorative patterns -->
               @if (i === 0) {
-                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-96 pointer-events-none opacity-30">
-                  <div class="w-full h-full text-purple-400">
-                    <app-decorative-pattern [pattern]="'data-flow'" />
-                  </div>
+              <div
+                class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-96 pointer-events-none opacity-30"
+              >
+                <div class="w-full h-full text-purple-400">
+                  <app-decorative-pattern [pattern]="'data-flow'" />
                 </div>
-              }
-              @if (i === 1) {
-                <div class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30">
-                  <div class="w-full h-full text-indigo-400">
-                    <app-decorative-pattern [pattern]="'network-nodes'" />
-                  </div>
+              </div>
+              } @if (i === 1) {
+              <div
+                class="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-30"
+              >
+                <div class="w-full h-full text-indigo-400">
+                  <app-decorative-pattern [pattern]="'network-nodes'" />
                 </div>
-              }
-              @if (i === 2) {
-                <div class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30">
-                  <div class="w-full h-full text-purple-300">
-                    <app-decorative-pattern [pattern]="'circuit-board'" />
-                  </div>
+              </div>
+              } @if (i === 2) {
+              <div
+                class="absolute left-[-5%] top-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-30"
+              >
+                <div class="w-full h-full text-purple-300">
+                  <app-decorative-pattern [pattern]="'circuit-board'" />
                 </div>
-              }
-              @if (i === 3) {
-                <div class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30">
-                  <div class="w-full h-full text-indigo-300">
-                    <app-decorative-pattern [pattern]="'gradient-blob'" />
-                  </div>
+              </div>
+              } @if (i === 3) {
+              <div
+                class="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[400px] pointer-events-none opacity-30"
+              >
+                <div class="w-full h-full text-indigo-300">
+                  <app-decorative-pattern [pattern]="'gradient-blob'" />
                 </div>
+              </div>
               }
 
               <!-- Content -->
@@ -211,18 +236,28 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                       start: 'top 80%',
                       end: 'top 30%',
                       scrub: 1,
-                      from: { opacity: 0, x: step.layout === 'left' ? -60 : 60, y: 20 },
+                      from: {
+                        opacity: 0,
+                        x: step.layout === 'left' ? -60 : 60,
+                        y: 20
+                      },
                       to: { opacity: 1, x: 0, y: 0 }
                     }"
                   >
                     <div class="inline-flex items-center gap-3 mb-6">
-                      <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-lg shadow-lg">
+                      <span
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-lg shadow-lg"
+                      >
                         {{ step.step }}
                       </span>
-                      <div class="h-px flex-1 bg-gradient-to-r from-indigo-200 to-transparent max-w-[100px]"></div>
+                      <div
+                        class="h-px flex-1 bg-gradient-to-r from-indigo-200 to-transparent max-w-[100px]"
+                      ></div>
                     </div>
 
-                    <h3 class="text-4xl font-bold text-gray-900 mb-4 leading-tight text-3d">
+                    <h3
+                      class="text-4xl font-bold text-gray-900 mb-4 leading-tight text-3d"
+                    >
                       {{ step.title }}
                     </h3>
 
@@ -231,16 +266,26 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                     </p>
 
                     @if (step.notes && step.notes.length > 0) {
-                      <div class="space-y-3">
-                        @for (note of step.notes; track $index) {
-                          <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="text-sm text-gray-700">{{ note }}</p>
-                          </div>
-                        }
+                    <div class="space-y-3">
+                      @for (note of step.notes; track $index) {
+                      <div class="flex items-start gap-3">
+                        <svg
+                          class="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <p class="text-sm text-gray-700">{{ note }}</p>
                       </div>
+                      }
+                    </div>
                     }
                   </div>
 
@@ -254,43 +299,66 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                       start: 'top 75%',
                       end: 'top 25%',
                       scrub: 1,
-                      from: { opacity: 0, x: step.layout === 'left' ? 80 : -80, scale: 0.95 },
+                      from: {
+                        opacity: 0,
+                        x: step.layout === 'left' ? 80 : -80,
+                        scale: 0.95
+                      },
                       to: { opacity: 1, x: 0, scale: 1 }
                     }"
                   >
                     @if (step.language === 'image') {
-                      <div class="relative group pt-5">
-                        <img [src]="step.code" [alt]="step.title" class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
-                      </div>
+                    <div class="relative group pt-5">
+                      <img
+                        [src]="step.code"
+                        [alt]="step.title"
+                        class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
+                      />
+                    </div>
                     }
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        }
+          }
 
-        <!-- Integration Cards -->
-        <div class="fixed bottom-0 left-0 right-0 z-0 pointer-events-none" [style.opacity]="ecosystemOpacity()">
-          <div class="container mx-auto px-8 relative z-10 pointer-events-auto">
-            <div class="max-w-5xl mx-auto py-6">
-              <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center animate-fade-in-up">
-                LangGraph Ecosystem Integration
-              </h3>
-              <div class="grid grid-cols-3 gap-4">
-                @for (integration of integrations(); track integration.name; let i = $index) {
-                  <div class="bg-white/95 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-300 animate-fade-in-up" [style.animation-delay]="(i * 100) + 'ms'">
+          <!-- Integration Cards -->
+          <div
+            class="fixed bottom-0 left-0 right-0 z-0 pointer-events-none"
+            [style.opacity]="ecosystemOpacity()"
+          >
+            <div
+              class="container mx-auto px-8 relative z-10 pointer-events-auto"
+            >
+              <div class="max-w-5xl mx-auto py-6">
+                <h3
+                  class="text-2xl font-bold text-gray-900 mb-4 text-center animate-fade-in-up"
+                >
+                  LangGraph Ecosystem Integration
+                </h3>
+                <div class="grid grid-cols-3 gap-4">
+                  @for (integration of integrations(); track integration.name;
+                  let i = $index) {
+                  <div
+                    class="bg-white/95 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
+                    [style.animation-delay]="i * 100 + 'ms'"
+                  >
                     <div class="text-3xl mb-2">{{ integration.icon }}</div>
-                    <h4 class="text-base font-bold text-gray-900 mb-1">{{ integration.name }}</h4>
-                    <p class="text-xs text-gray-500">{{ integration.description }}</p>
+                    <h4 class="text-base font-bold text-gray-900 mb-1">
+                      {{ integration.name }}
+                    </h4>
+                    <p class="text-xs text-gray-500">
+                      {{ integration.description }}
+                    </p>
                   </div>
-                }
+                  }
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </app-hijacked-scroll-timeline>
-
+        </app-hijacked-scroll-timeline>
       </div>
     </div>
   `,
@@ -328,7 +396,8 @@ export class LanggraphMemorySectionComponent {
       id: 'long-term-memory',
       step: 1,
       title: 'Long-Term Memory for AI',
-      description: 'Hybrid storage architecture combines ChromaDB vector database for semantic search with Neo4j graph database for relationship tracking. IMemoryAdapter pattern provides standardized interface across all modules. AI agents gain long-term contextual memory, understanding conversation history, user preferences, and domain knowledge for intelligent, context-aware interactions.',
+      description:
+        'Hybrid storage architecture combines ChromaDB vector database for semantic search with Neo4j graph database for relationship tracking. IMemoryAdapter pattern provides standardized interface across all modules. AI agents gain long-term contextual memory, understanding conversation history, user preferences, and domain knowledge for intelligent, context-aware interactions.',
       code: 'assets/images/libraries/langgraph-memory_step_1.png',
       language: 'image',
       layout: 'left',
@@ -343,7 +412,8 @@ export class LanggraphMemorySectionComponent {
       id: 'context-retrieval',
       step: 2,
       title: 'Automatic Context Retrieval',
-      description: 'Semantic memory automatically generates embeddings for user queries and retrieves relevant context through similarity search. LangGraph Store Integration (2025 compliant) ensures compatibility with official LangGraph interfaces. AI agents receive contextually relevant information without manual retrieval logic, improving response quality and user experience.',
+      description:
+        'Semantic memory automatically generates embeddings for user queries and retrieves relevant context through similarity search. LangGraph Store Integration (2025 compliant) ensures compatibility with official LangGraph interfaces. AI agents receive contextually relevant information without manual retrieval logic, improving response quality and user experience.',
       code: 'assets/images/libraries/langgraph-memory_step_2.png',
       language: 'image',
       layout: 'right',
@@ -358,7 +428,8 @@ export class LanggraphMemorySectionComponent {
       id: 'memory-sharing',
       step: 3,
       title: 'Multi-Agent Memory Sharing',
-      description: 'Shared knowledge base enables collaborative AI teams. User pattern analysis extracts common topics, interaction frequency, and user preferences. Graph-based conversation flow analysis tracks relationships between topics and entities. Multiple agents access unified memory, maintaining consistency across collaborative workflows.',
+      description:
+        'Shared knowledge base enables collaborative AI teams. User pattern analysis extracts common topics, interaction frequency, and user preferences. Graph-based conversation flow analysis tracks relationships between topics and entities. Multiple agents access unified memory, maintaining consistency across collaborative workflows.',
       code: 'assets/images/libraries/langgraph-memory_step_3.png',
       language: 'image',
       layout: 'left',
@@ -373,7 +444,8 @@ export class LanggraphMemorySectionComponent {
       id: 'continuous-improvement',
       step: 4,
       title: 'Continuous Improvement',
-      description: 'HITL module integration (@Inject IMemoryAdapter) automatically stores human approval patterns for machine learning improvements. System learns from user feedback, improving decision confidence over time. Memory-aware graph compilation optimizes workflows based on historical performance. AI continuously evolves with user interactions.',
+      description:
+        'HITL module integration (@Inject IMemoryAdapter) automatically stores human approval patterns for machine learning improvements. System learns from user feedback, improving decision confidence over time. Memory-aware graph compilation optimizes workflows based on historical performance. AI continuously evolves with user interactions.',
       code: 'assets/images/libraries/langgraph-memory_step_4.png',
       language: 'image',
       layout: 'right',
