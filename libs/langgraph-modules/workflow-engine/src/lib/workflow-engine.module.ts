@@ -6,7 +6,6 @@ import { CompilationCacheService } from './core/compilation-cache.service';
 import { MetadataProcessorService } from './core/metadata-processor.service';
 import { SubgraphManagerService } from './core/subgraph-manager.service';
 import { WorkflowStreamService } from './streaming/workflow-stream.service';
-import { WorkflowStreamOrchestratorService } from './streaming/workflow-stream-orchestrator.service';
 import { StreamManagementService } from './streaming/stream-management.service';
 import { TokenProcessingService } from './streaming/token-processing.service';
 import { StreamEventProcessorService } from './streaming/stream-event-processor.service';
@@ -89,12 +88,7 @@ export class WorkflowEngineModule {
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
-        WorkflowStreamOrchestratorService,
-        // Backward compatibility alias
-        {
-          provide: WorkflowStreamService,
-          useExisting: WorkflowStreamOrchestratorService,
-        },
+        WorkflowStreamService,
 
         WorkflowCheckpointService,
         WorkflowExecutionService,
@@ -145,8 +139,8 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        WorkflowStreamOrchestratorService,
         // Streaming services
+        WorkflowStreamService,
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
@@ -198,12 +192,7 @@ export class WorkflowEngineModule {
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
-        WorkflowStreamOrchestratorService,
-        // Backward compatibility alias
-        {
-          provide: WorkflowStreamService,
-          useExisting: WorkflowStreamOrchestratorService,
-        },
+        WorkflowStreamService,
 
         WorkflowCheckpointService,
         WorkflowExecutionService,
@@ -254,8 +243,8 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        WorkflowStreamOrchestratorService,
         // Streaming services
+        WorkflowStreamService,
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,

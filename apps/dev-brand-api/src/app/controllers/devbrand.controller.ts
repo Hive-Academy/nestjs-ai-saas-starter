@@ -25,23 +25,25 @@ import { WorkflowStreamingOrchestrator } from '@hive-academy/langgraph-streaming
  * Architecture Flow:
  * ┌──────────────────────────────────────────────────────────────────┐
  * │ 1. POST /devbrand/execute → Returns executionId immediately      │
- * │ 2. Workflow starts in background → executeWithStreaming()        │
- * │ 3. WorkflowStreamService emits events via EventEmitter2:         │
+ * │ 2. WorkflowStreamingOrchestrator.startWorkflowWithStreaming()    │
+ * │ 3. Workflow.executeWithStreaming() → LangGraph.stream()          │
+ * │ 4. Events auto-emit via EventEmitter2:                           │
  * │    - workflow.stream.${executionId}                              │
  * │    - workflow.token.${executionId}                               │
  * │    - workflow.progress.${executionId}                            │
- * │ 4. WebSocketBridgeService listens via @OnEvent decorators        │
- * │ 5. StreamingWebSocketService broadcasts to subscribed clients    │
- * │ 6. Clients receive events on ws://localhost:8080/streaming       │
+ * │ 5. WebSocketBridgeService listens via @OnEvent decorators        │
+ * │ 6. StreamingWebSocketService broadcasts to subscribed clients    │
+ * │ 7. Clients receive events on ws://localhost:8080/streaming       │
  * └──────────────────────────────────────────────────────────────────┘
  *
  * NO manual SSE transformation! NO custom event mapping!
  * NO duplicate infrastructure! Everything is already built.
  *
  * Key Services (Already Running):
+ * - WorkflowStreamingOrchestrator: Consumer facade for workflow lifecycle (streaming module)
  * - StreamingWebSocketService: Port 8080, Socket.io server
  * - WebSocketBridgeService: Event routing with @OnEvent('workflow.stream.*')
- * - WorkflowStreamService: Embedded in workflow-engine, emits EventEmitter2 events
+ * - WorkflowStreamService: Low-level streaming implementation (workflow-engine)
  * - TokenStreamingService: Character-by-character LLM streaming
  * - HumanApprovalService: HITL interruptions with Neo4j storage
  *

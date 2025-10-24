@@ -206,6 +206,124 @@ export class AppModule {}
 - Global import provides consistent event bus across all modules
 - Critical for streaming: High event volume requires single coordinated bus
 
+---
+
+## 🏗️ Production Architecture: Correct Streaming Configuration
+
+### The Two-Layer Architecture
+
+The streaming system has **two distinct layers** that work together:
+
+**Layer 1: Consumer Facade (This Module)**
+
+- **WorkflowStreamingOrchestrator**: High-level service for consumer applications
+- **StreamingWebSocketService**: WebSocket server (Socket.io) on port 8080
+- **WebSocketBridgeService**: Event routing with @OnEvent decorators
+- **Decorators**: @StreamToken, @StreamEvent, @StreamProgress
+
+**Layer 2: Low-Level Implementation (Workflow-Engine Module)**
+
+- **WorkflowStreamService**: Core streaming implementation
+- **TokenProcessingService**: Token buffering and emission
+- **StreamEventProcessorService**: Event processing and batching
+- **StreamManagementService**: Stream lifecycle management
+
+### Production Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Controller Layer (Consumer Application)                         │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ WorkflowStreamingOrchestrator.startWorkflowWithStreaming()  │ │
+│ │ • Returns executionId immediately (non-blocking)            │ │
+│ │ • Starts workflow in background                             │ │
+│ │ • Manages execution lifecycle                               │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Workflow Layer                                                   │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ Workflow.executeWithStreaming()                             │ │
+│ │ • Calls MultiAgentWorkflowBase.executeCoordination()        │ │
+│ │ • Enables LangGraph.stream() with streamMode: 'values'      │ │
+│ │ • Returns async generator                                   │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Event Layer (EventEmitter2)                                      │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ Events automatically emitted:                               │ │
+│ │ • workflow.stream.${executionId}                            │ │
+│ │ • workflow.token.${executionId}                             │ │
+│ │ • workflow.progress.${executionId}                          │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ WebSocket Layer                                                  │
+│ ┌─────────────────────────────────────────────────────────────┐ │
+│ │ WebSocketBridgeService (@OnEvent listeners)                 │ │
+│ │         ↓                                                    │ │
+│ │ StreamingWebSocketService.broadcastStreamUpdate()           │ │
+│ │         ↓                                                    │ │
+│ │ Socket.io → Connected WebSocket clients                     │ │
+│ └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Correct Module Configuration
+
+```typescript
+import { Module } from '@nestjs/common';
+import { StreamingModule } from '@hive-academy/langgraph-streaming';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { getStreamingConfig } from './config/streaming.config';
+
+@Module({
+  imports: [
+    // ✅ CORRECT: Import both modules
+
+    // 1. StreamingModule provides:
+    //    - Decorators (@StreamToken, @StreamEvent, @StreamProgress)
+    //    - WebSocket infrastructure (StreamingWebSocketService, WebSocketBridgeService)
+    //    - WorkflowStreamingOrchestrator (consumer facade)
+    StreamingModule.forRoot(getStreamingConfig()),
+
+    // 2. WorkflowEngineModule provides:
+    //    - WorkflowStreamService (low-level streaming)
+    //    - TokenProcessingService, StreamEventProcessorService
+    //    - Graph compilation and execution
+    WorkflowEngineModule.forRoot({
+      // WorkflowStreamService automatically available via injection
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Key Architectural Decisions
+
+1. **WorkflowStreamingOrchestrator** (streaming module) = **Consumer Facade**
+
+   - High-level API for controllers
+   - Manages workflow lifecycle
+   - Returns immediately with WebSocket connection info
+
+2. **WorkflowStreamService** (workflow-engine) = **Low-Level Implementation**
+
+   - Graph compilation and execution
+   - Decorator metadata extraction
+   - RxJS observable creation
+
+3. **No Circular Dependencies**
+   - Streaming module uses EventEmitter2 for event broadcasting
+   - Workflow-engine emits events, streaming module consumes them
+   - Clean separation of concerns
+
+---
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)
@@ -214,12 +332,12 @@ The streaming module is **embedded in workflow-engine** and integrated across th
 
 ### 🔗 Integration Architecture
 
-| Module              | Integration Pattern         | Usage                                                                                                      | File Reference                                                         |
-| ------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **workflow-engine** | Embedded Streaming Services | `WorkflowStreamService`, `WorkflowStreamOrchestrator`, `TokenProcessingService` built into workflow-engine | `workflow-engine/src/lib/streaming/*.service.ts`                       |
-| **functional-api**  | Decorator Composition       | `@StreamToken`, `@StreamEvent`, `@StreamProgress` used with `@Task`, `@Entrypoint`                         | `devbrand-supervisor.workflow.ts:14,96,120`                            |
-| **dev-brand-api**   | Production Configuration    | WebSocket gateway with CORS, auth, rate limiting                                                           | `apps/dev-brand-api/src/app/config/streaming.config.ts:1-49`           |
-| **dev-brand-api**   | Streaming Manager Service   | Application-level streaming coordination                                                                   | `apps/dev-brand-api/src/app/services/app-streaming-manager.service.ts` |
+| Module              | Integration Pattern         | Usage                                                                                                       | File Reference                                                         |
+| ------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **workflow-engine** | Embedded Streaming Services | `WorkflowStreamService`, `TokenProcessingService`, `StreamEventProcessorService` built into workflow-engine | `workflow-engine/src/lib/streaming/*.service.ts`                       |
+| **functional-api**  | Decorator Composition       | `@StreamToken`, `@StreamEvent`, `@StreamProgress` used with `@Task`, `@Entrypoint`                          | `devbrand-supervisor.workflow.ts:14,96,120`                            |
+| **dev-brand-api**   | Production Configuration    | WebSocket gateway with CORS, auth, rate limiting                                                            | `apps/dev-brand-api/src/app/config/streaming.config.ts:1-49`           |
+| **dev-brand-api**   | Streaming Manager Service   | Application-level streaming coordination                                                                    | `apps/dev-brand-api/src/app/services/app-streaming-manager.service.ts` |
 
 ### 🎯 Key Architectural Insight
 

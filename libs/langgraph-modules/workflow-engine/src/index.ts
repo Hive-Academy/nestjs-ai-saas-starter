@@ -23,7 +23,6 @@ export * from './lib/interfaces/multi-agent-bridge.interface';
 
 // Streaming Services (moved from streaming module to avoid circular dependency)
 export * from './lib/streaming/workflow-stream.service';
-export * from './lib/streaming/workflow-stream-orchestrator.service';
 export * from './lib/streaming/stream-management.service';
 export * from './lib/streaming/token-processing.service';
 export * from './lib/streaming/stream-event-processor.service';
