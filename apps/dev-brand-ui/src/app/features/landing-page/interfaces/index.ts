@@ -1,6 +1,12 @@
 /**
  * Shared TypeScript interfaces for Landing Page components
+ *
  * TASK_2025_026 - DevBrand Landing Page Implementation
+ *
+ * This module provides type-safe interfaces for all landing page data structures,
+ * ensuring consistent data contracts across components.
+ *
+ * @module landing-page/interfaces
  */
 
 /**
