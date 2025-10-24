@@ -306,7 +306,9 @@ export class WorkflowStreamingOrchestrator {
         // No manual event emission needed here!
 
         this.logger.debug(
-          `Event processed for ${executionId}: ${(event as any)?.type || 'unknown'}`
+          `Event processed for ${executionId}: ${
+            (event as any)?.type || 'unknown'
+          }`
         );
       }
 

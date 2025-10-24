@@ -68,12 +68,14 @@ Read([path-to-existing-file])
 ```
 
 **Task Strategy Decision**:
+
 - ✅ **If file EXISTS**: Task = "Enhance [component] with [new features]" (preserve existing, add features)
 - ✅ **If file DOESN'T exist**: Task = "Create [component] with [specifications]"
 - ❌ **NEVER**: Create poor/simplified versions to replace rich existing implementations
 - ❌ **NEVER**: Remove existing enhanced design elements when updating
 
 **Quality Mandate**:
+
 - Always build ENHANCED versions with rich design elements
 - If existing implementation is complex, PRESERVE that complexity and ADD to it
 - Stick with enhanced designs - never simplify or "clean up" to basic versions

@@ -10,7 +10,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
   imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
     <div
-      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-white via-sky-400 to-white"
+      class="relative w-full h-screen overflow-hidden bg-white"
       style="perspective: 1000px;"
     >
       <!-- 3D Background Scene (spheres + cubes) -->
@@ -34,96 +34,67 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         >
           <!-- Hero Title - Scroll up and fade out as user scrolls -->
           <h1
-            class="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in-up"
-            style="text-shadow: 0 10px 30px rgba(168, 85, 247, 0.5), 0 2px 5px rgba(0,0,0,0.8);"
+            class="text-5xl md:text-7xl font-bold leading-tight animate-fade-in-up text-gray-900"
           >
-            <span class="text-gray-900 drop-shadow-2xl">Enterprise AI</span
-            ><br />
-            <span
-              class="text-gray-900 drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
-            >
-              SaaS Starter
-            </span>
+            Build Production-Grade AI Applications<br />
+            with TypeScript Patterns You Already Know
           </h1>
 
           <!-- Hero Description - Parallax scroll effect -->
           <p
-            class="text-base md:text-xl text-gray-700 leading-relaxed max-w-xl mx-auto animate-fade-in-up animation-delay-200"
-            style="text-shadow: 0 2px 20px rgba(0,0,0,0.6);"
+            class="text-base md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto animate-fade-in-up animation-delay-200"
           >
-            Production-ready foundation combining
-            <span
-              class="text-purple-600 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >vector search</span
-            >,
-            <span
-              class="text-purple-600 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >graph relationships</span
-            >, and
-            <span
-              class="text-purple-600 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >intelligent workflows</span
-            >
+            NestJS AI SaaS Starter:
+            <strong class="text-gray-900">90% less code</strong>, enterprise
+            capabilities out-of-the-box, familiar patterns for vector databases,
+            knowledge graphs, and multi-agent workflows
           </p>
 
-          <!-- Feature Badges - Faster parallax -->
-          <div
-            class="flex flex-wrap justify-center gap-3 animate-fade-in-up animation-delay-400"
+          <!-- Value Proposition Bullets -->
+          <ul
+            class="space-y-4 text-base md:text-lg text-gray-900 max-w-2xl mx-auto animate-fade-in-up animation-delay-400"
           >
-            @for (badge of badges; track badge.text) {
-            <div
-              class="group px-4 py-2 rounded-full bg-purple-600/30 backdrop-blur-sm border border-purple-400/30
-                          flex items-center gap-2 transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
-                          shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:shadow-2xl
-                          cursor-pointer text-sm"
-              style="transform-style: preserve-3d;"
-            >
-              <span
-                class="text-lg transition-transform duration-300 group-hover:scale-125"
-                >{{ badge.icon }}</span
+            @for (bullet of bullets; track bullet) {
+            <li class="flex items-start gap-3">
+              <svg
+                class="w-6 h-6 text-indigo-600 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-              <span class="text-gray-900 font-medium">{{ badge.text }}</span>
-            </div>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>{{ bullet }}</span>
+            </li>
             }
-          </div>
+          </ul>
 
           <!-- CTA Buttons - Slowest parallax for depth -->
           <div
-            class="flex flex-wrap justify-center gap-3 pt-2 animate-fade-in-up animation-delay-600"
+            class="flex flex-col sm:flex-row justify-center gap-4 pt-6 animate-fade-in-up animation-delay-600"
           >
             <button
-              class="group relative px-8 py-4 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600
-                           hover:from-purple-600 hover:via-pink-600 hover:to-purple-700
-                           text-gray-900 font-semibold shadow-2xl shadow-purple-500/50
-                           transition-all duration-300 hover:scale-105 hover:-translate-y-2
-                           hover:shadow-purple-500/70 hover:shadow-3xl
-                           flex items-center gap-2 overflow-hidden
-                           before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:to-transparent
-                           before:opacity-0 before:transition-opacity hover:before:opacity-100"
-              style="transform-style: preserve-3d;"
+              class="px-8 py-4 bg-indigo-600 text-white text-base font-semibold
+                           rounded-lg shadow-lg hover:bg-indigo-700
+                           hover:shadow-xl hover:scale-105 transition-all duration-300
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                           focus-visible:outline-indigo-600"
             >
-              <span
-                class="text-xl transition-transform duration-300 group-hover:rotate-12"
-                >🚀</span
-              >
-              <span class="relative z-10">Explore Live Demo</span>
+              See Complete Workflow Examples
             </button>
             <button
-              class="group relative px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20
-                           backdrop-blur-sm border border-white/20 hover:border-white/40
-                           text-gray-900 font-semibold shadow-xl shadow-black/30
-                           transition-all duration-300 hover:scale-105 hover:-translate-y-2
-                           flex items-center gap-2"
-              style="transform-style: preserve-3d;"
+              class="px-8 py-4 bg-white text-indigo-600 text-base font-semibold
+                           rounded-lg border-2 border-indigo-600
+                           hover:bg-indigo-600 hover:text-white transition-all duration-300
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                           focus-visible:outline-indigo-600"
             >
-              <span
-                class="text-xl transition-transform duration-300 group-hover:scale-110"
-                >🏗️</span
-              >
-              <span>View Architecture</span>
+              Read Documentation
             </button>
           </div>
         </div>
@@ -166,10 +137,10 @@ export class HeroSectionComponent {
   // Scene graph reference - 3D background only (spheres + cubes)
   readonly heroSceneGraph = HeroSceneGraphComponent;
 
-  // Feature badges data
-  readonly badges = [
-    { icon: '🧠', text: 'Semantic Intelligence' },
-    { icon: '🕸️', text: 'Relationship Mapping' },
-    { icon: '⚡', text: 'Intelligent Workflows' },
+  // Value proposition bullets from design spec
+  readonly bullets = [
+    'Reduce vector database operations from 50+ lines to 5 with TypeORM-style repositories',
+    'Build multi-agent workflows with decorators, not imperative graph construction',
+    'Get enterprise features (multi-tenancy, monitoring, approvals) without months of infrastructure work',
   ];
 }
