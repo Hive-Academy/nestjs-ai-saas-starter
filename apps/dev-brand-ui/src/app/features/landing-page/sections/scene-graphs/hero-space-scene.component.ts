@@ -27,6 +27,7 @@ import { PlanetComponent } from '../../../../core/angular-3d/components/primitiv
 import { StarFieldComponent } from '../../../../core/angular-3d/components/primitives/star-field.component';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 import { SpaceBackgroundComponent } from '../../../../core/angular-3d/components/primitives/space-background.component';
+import { FogComponent } from '../../../../core/angular-3d/components/primitives/fog.component';
 
 // Import theme store and types
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
@@ -40,6 +41,7 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
     StarFieldComponent,
     NebulaComponent,
     SpaceBackgroundComponent,
+    FogComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -62,6 +64,13 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
     />
 
     <!-- ================================ -->
+    <!-- ATMOSPHERIC FOG (Theme-based) -->
+    <!-- ================================ -->
+    @if (fogEnabled) {
+    <app-fog [fogType]="fogType" [color]="fogColor" [density]="fogDensity" />
+    }
+
+    <!-- ================================ -->
     <!-- BACKGROUND GRADIENT SPHERE (Theme-based) -->
     <!-- ================================ -->
     <app-space-background
@@ -76,7 +85,7 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
     <app-planet
       [position]="darkPlanetPosition"
       [radius]="darkPlanetRadius"
-      [segments]="64"
+      [segments]="128"
       [baseColor]="darkPlanetBaseColor"
       [emissiveColor]="darkPlanetEmissiveColor"
       [emissiveIntensity]="darkPlanetEmissiveIntensity"
@@ -86,25 +95,6 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
       [metalness]="0.3"
       [roughness]="0.8"
       [rotationSpeed]="2"
-      [rotationAxis]="'y'"
-    />
-
-    <!-- ================================ -->
-    <!-- BRIGHT PLANET (Bottom-left, in front, Theme-based) -->
-    <!-- ================================ -->
-    <app-planet
-      [position]="brightPlanetPosition"
-      [radius]="brightPlanetRadius"
-      [segments]="64"
-      [baseColor]="brightPlanetBaseColor"
-      [emissiveColor]="brightPlanetEmissiveColor"
-      [emissiveIntensity]="brightPlanetEmissiveIntensity"
-      [glowColor]="brightPlanetGlowColor"
-      [glowIntensity]="brightPlanetGlowIntensity"
-      [glowDistance]="15"
-      [metalness]="0.6"
-      [roughness]="0.4"
-      [rotationSpeed]="3"
       [rotationAxis]="'y'"
     />
 
@@ -153,7 +143,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get directionalLightIntensity(): number {
-    return this.theme.lights.directional.intensity;
+    return this.theme.lights.directional.intensity * 1.5;
   }
 
   get directionalLightColor(): number {
@@ -161,7 +151,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get pointLightIntensity(): number {
-    return this.theme.lights.point[0]?.intensity || 2.0;
+    return (this.theme.lights.point[0]?.intensity || 2.0) * 1.3;
   }
 
   get pointLightColor(): number {
@@ -170,6 +160,25 @@ export class HeroSpaceSceneComponent {
 
   get pointLightPosition(): [number, number, number] {
     return this.theme.lights.point[0]?.position || [10, 5, 5];
+  }
+
+  // ================================
+  // FOG (Theme-based getters)
+  // ================================
+  get fogEnabled(): boolean {
+    return this.theme.fog?.enabled ?? false;
+  }
+
+  get fogType(): 'linear' | 'exponential' {
+    return 'exponential';
+  }
+
+  get fogColor(): number {
+    return this.theme.fog?.color ?? 0xcccccc;
+  }
+
+  get fogDensity(): number {
+    return this.theme.fog?.density ?? 0.008;
   }
 
   // ================================
@@ -187,11 +196,11 @@ export class HeroSpaceSceneComponent {
   // PLANETS (Theme-based getters)
   // ================================
   // Camera is at z=50 looking toward negative z
-  // Scene composition: Dark planet behind text + bright planet on bottom-left
+  // Scene composition: Dark planet behind text
 
   // DARK PLANET - Huge, behind text, takes up most of screen
   readonly darkPlanetPosition: [number, number, number] = [0, 0, -30];
-  readonly darkPlanetRadius = 60; // MASSIVE
+  readonly darkPlanetRadius = 90; // MASSIVE
 
   get darkPlanetBaseColor(): number {
     return this.theme.planet.baseColor;
@@ -213,30 +222,6 @@ export class HeroSpaceSceneComponent {
     return this.theme.planet.glowIntensity * 0.4; // Subtle glow
   }
 
-  // BRIGHT PLANET - Medium, bottom-left, in front of dark planet
-  readonly brightPlanetPosition: [number, number, number] = [-15, -10, 10];
-  readonly brightPlanetRadius = 12; // Medium-large
-
-  get brightPlanetBaseColor(): number {
-    return this.theme.planet.baseColor;
-  }
-
-  get brightPlanetEmissiveColor(): number {
-    return this.theme.planet.emissiveColor;
-  }
-
-  get brightPlanetEmissiveIntensity(): number {
-    return this.theme.planet.emissiveIntensity;
-  }
-
-  get brightPlanetGlowColor(): number {
-    return this.theme.planet.glowColor;
-  }
-
-  get brightPlanetGlowIntensity(): number {
-    return this.theme.planet.glowIntensity;
-  }
-
   // ================================
   // STARS (Theme-based getters)
   // ================================
@@ -246,18 +231,12 @@ export class HeroSpaceSceneComponent {
 
   get starSize(): number {
     return (
-      ((this.theme.stars.sizes.min + this.theme.stars.sizes.max) / 2) * 0.01
+      ((this.theme.stars.sizes.min + this.theme.stars.sizes.max) / 2) * 0.025
     );
   }
 
   get starOpacity(): number {
-    // Vary opacity by density to simulate different star counts
-    const densityOpacityMap = {
-      low: 0.5, // Fewer visible stars
-      medium: 0.8,
-      high: 1.0, // All stars visible
-    };
-    return densityOpacityMap[this.theme.stars.density] || 0.9;
+    return 1.0;
   }
 
   // ================================
