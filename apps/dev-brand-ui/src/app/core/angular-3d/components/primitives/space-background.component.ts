@@ -1,28 +1,38 @@
 /**
- * SpaceBackgroundComponent - Themed Gradient Background
+ * SpaceBackgroundComponent - Gradient Background Sphere
  *
- * Renders a background sphere/plane with customizable gradients:
- * - Linear or radial gradient support
- * - Theme-based color palettes
- * - Large sphere wrapping the scene
+ * REWRITTEN to follow declarative angular-three pattern.
+ *
+ * Previous BROKEN implementation:
+ * - Created canvas texture programmatically (AfterViewInit)
+ * - Used imperative material manipulation
+ * - Canvas-based gradient generation
+ *
+ * NEW CORRECT implementation:
+ * - Uses declarative ngt-mesh + ngt-sphere-geometry
+ * - Shader material for gradient effect
+ * - Signal-based reactive properties
+ * - No lifecycle hooks, fully declarative
+ *
+ * Pattern verified from:
+ * - Declarative mesh: planet.component.ts:42-57
+ * - Material parameters: planet.component.ts:50-56
  *
  * Usage:
  * ```html
  * <app-space-background
+ *   [radius]="100"
  *   [gradientType]="'radial'"
  *   [colors]="[0x000000, 0x0a0a1a, 0x000000]"
- *   [radius]="100"
  * />
  * ```
  */
 
 import {
   Component,
-  AfterViewInit,
-  input,
   CUSTOM_ELEMENTS_SCHEMA,
-  ElementRef,
-  viewChild,
+  input,
+  computed,
 } from '@angular/core';
 import * as THREE from 'three';
 
@@ -32,18 +42,21 @@ import * as THREE from 'three';
   imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <!-- Large sphere that wraps the entire scene -->
-    <ngt-mesh #backgroundMesh [scale]="[-1, 1, 1]">
-      <ngt-sphere-geometry [args]="[radius(), 64, 64]" />
-      <ngt-mesh-basic-material [side]="backSide" [fog]="false" />
+    <!-- Large inverted sphere wrapping the scene -->
+    <ngt-mesh [scale]="[-1, 1, 1]">
+      <ngt-sphere-geometry [args]="geometryArgs()" />
+      <ngt-shader-material
+        [vertexShader]="vertexShader()"
+        [fragmentShader]="fragmentShader()"
+        [uniforms]="uniforms()"
+        [side]="backSide"
+        [fog]="false"
+      />
     </ngt-mesh>
   `,
 })
-export class SpaceBackgroundComponent implements AfterViewInit {
-  private readonly meshRef =
-    viewChild<ElementRef<THREE.Mesh>>('backgroundMesh');
-
-  // Configuration inputs
+export class SpaceBackgroundComponent {
+  // Configuration inputs (signal-based)
   readonly radius = input<number>(100);
   readonly gradientType = input<'linear' | 'radial'>('radial');
   readonly colors = input<number[]>([0x000000, 0x0a0a1a, 0x000000]);
@@ -51,106 +64,80 @@ export class SpaceBackgroundComponent implements AfterViewInit {
   // Three.js constants
   readonly backSide = THREE.BackSide;
 
-  ngAfterViewInit(): void {
-    const mesh = this.meshRef()?.nativeElement;
-    if (!mesh) {
-      console.error('[SpaceBackground] Mesh ref not found!');
-      return;
-    }
+  // Computed geometry arguments
+  readonly geometryArgs = computed<
+    ConstructorParameters<typeof THREE.SphereGeometry>
+  >(() => {
+    return [this.radius(), 64, 64]; // [radius, widthSegments, heightSegments]
+  });
 
-    console.log('[SpaceBackground] Creating gradient texture...');
-    console.log('[SpaceBackground] Gradient type:', this.gradientType());
-    console.log('[SpaceBackground] Colors:', this.colors());
-
-    // Create gradient texture
-    const gradientTexture = this.createGradientTexture();
-
-    // Apply texture to material
-    const material = mesh.material as THREE.MeshBasicMaterial;
-    material.map = gradientTexture;
-    material.needsUpdate = true;
-
-    console.log('[SpaceBackground] Texture applied successfully');
-  }
-
-  /**
-   * Create a canvas-based gradient texture
-   */
-  private createGradientTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    const size = 512;
-    canvas.width = size;
-    canvas.height = size;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('Failed to get 2D context');
-    }
-
-    const gradientType = this.gradientType();
+  // Shader uniforms (reactive)
+  readonly uniforms = computed(() => {
     const colors = this.colors();
+    const gradientType = this.gradientType();
 
-    let gradient: CanvasGradient;
+    return {
+      uColors: {
+        value: colors.map((c) => new THREE.Color(c)),
+      },
+      uGradientType: {
+        value: gradientType === 'radial' ? 1.0 : 0.0,
+      },
+    };
+  });
 
-    if (gradientType === 'radial') {
-      // Radial gradient from center
-      gradient = ctx.createRadialGradient(
-        size / 2,
-        size / 2,
-        0,
-        size / 2,
-        size / 2,
-        size / 2
-      );
-    } else {
-      // Linear gradient top to bottom
-      gradient = ctx.createLinearGradient(0, 0, 0, size);
+  // Vertex shader (pass UV to fragment)
+  readonly vertexShader = computed(
+    () => `
+    varying vec2 vUv;
+    varying vec3 vPosition;
+
+    void main() {
+      vUv = uv;
+      vPosition = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
+  `
+  );
 
-    // Add color stops
-    const stopCount = colors.length;
-    colors.forEach((color, index) => {
-      const stop = index / (stopCount - 1);
-      const hexColor = this.numberToHex(color);
-      gradient.addColorStop(stop, hexColor);
-    });
+  // Fragment shader (gradient rendering)
+  readonly fragmentShader = computed(
+    () => `
+    uniform vec3 uColors[3];
+    uniform float uGradientType;
+    varying vec2 vUv;
+    varying vec3 vPosition;
 
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
+    void main() {
+      float gradientFactor;
 
-    return new THREE.CanvasTexture(canvas);
-  }
+      if (uGradientType > 0.5) {
+        // Radial gradient (from center)
+        vec2 center = vec2(0.5, 0.5);
+        float dist = distance(vUv, center);
+        gradientFactor = dist * 2.0; // 0.0 at center, 1.0 at edges
+      } else {
+        // Linear gradient (top to bottom)
+        gradientFactor = vUv.y;
+      }
 
-  /**
-   * Convert number color to hex string
-   */
-  private numberToHex(color: number): string {
-    return `#${color.toString(16).padStart(6, '0')}`;
-  }
+      // Clamp to [0, 1]
+      gradientFactor = clamp(gradientFactor, 0.0, 1.0);
 
-  /**
-   * Update gradient colors dynamically
-   */
-  updateGradient(newColors: number[]): void {
-    const mesh = this.meshRef()?.nativeElement;
-    if (!mesh) return;
+      // Mix colors based on gradient factor
+      vec3 color;
+      if (gradientFactor < 0.5) {
+        // First half: mix uColors[0] -> uColors[1]
+        float t = gradientFactor * 2.0;
+        color = mix(uColors[0], uColors[1], t);
+      } else {
+        // Second half: mix uColors[1] -> uColors[2]
+        float t = (gradientFactor - 0.5) * 2.0;
+        color = mix(uColors[1], uColors[2], t);
+      }
 
-    const material = mesh.material as THREE.MeshBasicMaterial;
-    const newTexture = this.createGradientTexture();
-
-    // Dispose old texture
-    material.map?.dispose();
-
-    // Apply new texture
-    material.map = newTexture;
-    material.needsUpdate = true;
-  }
-
-  /**
-   * Get mesh instance
-   */
-  getMesh(): THREE.Mesh | undefined {
-    const meshEl = this.meshRef();
-    return meshEl?.nativeElement;
-  }
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+  );
 }
