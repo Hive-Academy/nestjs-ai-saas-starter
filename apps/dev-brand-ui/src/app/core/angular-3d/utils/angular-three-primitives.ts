@@ -65,6 +65,10 @@ export function registerAngularThreePrimitives(): void {
     InstancedMesh: THREE.InstancedMesh,
     SkinnedMesh: THREE.SkinnedMesh,
 
+    // Base geometry classes
+    BufferGeometry: THREE.BufferGeometry,
+    BufferAttribute: THREE.BufferAttribute,
+
     // Primitive geometries
     SphereGeometry: THREE.SphereGeometry,
     BoxGeometry: THREE.BoxGeometry,

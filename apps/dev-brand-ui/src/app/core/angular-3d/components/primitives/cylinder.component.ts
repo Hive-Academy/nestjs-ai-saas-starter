@@ -36,7 +36,6 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Mesh } from 'three';
 
 @Component({
@@ -116,7 +115,6 @@ export class CylinderComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

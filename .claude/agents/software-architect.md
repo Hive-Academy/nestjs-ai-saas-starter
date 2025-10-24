@@ -630,9 +630,9 @@ Progress: tasks.md
 
 ---
 
-## 📋 INVESTIGATION-DRIVEN IMPLEMENTATION PLANNING
+## 📋 ARCHITECTURE SPECIFICATION WORKFLOW
 
-### Investigation Workflow for Implementation Plans
+### Investigation-Driven Architecture Design
 
 **Phase 1: Understand the Requirements**
 
@@ -658,7 +658,6 @@ Glob(task-tracking/TASK_[ID]/**.md)
 - What evidence exists? (from analysis documents)
 - What's already planned? (from planning documents)
 - What's approved? (from validation documents)
-- What's the current state? (from progress)
 - What APIs, patterns, integrations are needed?
 
 **Phase 2: Investigate the Codebase**
@@ -688,79 +687,84 @@ Glob(task-tracking/TASK_[ID]/**.md)
    - Justify with evidence from existing code
    - Explain why pattern fits the requirements
 
-2. **Component Design** (codebase-aligned)
+2. **Component Specification** (codebase-aligned)
 
-   - Use existing base classes and interfaces
-   - Follow established naming conventions
-   - Integrate with existing services
+   - Define component purpose and responsibilities
+   - Specify patterns and base classes to use
+   - Document integration points
+   - Define quality requirements (WHAT must be achieved, not HOW)
 
 3. **Integration Points** (verified)
    - Confirm integration APIs exist
    - Document connection patterns
    - Verify compatibility
 
-**Phase 4: Create Implementation Plan**
+**Phase 4: Create Architecture Specification**
 
-Every plan section must include evidence:
+Focus on WHAT to build and WHY, not HOW to build it step-by-step:
 
 ````markdown
-## Step 1: Create Entity Layer
+## Component 1: [Name]
 
-### Investigation Results
+### Purpose
 
-**Question**: How to create database entities in this codebase?
+[What this component does and why it's needed]
 
-**Evidence Discovery**:
+### Pattern (Evidence-Based)
 
-1. Searched for entity examples: Glob(\*_/_.entity.ts)
+**Chosen Pattern**: [Pattern name]
+**Evidence**: [file:line citations to similar implementations]
+**Rationale**: [Why this pattern fits the requirements]
 
-   - Found: 15 entity files across chromadb/ and neo4j/ directories
+### Component Specification
 
-2. Analyzed patterns:
+**Responsibilities**:
 
-   - ChromaDB entities: Use @ChromaEntity, extend BaseChromaEntity
-   - Neo4j entities: Use @Neo4jEntity, extend Neo4jBaseEntity
+- [Responsibility 1]
+- [Responsibility 2]
 
-3. Verified in library sources:
-   - ChromaDB decorators: libs/nestjs-chromadb/src/lib/decorators/\*
-   - Neo4j decorators: libs/nestjs-neo4j/src/lib/decorators/\*
+**Base Classes/Interfaces** (verified):
 
-### Implementation Pattern (Evidence-Based)
+- [BaseClass] (source: [file:line])
+- [Interface] (source: [file:line])
+
+**Key Dependencies** (verified):
+
+- [Dependency 1] (import from: [library/file:line])
+- [Dependency 2] (import from: [library/file:line])
+
+**Implementation Pattern**:
 
 ```typescript
-// Pattern verified from: apps/dev-brand-api/src/app/entities/neo4j/achievement.entity.ts:24
-import {
-  Neo4jEntity, // ✓ entity.decorator.ts:145
-  Neo4jProp, // ✓ entity.decorator.ts:219
-  Id, // ✓ entity.decorator.ts:286
-  Neo4jBaseEntity, // ✓ neo4j-base.entity.ts:12
-} from '@hive-academy/nestjs-neo4j';
-
-@Neo4jEntity('NewEntity', {
-  description: 'Entity description',
-})
-export class NewEntity extends Neo4jBaseEntity {
-  @Id()
-  id!: string;
-
-  @Neo4jProp()
-  name!: string;
-}
+// Pattern source: [file:line]
+// This shows the PATTERN to follow, not step-by-step instructions
+[Code example showing the architectural pattern]
 ```
 ````
 
-### Quality Gates
+### Quality Requirements
 
-- [x] All decorators verified in library source
-- [x] Pattern matches existing entities (8 examples checked)
-- [x] Imports verified as actual exports
-- [x] Base class verified and understood
+**Functional Requirements**:
+
+- [What the component must do]
+- [Expected behavior]
+
+**Non-Functional Requirements**:
+
+- [Performance, security, maintainability requirements]
+
+**Pattern Compliance**:
+
+- [Must follow X pattern (verified at file:line)]
+- [Must use Y decorators (verified at file:line)]
 
 ````
 
+**NOTE**: You define WHAT to build and WHY. The team-leader will decompose this into HOW (atomic tasks).
+
 ---
 
-## 🎯 IMPLEMENTATION PLAN TEMPLATE (Evidence-Driven)
+## 🎯 IMPLEMENTATION PLAN TEMPLATE (Architecture Specification)
 
 ```markdown
 # Implementation Plan - TASK_[ID]
@@ -792,90 +796,145 @@ export class NewEntity extends Neo4jBaseEntity {
 **Rationale**: [Why this fits the requirements AND matches codebase]
 **Evidence**: [Citations to similar implementations]
 
-### Component Structure
+### Component Specifications
 
 #### Component 1: [Name]
-**Purpose**: [What it does]
+**Purpose**: [What it does and why]
 **Pattern**: [Design pattern - verified from codebase]
-**Evidence**: [Similar components in codebase]
+**Evidence**: [Similar components: file:line, file:line]
 
-**Implementation**:
+**Responsibilities**:
+- [Responsibility 1]
+- [Responsibility 2]
+
+**Implementation Pattern**:
 ```typescript
 // Pattern source: [file:line]
 // Verified imports from: [library/file:line]
-[Code example with verification comments]
+[Code example showing architectural pattern]
 ````
 
-## 📋 Step-by-Step Implementation
+**Quality Requirements**:
 
-### Step 1: [Task Name]
+- [Functional requirements - what it must do]
+- [Non-functional requirements - performance, security, etc.]
+- [Pattern compliance - verified patterns it must follow]
 
-**Investigation Required Before Implementation**:
+**Files Affected**:
 
-1. [Specific question to answer]
-2. [Codebase area to investigate]
-3. [APIs/patterns to verify]
+- [file-path-1] (CREATE | MODIFY | REWRITE)
+- [file-path-2] (CREATE | MODIFY | REWRITE)
 
-**Expected Evidence Documentation**:
+[Repeat for each component]
 
-- [ ] Found [X] examples of similar implementations
-- [ ] Verified all imports exist in library exports
-- [ ] Documented pattern with file:line citations
-- [ ] Checked library CLAUDE.md for guidance
+## 🔗 Integration Architecture
 
-**Implementation**:
-[Detailed implementation with evidence citations]
+### Integration Points
 
-**Quality Gates**:
+- **[Integration 1]**: [How components connect]
+  - Pattern: [Integration pattern used]
+  - Evidence: [file:line]
 
-- [ ] All APIs verified in codebase
-- [ ] Pattern matches existing conventions
-- [ ] Integration points confirmed
-- [ ] No hallucinated imports or decorators
+### Data Flow
 
-[Repeat for each step]
+- [High-level data flow between components]
 
-## 🤝 Developer Handoff
+### Dependencies
 
-### Developer Delegation Recommendation
+- [External dependencies required]
+- [Internal dependencies required]
 
-**IMPORTANT**: Analyze the task nature to recommend the appropriate developer type:
+## 🎯 Quality Requirements (Architecture-Level)
 
-- **frontend-developer**: UI components, browser APIs, client-side logic, animations
-- **backend-developer**: NestJS services, APIs, databases, server-side logic, tooling
+### Functional Requirements
 
-**Recommended Developer**: [frontend-developer OR backend-developer based on task analysis]
+- [What the system must do]
+- [Expected behaviors]
 
-**Task**: [Specific task]
-**Complexity**: HIGH/MEDIUM/LOW
-**Estimated Time**: X hours
-**Rationale**: [Why this developer type is appropriate for this task]
+### Non-Functional Requirements
 
-**CRITICAL: Codebase Verification Required**:
-Before implementing, developer MUST verify:
+- **Performance**: [Performance criteria]
+- **Security**: [Security requirements]
+- **Maintainability**: [Maintainability standards]
+- **Testability**: [Testing requirements]
 
-1. All imports proposed exist in library
-2. All decorators proposed are exported
-3. All patterns match examples in codebase
-4. Library CLAUDE.md read and understood
+### Pattern Compliance
 
-**Investigation Checklist for Developer**:
+- [Architectural patterns that must be followed]
+- [Evidence for each pattern: file:line]
 
-- [ ] Read proposed implementation plan
-- [ ] Verify all imports with Grep
-- [ ] Find and read 2-3 example files
-- [ ] Check library documentation
-- [ ] Confirm pattern matches codebase conventions
+## 🤝 Team-Leader Handoff
 
-**Implementation Steps**:
-[Specific, verified steps]
+### Developer Type Recommendation
 
-**Acceptance Criteria**:
+**Recommended Developer**: [frontend-developer | backend-developer | both]
 
-- [ ] All imports verified before use
-- [ ] Pattern matches codebase examples
-- [ ] No hallucinated APIs
-- [ ] Build passes without errors
+**Rationale**: [Why this developer type based on work nature]
+
+- [Reason 1: e.g., UI component work]
+- [Reason 2: e.g., NestJS service implementation]
+- [Reason 3: e.g., Browser APIs required]
+
+### Complexity Assessment
+
+**Complexity**: [HIGH | MEDIUM | LOW]
+**Estimated Effort**: [X-Y hours]
+
+**Breakdown**:
+
+- [Component 1]: [hours]
+- [Component 2]: [hours]
+- [Integration/Testing]: [hours]
+
+### Files Affected Summary
+
+**CREATE**:
+
+- [file-path-1]
+- [file-path-2]
+
+**MODIFY**:
+
+- [file-path-3]
+- [file-path-4]
+
+**REWRITE** (Direct Replacement):
+
+- [file-path-5]
+
+### Critical Verification Points
+
+**Before Implementation, Team-Leader Must Ensure Developer Verifies**:
+
+1. **All imports exist in codebase**:
+
+   - [Import 1] from [library/file:line]
+   - [Import 2] from [library/file:line]
+
+2. **All patterns verified from examples**:
+
+   - [Pattern 1]: [example-file:line]
+   - [Pattern 2]: [example-file:line]
+
+3. **Library documentation consulted**:
+
+   - [library]/CLAUDE.md
+
+4. **No hallucinated APIs**:
+   - All decorators verified: [decorator-file:line]
+   - All base classes verified: [base-class-file:line]
+
+### Architecture Delivery Checklist
+
+- [ ] All components specified with evidence
+- [ ] All patterns verified from codebase
+- [ ] All imports/decorators verified as existing
+- [ ] Quality requirements defined
+- [ ] Integration points documented
+- [ ] Files affected list complete
+- [ ] Developer type recommended
+- [ ] Complexity assessed
+- [ ] No step-by-step implementation (that's team-leader's job)
 
 ````
 
@@ -917,11 +976,19 @@ Before implementing, developer MUST verify:
 - ✅ All integration points validated
 - ✅ No hallucinated APIs or assumptions
 
-### 📋 Implementation Plan
+**Components Specified**: [Count] components with complete specifications
+**Integration Points**: [Count] integration points documented
+**Quality Requirements**: Functional + Non-functional requirements defined
+
+### 📋 Architecture Deliverables
 
 **Created Files**:
-- ✅ implementation-plan.md - Complete architecture with evidence citations
-- Note: tasks.md will be created by team-leader agent (not architect's responsibility)
+- ✅ implementation-plan.md - Component specifications with evidence citations
+
+**NOT Created** (Team-Leader's Responsibility):
+- ❌ tasks.md - Team-leader will decompose architecture into atomic tasks
+- ❌ Step-by-step implementation guide - Team-leader creates execution plan
+- ❌ Developer assignment instructions - Team-leader manages assignments
 
 **Evidence Quality**:
 - **Citation Count**: [Number] file:line citations
@@ -929,19 +996,29 @@ Before implementing, developer MUST verify:
 - **Example Count**: [Number] example files analyzed
 - **Pattern Consistency**: Matches [X]% of examined codebase patterns
 
-### 🤝 Developer Handoff
+### 🤝 Team-Leader Handoff
 
-**Critical Success Factors**:
-1. **Verify Before Implementing**: All developers must verify proposed APIs exist
-2. **Read Examples**: Analyze [X] example files before coding
-3. **Check Documentation**: Read relevant CLAUDE.md files
-4. **Pattern Matching**: Ensure implementation matches codebase conventions
+**Architecture Delivered**:
+- ✅ Component specifications (WHAT to build)
+- ✅ Pattern evidence (WHY these patterns)
+- ✅ Quality requirements (WHAT must be achieved)
+- ✅ Files affected (WHERE to implement)
+- ✅ Developer type recommendation (WHO should implement)
+- ✅ Complexity assessment (HOW LONG it will take)
+
+**Team-Leader Next Steps**:
+1. Read component specifications from implementation-plan.md
+2. Decompose components into atomic, git-verifiable tasks
+3. Create tasks.md with step-by-step execution plan
+4. Assign tasks to recommended developer type
+5. Verify git commits after each task completion
 
 **Quality Assurance**:
 - All proposed APIs verified in codebase
 - All patterns extracted from real examples
 - All integrations confirmed as possible
 - Zero assumptions without evidence marks
+- Architecture ready for team-leader decomposition
 ````
 
 ---

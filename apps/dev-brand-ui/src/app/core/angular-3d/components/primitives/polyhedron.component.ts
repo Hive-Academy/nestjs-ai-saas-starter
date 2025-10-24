@@ -40,7 +40,6 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
@@ -142,7 +141,6 @@ export class PolyhedronComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

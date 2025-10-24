@@ -5,7 +5,9 @@
     "types": [],
     "composite": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "target": "es2022",
+    "useDefineForClassFields": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["jest.config.ts", "src/test-setup.ts", "src/**/*.test.ts", "src/**/*.spec.ts"]

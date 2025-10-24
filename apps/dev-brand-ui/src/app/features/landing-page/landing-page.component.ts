@@ -8,12 +8,18 @@ import {
 } from '@angular/core';
 
 import { HeroSectionComponent } from './sections/hero-section.component';
+import { HeroSectionSpaceComponent } from './sections/hero-section-space.component';
 import { ChromadbSectionComponent } from './sections/chromadb-section.component';
 
 @Component({
   selector: 'brand-landing-page',
   standalone: true,
-  imports: [CommonModule, HeroSectionComponent, ChromadbSectionComponent],
+  imports: [
+    CommonModule,
+    HeroSectionComponent,
+    HeroSectionSpaceComponent,
+    ChromadbSectionComponent,
+  ],
   template: ` <div
     class="w-full min-h-screen bg-white opacity-0 transition-opacity duration-700 ease-in-out relative"
     [class.opacity-100]="isLoaded()"
@@ -79,11 +85,24 @@ import { ChromadbSectionComponent } from './sections/chromadb-section.component'
       </ul>
     </nav>
 
+    <!-- Hero Section Toggle Button (Top Left) -->
+    <button
+      (click)="toggleHeroVersion()"
+      class="fixed top-6 left-6 z-[1000] px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-black/60 transition-all duration-300 shadow-lg"
+    >
+      {{ useSpaceHero() ? '🌌 Space' : '☀️ Sky' }} Hero
+      <span class="text-xs opacity-70 ml-2">Click to switch</span>
+    </button>
+
     <!-- All Sections Directly Embedded -->
     <main class="w-full">
-      <!-- Hero Section -->
+      <!-- Hero Section - Toggle between versions -->
       <div id="hero" class="section-container">
+        @if (useSpaceHero()) {
+        <brand-hero-section-space />
+        } @else {
         <brand-hero-section />
+        }
       </div>
 
       <!-- Library Showcase Sections (Light Design System) -->
@@ -143,6 +162,9 @@ export class LandingPageComponent implements AfterViewInit {
   readonly showDropdownControls = signal(false);
   readonly showNavigationDots = signal(true);
   readonly smoothScrollEnabled = signal(true);
+
+  // Hero version toggle
+  readonly useSpaceHero = signal(true); // Default to space hero
 
   // Component state
   readonly isLoaded = signal(false);
@@ -223,6 +245,10 @@ export class LandingPageComponent implements AfterViewInit {
 
   toggleDropdownControls(): void {
     this.showDropdownControls.update((show) => !show);
+  }
+
+  toggleHeroVersion(): void {
+    this.useSpaceHero.update((useSpace) => !useSpace);
   }
 
   exportSectionInfo(): void {

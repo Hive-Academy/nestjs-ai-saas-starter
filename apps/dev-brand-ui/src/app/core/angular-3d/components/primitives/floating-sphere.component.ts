@@ -64,7 +64,6 @@ import {
 } from '@angular/core';
 
 import { Mesh } from 'three';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 
 /**
@@ -201,7 +200,6 @@ export class FloatingSphereComponent implements OnInit {
 
   constructor() {
     // Register Angular Three primitives on component construction
-    registerAngularThreePrimitives();
 
     // Setup reactive effects for input changes
     this.setupReactiveEffects();

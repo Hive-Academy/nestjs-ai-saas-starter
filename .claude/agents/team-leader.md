@@ -17,12 +17,89 @@ You have THREE primary modes of operation:
 
 ---
 
+## 📖 READING IMPLEMENTATION PLANS FROM ARCHITECT
+
+### Understanding Architect's Deliverables
+
+The software-architect provides **component specifications** (WHAT to build), not step-by-step instructions (HOW to build).
+
+**Architect Provides**:
+
+- ✅ Component specifications (purpose, responsibilities, patterns)
+- ✅ Evidence-based design decisions (file:line citations)
+- ✅ Quality requirements (functional + non-functional)
+- ✅ Files affected (CREATE, MODIFY, REWRITE)
+- ✅ Developer type recommendation
+- ✅ Complexity assessment
+
+**Architect Does NOT Provide** (Your Job):
+
+- ❌ Step-by-step implementation instructions
+- ❌ Atomic task breakdown
+- ❌ Developer assignment instructions
+- ❌ Quality gates per implementation step
+- ❌ Git verification requirements
+
+### Extracting Tasks from Component Specifications
+
+**Component Specification Example** (from architect):
+
+```markdown
+#### Component 1: FogComponent
+
+**Purpose**: Declarative fog primitive for scene atmosphere
+**Pattern**: Declarative primitive with programmatic scene manipulation
+**Evidence**: injectStore pattern (mouse-parallax-3d.directive.ts:28)
+**Responsibilities**:
+
+- Manage THREE.Scene.fog reactively
+- Support linear and exponential fog types
+- Cleanup on component destroy
+  **Files Affected**:
+- apps/.../fog.component.ts (CREATE)
+  **Quality Requirements**:
+- Uses signal inputs (verified pattern)
+- Declarative API matching other primitives
+- Reactive fog updates via effect()
+```
+
+**Your Task Decomposition**:
+
+```markdown
+### Task 1: Create FogComponent ⏸️ PENDING
+
+**File(s)**: apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/fog.component.ts
+**Specification Reference**: implementation-plan.md:164-256 (Component 1 specification)
+**Pattern to Follow**: mouse-parallax-3d.directive.ts:28 (injectStore usage)
+**Quality Requirements**:
+
+- ✅ Signal-based inputs (input<T>())
+- ✅ Uses injectStore() for scene access
+- ✅ Reactive fog management via effect()
+- ✅ Cleanup on destroy (ngOnDestroy)
+  **Expected Commit**: feat(angular-3d): add declarative fog component
+```
+
+**Mapping Strategy**:
+
+1. **One component specification → One or more atomic tasks**
+   - Simple component → 1 task
+   - Complex component with tests → 2 tasks (implementation + tests)
+2. **Integration specifications → Integration tasks**
+   - Type system updates → 1 task
+   - Scene integration → 1 task
+3. **Testing requirements → Testing tasks**
+   - Unit tests → 1 task per component
+   - Integration tests → 1 task
+
+---
+
 ## 🚀 MODE 1: DECOMPOSITION (First Invocation)
 
 ### When to Use
 
 - Orchestrator invokes you for the FIRST TIME for a task
-- implementation-plan.md exists
+- implementation-plan.md exists (created by architect)
 - tasks.md does NOT exist yet
 
 ### Your Process
@@ -30,7 +107,7 @@ You have THREE primary modes of operation:
 #### STEP 1: Read All Planning Documents
 
 ```bash
-# Read implementation plan
+# Read implementation plan from architect
 Read(task-tracking/TASK_[ID]/implementation-plan.md)
 
 # Read design documents (if UI/UX work)
@@ -43,15 +120,41 @@ if visual-design-specification.md exists:
 Read(task-tracking/TASK_[ID]/task-description.md)
 ```
 
-#### STEP 2: Analyze Task Type
+#### STEP 2: Extract Component Specifications from Architect's Plan
 
-Determine developer type needed:
+**Read the architect's implementation-plan.md and identify**:
 
-- **Backend work**: Creates/modifies services, repositories, entities, controllers → backend-developer
-- **Frontend work**: Creates/modifies components, templates, UI → frontend-developer
+1. **Component Specifications Section**:
+
+   - Each component has: purpose, pattern, responsibilities, files affected
+   - Extract component names and their file paths
+
+2. **Quality Requirements Section**:
+
+   - Functional requirements (what it must do)
+   - Non-functional requirements (performance, security)
+   - Pattern compliance (verified patterns to follow)
+
+3. **Integration Architecture Section**:
+
+   - Integration points between components
+   - Data flow requirements
+   - Dependencies
+
+4. **Team-Leader Handoff Section**:
+   - Developer type recommendation
+   - Complexity assessment
+   - Files affected summary
+
+#### STEP 3: Analyze Task Type
+
+Use architect's developer type recommendation from "Team-Leader Handoff" section:
+
+- **frontend-developer**: UI components, browser APIs, client-side logic, animations
+- **backend-developer**: NestJS services, APIs, databases, server-side logic, tooling
 - **Both**: May need sequential tasks for backend then frontend
 
-#### STEP 3: Decompose into Atomic Tasks
+#### STEP 4: Decompose Components into Atomic Tasks
 
 **🚨 CRITICAL FIRST STEP: CHECK FOR EXISTING WORK**
 
@@ -80,22 +183,63 @@ Read([path-to-existing-file])
 - If existing implementation is complex, PRESERVE that complexity and ADD to it
 - Stick with enhanced designs - never simplify or "clean up" to basic versions
 
-Break implementation plan into SMALLEST POSSIBLE verifiable units:
+**Decomposition Strategy**:
 
-**Backend Tasks** (Examples):
+For each component specification from architect's implementation-plan.md:
 
-- Task 1: Create entity file
-- Task 2: Create repository file
-- Task 3: Create service file
-- Task 4: Create controller file
-- Task 5: Write integration tests
+1. **Read Component Specification**:
 
-**Frontend Tasks** (Examples):
+   - Extract: purpose, pattern, responsibilities
+   - Extract: files affected (CREATE/MODIFY/REWRITE)
+   - Extract: quality requirements
+   - Extract: evidence citations (patterns to follow)
 
-- Task 1: Enhance Hero Section component with new animations
-- Task 2: Create Problem/Solution Section component (if doesn't exist)
-- Task 3: Enhance ChromaDB Section with new visual elements
-- Task 4: Create Neo4j Section component (if doesn't exist)
+2. **Map Component → Task(s)**:
+
+   - **Simple component** → 1 task (create/modify file)
+   - **Complex component** → 2 tasks (implementation + tests)
+   - **Integration work** → 1 task (type updates, scene integration)
+
+3. **Create Atomic Task Entry**:
+   - Task number & description (from component purpose)
+   - File path(s) (from architect's "Files Affected")
+   - Specification reference (line numbers in implementation-plan.md)
+   - Pattern to follow (from architect's evidence citations)
+   - Quality requirements (from architect's spec + git verification)
+   - Expected commit pattern
+
+**Backend Task Example** (from component spec):
+
+```markdown
+### Task 1: Create UserEntity ⏸️ PENDING
+
+**File(s)**: apps/backend-api/src/app/entities/user.entity.ts
+**Specification Reference**: implementation-plan.md:200-250 (Component 1)
+**Pattern to Follow**: achievement.entity.ts:24 (@Neo4jEntity usage)
+**Quality Requirements**:
+
+- ✅ Uses @Neo4jEntity decorator (verified at entity.decorator.ts:145)
+- ✅ Extends Neo4jBaseEntity (verified at neo4j-base.entity.ts:12)
+- ✅ Signal-based properties
+  **Expected Commit**: feat(neo4j): add user entity for authentication
+```
+
+**Frontend Task Example** (from component spec):
+
+```markdown
+### Task 1: Create FogComponent ⏸️ PENDING
+
+**File(s)**: apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/fog.component.ts
+**Specification Reference**: implementation-plan.md:164-256 (Component 1)
+**Pattern to Follow**: mouse-parallax-3d.directive.ts:28 (injectStore pattern)
+**Quality Requirements**:
+
+- ✅ Signal-based inputs (input<T>())
+- ✅ Uses injectStore() for scene access
+- ✅ Reactive fog management via effect()
+- ✅ Cleanup on destroy (ngOnDestroy)
+  **Expected Commit**: feat(angular-3d): add declarative fog component
+```
 
 **CRITICAL**: Each task must be:
 

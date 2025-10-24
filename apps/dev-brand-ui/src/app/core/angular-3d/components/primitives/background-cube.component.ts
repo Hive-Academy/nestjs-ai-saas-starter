@@ -62,7 +62,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { Mesh } from 'three';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
 
@@ -184,7 +183,6 @@ export class BackgroundCubeComponent implements OnInit {
 
   constructor() {
     // Register Angular Three primitives
-    registerAngularThreePrimitives();
 
     // Setup reactive effects
     this.setupReactiveEffects();

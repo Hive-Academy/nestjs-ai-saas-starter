@@ -33,7 +33,6 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
     CommonModule,
     HijackedScrollTimelineComponent,
     HijackedScrollItemDirective,
-    CodeSnippetComponent,
     DecorativePatternComponent,
     ScrollAnimationDirective,
   ],
