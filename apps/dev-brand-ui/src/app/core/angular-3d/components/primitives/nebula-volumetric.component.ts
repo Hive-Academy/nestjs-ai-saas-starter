@@ -65,7 +65,7 @@ interface NebulaCloud {
         [scale]="cloud.scale"
         [renderOrder]="998"
       >
-        <ngt-plane-geometry [args]="[1, 1, 1, 1]" />
+        <ngt-circle-geometry [args]="[0.5, 32]" />
         <ngt-shader-material
           [vertexShader]="vertexShader"
           [fragmentShader]="fragmentShader"
@@ -195,76 +195,70 @@ export class NebulaVolumetricComponent {
       return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
     }
 
-    // Multi-octave fractal noise for wispy clouds
-    float fractalNoise(vec3 p, float time) {
-      float noise = 0.0;
-      float amplitude = 1.0;
+    // FBM (Fractional Brownian Motion) - standard implementation
+    float fbm(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
       float frequency = 1.0;
-      float maxValue = 0.0;
 
-      // Add time-based flow
-      vec3 flowP = p + vec3(time * 0.05, time * 0.03, time * 0.04);
-
-      // 4 octaves of noise
+      // 4 octaves - enough detail without artifacts
       for (int i = 0; i < 4; i++) {
-        noise += amplitude * snoise(flowP * frequency * uNoiseScale);
-        maxValue += amplitude;
-        amplitude *= 0.5;
-        frequency *= 2.0;
+        value += amplitude * snoise(p * frequency);
+        frequency *= 2.0;  // lacunarity
+        amplitude *= 0.5;  // gain
       }
 
-      return noise / maxValue;
+      return value;
     }
 
     void main() {
       // Center coordinates (-0.5 to 0.5)
       vec2 centeredUv = vUv - 0.5;
 
-      // Generate 3D noise position
-      vec3 noisePos = vec3(vUv * 2.0 - 1.0, 0.0);
+      // Calculate distance from center for circular falloff
+      float dist = length(centeredUv);
 
-      // Multi-octave fractal noise with more detail
-      float noise1 = fractalNoise(noisePos * 1.0, uTime);
-      float noise2 = fractalNoise(noisePos * 2.5, uTime * 0.7);
-      float noise3 = fractalNoise(noisePos * 5.0, uTime * 0.5);
-      float noise4 = fractalNoise(noisePos * 8.0, uTime * 0.3);
+      // Time-based animation
+      float time = uTime * 0.03;
 
-      // Combine noise layers with more detail
-      float combinedNoise = (noise1 * 0.4 + noise2 * 0.3 + noise3 * 0.2 + noise4 * 0.1);
+      // Generate noise position with time flow
+      vec3 noisePos = vec3(centeredUv * uNoiseScale, time);
+
+      // Main density using FBM
+      float density = fbm(noisePos + vec3(time * 0.5, time * 0.3, 0.0));
+
+      // Add second layer for detail
+      float detail = fbm(noisePos * 2.5 + vec3(time * 0.3, -time * 0.2, 0.0));
+
+      // Combine layers
+      float combinedNoise = density * 0.6 + detail * 0.4;
       combinedNoise = (combinedNoise + 1.0) * 0.5; // Normalize to 0-1
 
-      // Create elliptical mask (wider horizontally for streak effect)
-      vec2 ellipseUv = centeredUv;
-      ellipseUv.x *= 0.5; // Make it twice as wide horizontally
-      float ellipseDist = length(ellipseUv);
+      // Very soft radial falloff for cloud-like edges (important for circular geometry)
+      float radialFalloff = 1.0 - smoothstep(0.0, 1.0, dist);
+      radialFalloff = pow(radialFalloff, 0.8); // Gentle curve for very soft edges
 
-      // Distort the mask with noise for irregular, organic edges
-      float edgeNoise = snoise(vec3(centeredUv * 4.0, uTime * 0.1));
-      float distortedDist = ellipseDist + edgeNoise * 0.15;
+      // Add noise-based irregularity to edges
+      float edgeNoise = fbm(noisePos * 3.0) * 0.3;
+      float irregularEdge = radialFalloff * (0.7 + edgeNoise);
 
-      // Apply irregular mask with noise-based falloff
-      float irregularMask = 1.0 - smoothstep(0.0, 0.6, distortedDist);
+      // Combine density with edge falloff
+      float alpha = combinedNoise * irregularEdge;
 
-      // Add turbulence for wispy tendrils at edges
-      float turbulence = abs(snoise(vec3(centeredUv * 6.0, uTime * 0.05)));
-      irregularMask *= (0.7 + turbulence * 0.3);
-
-      // Combine noise with irregular mask
-      float alpha = combinedNoise * irregularMask;
-
-      // Apply softer power curve for more gradual falloff
-      alpha = pow(alpha, 1.5);
+      // Very soft power curve for fog-like appearance
+      alpha = pow(max(alpha, 0.0), 1.5);
 
       // Apply overall opacity
       alpha *= uOpacity;
 
-      // Smooth color mixing based on noise
-      vec3 color1 = mix(uPrimaryColor, uSecondaryColor, noise1 * 0.5 + 0.5);
-      vec3 color2 = mix(uSecondaryColor, uTertiaryColor, noise2 * 0.5 + 0.5);
+      // Smooth color gradient
+      float colorGradient = combinedNoise * 0.5 + 0.5;
+      vec3 color1 = mix(uPrimaryColor, uSecondaryColor, colorGradient);
+      vec3 color2 = mix(uSecondaryColor, uTertiaryColor, density * 0.5 + 0.5);
       vec3 finalColor = mix(color1, color2, uColorMix);
 
-      // Add brightness variation with more contrast
-      float brightness = 0.7 + combinedNoise * 0.6;
+      // Brightness variation
+      float brightness = 0.9 + combinedNoise * 0.3;
       finalColor *= brightness;
 
       gl_FragColor = vec4(finalColor, alpha);

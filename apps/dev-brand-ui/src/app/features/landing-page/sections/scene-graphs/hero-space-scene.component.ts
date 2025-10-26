@@ -137,19 +137,19 @@ import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.
     <!-- Planet at z=9.5, Camera at z=12 -->
     <!-- ================================ -->
 
-    <!-- MAIN NEBULA - Primary cyan to pink gradient horizontal streak -->
+    <!-- MAIN NEBULA - Horizontal nebula behind planet -->
     <app-nebula-volumetric
-      [cloudCount]="60"
-      [radius]="30"
-      [minSize]="10"
-      [maxSize]="40"
-      [minOpacity]="0.4"
-      [maxOpacity]="0.8"
+      [cloudCount]="80"
+      [radius]="25"
+      [minSize]="15"
+      [maxSize]="45"
+      [minOpacity]="0.3"
+      [maxOpacity]="0.6"
       [primaryColor]="'#0088ff'"
       [secondaryColor]="'#00d4ff'"
       [tertiaryColor]="'#ff6bd4'"
       [flow]="true"
-      [position]="[-140, 70, -190]"
+      [position]="[0, 3, -60]"
     />
 
     <!-- CORE NEBULA - Dense bright center layer -->
