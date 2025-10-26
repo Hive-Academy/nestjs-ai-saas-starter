@@ -112,7 +112,7 @@ import { Float3dDirective } from '../../directives/float-3d.directive';
         <ngt-sphere-geometry
           [args]="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
         />
-        <ngt-mesh-basic-material
+        <ngt-mesh-standard-material
           [color]="glowConfig()!.color ?? emissive()"
           [transparent]="true"
           [opacity]="glowConfig()!.opacity ?? 0.2"

@@ -7,7 +7,6 @@ export { Text3DComponent } from './components/primitives/text-3d.component';
 
 // Directives - Keeping valuable GSAP animation support
 export { Float3dDirective } from './directives/float-3d.directive';
-export { MouseParallax3dDirective } from './directives/mouse-parallax-3d.directive';
 
 // Services - Animation
 export { AnimationService } from './services/animation.service';

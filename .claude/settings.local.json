@@ -15,7 +15,11 @@
       "Bash(npx nx show:*)",
       "Bash(cat:*)",
       "mcp__chrome-devtools__take_screenshot",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git mv:*)",
+      "Read(//tmp/chrome-devtools-mcp-8tjF0W/**)",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__navigate_page"
     ],
     "deny": [],
     "ask": [],

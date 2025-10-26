@@ -36,7 +36,7 @@
 
 import { Component, input } from '@angular/core';
 import { NgtCanvas } from 'angular-three';
-import { MouseParallax3dDirective } from '../directives/mouse-parallax-3d.directive';
+import { SceneMouseParallaxDirective } from '../directives/scene-mouse-parallax.directive';
 
 export interface CameraConfig {
   position: [number, number, number];
@@ -62,7 +62,7 @@ export interface MouseParallaxConfig {
 @Component({
   selector: 'app-scene-3d',
   standalone: true,
-  imports: [NgtCanvas, MouseParallax3dDirective],
+  imports: [NgtCanvas, SceneMouseParallaxDirective],
   template: `
     @if (enableMouseParallax()) {
     <ngt-canvas
@@ -70,7 +70,7 @@ export interface MouseParallaxConfig {
       [camera]="camera()"
       [gl]="gl()"
       [shadows]="shadows()"
-      mouseParallax3d
+      sceneMouseParallax
       [sensitivity]="mouseParallax().sensitivity"
       [smoothing]="mouseParallax().smoothing"
       [cameraDistance]="mouseParallax().cameraDistance"
@@ -84,15 +84,13 @@ export interface MouseParallaxConfig {
     />
     }
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-    `,
-  ],
+  styles: `
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  `,
 })
 export class Scene3DComponent {
   /**
@@ -103,7 +101,7 @@ export class Scene3DComponent {
 
   /**
    * Camera configuration
-   * Default: Perspective camera at [0, 0, 12] with 75° FOV
+   * Default: Perspective camera at [0, 0, 12] with 75° FOV (Three.js human scale)
    */
   camera = input<CameraConfig>({
     position: [0, 0, 12],
@@ -141,4 +139,13 @@ export class Scene3DComponent {
     smoothing: 5,
     cameraDistance: 12,
   });
+
+  constructor() {
+    // Debug logging to check what values are being used
+    setTimeout(() => {
+      console.log('[Scene3D] Camera config:', this.camera());
+      console.log('[Scene3D] Enable parallax:', this.enableMouseParallax());
+      console.log('[Scene3D] Mouse parallax config:', this.mouseParallax());
+    }, 100);
+  }
 }

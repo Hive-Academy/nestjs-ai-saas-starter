@@ -47,7 +47,7 @@ import * as THREE from 'three';
   imports: [],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ngt-group #nebulaGroup>
+    <ngt-group #nebulaGroup [position]="position()">
       @for (cloud of cloudData(); track cloud.id) {
       <ngt-sprite
         [position]="cloud.position"
@@ -59,7 +59,7 @@ import * as THREE from 'three';
           [color]="cloud.color"
           [transparent]="true"
           [opacity]="cloud.opacity"
-          [blending]="normalBlending"
+          [blending]="additiveBlending"
           [depthWrite]="false"
           [depthTest]="true"
           [fog]="false"
@@ -73,57 +73,73 @@ export class NebulaComponent {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('nebulaGroup');
 
   // Configuration inputs
+  readonly position = input<[number, number, number]>([0, 0, 0]); // Group position
   readonly particleCount = input<number>(20); // Fewer, larger clouds
   readonly radius = input<number>(50); // Distribution radius
   readonly colorPalette = input<string[]>(['#ffffff', '#cccccc', '#aaaaaa']);
   readonly minSize = input<number>(5); // Minimum cloud size
   readonly maxSize = input<number>(15); // Maximum cloud size
-  readonly minOpacity = input<number>(0.1); // Minimum opacity (reduced for normal blending)
-  readonly maxOpacity = input<number>(0.3); // Maximum opacity (reduced for normal blending)
+  readonly minOpacity = input<number>(0.05); // Minimum opacity for realistic wispy clouds
+  readonly maxOpacity = input<number>(0.15); // Maximum opacity for realistic wispy clouds
   readonly flow = input<boolean>(true);
 
   // Three.js constants
-  readonly normalBlending = THREE.NormalBlending; // Changed from AdditiveBlending to fix planet rendering
+  readonly additiveBlending = THREE.AdditiveBlending; // Additive blending for realistic nebula glow
 
   /**
-   * Generate procedural cloud texture
-   * Creates a soft radial gradient with noise-like variation
+   * Generate procedural cloud texture with fractal noise
+   * Creates realistic wispy clouds using multi-octave simplex noise
    */
   readonly cloudTexture = computed(() => {
     const canvas = document.createElement('canvas');
-    const size = 256;
+    const size = 512; // Higher resolution for better detail
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d')!;
-
-    // Create radial gradient from center
-    const gradient = ctx.createRadialGradient(
-      size / 2,
-      size / 2,
-      0,
-      size / 2,
-      size / 2,
-      size / 2
-    );
-
-    // Soft cloud gradient with smooth falloff
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); // Bright center
-    gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
-    gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.4)');
-    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)'); // Transparent edges
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-
-    // Add noise/variation for organic appearance
-    const imageData = ctx.getImageData(0, 0, size, size);
+    const imageData = ctx.createImageData(size, size);
     const data = imageData.data;
 
-    for (let i = 0; i < data.length; i += 4) {
-      // Add subtle random variation to alpha channel
-      const noise = Math.random() * 0.3 - 0.15; // -0.15 to +0.15
-      data[i + 3] = Math.max(0, Math.min(255, data[i + 3] * (1 + noise)));
+    // Generate fractal noise texture
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        // Normalize coordinates to -0.5 to 0.5
+        const nx = x / size - 0.5;
+        const ny = y / size - 0.5;
+
+        // Multi-octave fractal noise (4 octaves)
+        let noiseValue = 0;
+        let amplitude = 1.0;
+        let frequency = 2.0;
+        let maxValue = 0; // For normalization
+
+        for (let octave = 0; octave < 4; octave++) {
+          noiseValue +=
+            amplitude * random.noise.simplex2(nx * frequency, ny * frequency);
+          maxValue += amplitude;
+          amplitude *= 0.5; // Each octave contributes less
+          frequency *= 2.0; // Each octave has higher frequency
+        }
+
+        // Normalize to 0-1 range
+        noiseValue = (noiseValue / maxValue + 1.0) * 0.5;
+
+        // Apply radial falloff for cloud shape
+        const dist = Math.sqrt(nx * nx + ny * ny);
+        const radialMask = Math.max(0, 1.0 - dist * 2.0);
+
+        // Combine noise with radial mask for wispy cloud effect
+        let alpha = noiseValue * radialMask;
+
+        // Apply power curve for softer edges
+        alpha = Math.pow(alpha, 1.5);
+
+        // Write to image data
+        const idx = (y * size + x) * 4;
+        data[idx] = 255; // R
+        data[idx + 1] = 255; // G
+        data[idx + 2] = 255; // B
+        data[idx + 3] = Math.floor(alpha * 255); // A
+      }
     }
 
     ctx.putImageData(imageData, 0, 0);
@@ -131,7 +147,7 @@ export class NebulaComponent {
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
 
-    console.log('[Nebula] Procedural cloud texture generated');
+    console.log('[Nebula] Fractal noise cloud texture generated (maath)');
     return texture;
   });
 

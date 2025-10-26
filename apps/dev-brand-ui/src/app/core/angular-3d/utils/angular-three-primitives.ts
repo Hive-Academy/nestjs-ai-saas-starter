@@ -106,7 +106,8 @@ export function registerAngularThreePrimitives(): void {
     SpotLight: THREE.SpotLight,
     HemisphereLight: THREE.HemisphereLight,
     RectAreaLight: THREE.RectAreaLight,
-
+    Fog: THREE.Fog,
+    FogExp2: THREE.FogExp2,
     // Cameras
     PerspectiveCamera: THREE.PerspectiveCamera,
     OrthographicCamera: THREE.OrthographicCamera,

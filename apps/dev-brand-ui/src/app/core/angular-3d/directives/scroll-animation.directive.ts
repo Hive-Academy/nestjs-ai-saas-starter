@@ -156,7 +156,7 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
       offsetHeight: element.offsetHeight,
       boundingRect: element.getBoundingClientRect(),
     };
-    console.log('[ScrollAnimation] Initializing on element:', elementInfo);
+    // console.log('[ScrollAnimation] Initializing on element:', elementInfo);
 
     // Determine animation based on type
     const animationProps = this.getAnimationProperties(config);

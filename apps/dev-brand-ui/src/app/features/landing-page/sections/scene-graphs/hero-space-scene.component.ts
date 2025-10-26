@@ -24,37 +24,48 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 
 // Import space primitives
 import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
-import { StarFieldComponent } from '../../../../core/angular-3d/components/primitives/star-field.component';
-import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
-import { SpaceBackgroundComponent } from '../../../../core/angular-3d/components/primitives/space-background.component';
+import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
+import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
 import { FogComponent } from '../../../../core/angular-3d/components/primitives/fog.component';
+import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
 
 // Import theme store and types
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
 import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
-import { NgtSelect } from 'angular-three';
+
+import { Float3dDirective } from '../../../../core/angular-3d';
+import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
 
 @Component({
   selector: 'app-hero-space-scene',
   standalone: true,
   imports: [
     PlanetComponent,
-    StarFieldComponent,
-    NebulaComponent,
-    SpaceBackgroundComponent,
+    StarFieldEnhancedComponent,
+    NebulaVolumetricComponent,
     FogComponent,
+    BloomEffectComponent,
+    Float3dDirective,
+    Glow3dDirective,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <!-- ================================ -->
+    <!-- SCENE BACKGROUND COLOR -->
+    <!-- ================================ -->
+    <!-- <ngt-color attach="background" *args="[backgroundColorHex]" /> -->
+
+    <!-- ================================ -->
     <!-- LIGHTING SETUP (Theme-based) -->
     <!-- ================================ -->
+    <!-- Very low ambient for deep space darkness -->
     <ngt-ambient-light
       [intensity]="ambientLightIntensity"
       [color]="ambientLightColor"
     />
+    <!-- Softer directional "sun" light from upper-right for darker planet -->
     <ngt-directional-light
-      [position]="[10, 10, 10]"
+      [position]="[30, 15, 25]"
       [intensity]="directionalLightIntensity"
       [color]="directionalLightColor"
       [castShadow]="true"
@@ -63,70 +74,123 @@ import { NgtSelect } from 'angular-three';
       [shadow-camera-near]="0.5"
       [shadow-camera-far]="500"
     />
-    <ngt-point-light
-      [position]="pointLightPosition"
-      [intensity]="pointLightIntensity"
-      [color]="pointLightColor"
-    />
+    <!-- Point light removed for realistic space lighting (directional only) -->
 
     <!-- ================================ -->
     <!-- ATMOSPHERIC FOG (Theme-based) -->
     <!-- ================================ -->
     @if (fogEnabled) {
-    <app-fog [fogType]="fogType" [color]="fogColor" [density]="fogDensity" />
+    <app-fog
+      attach="fog"
+      [fogType]="fogType"
+      [color]="fogColor"
+      [density]="fogDensity"
+    />
     }
 
     <!-- ================================ -->
-    <!-- BACKGROUND GRADIENT SPHERE (Theme-based) -->
-    <!-- ================================ -->
-    <app-space-background
-      [radius]="100"
-      [gradientType]="backgroundGradientType"
-      [colors]="backgroundColors"
-    />
-
-    <!-- ================================ -->
-    <!-- LARGE DARK PLANET (Background - behind text, Theme-based) -->
+    <!-- LARGE DARK PLANET (Background - behind text, Textured) -->
     <!-- ================================ -->
     <app-planet
       [position]="darkPlanetPosition"
       [radius]="darkPlanetRadius"
-      [segments]="128"
-      [baseColor]="darkPlanetBaseColor"
-      [emissiveColor]="darkPlanetEmissiveColor"
-      [emissiveIntensity]="darkPlanetEmissiveIntensity"
+      [segments]="150"
+      [textureUrl]="'assets/moon_1024.jpg'"
       [glowColor]="darkPlanetGlowColor"
-      [glowIntensity]="darkPlanetGlowIntensity"
+      [glowIntensity]="0"
       [glowDistance]="20"
-      [metalness]="0.3"
-      [roughness]="0.8"
-      [rotationSpeed]="2"
+      [rotationSpeed]="0.5"
       [rotationAxis]="'y'"
     />
 
     <!-- ================================ -->
-    <!-- STAR FIELD (NgtsPointsBuffer, Theme-based) -->
+    <!-- ENHANCED STAR FIELD (Multi-size with glow) -->
     <!-- ================================ -->
-    <app-star-field
+    <!-- Background stars (distant) -->
+    <app-star-field-enhanced
+      [starCount]="3000"
+      [radius]="50"
+      [enableTwinkle]="true"
+    />
+
+    <!-- Midground stars (brighter) -->
+    <app-star-field-enhanced
       [starCount]="2000"
+      [radius]="40"
+      [enableTwinkle]="false"
+    />
+
+    <!-- Foreground stars (closest, brightest) -->
+    <app-star-field-enhanced
+      [starCount]="2500"
       [radius]="30"
-      [colorPalette]="starColors"
-      [size]="starSize"
-      [opacity]="starOpacity"
+      [enableTwinkle]="true"
+      float3d
+      glow3d
+      [glowColor]="darkPlanetGlowColor"
+      [glowIntensity]="0.3"
     />
 
     <!-- ================================ -->
-    <!-- NEBULA CLOUDS (Sprite-based volumetric clouds) -->
+    <!-- VOLUMETRIC NEBULA CLOUDS (Shader-based with procedural noise) -->
+    <!-- Horizontal elongated nebula with organic flowing shape -->
+    <!-- Planet at z=9.5, Camera at z=12 -->
     <!-- ================================ -->
-    <app-nebula
-      [particleCount]="25"
-      [radius]="60"
-      [colorPalette]="nebulaColors"
+
+    <!-- MAIN NEBULA - Primary cyan to pink gradient horizontal streak -->
+    <app-nebula-volumetric
+      [cloudCount]="60"
+      [radius]="30"
+      [minSize]="10"
+      [maxSize]="40"
+      [minOpacity]="0.4"
+      [maxOpacity]="0.8"
+      [primaryColor]="'#0088ff'"
+      [secondaryColor]="'#00d4ff'"
+      [tertiaryColor]="'#ff6bd4'"
+      [flow]="true"
+      [position]="[-140, 70, -190]"
+    />
+
+    <!-- CORE NEBULA - Dense bright center layer -->
+    <!-- <app-nebula-volumetric
+      [cloudCount]="80"
+      [radius]="35"
+      [minSize]="15"
+      [maxSize]="40"
+      [minOpacity]="0.5"
+      [maxOpacity]="0.85"
+      [primaryColor]="'#4dd4ff'"
+      [secondaryColor]="'#ffffff'"
+      [tertiaryColor]="'#ffa0e0'"
+      [flow]="true"
+      [position]="[-135, 68, -188]"
+    /> -->
+
+    <!-- ACCENT NEBULA - Purple/pink accent layer for depth -->
+    <!-- <app-nebula-volumetric
+      [cloudCount]="60"
+      [radius]="38"
       [minSize]="8"
-      [maxSize]="20"
-      [minOpacity]="0.1"
-      [maxOpacity]="0.3"
-      [flow]="nebulaFlow"
+      [maxSize]="45"
+      [minOpacity]="0.3"
+      [maxOpacity]="0.65"
+      [primaryColor]="'#8060ff'"
+      [secondaryColor]="'#c060ff'"
+      [tertiaryColor]="'#00d4ff'"
+      [flow]="true"
+      [position]="[-130, 70, -185]"
+    /> -->
+
+    <!-- ================================ -->
+    <!-- BLOOM POST-PROCESSING -->
+    <!-- ================================ -->
+    <!-- Enhanced bloom for luminous nebula core -->
+    <app-bloom-effect
+      [kernelSize]="5"
+      [luminanceThreshold]="0.15"
+      [luminanceSmoothing]="0.75"
+      [intensity]="2.8"
     />
   `,
 })
@@ -143,7 +207,7 @@ export class HeroSpaceSceneComponent {
   // LIGHTING (Theme-based getters)
   // ================================
   get ambientLightIntensity(): number {
-    return this.theme.lights.ambient.intensity;
+    return this.theme.lights.ambient.intensity * 0.02; // Very dark ambient for deep space
   }
 
   get ambientLightColor(): number {
@@ -151,7 +215,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get directionalLightIntensity(): number {
-    return this.theme.lights.directional.intensity * 1.5;
+    return this.theme.lights.directional.intensity * 1.5; // Reduced for darker planet
   }
 
   get directionalLightColor(): number {
@@ -182,7 +246,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get fogColor(): number {
-    return this.theme.fog?.color ?? 0xcccccc;
+    return this.theme.fog?.color ?? 0x000508;
   }
 
   get fogDensity(): number {
@@ -200,15 +264,26 @@ export class HeroSpaceSceneComponent {
     return this.theme.background.colors;
   }
 
+  get backgroundColorHex(): string {
+    // Use darkest background color for scene background
+    const color =
+      this.theme.background.colors[this.theme.background.colors.length - 1];
+    return `#${color.toString(16).padStart(6, '0')}`;
+  }
+
   // ================================
   // PLANETS (Theme-based getters)
   // ================================
-  // Camera is at z=50 looking toward negative z
-  // Scene composition: Dark planet behind text
+  // Camera is at z=45 looking toward NEGATIVE z direction
+  // Scene composition: Large planet filling ~60-70% of viewport
+  // Math: At FOV=65° and distance=65, visible height ≈ 76.5 units
+  // For 65% coverage: diameter ≈ 50 units, so radius ≈ 25 units
 
-  // DARK PLANET - Huge, centered behind text, takes up ~50% of viewport
-  readonly darkPlanetPosition: [number, number, number] = [0, 0, 35];
-  readonly darkPlanetRadius = 18; // MASSIVE sphere matching reference design
+  // DARK PLANET - Using Three.js human scale (camera at z=12)
+  // At distance 12, FOV 75°: visible height ≈ 18.4 units
+  // For 55% coverage: diameter ≈ 10.1 units, radius ≈ 5.0 units
+  readonly darkPlanetPosition: [number, number, number] = [0, 0, 9.5];
+  readonly darkPlanetRadius = 5.0; // Human-scale units for 55% viewport coverage
 
   get darkPlanetBaseColor(): number {
     return this.theme.planet.baseColor;
@@ -219,7 +294,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetEmissiveIntensity(): number {
-    return 0.8; // Subtle emissive - allows directional light to define shape
+    return 0.05; // Minimal emissive - let directional light define shape realistically
   }
 
   get darkPlanetGlowColor(): number {
@@ -227,7 +302,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetGlowIntensity(): number {
-    return 2.0; // Soft atmospheric glow without overpowering the scene
+    return 0.5; // Very subtle atmospheric glow for realism
   }
 
   // ================================
@@ -238,9 +313,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get starSize(): number {
-    return (
-      ((this.theme.stars.sizes.min + this.theme.stars.sizes.max) / 2) * 0.008
-    ); // Much smaller for tiny point stars like reference
+    return this.theme.stars.sizes.min; // Tiny pinpoints for realistic star appearance
   }
 
   get starOpacity(): number {

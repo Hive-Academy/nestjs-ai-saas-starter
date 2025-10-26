@@ -123,7 +123,7 @@ export const SPACE_THEMES: Record<
     },
     nebula: {
       colors: ['#ffffff', '#e0e0e0', '#c0c0c0'], // Soft white/gray clouds
-      opacity: 0.3,
+      opacity: 0.7,
       flow: true,
     },
     lights: {
@@ -133,8 +133,8 @@ export const SPACE_THEMES: Record<
     },
     fog: {
       enabled: true,
-      color: 0xcccccc,
-      density: 0.008,
+      color: 0x000508, // Very dark blue-black for realistic space atmosphere
+      density: 0.04, // Increased density for visible atmospheric depth
     },
   },
 

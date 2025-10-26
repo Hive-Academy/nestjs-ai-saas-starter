@@ -19,8 +19,14 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
       <app-scene-3d
         class="absolute inset-0"
         [sceneGraph]="sceneGraph"
-        [camera]="{ position: [0, 0, 50], fov: 60 }"
-        [gl]="{ antialias: true, alpha: false }"
+        [camera]="cameraConfig"
+        [gl]="rendererConfig"
+        [enableMouseParallax]="false"
+        [mouseParallax]="{
+          sensitivity: 0.4,
+          smoothing: 5,
+          cameraDistance: 12
+        }"
       />
 
       <!-- Theme Switcher - Top Right Corner -->
@@ -110,13 +116,6 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
   `,
   styles: [
     `
-      /* Ensure ngt-canvas fills container */
-      ngt-canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-
       @keyframes fade-in-up {
         from {
           opacity: 0;
@@ -220,6 +219,25 @@ export class HeroSectionSpaceComponent {
   private readonly themeStore = inject(SpaceThemeStore);
 
   readonly sceneGraph = HeroSpaceSceneComponent;
+
+  // Camera configuration for 3D scene
+  // Camera at z=12 looking toward origin (where planet is at z=0)
+  readonly cameraConfig = {
+    position: [0, 0, 12] as [number, number, number],
+    fov: 75,
+    near: 0.1,
+    far: 1000,
+  };
+
+  // Renderer configuration with explicit pixel ratio
+  readonly rendererConfig = {
+    antialias: true,
+    alpha: false,
+    pixelRatio: Math.min(
+      (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
+      2
+    ),
+  };
 
   // Expose store's current theme ID for UI binding
   readonly selectedTheme = this.themeStore.currentThemeId;

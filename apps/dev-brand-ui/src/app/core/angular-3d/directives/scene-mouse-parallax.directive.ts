@@ -1,18 +1,22 @@
 /**
- * MouseParallax3dDirective - Mouse-responsive camera and object movement
+ * SceneMouseParallaxDirective - Scene-wide mouse-responsive camera and object movement
  *
- * Adds smooth mouse tracking with parallax effects to Angular Three scenes.
- * Objects move at different rates based on mouse position for depth perception.
+ * Applies parallax effects to the ENTIRE scene - moves camera in orbital pattern
+ * and applies parallax to ALL objects in the scene based on mouse position.
+ *
+ * ⚠️ SCENE-LEVEL ONLY: Apply to <ngt-canvas> / Scene3DComponent, NOT individual elements
  *
  * Features:
  * - Normalized mouse tracking (-1 to 1)
- * - Smooth camera orbital movement
- * - Parallax object positioning
+ * - Smooth camera orbital movement around scene origin
+ * - Automatic parallax for ALL meshes and points in scene
  * - Configurable sensitivity and easing
  *
  * Usage:
  * ```html
- * <ngt-canvas mouseParallax3d [sensitivity]="0.4" />
+ * <ngt-canvas sceneMouseParallax [sensitivity]="0.4" />
+ * <!-- OR -->
+ * <app-scene-3d [enableMouseParallax]="true" [mouseParallax]="{ sensitivity: 0.4, ... }" />
  * ```
  */
 
@@ -21,10 +25,10 @@ import { injectStore } from 'angular-three';
 import * as THREE from 'three';
 
 @Directive({
-  selector: '[mouseParallax3d]',
+  selector: '[sceneMouseParallax]',
   standalone: true,
 })
-export class MouseParallax3dDirective implements OnInit, OnDestroy {
+export class SceneMouseParallaxDirective implements OnInit, OnDestroy {
   private readonly store = injectStore();
 
   // Configuration inputs

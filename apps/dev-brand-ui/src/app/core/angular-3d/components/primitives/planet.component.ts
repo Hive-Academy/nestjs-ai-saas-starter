@@ -23,15 +23,18 @@
  */
 
 import {
-  Component,
   AfterViewInit,
-  input,
+  Component,
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
+  input,
   viewChild,
 } from '@angular/core';
-import * as THREE from 'three';
+import { injectLoader } from 'angular-three';
 import gsap from 'gsap';
+import * as THREE from 'three';
+import { TextureLoader } from 'three';
+import { ElementMouseParallaxDirective } from '../../directives/element-mouse-parallax.directive';
 
 @Component({
   selector: 'app-planet',
@@ -43,16 +46,21 @@ import gsap from 'gsap';
     <ngt-mesh
       #planetMesh
       [position]="position()"
+      [scale]="scale()"
       [castShadow]="true"
       [receiveShadow]="true"
     >
       <ngt-sphere-geometry [args]="[radius(), segments(), segments()]" />
+      <!-- Always use standard material, texture loaded if URL provided -->
       <ngt-mesh-standard-material
         [color]="baseColor()"
+        [map]="textureUrl() ? moonTexture() : undefined"
+        [bumpMap]="textureUrl() ? moonTexture() : undefined"
+        [bumpScale]="1"
         [emissive]="emissiveColor()"
         [emissiveIntensity]="emissiveIntensity()"
-        [metalness]="metalness()"
-        [roughness]="roughness()"
+        [metalness]="textureUrl() ? 0.1 : metalness()"
+        [roughness]="textureUrl() ? 0.9 : roughness()"
       />
     </ngt-mesh>
 
@@ -73,9 +81,19 @@ export class PlanetComponent implements AfterViewInit {
   private rotationAnimation?: gsap.core.Tween;
 
   // Position and size
-  readonly position = input<[number, number, number]>([0, 0, 0]);
-  readonly radius = input<number>(5);
+  readonly position = input<[number, number, number]>([0, 0, 0]); // Standard Three.js origin
+  readonly radius = input<number>(6.5); // Human-scale radius (~70% viewport coverage)
   readonly segments = input<number>(64); // Higher = smoother sphere
+  readonly scale = input<number>(1);
+  readonly enableMouseParallax = input<boolean>(false);
+  // Texture URL (optional - for photorealistic rendering)
+  readonly textureUrl = input<string | undefined>(undefined);
+
+  // Load moon texture conditionally
+  readonly moonTexture = injectLoader(
+    () => TextureLoader,
+    () => this.textureUrl() || 'assets/moon_1024.jpg'
+  );
 
   // Material properties
   readonly baseColor = input<number>(0xcccccc);
@@ -103,6 +121,20 @@ export class PlanetComponent implements AfterViewInit {
     console.log('[Planet] Initialized');
     console.log('[Planet] Position:', this.position());
     console.log('[Planet] Radius:', this.radius());
+    console.log('[Planet] Scale:', this.scale());
+    console.log(
+      '[Planet] Mesh scale:',
+      mesh.scale.x,
+      mesh.scale.y,
+      mesh.scale.z
+    );
+    // console.log('[Planet] Geometry radius:', mesh.geometry.parameters.radius);
+    console.log(
+      '[Planet] Actual world position:',
+      mesh.position.x,
+      mesh.position.y,
+      mesh.position.z
+    );
     console.log('[Planet] Base color:', this.baseColor().toString(16));
     console.log(
       '[Planet] Emissive:',

@@ -42,7 +42,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
     <ngt-fog [color]="color()" [near]="near()" [far]="far()" />
     } @else {
     <!-- Exponential Fog (THREE.FogExp2) -->
-    <ngt-fogExp2 [color]="color()" [density]="density()" />
+    <ngt-fog-exp2 [color]="color()" [density]="density()" />
 
     }
   `,
