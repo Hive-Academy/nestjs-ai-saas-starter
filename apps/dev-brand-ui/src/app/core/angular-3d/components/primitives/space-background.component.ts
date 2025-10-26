@@ -51,6 +51,7 @@ import * as THREE from 'three';
         [uniforms]="uniforms()"
         [side]="backSide"
         [fog]="false"
+        [depthWrite]="false"
       />
     </ngt-mesh>
   `,
@@ -76,9 +77,32 @@ export class SpaceBackgroundComponent {
     const colors = this.colors();
     const gradientType = this.gradientType();
 
+    // Convert hex colors to THREE.Color and ensure array has exactly 3 elements
+    // If only one color provided (pure black), create a subtle gradient
+    const colorArray =
+      colors.length >= 3
+        ? colors.slice(0, 3).map((c) => new THREE.Color(c))
+        : colors.length === 1
+        ? [
+            new THREE.Color(colors[0]),
+            new THREE.Color(colors[0]),
+            new THREE.Color(colors[0]),
+          ]
+        : [
+            new THREE.Color(colors[0] ?? 0x000000),
+            new THREE.Color(colors[1] ?? 0x000000),
+            new THREE.Color(colors[0] ?? 0x000000),
+          ];
+
+    console.log('[SpaceBackground] Uniforms update:', {
+      inputColors: colors,
+      colorArray: colorArray.map((c) => c.getHexString()),
+      gradientType: gradientType === 'radial' ? 'radial' : 'linear',
+    });
+
     return {
       uColors: {
-        value: colors.map((c) => new THREE.Color(c)),
+        value: colorArray,
       },
       uGradientType: {
         value: gradientType === 'radial' ? 1.0 : 0.0,
@@ -86,27 +110,31 @@ export class SpaceBackgroundComponent {
     };
   });
 
-  // Vertex shader (pass UV to fragment)
+  // Vertex shader (pass UV and fog depth to fragment)
   readonly vertexShader = computed(
     () => `
     varying vec2 vUv;
     varying vec3 vPosition;
+    varying float vFogDepth;
 
     void main() {
       vUv = uv;
       vPosition = position;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vFogDepth = -mvPosition.z;
+      gl_Position = projectionMatrix * mvPosition;
     }
   `
   );
 
-  // Fragment shader (gradient rendering)
+  // Fragment shader (gradient rendering with manual fog)
   readonly fragmentShader = computed(
     () => `
     uniform vec3 uColors[3];
     uniform float uGradientType;
     varying vec2 vUv;
     varying vec3 vPosition;
+    varying float vFogDepth;
 
     void main() {
       float gradientFactor;
@@ -137,6 +165,10 @@ export class SpaceBackgroundComponent {
       }
 
       gl_FragColor = vec4(color, 1.0);
+
+      // Note: Background sphere is far back, fog effect will be handled
+      // by foreground objects. Keeping this shader simple to avoid
+      // fog uniform errors with custom shaders.
     }
   `
   );

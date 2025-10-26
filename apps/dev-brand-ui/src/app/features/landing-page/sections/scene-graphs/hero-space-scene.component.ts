@@ -32,6 +32,7 @@ import { FogComponent } from '../../../../core/angular-3d/components/primitives/
 // Import theme store and types
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
 import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
+import { NgtSelect } from 'angular-three';
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -56,6 +57,11 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
       [position]="[10, 10, 10]"
       [intensity]="directionalLightIntensity"
       [color]="directionalLightColor"
+      [castShadow]="true"
+      [shadow-mapSize-width]="2048"
+      [shadow-mapSize-height]="2048"
+      [shadow-camera-near]="0.5"
+      [shadow-camera-far]="500"
     />
     <ngt-point-light
       [position]="pointLightPosition"
@@ -110,14 +116,16 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
     />
 
     <!-- ================================ -->
-    <!-- NEBULA CLOUDS (NgtsPointsBuffer, Theme-based) -->
+    <!-- NEBULA CLOUDS (Sprite-based volumetric clouds) -->
     <!-- ================================ -->
     <app-nebula
-      [particleCount]="1500"
-      [radius]="40"
+      [particleCount]="25"
+      [radius]="60"
       [colorPalette]="nebulaColors"
-      [size]="1.0"
-      [opacity]="nebulaOpacity"
+      [minSize]="8"
+      [maxSize]="20"
+      [minOpacity]="0.1"
+      [maxOpacity]="0.3"
       [flow]="nebulaFlow"
     />
   `,
@@ -166,7 +174,7 @@ export class HeroSpaceSceneComponent {
   // FOG (Theme-based getters)
   // ================================
   get fogEnabled(): boolean {
-    return this.theme.fog?.enabled ?? false;
+    return this.theme.fog?.enabled ?? true;
   }
 
   get fogType(): 'linear' | 'exponential' {
@@ -198,9 +206,9 @@ export class HeroSpaceSceneComponent {
   // Camera is at z=50 looking toward negative z
   // Scene composition: Dark planet behind text
 
-  // DARK PLANET - Huge, behind text, takes up most of screen
-  readonly darkPlanetPosition: [number, number, number] = [0, 0, -30];
-  readonly darkPlanetRadius = 90; // MASSIVE
+  // DARK PLANET - Huge, centered behind text, takes up ~50% of viewport
+  readonly darkPlanetPosition: [number, number, number] = [0, 0, 35];
+  readonly darkPlanetRadius = 18; // MASSIVE sphere matching reference design
 
   get darkPlanetBaseColor(): number {
     return this.theme.planet.baseColor;
@@ -211,7 +219,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetEmissiveIntensity(): number {
-    return this.theme.planet.emissiveIntensity * 0.5; // Dimmer for background planet
+    return 0.8; // Subtle emissive - allows directional light to define shape
   }
 
   get darkPlanetGlowColor(): number {
@@ -219,7 +227,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetGlowIntensity(): number {
-    return this.theme.planet.glowIntensity * 0.4; // Subtle glow
+    return 2.0; // Soft atmospheric glow without overpowering the scene
   }
 
   // ================================
@@ -231,8 +239,8 @@ export class HeroSpaceSceneComponent {
 
   get starSize(): number {
     return (
-      ((this.theme.stars.sizes.min + this.theme.stars.sizes.max) / 2) * 0.025
-    );
+      ((this.theme.stars.sizes.min + this.theme.stars.sizes.max) / 2) * 0.008
+    ); // Much smaller for tiny point stars like reference
   }
 
   get starOpacity(): number {

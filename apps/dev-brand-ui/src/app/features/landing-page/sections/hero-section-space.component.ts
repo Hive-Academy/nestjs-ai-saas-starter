@@ -12,10 +12,16 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
   template: `
     <div
       class="relative w-full h-screen flex flex-col overflow-hidden"
+      [style.background]="backgroundGradient"
       style="perspective: 1000px;"
     >
       <!-- 3D Space Background Scene -->
-      <app-scene-3d class="absolute inset-0" [sceneGraph]="sceneGraph" />
+      <app-scene-3d
+        class="absolute inset-0"
+        [sceneGraph]="sceneGraph"
+        [camera]="{ position: [0, 0, 50], fov: 60 }"
+        [gl]="{ antialias: true, alpha: false }"
+      />
 
       <!-- Theme Switcher - Top Right Corner -->
       <div
@@ -213,7 +219,6 @@ export class HeroSectionSpaceComponent {
   // Inject theme store for centralized theme management
   private readonly themeStore = inject(SpaceThemeStore);
 
-  // Scene graph component (no inputs needed, injects store directly)
   readonly sceneGraph = HeroSpaceSceneComponent;
 
   // Expose store's current theme ID for UI binding
@@ -221,6 +226,32 @@ export class HeroSectionSpaceComponent {
 
   // Get themes from store
   readonly themes = this.themeStore.availableThemes;
+
+  /**
+   * Get current theme object
+   */
+  get currentTheme() {
+    return this.themeStore.currentTheme();
+  }
+
+  /**
+   * Generate CSS background gradient from theme colors
+   */
+  get backgroundGradient(): string {
+    const theme = this.currentTheme;
+    const colors = theme.background.colors;
+
+    // Convert hex numbers to CSS color strings
+    const cssColors = colors.map((c) => `#${c.toString(16).padStart(6, '0')}`);
+
+    if (theme.background.type === 'radial') {
+      // Radial gradient from center
+      return `radial-gradient(circle at center, ${cssColors.join(', ')})`;
+    } else {
+      // Linear gradient from top to bottom
+      return `linear-gradient(to bottom, ${cssColors.join(', ')})`;
+    }
+  }
 
   /**
    * Select a theme via the store

@@ -13,7 +13,9 @@
       "Bash(git commit:*)",
       "Bash(npx nx typecheck:*)",
       "Bash(npx nx show:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "mcp__chrome-devtools__take_screenshot",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],

@@ -105,8 +105,8 @@ export const SPACE_THEMES: Record<
     name: 'Classic Space',
     description: 'Traditional dark space with white stars',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x0a0a1a, 0x050510, 0x000000], // Dark blue → darker → black
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -122,8 +122,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 0.8,
     },
     nebula: {
-      colors: ['#cccccc', '#aaaaaa', '#888888'],
-      opacity: 0.6,
+      colors: ['#ffffff', '#e0e0e0', '#c0c0c0'], // Soft white/gray clouds
+      opacity: 0.3,
       flow: true,
     },
     lights: {
@@ -145,8 +145,8 @@ export const SPACE_THEMES: Record<
     name: 'Purple Nebula',
     description: 'Deep purple space with violet stars',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x1a0a2e, 0x0f051a, 0x000000], // Deep purple → darker → black
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -162,8 +162,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.2,
     },
     nebula: {
-      colors: ['#d0b0e0', '#c0a0d0', '#b090c0'],
-      opacity: 0.6,
+      colors: ['#e0c0f0', '#d0b0e0', '#c0a0d0'], // Soft purple clouds
+      opacity: 0.3,
       flow: true,
     },
     lights: {
@@ -188,8 +188,8 @@ export const SPACE_THEMES: Record<
     name: 'Cyan Cosmos',
     description: 'Cool cyan and blue space aesthetic',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x0a1a2e, 0x050f1a, 0x000000], // Cyan blue → darker → black
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -205,8 +205,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.0,
     },
     nebula: {
-      colors: ['#c0d0e0', '#b0c0d0', '#a0b0c0'],
-      opacity: 0.6,
+      colors: ['#d0e0f0', '#c0d0e0', '#b0c0d0'], // Soft cyan clouds
+      opacity: 0.3,
       flow: true,
     },
     lights: {
@@ -228,8 +228,8 @@ export const SPACE_THEMES: Record<
     name: 'Warm Sunset',
     description: 'Warm orange and pink space aesthetic',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x2e1a0a, 0x1a0f05, 0x000000], // Warm orange → darker → black
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -245,8 +245,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.1,
     },
     nebula: {
-      colors: ['#e0d0c0', '#d0c0b0', '#c0b0a0'],
-      opacity: 0.6,
+      colors: ['#f0e0d0', '#e0d0c0', '#d0c0b0'], // Soft warm clouds
+      opacity: 0.3,
       flow: true,
     },
     lights: {
@@ -268,8 +268,8 @@ export const SPACE_THEMES: Record<
     name: 'Light Sky',
     description: 'Bright sky blue gradient matching current design',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x1a2e4a, 0x0f1a2e, 0x050a14], // Light blue → medium → dark blue
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -285,8 +285,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 0.7,
     },
     nebula: {
-      colors: ['#e0e0e0', '#d0d0d0', '#c0c0c0'],
-      opacity: 0.3,
+      colors: ['#f0f0f0', '#e0e0e0', '#d0d0d0'], // Very light soft clouds
+      opacity: 0.2,
       flow: false,
     },
     lights: {
@@ -308,8 +308,8 @@ export const SPACE_THEMES: Record<
     name: 'Green Aurora',
     description: 'Ethereal green aurora-inspired space',
     background: {
-      type: 'linear',
-      colors: [0x000000],
+      type: 'radial',
+      colors: [0x0a2e1a, 0x051a0f, 0x000000], // Green aurora → darker → black
     },
     stars: {
       colors: ['#ffffff', '#f0f0f0', '#e0e0e0'],
@@ -325,8 +325,8 @@ export const SPACE_THEMES: Record<
       glowIntensity: 1.1,
     },
     nebula: {
-      colors: ['#c0e0d0', '#b0d0c0', '#a0c0b0'],
-      opacity: 0.6,
+      colors: ['#d0f0e0', '#c0e0d0', '#b0d0c0'], // Soft green clouds
+      opacity: 0.3,
       flow: true,
     },
     lights: {

@@ -30,6 +30,7 @@ import {
 import { NgtsPointMaterial } from 'angular-three-soba/materials';
 import { NgtsPointsBuffer } from 'angular-three-soba/performances';
 import { random } from 'maath';
+import { NgtSelect } from 'angular-three';
 
 @Component({
   selector: 'app-star-field',
@@ -37,22 +38,24 @@ import { random } from 'maath';
   imports: [NgtsPointsBuffer, NgtsPointMaterial],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ngts-points-buffer
-      [positions]="positions()"
-      [stride]="3"
-      [options]="{ frustumCulled: false }"
-    >
-      <ngts-point-material
-        [options]="{
-          transparent: true,
-          color: averageColor(),
-          size: size(),
-          sizeAttenuation: true,
-          depthWrite: false,
-          opacity: opacity()
-        }"
-      />
-    </ngts-points-buffer>
+    <ngt-mesh>
+      <ngts-points-buffer
+        [positions]="positions()"
+        [stride]="3"
+        [options]="{ frustumCulled: false }"
+      >
+        <ngts-point-material
+          [options]="{
+            transparent: true,
+            color: averageColor(),
+            size: size(),
+            sizeAttenuation: true,
+            depthWrite: false,
+            opacity: opacity()
+          }"
+        />
+      </ngts-points-buffer>
+    </ngt-mesh>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

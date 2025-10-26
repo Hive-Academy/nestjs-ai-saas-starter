@@ -96,13 +96,16 @@ import { ChromadbSectionComponent } from './sections/chromadb-section.component'
 
     <!-- All Sections Directly Embedded -->
     <main class="w-full">
-      <!-- Hero Section - Toggle between versions -->
+      <!-- Hero Section - Space version -->
       <div id="hero" class="section-container">
-        @if (useSpaceHero()) {
-        <brand-hero-section-space />
-        } @else {
-        <brand-hero-section />
-        }
+        <!-- Hero Section - Toggle between versions -->
+        <div id="hero" class="section-container">
+          @if (useSpaceHero()) {
+          <brand-hero-section-space />
+          } @else {
+          <brand-hero-section />
+          }
+        </div>
       </div>
 
       <!-- Library Showcase Sections (Light Design System) -->
