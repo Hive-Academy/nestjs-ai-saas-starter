@@ -27,6 +27,10 @@ module.exports = {
         'accent-lime': '#C0FF00', // Lime green
         'accent-secondary': '#8B5CF6', // Purple for gradients
         'accent-tertiary': '#06B6D4', // Cyan for highlights
+        'accent-danger': '#EF4444', // Red for problem/danger
+        'accent-danger-dark': '#DC2626', // Darker red
+        'accent-success': '#10B981', // Green for success
+        'accent-success-dark': '#059669', // Darker green
       },
       fontSize: {
         base: '18px', // Design system: 18px body
