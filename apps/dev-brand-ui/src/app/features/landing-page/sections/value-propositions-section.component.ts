@@ -35,14 +35,7 @@ import type { ValueProposition } from '../interfaces';
       <div
         class="fixed right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 z-10 pointer-events-none hidden lg:block opacity-40"
       >
-        <app-scene-3d
-          [sceneGraph]="ValuePropositions3DSceneComponent"
-          [sceneGraphInputs]="{
-            activeLibraryIndex: activeIndex(),
-            scrollProgress: scrollProgress(),
-            showWireframe: true
-          }"
-        />
+        <app-scene-3d [sceneGraph]="ValuePropositions3DSceneComponent" />
       </div>
       <!-- Sticky Numbered Sidebar (Left) -->
       <nav class="fixed left-8 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
@@ -273,7 +266,7 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
    * Calculate scroll progress within active section (0-1)
    * Updates on every scroll event to animate 3D scene
    */
-  @HostListener('window:scroll', ['$event'])
+  @HostListener('window:scroll')
   onScroll(): void {
     if (typeof window === 'undefined') return;
 

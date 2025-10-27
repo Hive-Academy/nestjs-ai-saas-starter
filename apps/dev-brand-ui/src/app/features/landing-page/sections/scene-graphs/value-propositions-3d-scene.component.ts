@@ -45,7 +45,7 @@ import * as THREE from 'three';
       <ngt-point-light
         [position]="[-5, 3, 0]"
         [intensity]="0.8"
-        [color]="0x6366f1"
+        [color]="indigoColor"
       />
 
       <!-- Active Library Geometry -->
@@ -58,8 +58,8 @@ import * as THREE from 'three';
       >
         <ngt-box-geometry [args]="[2, 2, 2]" />
         <ngt-mesh-standard-material
-          [color]="0x6366f1"
-          [emissive]="0x6366f1"
+          [color]="indigoColor"
+          [emissive]="indigoColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -74,8 +74,8 @@ import * as THREE from 'three';
       >
         <ngt-icosahedron-geometry [args]="[1.5, 0]" />
         <ngt-mesh-standard-material
-          [color]="0x8b5cf6"
-          [emissive]="0x8b5cf6"
+          [color]="purpleColor"
+          [emissive]="purpleColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -91,8 +91,8 @@ import * as THREE from 'three';
       >
         <ngt-torus-geometry [args]="[1.2, 0.4, 16, 100]" />
         <ngt-mesh-standard-material
-          [color]="0x06b6d4"
-          [emissive]="0x06b6d4"
+          [color]="cyanColor"
+          [emissive]="cyanColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -107,8 +107,8 @@ import * as THREE from 'three';
       >
         <ngt-octahedron-geometry [args]="[1.5, 0]" />
         <ngt-mesh-standard-material
-          [color]="0x10b981"
-          [emissive]="0x10b981"
+          [color]="greenColor"
+          [emissive]="greenColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -123,8 +123,8 @@ import * as THREE from 'three';
       >
         <ngt-tetrahedron-geometry [args]="[1.5, 0]" />
         <ngt-mesh-standard-material
-          [color]="0xf59e0b"
-          [emissive]="0xf59e0b"
+          [color]="amberColor"
+          [emissive]="amberColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -139,8 +139,8 @@ import * as THREE from 'three';
       >
         <ngt-dodecahedron-geometry [args]="[1.5, 0]" />
         <ngt-mesh-standard-material
-          [color]="0xec4899"
-          [emissive]="0xec4899"
+          [color]="pinkColor"
+          [emissive]="pinkColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -155,8 +155,8 @@ import * as THREE from 'three';
       >
         <ngt-cylinder-geometry [args]="[1, 1, 2, 32]" />
         <ngt-mesh-standard-material
-          [color]="0x3b82f6"
-          [emissive]="0x3b82f6"
+          [color]="blueColor"
+          [emissive]="blueColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -171,8 +171,8 @@ import * as THREE from 'three';
       >
         <ngt-torus-knot-geometry [args]="[1, 0.3, 100, 16]" />
         <ngt-mesh-standard-material
-          [color]="0xa855f7"
-          [emissive]="0xa855f7"
+          [color]="violetColor"
+          [emissive]="violetColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -187,8 +187,8 @@ import * as THREE from 'three';
       >
         <ngt-sphere-geometry [args]="[1.5, 32, 32]" />
         <ngt-mesh-standard-material
-          [color]="0x14b8a6"
-          [emissive]="0x14b8a6"
+          [color]="tealColor"
+          [emissive]="tealColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -203,8 +203,8 @@ import * as THREE from 'three';
       >
         <ngt-cone-geometry [args]="[1.2, 2.5, 32]" />
         <ngt-mesh-standard-material
-          [color]="0xef4444"
-          [emissive]="0xef4444"
+          [color]="redColor"
+          [emissive]="redColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -219,8 +219,8 @@ import * as THREE from 'three';
       >
         <ngt-capsule-geometry [args]="[0.6, 2, 4, 8]" />
         <ngt-mesh-standard-material
-          [color]="0x00d9ff"
-          [emissive]="0x00d9ff"
+          [color]="cyanBrightColor"
+          [emissive]="cyanBrightColor"
           [emissiveIntensity]="0.2"
           [metalness]="0.3"
           [roughness]="0.4"
@@ -263,7 +263,7 @@ import * as THREE from 'three';
         <ngt-capsule-geometry [args]="[0.6, 2, 4, 8]" />
         } }
         <ngt-mesh-basic-material
-          [color]="0xffffff"
+          [color]="whiteColor"
           [wireframe]="true"
           [opacity]="0.1"
           [transparent]="true"
@@ -290,6 +290,20 @@ export class ValuePropositions3DSceneComponent {
    * Show wireframe overlay for extra detail
    */
   showWireframe = input<boolean>(true);
+
+  // Color constants for template bindings (hex literals not allowed in templates)
+  readonly indigoColor = 0x6366f1; // Indigo 500 - ChromaDB
+  readonly purpleColor = 0x8b5cf6; // Purple 500 - Neo4j
+  readonly cyanColor = 0x06b6d4; // Cyan 500 - Memory
+  readonly greenColor = 0x10b981; // Green 500 - Checkpoint
+  readonly amberColor = 0xf59e0b; // Amber 500 - Functional
+  readonly pinkColor = 0xec4899; // Pink 500 - Multi-Agent
+  readonly blueColor = 0x3b82f6; // Blue 500 - Platform
+  readonly violetColor = 0xa855f7; // Violet 500 - Time-Travel
+  readonly tealColor = 0x14b8a6; // Teal 500 - Monitoring
+  readonly redColor = 0xef4444; // Red 500 - HITL
+  readonly cyanBrightColor = 0x00d9ff; // Cyan bright - Streaming
+  readonly whiteColor = 0xffffff; // White - Wireframe
 
   /**
    * Get rotation based on scroll progress
