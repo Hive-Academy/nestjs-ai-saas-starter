@@ -7,3 +7,4 @@
 
 export { FloatingSphereComponent } from './floating-sphere.component';
 export { TechMarkerComponent } from './tech-marker.component';
+export { Hero3DTextComponent } from './hero-3d-text.component';
