@@ -4,15 +4,18 @@ import {
   OnDestroy,
   OnInit,
   signal,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
 import type { ValueProposition } from '../interfaces';
 
 /**
  * Value Propositions Section Component - Scroll-Driven 3D Showcase
  *
- * REDESIGNED: Inspired by Design-4 (threejs.journey) - Sticky sidebar + scroll-reveal
+ * REDESIGNED: Inspired by Design-4 (threejs.journey) - Sticky sidebar + scroll-reveal + 3D
  *
  * Features:
  * - Sticky numbered sidebar (01-11) for navigation
@@ -20,15 +23,27 @@ import type { ValueProposition } from '../interfaces';
  * - Scroll-triggered content animations
  * - Active section tracking with IntersectionObserver
  * - Click-to-navigate from sidebar
- *
- * Future: 3D scene synchronized with scroll (Phase 2)
+ * - 3D scene synchronized with scroll (Phase 2 COMPLETE)
  */
 @Component({
   selector: 'app-value-propositions-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective],
+  imports: [CommonModule, ScrollAnimationDirective, Scene3DComponent],
   template: `
     <section class="relative bg-white">
+      <!-- Fixed 3D Scene Background (Center-Right) -->
+      <div
+        class="fixed right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 z-10 pointer-events-none hidden lg:block opacity-40"
+      >
+        <app-scene-3d
+          [sceneGraph]="ValuePropositions3DSceneComponent"
+          [sceneGraphInputs]="{
+            activeLibraryIndex: activeIndex(),
+            scrollProgress: scrollProgress(),
+            showWireframe: true
+          }"
+        />
+      </div>
       <!-- Sticky Numbered Sidebar (Left) -->
       <nav class="fixed left-8 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
         <div class="space-y-6">
@@ -235,6 +250,12 @@ import type { ValueProposition } from '../interfaces';
 export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   // Active section tracking
   activeIndex = signal(0);
+  // Scroll progress within active section (0-1)
+  scrollProgress = signal(0);
+
+  // Expose 3D scene component for template
+  readonly ValuePropositions3DSceneComponent =
+    ValuePropositions3DSceneComponent;
 
   private observer?: IntersectionObserver;
 
@@ -246,6 +267,37 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
+  }
+
+  /**
+   * Calculate scroll progress within active section (0-1)
+   * Updates on every scroll event to animate 3D scene
+   */
+  @HostListener('window:scroll', ['$event'])
+  onScroll(): void {
+    if (typeof window === 'undefined') return;
+
+    const activeElement = document.getElementById(
+      `library-${this.activeIndex()}`
+    );
+    if (!activeElement) return;
+
+    const rect = activeElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Calculate progress from when section enters viewport (bottom) to when it exits (top)
+    // 0 = section just entered viewport from bottom
+    // 1 = section about to exit viewport from top
+    const sectionHeight = rect.height;
+    const scrolledIntoView = viewportHeight - rect.top;
+    const totalScrollDistance = sectionHeight + viewportHeight;
+
+    const progress = Math.max(
+      0,
+      Math.min(1, scrolledIntoView / totalScrollDistance)
+    );
+
+    this.scrollProgress.set(progress);
   }
 
   /**
@@ -274,9 +326,8 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
 
     // Observe all library sections
     setTimeout(() => {
-      const sections = this.elementRef.nativeElement.querySelectorAll(
-        '[id^="library-"]'
-      );
+      const sections =
+        this.elementRef.nativeElement.querySelectorAll('[id^="library-"]');
       sections.forEach((section: Element) => {
         this.observer?.observe(section);
       });
