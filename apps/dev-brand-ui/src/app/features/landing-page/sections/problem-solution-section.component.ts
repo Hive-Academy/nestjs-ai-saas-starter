@@ -21,206 +21,145 @@ import { Icon3DContainerComponent } from '../components/icon-3d-container.compon
     Icon3DContainerComponent,
   ],
   template: `
-    <section class="relative min-h-screen py-20 md:py-32 px-8 md:px-16 bg-bg-secondary overflow-hidden flex items-center">
-      <!-- Decorative Background Elements -->
-      <div class="absolute top-20 left-10 w-96 h-96 bg-accent-danger/10 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-20 right-10 w-96 h-96 bg-accent-success/10 rounded-full blur-3xl"></div>
+    <section class="relative h-screen px-8 md:px-16 bg-white overflow-hidden flex items-center">
+      <!-- Gradient Background (Initially hidden, fades in with solution) -->
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-accent-primary/5 via-accent-secondary/5 to-accent-success/5"
+        scrollAnimation
+        [scrollConfig]="{
+          animation: 'fadeIn',
+          start: 'top 50%',
+          duration: 1.5,
+          once: true
+        }"
+      ></div>
 
-      <div class="relative max-w-7xl mx-auto w-full">
-        <!-- Row 1: Problem vs Solution (Side by Side) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+      <!-- Subtle decorative blur circles -->
+      <div class="absolute -top-40 -right-40 w-96 h-96 bg-accent-primary/10 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-accent-success/10 rounded-full blur-3xl"></div>
 
-          <!-- Problem Card (Left) - Slides in from left, red theme -->
-          <div
-            scrollAnimation
-            [scrollConfig]="{
-              animation: 'slideInLeft',
-              start: 'top 75%',
-              duration: 1.0,
-              ease: 'power3.out',
-              once: true
-            }"
-          >
-            <div class="relative bg-gradient-to-br from-accent-danger/10 to-accent-danger-dark/5 border-2 border-accent-danger/30 rounded-card-xl p-8 md:p-10">
-              <!-- Danger Icon Badge -->
-              <div class="absolute -top-6 -left-6">
-                <app-icon-3d-container [size]="'lg'" [animation]="'float'">
-                  <div class="w-full h-full rounded-full bg-accent-danger flex items-center justify-center text-white text-4xl shadow-card-elevated">
-                    ⚠️
-                  </div>
-                </app-icon-3d-container>
-              </div>
+      <div class="relative max-w-6xl mx-auto w-full space-y-16">
 
-              <h3 class="text-3xl md:text-4xl font-bold text-accent-danger mb-6 mt-4">
-                The Problem TypeScript Developers Face
-              </h3>
+        <!-- Problem Section - Fades in first, then fades out -->
+        <div
+          class="text-center"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 80%',
+            end: 'top 30%',
+            scrub: true,
+            once: false
+          }"
+        >
+          <h2 class="text-5xl md:text-7xl font-bold text-text-headline mb-6 leading-tight">
+            The Problem
+          </h2>
+          <p class="text-xl md:text-2xl text-text-secondary max-w-4xl mx-auto leading-relaxed mb-8">
+            TypeScript developers building AI applications face a painful choice:
+            use Python-style frameworks like LangGraph (pattern mismatch), stitch
+            together raw SDKs (integration hell), or spend months building
+            production infrastructure.
+          </p>
 
-              <p class="text-lg text-text-primary leading-relaxed mb-6">
-                TypeScript developers building AI applications face a painful choice:
-                use Python-style frameworks like LangGraph (pattern mismatch), stitch
-                together raw SDKs (integration hell), or spend months building
-                production infrastructure (multi-tenancy, monitoring, approvals).
-              </p>
-
-              <!-- Problem Icons -->
-              <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                  <span class="text-2xl">🔴</span>
-                  <span class="text-base text-text-secondary">Pattern mismatch</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-2xl">🔴</span>
-                  <span class="text-base text-text-secondary">Integration hell</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span class="text-2xl">🔴</span>
-                  <span class="text-base text-text-secondary">Months of infrastructure work</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Solution Card (Right) - Slides in from right, green/gradient theme -->
-          <div
-            scrollAnimation
-            [scrollConfig]="{
-              animation: 'slideInRight',
-              start: 'top 70%',
-              duration: 1.0,
-              ease: 'power3.out',
-              once: true
-            }"
-          >
-            <div class="relative bg-gradient-to-br from-accent-primary via-accent-secondary to-accent-success rounded-card-xl p-8 md:p-10 shadow-card-glow-indigo">
-              <!-- Success Icon Badge -->
-              <div class="absolute -top-6 -right-6">
-                <app-icon-3d-container [size]="'lg'" [animation]="'float'">
-                  <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-accent-success text-4xl shadow-card-elevated">
-                    ⚡
-                  </div>
-                </app-icon-3d-container>
-              </div>
-
-              <h3 class="text-3xl md:text-4xl font-bold text-white mb-6 mt-4">
-                Our Solution: NestJS Patterns for AI/ML
-              </h3>
-
-              <p class="text-xl text-white/90 leading-relaxed mb-6">
-                NestJS AI SaaS Starter applies familiar NestJS patterns
-                (decorators, dependency injection, modules) to AI/ML operations.
-                ChromaDB and Neo4j get TypeORM-style repositories. LangGraph
-                workflows become declarative classes with @Node and @Edge
-                decorators. Enterprise features (monitoring, approvals,
-                streaming) work out-of-the-box.
-              </p>
-
-              <!-- Tech Badges -->
-              <div class="flex flex-wrap gap-3">
-                <span class="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-white text-base font-semibold border border-white/30 flex items-center gap-2">
-                  ✅ ChromaDB
-                </span>
-                <span class="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-white text-base font-semibold border border-white/30 flex items-center gap-2">
-                  ✅ Neo4j
-                </span>
-                <span class="px-5 py-2 bg-white/20 backdrop-blur-md rounded-full text-white text-base font-semibold border border-white/30 flex items-center gap-2">
-                  ✅ LangGraph
-                </span>
-              </div>
-            </div>
+          <!-- Problem bullets - minimal style -->
+          <div class="flex flex-wrap justify-center gap-6 text-lg text-text-secondary">
+            <span class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-accent-danger"></span>
+              Pattern mismatch
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-accent-danger"></span>
+              Integration hell
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-accent-danger"></span>
+              Infrastructure overhead
+            </span>
           </div>
         </div>
 
-        <!-- Row 2: Stats Grid - Pop up sequentially from bottom -->
-        <div class="relative max-w-6xl mx-auto">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-
-            <!-- Metric 1: Large featured card (spans 2 columns) - Pop up first -->
-            <div
-              class="md:col-span-2 bg-white rounded-card-lg p-8 shadow-card-elevated hover:shadow-card-glow-indigo transition-all duration-300 hover:scale-102"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
-                start: 'top 85%',
-                duration: 0.6,
-                ease: 'back.out',
-                once: true
-              }"
-            >
-              <div class="text-6xl md:text-7xl font-bold bg-gradient-to-br from-accent-primary to-accent-secondary bg-clip-text text-transparent mb-4">
-                {{ metrics[0].value }}
-              </div>
-              <div class="text-xl text-text-headline font-bold mb-2">
-                {{ metrics[0].label }}
-              </div>
-              <div class="text-base text-text-secondary">{{ metrics[0].description }}</div>
-            </div>
-
-            <!-- Metric 2: Tall card - Pop up second -->
-            <div
-              class="bg-white rounded-card-lg p-8 shadow-card-elevated hover:shadow-card-glow-purple transition-all duration-300 hover:scale-102"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
-                start: 'top 85%',
-                duration: 0.6,
-                delay: 0.15,
-                ease: 'back.out',
-                once: true
-              }"
-            >
-              <div class="text-5xl md:text-6xl font-bold text-accent-secondary mb-4">
-                {{ metrics[1].value }}
-              </div>
-              <div class="text-lg text-text-headline font-bold mb-2">
-                {{ metrics[1].label }}
-              </div>
-              <div class="text-sm text-text-secondary">{{ metrics[1].description }}</div>
-            </div>
-
-            <!-- Metric 3: Tall card - Pop up third -->
-            <div
-              class="bg-white rounded-card-lg p-8 shadow-card-elevated hover:shadow-card-glow-indigo transition-all duration-300 hover:scale-102"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
-                start: 'top 85%',
-                duration: 0.6,
-                delay: 0.3,
-                ease: 'back.out',
-                once: true
-              }"
-            >
-              <div class="text-5xl md:text-6xl font-bold text-accent-tertiary mb-4">
-                {{ metrics[2].value }}
-              </div>
-              <div class="text-lg text-text-headline font-bold mb-2">
-                {{ metrics[2].label }}
-              </div>
-              <div class="text-sm text-text-secondary">{{ metrics[2].description }}</div>
-            </div>
-
-            <!-- Metric 4: Wide featured card (spans 2 columns) - Pop up fourth -->
-            <div
-              class="md:col-span-2 bg-gradient-to-br from-accent-lime/20 to-accent-electric/20 rounded-card-lg p-8 shadow-card-elevated hover:shadow-card-glow-purple transition-all duration-300 hover:scale-102 border-2 border-accent-electric/30"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
-                start: 'top 85%',
-                duration: 0.6,
-                delay: 0.45,
-                ease: 'back.out',
-                once: true
-              }"
-            >
-              <div class="text-6xl md:text-7xl font-bold text-accent-primary mb-4">
-                {{ metrics[3].value }}
-              </div>
-              <div class="text-xl text-text-headline font-bold mb-2">
-                {{ metrics[3].label }}
-              </div>
-              <div class="text-base text-text-secondary">{{ metrics[3].description }}</div>
-            </div>
+        <!-- Divider Line with Icon - appears between problem and solution -->
+        <div
+          class="flex items-center justify-center"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'scaleIn',
+            start: 'top 60%',
+            duration: 0.8,
+            once: true
+          }"
+        >
+          <div class="h-px bg-gradient-to-r from-transparent via-accent-primary/30 to-transparent w-full max-w-2xl"></div>
+          <div class="absolute w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-card-elevated">
+            <span class="text-3xl">⚡</span>
           </div>
+        </div>
+
+        <!-- Solution Section - Fades in as problem fades out -->
+        <div
+          class="text-center"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 50%',
+            duration: 1.2,
+            once: true
+          }"
+        >
+          <h2 class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight">
+            Our Solution
+          </h2>
+          <h3 class="text-3xl md:text-4xl font-bold text-text-headline mb-6">
+            NestJS Patterns for AI/ML
+          </h3>
+          <p class="text-xl md:text-2xl text-text-primary max-w-4xl mx-auto leading-relaxed mb-8">
+            Apply familiar NestJS patterns to AI/ML operations.
+            ChromaDB and Neo4j get TypeORM-style repositories. LangGraph
+            workflows become declarative classes. Enterprise features work out-of-the-box.
+          </p>
+
+          <!-- Tech stack - minimal badges -->
+          <div class="flex flex-wrap justify-center gap-4 text-base font-medium">
+            <span class="text-accent-primary">ChromaDB</span>
+            <span class="text-text-secondary">•</span>
+            <span class="text-accent-secondary">Neo4j</span>
+            <span class="text-text-secondary">•</span>
+            <span class="text-accent-success">LangGraph</span>
+          </div>
+        </div>
+
+        <!-- Stats Grid - Minimal, no cards, just numbers on gradient background -->
+        <div
+          class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 max-w-5xl mx-auto pt-8"
+        >
+          @for (metric of metrics; track $index) {
+            <div
+              class="text-center"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideUp',
+                start: 'top 80%',
+                duration: 0.6,
+                delay: $index * 0.15,
+                ease: 'back.out',
+                once: true
+              }"
+            >
+              <!-- Large number with gradient -->
+              <div class="text-5xl md:text-6xl font-bold bg-gradient-to-br from-accent-primary to-accent-secondary bg-clip-text text-transparent mb-2">
+                {{ metric.value }}
+              </div>
+              <!-- Label -->
+              <div class="text-sm md:text-base font-semibold text-text-headline mb-1">
+                {{ metric.label }}
+              </div>
+              <!-- Description -->
+              <div class="text-xs md:text-sm text-text-secondary leading-snug">
+                {{ metric.description }}
+              </div>
+            </div>
+          }
         </div>
       </div>
     </section>
