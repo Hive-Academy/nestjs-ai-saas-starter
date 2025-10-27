@@ -1,389 +1,478 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { EnhancedCardComponent } from '../components/enhanced-card.component';
-import { GlassPillComponent } from '../components/glass-pill.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
- * Enterprise Capabilities Matrix Section Component
+ * Enterprise Feature Explorer Section Component
  *
- * TASK_2025_026 - Task 12 (BATCH 3)
+ * REDESIGNED: Interactive Feature Explorer - No more boring matrix!
  *
- * Visualizes 11x11 matrix showing production features across all libraries.
- * Demonstrates enterprise capabilities built-in across all 13 libraries.
+ * Transforms the traditional capabilities matrix into an engaging,
+ * interactive showcase of enterprise features.
  *
- * Design Specifications:
- * - Background: bg-white (#FFFFFF)
- * - Section padding: py-20 md:py-32
- * - Container: max-w-7xl mx-auto px-8 md:px-12
- * - Table: responsive with horizontal scroll on mobile
- * - Sticky first column on mobile
- * - ROI callout: bg-accent-primary/10 rounded-card p-12
- *
- * Reference:
- * - visual-design-specification.md:1082-1169
- * - design-handoff.md:1033-1083
+ * Design Philosophy:
+ * - Full-screen feature cards (vertical stack)
+ * - Each feature is a hero with its own moment
+ * - Visual icons/emojis for each feature
+ * - "Why it matters" value proposition
+ * - Library support shown as interactive badges
+ * - Real-world use case examples
+ * - Scroll-driven animations
+ * - Modern, engaging, Design-1 (Vercel) inspired
  */
 @Component({
   selector: 'app-capabilities-matrix-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    EnhancedCardComponent,
-    GlassPillComponent,
-    CountUpDirective,
-  ],
+  imports: [CommonModule, ScrollAnimationDirective, CountUpDirective],
   template: `
     <section
-      class="bg-white py-20 md:py-32"
-      aria-labelledby="capabilities-matrix-headline"
+      class="relative bg-gradient-to-b from-white via-gray-50 to-white py-20 md:py-32"
+      aria-labelledby="features-headline"
     >
-      <div class="max-w-7xl mx-auto px-8 md:px-12">
+      <div class="max-w-7xl mx-auto px-8 md:px-16">
         <!-- Section Headline -->
-        <h2
-          id="capabilities-matrix-headline"
-          class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center"
-        >
-          Production-Ready from Day One
-        </h2>
+        <div class="text-center mb-20">
+          <h2
+            id="features-headline"
+            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 80%',
+              duration: 0.8,
+              once: true
+            }"
+          >
+            Enterprise-Ready Out of the Box
+          </h2>
+          <p
+            class="text-xl md:text-2xl text-text-secondary max-w-4xl mx-auto leading-relaxed mb-8"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'slideUp',
+              start: 'top 75%',
+              duration: 0.8,
+              delay: 0.2,
+              once: true
+            }"
+          >
+            Zero infrastructure code. Built-in production capabilities across
+            all 11 libraries.
+          </p>
 
-        <!-- Section Intro -->
-        <p
-          class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16"
-        >
-          Enterprise capabilities built-in across all 13 libraries.
-          Multi-tenancy, monitoring, retry logic, caching, audit logging—zero
-          infrastructure code required.
-        </p>
-
-        <!-- Capability Matrix Table -->
-        <app-enhanced-card
-          [variant]="'solid'"
-          [padding]="'lg'"
-          [hoverable]="false"
-          class="mb-16"
-        >
-          <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-            <thead>
-              <tr class="bg-gray-50">
-                <th
-                  class="sticky left-0 bg-gray-50 text-left p-4 text-sm font-semibold text-secondary border-b border-gray-200"
-                >
-                  Capability
-                </th>
-                @for (library of libraries; track library) {
-                <th
-                  class="text-center p-4 text-sm font-semibold text-secondary border-b border-gray-200 whitespace-nowrap"
-                >
-                  <app-glass-pill
-                    [label]="library"
-                    [color]="getLibraryColor(library)"
-                    [size]="'sm'"
-                  ></app-glass-pill>
-                </th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              @for (capability of capabilities; track capability.name) {
-              <tr class="hover:bg-accent-primary/5 transition-colors">
-                <td
-                  class="sticky left-0 bg-white p-4 text-sm font-medium text-primary border-b border-gray-200"
-                >
-                  {{ capability.name }}
-                </td>
-                @for (library of libraries; track library) {
-                <td class="p-4 text-center border-b border-gray-200">
-                  @if (hasCapability(library, capability.name)) {
-                  <div class="flex flex-col items-center">
-                    <!-- Checkmark SVG -->
-                    <svg
-                      class="w-6 h-6 text-accent-primary"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    @if (capability.implementations[library]) {
-                    <div class="text-xs text-secondary mt-1">
-                      {{ capability.implementations[library] }}
-                    </div>
-                    }
-                  </div>
-                  }
-                </td>
-                }
-              </tr>
-              }
-            </tbody>
-          </table>
+          <!-- Feature Count Badge -->
+          <div
+            class="inline-flex items-center gap-3 px-6 py-3 bg-white rounded-full shadow-card-elevated border border-gray-200"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'scaleIn',
+              start: 'top 70%',
+              duration: 0.6,
+              delay: 0.4,
+              ease: 'back.out',
+              once: true
+            }"
+          >
+            <span
+              class="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent"
+            >
+              11
+            </span>
+            <span class="text-lg font-semibold text-text-headline">
+              Production Features
+            </span>
           </div>
-        </app-enhanced-card>
+        </div>
 
-        <!-- ROI Calculation Callout -->
-        <app-enhanced-card
-          [variant]="'glass'"
-          [padding]="'lg'"
-          [hoverable]="false"
-          class="bg-accent-primary/10"
+        <!-- Feature Cards -->
+        @for (feature of features; track feature.name) {
+        <article
+          class="mb-20 last:mb-0"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 70%',
+            duration: 1,
+            delay: ($index % 3) * 0.15,
+            once: true
+          }"
+        >
+          <div
+            class="bg-white rounded-3xl border border-gray-200 shadow-card-elevated overflow-hidden hover:shadow-card-glow-indigo transition-shadow duration-500"
+          >
+            <!-- Feature Header -->
+            <div
+              class="px-8 md:px-12 pt-8 md:pt-12 pb-6 bg-gradient-to-br from-gray-50 to-white"
+            >
+              <div class="flex items-start gap-6 mb-6">
+                <!-- Icon -->
+                <div
+                  class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-4xl md:text-5xl shadow-lg flex-shrink-0"
+                >
+                  {{ feature.icon }}
+                </div>
+
+                <!-- Title & Description -->
+                <div class="flex-1">
+                  <h3
+                    class="text-3xl md:text-4xl font-bold text-text-headline mb-3"
+                  >
+                    {{ feature.name }}
+                  </h3>
+                  <p
+                    class="text-lg md:text-xl text-text-secondary leading-relaxed mb-4"
+                  >
+                    {{ feature.description }}
+                  </p>
+                  <div
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-accent-success/10 text-accent-success text-sm font-semibold rounded-full border border-accent-success/20"
+                  >
+                    <span>✓</span>
+                    <span>{{ feature.whyItMatters }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Library Support -->
+            <div class="px-8 md:px-12 py-6 bg-white border-t border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <div
+                  class="text-sm font-semibold text-text-headline uppercase tracking-wide"
+                >
+                  Supported Across
+                </div>
+                <div
+                  class="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent"
+                >
+                  {{ feature.supportedLibraries.length }}/11 Libraries
+                </div>
+              </div>
+
+              <!-- Library Badges Grid -->
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                @for (lib of feature.supportedLibraries; track lib.name) {
+                <div
+                  class="group relative px-4 py-3 bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 rounded-xl border border-accent-primary/20 hover:border-accent-primary/40 hover:shadow-md transition-all duration-300 cursor-pointer"
+                >
+                  <div class="text-sm font-semibold text-accent-primary mb-1">
+                    {{ lib.name }}
+                  </div>
+                  <div class="text-xs text-text-secondary">
+                    {{ lib.implementation }}
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Use Case -->
+            <div
+              class="px-8 md:px-12 py-6 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200"
+            >
+              <div
+                class="text-sm font-semibold text-text-headline uppercase tracking-wide mb-3"
+              >
+                Real-World Use Case
+              </div>
+              <p class="text-base text-text-primary leading-relaxed">
+                {{ feature.useCase }}
+              </p>
+            </div>
+          </div>
+        </article>
+        }
+
+        <!-- ROI Callout -->
+        <div
+          class="mt-20 p-12 bg-gradient-to-br from-accent-primary/10 via-accent-secondary/10 to-accent-success/10 rounded-3xl border border-accent-primary/20"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'scaleIn',
+            start: 'top 80%',
+            duration: 1,
+            ease: 'back.out',
+            once: true
+          }"
         >
           <div class="text-center">
-            <div class="text-6xl font-bold text-accent-primary mb-4">
-              $<span appCountUp [targetValue]="262800" [duration]="2500">0</span>
+            <div
+              class="text-6xl md:text-7xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent mb-4"
+            >
+              $<span appCountUp [targetValue]="262800" [duration]="2500"
+                >0</span
+              >
             </div>
-            <div class="text-2xl font-bold text-headline mb-4">
+            <div class="text-2xl md:text-3xl font-bold text-text-headline mb-4">
               Infrastructure Development Savings
             </div>
-            <div class="text-lg text-secondary max-w-2xl mx-auto">
+            <p
+              class="text-lg md:text-xl text-text-secondary max-w-3xl mx-auto leading-relaxed"
+            >
               Traditional approach:
-              <span appCountUp [targetValue]="11" [suffix]="' weeks'">0 weeks</span> =
-              <span appCountUp [targetValue]="1760" [suffix]="' hours'">0 hours</span> =
-              $<span appCountUp [targetValue]="264000">0</span> in developer time.
-              Our approach: 1 day = 8 hours = $1,200. Savings: $<span appCountUp [targetValue]="262800">0</span>.
-            </div>
+              <span class="font-bold text-accent-danger">11 weeks</span> = 1,760
+              hours = $264,000 in developer time.<br />
+              Our approach:
+              <span class="font-bold text-accent-success">1 day</span> = 8 hours
+              = $1,200.<br />
+              <span class="text-2xl font-bold text-accent-success"
+                >You save $262,800.</span
+              >
+            </p>
           </div>
-        </app-enhanced-card>
+        </div>
       </div>
     </section>
   `,
 })
 export class CapabilitiesMatrixSectionComponent {
   /**
-   * All 11 libraries in the DevBrand ecosystem
+   * Enterprise features transformed into engaging showcase cards
+   * Each feature includes icon, description, value prop, library support, and use case
    */
-  libraries = [
-    'ChromaDB',
-    'Neo4j',
-    'Core',
-    'Memory',
-    'Checkpoint',
-    'Functional-API',
-    'Multi-Agent',
-    'Platform',
-    'Time-Travel',
-    'Monitoring',
-    'HITL',
-  ];
-
-  /**
-   * Enterprise capabilities with implementation notes
-   */
-  capabilities: {
-    name: string;
-    implementations: Record<string, string>;
-  }[] = [
+  features = [
     {
       name: 'Multi-Tenancy',
-      implementations: {
-        ChromaDB: 'Database-per-tenant',
-        Neo4j: 'Database-per-tenant',
-        Core: 'Tenant isolation',
-        Memory: 'Tenant scoping',
-        Checkpoint: 'Tenant partitioning',
-        'Functional-API': 'Tenant decorators',
-        'Multi-Agent': 'Tenant contexts',
-        Platform: 'Tenant routing',
-        'Time-Travel': 'Tenant history',
-        Monitoring: 'Tenant metrics',
-        HITL: 'Tenant approvals',
-      },
+      icon: '🏢',
+      description:
+        'Isolate data per customer with built-in tenant management across all layers',
+      whyItMatters: 'Zero-config SaaS data isolation',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Database-per-tenant' },
+        { name: 'Neo4j', implementation: 'Database-per-tenant' },
+        { name: 'Core', implementation: 'Tenant isolation' },
+        { name: 'Memory', implementation: 'Tenant scoping' },
+        { name: 'Checkpoint', implementation: 'Tenant partitioning' },
+        { name: 'Functional-API', implementation: 'Tenant decorators' },
+        { name: 'Multi-Agent', implementation: 'Tenant contexts' },
+        { name: 'Platform', implementation: 'Tenant routing' },
+        { name: 'Time-Travel', implementation: 'Tenant history' },
+        { name: 'Monitoring', implementation: 'Tenant metrics' },
+        { name: 'HITL', implementation: 'Tenant approvals' },
+      ],
+      useCase:
+        "A legal AI SaaS serves 50+ law firms. Each firm's case documents, embeddings, and graph relationships are automatically isolated—no manual tenant logic required.",
     },
     {
-      name: 'Monitoring',
-      implementations: {
-        ChromaDB: 'Query metrics',
-        Neo4j: 'Cypher metrics',
-        Core: 'Workflow metrics',
-        Memory: 'Memory metrics',
-        Checkpoint: 'State metrics',
-        'Functional-API': 'Node metrics',
-        'Multi-Agent': 'Agent metrics',
-        Platform: 'Platform metrics',
-        'Time-Travel': 'History metrics',
-        Monitoring: 'Full observability',
-        HITL: 'Approval metrics',
-      },
+      name: 'Production Monitoring',
+      icon: '📊',
+      description:
+        'Prometheus metrics, alerting, and dashboards built into every library',
+      whyItMatters: 'Full observability without instrumentation',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Query metrics' },
+        { name: 'Neo4j', implementation: 'Cypher metrics' },
+        { name: 'Core', implementation: 'Workflow metrics' },
+        { name: 'Memory', implementation: 'Memory metrics' },
+        { name: 'Checkpoint', implementation: 'State metrics' },
+        { name: 'Functional-API', implementation: 'Node metrics' },
+        { name: 'Multi-Agent', implementation: 'Agent metrics' },
+        { name: 'Platform', implementation: 'Platform metrics' },
+        { name: 'Time-Travel', implementation: 'History metrics' },
+        { name: 'Monitoring', implementation: 'Full observability' },
+        { name: 'HITL', implementation: 'Approval metrics' },
+      ],
+      useCase:
+        'An e-commerce AI assistant tracks workflow latency, token usage, and approval rates in Grafana—alerting on Slack when response times exceed 2 seconds.',
     },
     {
-      name: 'Retry Logic',
-      implementations: {
-        ChromaDB: 'Auto-retry',
-        Neo4j: 'Exponential backoff',
-        Core: 'Workflow retry',
-        Memory: 'Context retry',
-        Checkpoint: 'State recovery',
-        'Functional-API': 'Node retry',
-        'Multi-Agent': 'Agent retry',
-        Platform: 'Platform retry',
-        'Time-Travel': 'Replay',
-        Monitoring: 'Retry tracking',
-        HITL: 'Approval retry',
-      },
+      name: 'Smart Retry Logic',
+      icon: '🔄',
+      description:
+        'Exponential backoff, circuit breakers, and replay strategies for every operation',
+      whyItMatters: 'Resilient operations without manual retry code',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Auto-retry' },
+        { name: 'Neo4j', implementation: 'Exponential backoff' },
+        { name: 'Core', implementation: 'Workflow retry' },
+        { name: 'Memory', implementation: 'Context retry' },
+        { name: 'Checkpoint', implementation: 'State recovery' },
+        { name: 'Functional-API', implementation: 'Node retry' },
+        { name: 'Multi-Agent', implementation: 'Agent retry' },
+        { name: 'Platform', implementation: 'Platform retry' },
+        { name: 'Time-Travel', implementation: 'Replay' },
+        { name: 'Monitoring', implementation: 'Retry tracking' },
+        { name: 'HITL', implementation: 'Approval retry' },
+      ],
+      useCase:
+        'An OpenAI rate limit triggers automatic exponential backoff across all LLM calls—workflows recover without manual intervention or lost context.',
     },
     {
-      name: 'Caching',
-      implementations: {
-        ChromaDB: 'Query cache',
-        Neo4j: 'Result cache',
-        Core: 'Workflow cache',
-        Memory: 'Context cache',
-        Checkpoint: 'State cache',
-        'Functional-API': 'Node cache',
-        'Multi-Agent': 'Agent cache',
-        Platform: 'Platform cache',
-        'Time-Travel': 'History cache',
-        Monitoring: 'Metrics cache',
-        HITL: 'Approval cache',
-      },
+      name: 'Intelligent Caching',
+      icon: '⚡',
+      description:
+        'Multi-layer caching with TTL, invalidation, and semantic cache strategies',
+      whyItMatters: '10x faster responses with zero cache logic',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Query cache' },
+        { name: 'Neo4j', implementation: 'Result cache' },
+        { name: 'Core', implementation: 'Workflow cache' },
+        { name: 'Memory', implementation: 'Context cache' },
+        { name: 'Checkpoint', implementation: 'State cache' },
+        { name: 'Functional-API', implementation: 'Node cache' },
+        { name: 'Multi-Agent', implementation: 'Agent cache' },
+        { name: 'Platform', implementation: 'Platform cache' },
+        { name: 'Time-Travel', implementation: 'History cache' },
+        { name: 'Monitoring', implementation: 'Metrics cache' },
+        { name: 'HITL', implementation: 'Approval cache' },
+      ],
+      useCase:
+        'A customer support bot caches similar queries semantically—"How do I reset password?" serves from cache for 95% of variations, reducing LLM costs by 80%.',
     },
     {
       name: 'Audit Logging',
-      implementations: {
-        ChromaDB: 'Query logs',
-        Neo4j: 'Cypher logs',
-        Core: 'Workflow logs',
-        Memory: 'Context logs',
-        Checkpoint: 'State logs',
-        'Functional-API': 'Node execution logs',
-        'Multi-Agent': 'Agent logs',
-        Platform: 'Platform logs',
-        'Time-Travel': 'Full history',
-        Monitoring: 'Audit trails',
-        HITL: 'Approval logs',
-      },
+      icon: '📝',
+      description:
+        'Complete audit trails for compliance, debugging, and security investigations',
+      whyItMatters: 'SOC 2 compliance without manual logging',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Query logs' },
+        { name: 'Neo4j', implementation: 'Cypher logs' },
+        { name: 'Core', implementation: 'Workflow logs' },
+        { name: 'Memory', implementation: 'Context logs' },
+        { name: 'Checkpoint', implementation: 'State logs' },
+        { name: 'Functional-API', implementation: 'Node execution logs' },
+        { name: 'Multi-Agent', implementation: 'Agent logs' },
+        { name: 'Platform', implementation: 'Platform logs' },
+        { name: 'Time-Travel', implementation: 'Full history' },
+        { name: 'Monitoring', implementation: 'Audit trails' },
+        { name: 'HITL', implementation: 'Approval logs' },
+      ],
+      useCase:
+        'A financial AI logs every decision—auditors trace a $50K loan approval through 12 workflow steps, 3 agent collaborations, and 2 human approvals with timestamps.',
     },
     {
       name: 'Error Recovery',
-      implementations: {
-        ChromaDB: 'Auto-recovery',
-        Neo4j: 'Transaction rollback',
-        Core: 'Workflow recovery',
-        Memory: 'Context recovery',
-        Checkpoint: 'State restoration',
-        'Functional-API': 'Node recovery',
-        'Multi-Agent': 'Agent recovery',
-        Platform: 'Platform recovery',
-        'Time-Travel': 'Point-in-time recovery',
-        Monitoring: 'Error tracking',
-        HITL: 'Manual recovery',
-      },
+      icon: '🛡️',
+      description:
+        'Automatic rollback, state restoration, and graceful degradation strategies',
+      whyItMatters: 'Self-healing workflows without ops intervention',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Auto-recovery' },
+        { name: 'Neo4j', implementation: 'Transaction rollback' },
+        { name: 'Core', implementation: 'Workflow recovery' },
+        { name: 'Memory', implementation: 'Context recovery' },
+        { name: 'Checkpoint', implementation: 'State restoration' },
+        { name: 'Functional-API', implementation: 'Node recovery' },
+        { name: 'Multi-Agent', implementation: 'Agent recovery' },
+        { name: 'Platform', implementation: 'Platform recovery' },
+        { name: 'Time-Travel', implementation: 'Point-in-time recovery' },
+        { name: 'Monitoring', implementation: 'Error tracking' },
+        { name: 'HITL', implementation: 'Manual recovery' },
+      ],
+      useCase:
+        'A multi-agent workflow fails midway—the system automatically restores to the last checkpoint, retries the failed agent, and continues without losing 10 minutes of work.',
     },
     {
       name: 'Rate Limiting',
-      implementations: {
-        ChromaDB: 'Query throttling',
-        Neo4j: 'Query throttling',
-        Core: 'Workflow throttling',
-        Memory: 'Context throttling',
-        Checkpoint: 'State throttling',
-        'Functional-API': 'Node throttling',
-        'Multi-Agent': 'Agent throttling',
-        Platform: 'Platform throttling',
-        'Time-Travel': 'History throttling',
-        Monitoring: 'Metric throttling',
-        HITL: 'Approval throttling',
-      },
+      icon: '🚦',
+      description:
+        'Token bucket, sliding window, and distributed rate limiting per tenant',
+      whyItMatters: 'Cost control and fair usage without custom logic',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Query throttling' },
+        { name: 'Neo4j', implementation: 'Query throttling' },
+        { name: 'Core', implementation: 'Workflow throttling' },
+        { name: 'Memory', implementation: 'Context throttling' },
+        { name: 'Checkpoint', implementation: 'State throttling' },
+        { name: 'Functional-API', implementation: 'Node throttling' },
+        { name: 'Multi-Agent', implementation: 'Agent throttling' },
+        { name: 'Platform', implementation: 'Platform throttling' },
+        { name: 'Time-Travel', implementation: 'History throttling' },
+        { name: 'Monitoring', implementation: 'Metric throttling' },
+        { name: 'HITL', implementation: 'Approval throttling' },
+      ],
+      useCase:
+        'A freemium SaaS limits free users to 10 AI queries/day—rate limits enforce tier restrictions across all workflows without touching application code.',
     },
     {
-      name: 'Authentication',
-      implementations: {
-        ChromaDB: 'API keys',
-        Neo4j: 'Basic + JWT',
-        Core: 'Workflow auth',
-        Memory: 'Context auth',
-        Checkpoint: 'State auth',
-        'Functional-API': 'Node auth',
-        'Multi-Agent': 'Agent auth',
-        Platform: 'Platform auth',
-        'Time-Travel': 'History auth',
-        Monitoring: 'Metrics auth',
-        HITL: 'Approval auth',
-      },
+      name: 'Authentication & Authorization',
+      icon: '🔐',
+      description:
+        'JWT, API keys, RBAC, and OAuth2 integration with NestJS guards',
+      whyItMatters: 'Enterprise security patterns without custom middleware',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'API keys' },
+        { name: 'Neo4j', implementation: 'Basic + JWT' },
+        { name: 'Core', implementation: 'Workflow auth' },
+        { name: 'Memory', implementation: 'Context auth' },
+        { name: 'Checkpoint', implementation: 'State auth' },
+        { name: 'Functional-API', implementation: 'Node auth' },
+        { name: 'Multi-Agent', implementation: 'Agent auth' },
+        { name: 'Platform', implementation: 'Platform auth' },
+        { name: 'Time-Travel', implementation: 'History auth' },
+        { name: 'Monitoring', implementation: 'Metrics auth' },
+        { name: 'HITL', implementation: 'Approval auth' },
+      ],
+      useCase:
+        'A healthcare AI enforces HIPAA access controls—only authorized clinicians can invoke workflows that query patient embeddings or approve treatment plans.',
     },
     {
-      name: 'Streaming',
-      implementations: {
-        ChromaDB: 'Result streaming',
-        Neo4j: 'Result streaming',
-        Core: 'Workflow streaming',
-        Memory: 'Context streaming',
-        Checkpoint: 'State streaming',
-        'Functional-API': 'Node streaming',
-        'Multi-Agent': 'Agent streaming',
-        Platform: 'Platform streaming',
-        'Time-Travel': 'History streaming',
-        Monitoring: 'Metrics streaming',
-        HITL: 'Approval streaming',
-      },
+      name: 'Real-Time Streaming',
+      icon: '🌊',
+      description:
+        'WebSocket, SSE, and RxJS observables for token-by-token LLM responses',
+      whyItMatters: 'ChatGPT-style streaming with one decorator',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Result streaming' },
+        { name: 'Neo4j', implementation: 'Result streaming' },
+        { name: 'Core', implementation: 'Workflow streaming' },
+        { name: 'Memory', implementation: 'Context streaming' },
+        { name: 'Checkpoint', implementation: 'State streaming' },
+        { name: 'Functional-API', implementation: 'Node streaming' },
+        { name: 'Multi-Agent', implementation: 'Agent streaming' },
+        { name: 'Platform', implementation: 'Platform streaming' },
+        { name: 'Time-Travel', implementation: 'History streaming' },
+        { name: 'Monitoring', implementation: 'Metrics streaming' },
+        { name: 'HITL', implementation: 'Approval streaming' },
+      ],
+      useCase:
+        'A code generation AI streams TypeScript token-by-token to the frontend—users see real-time progress with automatic backpressure and reconnection handling.',
     },
     {
       name: 'Health Checks',
-      implementations: {
-        ChromaDB: 'Database health',
-        Neo4j: 'Database health',
-        Core: 'Workflow health',
-        Memory: 'Memory health',
-        Checkpoint: 'Checkpoint health',
-        'Functional-API': 'API health',
-        'Multi-Agent': 'Agent health',
-        Platform: 'Platform health',
-        'Time-Travel': 'History health',
-        Monitoring: 'Full health',
-        HITL: 'Approval health',
-      },
+      icon: '❤️',
+      description:
+        'Liveness, readiness, and dependency health checks for Kubernetes deployments',
+      whyItMatters: 'Production-ready orchestration without custom probes',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Database health' },
+        { name: 'Neo4j', implementation: 'Database health' },
+        { name: 'Core', implementation: 'Workflow health' },
+        { name: 'Memory', implementation: 'Memory health' },
+        { name: 'Checkpoint', implementation: 'Checkpoint health' },
+        { name: 'Functional-API', implementation: 'API health' },
+        { name: 'Multi-Agent', implementation: 'Agent health' },
+        { name: 'Platform', implementation: 'Platform health' },
+        { name: 'Time-Travel', implementation: 'History health' },
+        { name: 'Monitoring', implementation: 'Full health' },
+        { name: 'HITL', implementation: 'Approval health' },
+      ],
+      useCase:
+        'Kubernetes restarts unhealthy pods automatically when ChromaDB connection drops—health checks detect failures and trigger recovery before users notice.',
     },
     {
-      name: 'Documentation',
-      implementations: {
-        ChromaDB: 'Full API docs',
-        Neo4j: 'Full API docs',
-        Core: 'Full API docs',
-        Memory: 'Full API docs',
-        Checkpoint: 'Full API docs',
-        'Functional-API': 'Full API docs',
-        'Multi-Agent': 'Full API docs',
-        Platform: 'Full API docs',
-        'Time-Travel': 'Full API docs',
-        Monitoring: 'Full API docs',
-        HITL: 'Full API docs',
-      },
+      name: 'Comprehensive Documentation',
+      icon: '📚',
+      description:
+        'API docs, examples, migration guides, and troubleshooting for every library',
+      whyItMatters: 'Onboard developers in hours not weeks',
+      supportedLibraries: [
+        { name: 'ChromaDB', implementation: 'Full API docs' },
+        { name: 'Neo4j', implementation: 'Full API docs' },
+        { name: 'Core', implementation: 'Full API docs' },
+        { name: 'Memory', implementation: 'Full API docs' },
+        { name: 'Checkpoint', implementation: 'Full API docs' },
+        { name: 'Functional-API', implementation: 'Full API docs' },
+        { name: 'Multi-Agent', implementation: 'Full API docs' },
+        { name: 'Platform', implementation: 'Full API docs' },
+        { name: 'Time-Travel', implementation: 'Full API docs' },
+        { name: 'Monitoring', implementation: 'Full API docs' },
+        { name: 'HITL', implementation: 'Full API docs' },
+      ],
+      useCase:
+        'A new developer joins the team Friday—by Monday they ship a RAG pipeline using docs, examples, and migration guides without asking senior devs for help.',
     },
   ];
-
-  /**
-   * Check if a library supports a specific capability
-   */
-  hasCapability(library: string, capability: string): boolean {
-    const cap = this.capabilities.find((c) => c.name === capability);
-    return cap?.implementations[library] !== undefined;
-  }
-
-  /**
-   * Get color scheme for library glass pills
-   */
-  getLibraryColor(
-    library: string
-  ): 'electric' | 'neon' | 'lime' | 'neutral' {
-    const colorMap: Record<string, 'electric' | 'neon' | 'lime' | 'neutral'> = {
-      ChromaDB: 'electric',
-      Neo4j: 'neon',
-      Core: 'lime',
-      Memory: 'electric',
-      Checkpoint: 'neon',
-      'Functional-API': 'lime',
-      'Multi-Agent': 'electric',
-      Platform: 'neon',
-      'Time-Travel': 'lime',
-      Monitoring: 'electric',
-      HITL: 'neon',
-    };
-    return colorMap[library] || 'neutral';
-  }
 }
