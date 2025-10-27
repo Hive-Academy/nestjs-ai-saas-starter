@@ -1,67 +1,217 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowExampleCardComponent } from '../components/workflow-example-card.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import type { WorkflowExample } from '../interfaces';
 
 /**
  * Workflow Examples Section Component
  *
- * TASK_2025_026 - Task 11 (BATCH 3)
+ * REDESIGNED: Inspired by Design-3 (Stripe) - Clean, professional, code-focused
  *
- * Demonstrates real integrations where multiple libraries work together.
- * Shows 3 complete workflow examples: RAG Pipeline, Multi-Agent, DevBrand API.
+ * Shows 3 complete workflow examples demonstrating multi-library integrations:
+ * 1. RAG Pipeline - ChromaDB + Neo4j + Memory
+ * 2. Multi-Agent - Multi-Agent + HITL + Checkpoint
+ * 3. Production API - Workflow-Engine + Platform + Monitoring
  *
- * Design Specifications:
- * - Background: bg-secondary (#F9FAFB)
- * - Section padding: py-20 md:py-32
- * - Container: max-w-7xl mx-auto px-8 md:px-12
- * - Section headline: text-4xl md:text-6xl font-bold text-headline
- * - Section intro: text-lg md:text-xl text-secondary
- *
- * Reference:
- * - implementation-plan.md:676-684
- * - visual-design-specification.md:904-1078
- * - design-handoff.md:948-1031
+ * Design Philosophy:
+ * - Vertical stacked full-width cards
+ * - Side-by-side code comparison (before/after)
+ * - Module badges as glass pills
+ * - Prominent metric callouts (line reduction)
+ * - Scroll-reveal animations
+ * - Clean, professional, Stripe-inspired aesthetic
  */
 @Component({
   selector: 'app-workflow-examples-section',
   standalone: true,
-  imports: [CommonModule, WorkflowExampleCardComponent],
+  imports: [CommonModule, ScrollAnimationDirective],
   template: `
     <section
-      class="bg-secondary py-20 md:py-32"
+      class="relative bg-white py-20 md:py-32"
       aria-labelledby="workflow-examples-headline"
     >
-      <div class="max-w-7xl mx-auto px-8 md:px-12">
+      <div class="max-w-7xl mx-auto px-8 md:px-16">
         <!-- Section Headline -->
-        <h2
-          id="workflow-examples-headline"
-          class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center"
-        >
-          See Libraries Working Together
-        </h2>
+        <div class="text-center mb-20">
+          <h2
+            id="workflow-examples-headline"
+            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 80%',
+              duration: 0.8,
+              once: true
+            }"
+          >
+            Real Integrations in Action
+          </h2>
+          <p
+            class="text-xl md:text-2xl text-text-secondary max-w-4xl mx-auto leading-relaxed"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'slideUp',
+              start: 'top 75%',
+              duration: 0.8,
+              delay: 0.2,
+              once: true
+            }"
+          >
+            These aren't isolated tools—they're a cohesive ecosystem. See how
+            ChromaDB, Neo4j, and LangGraph modules orchestrate together.
+          </p>
+        </div>
 
-        <!-- Section Intro -->
-        <p
-          class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16"
-        >
-          These aren't isolated tools—they're a cohesive ecosystem. See how
-          ChromaDB, Neo4j, and LangGraph modules orchestrate together through
-          real production workflows.
-        </p>
-
-        <!-- Workflow Examples -->
+        <!-- Workflow Cards -->
         @for (workflow of workflows; track workflow.title) {
-        <app-workflow-example-card
-          [workflowExample]="workflow"
-          [index]="$index + 1"
-        />
+        <article
+          class="mb-24 last:mb-0"
+          scrollAnimation
+          [scrollConfig]="{
+            animation: 'fadeIn',
+            start: 'top 75%',
+            duration: 1,
+            delay: $index * 0.2,
+            once: true
+          }"
+        >
+          <!-- Workflow Header -->
+          <div class="mb-8">
+            <div class="flex items-center gap-4 mb-4">
+              <span class="text-6xl font-bold text-accent-primary/20">
+                {{ ($index + 1).toString().padStart(2, '0') }}
+              </span>
+              <div class="flex-1">
+                <h3
+                  class="text-3xl md:text-4xl font-bold text-text-headline mb-2"
+                >
+                  {{ workflow.title }}
+                </h3>
+                <p class="text-lg text-text-secondary">
+                  {{ workflow.description }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Module Badges -->
+            <div class="flex flex-wrap gap-2 mb-6">
+              @for (module of workflow.modules; track module) {
+              <span
+                class="px-4 py-2 bg-accent-primary/10 text-accent-primary text-sm font-semibold rounded-full border border-accent-primary/20"
+              >
+                {{ module }}
+              </span>
+              }
+            </div>
+          </div>
+
+          <!-- Code Comparison Card -->
+          <div
+            class="bg-white rounded-2xl border border-gray-200 shadow-card-elevated overflow-hidden"
+          >
+            <!-- Metric Banner -->
+            <div
+              class="bg-gradient-to-r from-accent-primary/10 via-accent-secondary/10 to-accent-tertiary/10 px-8 py-6 border-b border-gray-200"
+            >
+              <div class="flex items-center justify-center gap-4">
+                <div class="text-center">
+                  <div class="text-4xl font-bold text-accent-danger">
+                    {{ workflow.codeBeforeLines }}
+                  </div>
+                  <div class="text-sm text-text-secondary">lines before</div>
+                </div>
+                <div class="text-3xl text-text-secondary">→</div>
+                <div class="text-center">
+                  <div
+                    class="text-4xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent"
+                  >
+                    {{ workflow.codeAfterLines }}
+                  </div>
+                  <div class="text-sm text-text-secondary">lines after</div>
+                </div>
+                <div
+                  class="ml-8 px-6 py-3 bg-accent-success/20 rounded-full border border-accent-success/30"
+                >
+                  <div class="text-2xl font-bold text-accent-success">
+                    {{
+                      calculateReduction(
+                        workflow.codeBeforeLines,
+                        workflow.codeAfterLines
+                      )
+                    }}% less code
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Code Blocks -->
+            <div
+              class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200"
+            >
+              <!-- Before Code -->
+              <div class="p-8">
+                <div class="flex items-center gap-2 mb-4">
+                  <span class="w-3 h-3 rounded-full bg-accent-danger"></span>
+                  <span
+                    class="text-sm font-semibold text-accent-danger uppercase tracking-wide"
+                  >
+                    Before: Manual Setup
+                  </span>
+                </div>
+                <pre
+                  class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
+                ><code class="font-mono">{{ workflow.codeBefore }}</code></pre>
+              </div>
+
+              <!-- After Code -->
+              <div class="p-8 bg-gray-50">
+                <div class="flex items-center gap-2 mb-4">
+                  <span class="w-3 h-3 rounded-full bg-accent-success"></span>
+                  <span
+                    class="text-sm font-semibold text-accent-success uppercase tracking-wide"
+                  >
+                    After: NestJS Patterns
+                  </span>
+                </div>
+                <pre
+                  class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
+                ><code class="font-mono">{{ workflow.codeAfter }}</code></pre>
+              </div>
+            </div>
+
+            <!-- Value Delivered -->
+            <div
+              class="px-8 py-6 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200"
+            >
+              <div
+                class="text-sm font-semibold text-text-headline uppercase tracking-wide mb-4"
+              >
+                Value Delivered
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (value of workflow.valueDelivered; track value) {
+                <div class="flex items-start gap-3">
+                  <span class="text-accent-success text-xl mt-0.5">✓</span>
+                  <span class="text-base text-text-primary">{{ value }}</span>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </article>
         }
       </div>
     </section>
   `,
 })
 export class WorkflowExamplesSectionComponent {
+  /**
+   * Calculate percentage reduction from before to after
+   */
+  calculateReduction(before: number, after: number): number {
+    return Math.round(((before - after) / before) * 100);
+  }
+
   /**
    * Complete workflow examples showing multi-library integrations
    */
