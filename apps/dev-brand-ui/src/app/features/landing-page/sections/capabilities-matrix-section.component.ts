@@ -1,5 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EnhancedCardComponent } from '../components/enhanced-card.component';
+import { GlassPillComponent } from '../components/glass-pill.component';
+import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
+import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
  * Enterprise Capabilities Matrix Section Component
@@ -24,7 +28,13 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-capabilities-matrix-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    EnhancedCardComponent,
+    GlassPillComponent,
+    Icon3DContainerComponent,
+    CountUpDirective,
+  ],
   template: `
     <section
       class="bg-white py-20 md:py-32"
@@ -49,8 +59,14 @@ import { CommonModule } from '@angular/common';
         </p>
 
         <!-- Capability Matrix Table -->
-        <div class="overflow-x-auto mb-16">
-          <table class="w-full border-collapse">
+        <app-enhanced-card
+          [variant]="'solid'"
+          [padding]="'lg'"
+          [hoverable]="false"
+          class="mb-16"
+        >
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
             <thead>
               <tr class="bg-gray-50">
                 <th
@@ -62,7 +78,11 @@ import { CommonModule } from '@angular/common';
                 <th
                   class="text-center p-4 text-sm font-semibold text-secondary border-b border-gray-200 whitespace-nowrap"
                 >
-                  {{ library }}
+                  <app-glass-pill
+                    [label]="library"
+                    [color]="getLibraryColor(library)"
+                    [size]="'sm'"
+                  ></app-glass-pill>
                 </th>
                 }
               </tr>
@@ -106,21 +126,32 @@ import { CommonModule } from '@angular/common';
               }
             </tbody>
           </table>
-        </div>
+          </div>
+        </app-enhanced-card>
 
         <!-- ROI Calculation Callout -->
-        <div class="bg-accent-primary/10 rounded-card p-12 text-center">
-          <div class="text-6xl font-bold text-accent-primary mb-4">
-            $262,800
+        <app-enhanced-card
+          [variant]="'glass'"
+          [padding]="'lg'"
+          [hoverable]="false"
+          class="bg-accent-primary/10"
+        >
+          <div class="text-center">
+            <div class="text-6xl font-bold text-accent-primary mb-4">
+              $<span appCountUp [targetValue]="262800" [duration]="2500">0</span>
+            </div>
+            <div class="text-2xl font-bold text-headline mb-4">
+              Infrastructure Development Savings
+            </div>
+            <div class="text-lg text-secondary max-w-2xl mx-auto">
+              Traditional approach:
+              <span appCountUp [targetValue]="11" [suffix]="' weeks'">0 weeks</span> =
+              <span appCountUp [targetValue]="1760" [suffix]="' hours'">0 hours</span> =
+              $<span appCountUp [targetValue]="264000">0</span> in developer time.
+              Our approach: 1 day = 8 hours = $1,200. Savings: $<span appCountUp [targetValue]="262800">0</span>.
+            </div>
           </div>
-          <div class="text-2xl font-bold text-headline mb-4">
-            Infrastructure Development Savings
-          </div>
-          <div class="text-lg text-secondary max-w-2xl mx-auto">
-            Traditional approach: 11 weeks = 1,760 hours = $264,000 in developer
-            time. Our approach: 1 day = 8 hours = $1,200. Savings: $262,800.
-          </div>
-        </div>
+        </app-enhanced-card>
       </div>
     </section>
   `,
@@ -334,5 +365,27 @@ export class CapabilitiesMatrixSectionComponent {
   hasCapability(library: string, capability: string): boolean {
     const cap = this.capabilities.find((c) => c.name === capability);
     return cap?.implementations[library] !== undefined;
+  }
+
+  /**
+   * Get color scheme for library glass pills
+   */
+  getLibraryColor(
+    library: string
+  ): 'electric' | 'neon' | 'lime' | 'neutral' {
+    const colorMap: Record<string, 'electric' | 'neon' | 'lime' | 'neutral'> = {
+      ChromaDB: 'electric',
+      Neo4j: 'neon',
+      Core: 'lime',
+      Memory: 'electric',
+      Checkpoint: 'neon',
+      'Functional-API': 'lime',
+      'Multi-Agent': 'electric',
+      Platform: 'neon',
+      'Time-Travel': 'lime',
+      Monitoring: 'electric',
+      HITL: 'neon',
+    };
+    return colorMap[library] || 'neutral';
   }
 }
