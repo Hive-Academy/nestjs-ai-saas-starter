@@ -1,36 +1,36 @@
 /**
- * NebulaVolumetricComponent - Advanced Volumetric Nebula with Custom Shaders
+ * NebulaVolumetricComponent - True Volumetric Smoke/Cloud Nebula
  *
- * Creates realistic nebula clouds using:
- * - Custom vertex/fragment shaders
- * - Multi-octave Perlin/Simplex noise for wispy structures
- * - Volumetric ray-marching techniques
- * - Multiple color channels (red, blue, purple like Hubble images)
- * - Soft additive blending for glow
+ * Creates realistic smoke-like nebula clouds using:
+ * - Large continuous planes (not particles/circles)
+ * - Multi-octave 3D Perlin noise for organic smoke patterns
+ * - Ultra-soft edge falloff (no visible geometry)
+ * - Slow-flowing animation for natural cloud movement
+ * - Additive blending for luminous glow
  *
- * Features:
- * - Procedural 3D noise textures
- * - Custom shader for volumetric rendering
- * - Color mixing based on astronomical nebulae
- * - Optional pulsing/flowing animation
- * - Depth-based alpha falloff
+ * Technical approach:
+ * - Single large plane mesh per layer (not multiple circles)
+ * - Continuous noise field across entire plane
+ * - World-space coordinates for seamless appearance
+ * - Domain warping for organic smoke tendrils
  *
  * Usage:
  * ```html
  * <app-nebula-volumetric
- *   [cloudCount]="8"
- *   [radius]="30"
- *   [primaryColor]="'#ff6b9d'"
- *   [secondaryColor]="'#4d4dff'"
- *   [tertiaryColor]="'#9d4dff'"
- *   [flow]="true"
+ *   [width]="120"
+ *   [height]="60"
+ *   [layers]="2"
+ *   [opacity]="0.6"
+ *   [primaryColor]="'#0088ff'"
+ *   [secondaryColor]="'#00d4ff'"
+ *   [tertiaryColor]="'#ff6bd4'"
+ *   [enableFlow]="true"
  * />
  * ```
  */
 
 import {
   Component,
-  computed,
   CUSTOM_ELEMENTS_SCHEMA,
   effect,
   ElementRef,
@@ -40,17 +40,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { injectBeforeRender } from 'angular-three';
-import { random } from 'maath';
 import * as THREE from 'three';
-
-interface NebulaCloud {
-  id: number;
-  position: [number, number, number];
-  scale: [number, number, number];
-  rotationSpeed: number;
-  pulsePhase: number;
-  colorMix: number; // 0-1 value for blending colors
-}
 
 @Component({
   selector: 'app-nebula-volumetric',
@@ -59,17 +49,38 @@ interface NebulaCloud {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <ngt-group #nebulaGroup [position]="position()">
-      @for (cloud of cloudData(); track cloud.id) {
+      <!-- Layer 1: Main cloud layer (background) -->
       <ngt-mesh
-        [position]="cloud.position"
-        [scale]="cloud.scale"
-        [renderOrder]="998"
+        [position]="[0, 0, 0]"
+        [scale]="[width(), height(), 1]"
+        [renderOrder]="997"
       >
-        <ngt-circle-geometry [args]="[0.5, 32]" />
+        <ngt-plane-geometry [args]="[1, 1, 256, 256]" />
         <ngt-shader-material
           [vertexShader]="vertexShader"
           [fragmentShader]="fragmentShader"
-          [uniforms]="getUniforms(cloud)"
+          [uniforms]="layer1Uniforms"
+          [transparent]="true"
+          [blending]="additiveBlending"
+          [depthWrite]="false"
+          [depthTest]="true"
+          [side]="doubleSide"
+          [fog]="false"
+        />
+      </ngt-mesh>
+
+      <!-- Layer 2: Secondary cloud layer (adds depth) -->
+      @if (layers() >= 2) {
+      <ngt-mesh
+        [position]="[8, -5, -8]"
+        [scale]="[width() * 0.85, height() * 0.85, 1]"
+        [renderOrder]="998"
+      >
+        <ngt-plane-geometry [args]="[1, 1, 256, 256]" />
+        <ngt-shader-material
+          [vertexShader]="vertexShader"
+          [fragmentShader]="fragmentShader"
+          [uniforms]="layer2Uniforms"
           [transparent]="true"
           [blending]="additiveBlending"
           [depthWrite]="false"
@@ -84,22 +95,29 @@ interface NebulaCloud {
 })
 export class NebulaVolumetricComponent {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('nebulaGroup');
-
   private readonly injector = inject(Injector);
+
   // Configuration inputs
   readonly position = input<[number, number, number]>([0, 0, 0]);
-  readonly cloudCount = input<number>(8);
-  readonly radius = input<number>(30);
-  readonly minSize = input<number>(20);
-  readonly maxSize = input<number>(45);
-  readonly minOpacity = input<number>(0.15);
-  readonly maxOpacity = input<number>(0.35);
-  readonly flow = input<boolean>(true);
+  readonly width = input<number>(120);
+  readonly height = input<number>(60);
+  readonly layers = input<number>(2);
+  readonly opacity = input<number>(0.6);
+  readonly enableFlow = input<boolean>(true);
+  readonly flowSpeed = input<number>(0.5);
 
-  // Color inputs (astronomical nebula colors)
-  readonly primaryColor = input<string>('#ff6b9d'); // Red/Pink (H-alpha)
-  readonly secondaryColor = input<string>('#4d4dff'); // Blue (Oxygen-III)
-  readonly tertiaryColor = input<string>('#9d4dff'); // Purple (Sulfur-II)
+  // Visual quality controls
+  readonly noiseScale = input<number>(0.01); // Smaller = larger features, bigger = more detail
+  readonly density = input<number>(1.1); // Overall cloud density (0.5 - 2.0)
+  readonly edgeSoftness = input<number>(0.3); // Edge fade softness (0.1 = hard, 0.5 = very soft)
+  readonly contrast = input<number>(1.0); // Bright/dim contrast (0.5 = low, 2.0 = high)
+  readonly glowIntensity = input<number>(3.0); // Glow strength in bright areas (1.0 - 5.0)
+  readonly colorIntensity = input<number>(1.8); // Color brightness multiplier (0.5 - 3.0)
+
+  // Color inputs
+  readonly primaryColor = input<string>('#0088ff');
+  readonly secondaryColor = input<string>('#00d4ff');
+  readonly tertiaryColor = input<string>('#ff6bd4');
 
   // Three.js constants
   readonly additiveBlending = THREE.AdditiveBlending;
@@ -108,11 +126,12 @@ export class NebulaVolumetricComponent {
   // Shader code
   readonly vertexShader = `
     varying vec2 vUv;
-    varying vec3 vPosition;
+    varying vec3 vWorldPosition;
 
     void main() {
       vUv = uv;
-      vPosition = position;
+      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPos.xyz;
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `;
@@ -121,15 +140,20 @@ export class NebulaVolumetricComponent {
     uniform float uTime;
     uniform float uOpacity;
     uniform float uNoiseScale;
-    uniform float uColorMix;
+    uniform float uFlowSpeed;
+    uniform float uDensity;
+    uniform float uEdgeSoftness;
+    uniform float uContrast;
+    uniform float uGlowIntensity;
+    uniform float uColorIntensity;
     uniform vec3 uPrimaryColor;
     uniform vec3 uSecondaryColor;
     uniform vec3 uTertiaryColor;
 
     varying vec2 vUv;
-    varying vec3 vPosition;
+    varying vec3 vWorldPosition;
 
-    // 3D Simplex noise function (from Stefan Gustavson)
+    // 3D Simplex noise
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
     vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
     vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -195,193 +219,249 @@ export class NebulaVolumetricComponent {
       return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
     }
 
-    // FBM (Fractional Brownian Motion) - standard implementation
+    // FBM for smoke/cloud patterns
     float fbm(vec3 p) {
       float value = 0.0;
       float amplitude = 0.5;
       float frequency = 1.0;
 
-      // 4 octaves - enough detail without artifacts
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 5; i++) {
         value += amplitude * snoise(p * frequency);
-        frequency *= 2.0;  // lacunarity
-        amplitude *= 0.5;  // gain
+        frequency *= 2.0;
+        amplitude *= 0.5;
       }
 
       return value;
     }
 
+    // Domain warping for organic smoke tendrils
+    vec3 domainWarp(vec3 p) {
+      float warpAmount = 0.6;
+      return p + vec3(
+        fbm(p + vec3(1.7, 9.2, 4.1)) * warpAmount,
+        fbm(p + vec3(8.3, 2.8, 5.5)) * warpAmount,
+        fbm(p + vec3(3.5, 6.1, 2.9)) * warpAmount
+      );
+    }
+
     void main() {
-      // Center coordinates (-0.5 to 0.5)
+      // World-space position for continuous field
+      vec3 pos = vWorldPosition * uNoiseScale;
+
+      // Slow-flowing animation
+      float time = uTime * uFlowSpeed * 0.05;
+      vec3 flowOffset = vec3(time * 0.15, time * 0.08, time * 0.05);
+
+      // Apply domain warping for organic smoke
+      vec3 warpedPos = domainWarp(pos + flowOffset);
+
+      // Generate multi-scale smoke density
+      float smoke1 = fbm(warpedPos);
+      float smoke2 = fbm(warpedPos * 1.5 + vec3(5.2, 3.7, 8.1));
+      float smoke3 = fbm(warpedPos * 0.6 + vec3(2.3, 7.1, 4.6));
+
+      // Combine smoke layers
+      float smokeDensity = smoke1 * 0.45 + smoke2 * 0.35 + smoke3 * 0.2;
+      smokeDensity = (smokeDensity + 1.0) * 0.5; // Normalize to [0, 1]
+
+      // Apply density multiplier
+      smokeDensity *= uDensity;
+
+      // CRITICAL: Ultra-soft edge falloff with NO visible boundaries
       vec2 centeredUv = vUv - 0.5;
+      float distFromCenter = length(centeredUv);
 
-      // Calculate distance from center for circular falloff
-      float dist = length(centeredUv);
+      // Multi-stage radial falloff for extremely soft edges
+      float radialFalloff1 = 1.0 - smoothstep(0.0, 0.6, distFromCenter);
+      float radialFalloff2 = 1.0 - smoothstep(0.0, 0.5, distFromCenter);
+      float radialFalloff3 = 1.0 - smoothstep(0.0, 0.4, distFromCenter);
 
-      // Time-based animation
-      float time = uTime * 0.03;
+      // Combine multiple falloff stages
+      float edgeFalloff = radialFalloff1 * 0.3 + radialFalloff2 * 0.4 + radialFalloff3 * 0.3;
 
-      // Generate noise position with time flow
-      vec3 noisePos = vec3(centeredUv * uNoiseScale, time);
+      // Configurable edge softness (lower = softer)
+      edgeFalloff = pow(edgeFalloff, uEdgeSoftness);
 
-      // Main density using FBM
-      float density = fbm(noisePos + vec3(time * 0.5, time * 0.3, 0.0));
+      // Strong noise-based irregularity for organic edges
+      float edgeNoise1 = fbm(warpedPos * 1.2) * 0.5 + 0.5;
+      float edgeNoise2 = fbm(warpedPos * 0.6 + vec3(5.0, 5.0, 5.0)) * 0.5 + 0.5;
+      float edgeNoise = edgeNoise1 * 0.6 + edgeNoise2 * 0.4;
 
-      // Add second layer for detail
-      float detail = fbm(noisePos * 2.5 + vec3(time * 0.3, -time * 0.2, 0.0));
+      edgeFalloff *= 0.2 + edgeNoise * 0.8;
 
-      // Combine layers
-      float combinedNoise = density * 0.6 + detail * 0.4;
-      combinedNoise = (combinedNoise + 1.0) * 0.5; // Normalize to 0-1
+      // Calculate base alpha
+      float alpha = smokeDensity * edgeFalloff;
 
-      // Very soft radial falloff for cloud-like edges (important for circular geometry)
-      float radialFalloff = 1.0 - smoothstep(0.0, 1.0, dist);
-      radialFalloff = pow(radialFalloff, 0.8); // Gentle curve for very soft edges
+      // Create BRIGHT and DIM areas (configurable contrast)
+      // Use thresholding to create intense bright spots
+      float brightAreas = smoothstep(0.55, 0.75, smokeDensity);
+      float dimAreas = smoothstep(0.2, 0.4, smokeDensity);
 
-      // Add noise-based irregularity to edges
-      float edgeNoise = fbm(noisePos * 3.0) * 0.3;
-      float irregularEdge = radialFalloff * (0.7 + edgeNoise);
+      // Contrast control: either very bright or very dim
+      float intensityMask = brightAreas * (2.5 * uContrast) + dimAreas * (0.3 * uContrast);
 
-      // Combine density with edge falloff
-      float alpha = combinedNoise * irregularEdge;
+      // Very soft alpha curves for gas-like appearance
+      alpha = pow(max(alpha, 0.0), 1.8);
+      alpha = smoothstep(0.0, 1.0, alpha);
+      alpha = smoothstep(0.0, 1.0, alpha); // Double smoothstep for extra softness
 
-      // Very soft power curve for fog-like appearance
-      alpha = pow(max(alpha, 0.0), 1.5);
+      // Apply opacity with intensity variation
+      alpha *= uOpacity * intensityMask;
 
-      // Apply overall opacity
-      alpha *= uOpacity;
+      // Discard nearly transparent pixels
+      if (alpha < 0.002) discard;
 
-      // Smooth color gradient
-      float colorGradient = combinedNoise * 0.5 + 0.5;
-      vec3 color1 = mix(uPrimaryColor, uSecondaryColor, colorGradient);
-      vec3 color2 = mix(uSecondaryColor, uTertiaryColor, density * 0.5 + 0.5);
-      vec3 finalColor = mix(color1, color2, uColorMix);
+      // Color mixing with HIGH CONTRAST
+      // Bright areas = intense primary color
+      // Dim areas = very dark secondary color
+      float densityContrast = smoothstep(0.3, 0.7, smokeDensity);
 
-      // Brightness variation
-      float brightness = 0.9 + combinedNoise * 0.3;
+      // Dark base color for dim areas
+      vec3 darkColor = uSecondaryColor * 0.15;
+
+      // Bright color for intense areas (configurable)
+      vec3 brightColor = uPrimaryColor * uColorIntensity;
+
+      // Mid-tone color
+      vec3 midColor = mix(uSecondaryColor, uPrimaryColor, 0.6);
+
+      // Mix based on density with high contrast
+      vec3 color1 = mix(darkColor, midColor, densityContrast);
+      vec3 color2 = mix(color1, brightColor, brightAreas);
+
+      // Add accent color in specific density ranges
+      vec3 finalColor = mix(color2, uTertiaryColor * 1.5, brightAreas * 0.2);
+
+      // Strong brightness variation for dramatic lighting
+      float brightness = 0.4 + smokeDensity * 1.2 + brightAreas * 1.5;
       finalColor *= brightness;
+
+      // Configurable glow in VERY bright areas only
+      float strongGlow = pow(brightAreas, 3.0) * uGlowIntensity;
+      finalColor += strongGlow * uPrimaryColor * 2.0;
 
       gl_FragColor = vec4(finalColor, alpha);
     }
   `;
 
-  /**
-   * Generate uniform values for a specific cloud
-   */
-  getUniforms(cloud: NebulaCloud): { [uniform: string]: THREE.IUniform } {
-    return {
-      uTime: { value: 0.0 },
-      uOpacity: {
-        value:
-          this.minOpacity() +
-          Math.random() * (this.maxOpacity() - this.minOpacity()),
-      },
-      uNoiseScale: { value: 0.8 + Math.random() * 0.4 }, // 0.8-1.2
-      uColorMix: { value: cloud.colorMix },
-      uPrimaryColor: { value: new THREE.Color(this.primaryColor()) },
-      uSecondaryColor: { value: new THREE.Color(this.secondaryColor()) },
-      uTertiaryColor: { value: new THREE.Color(this.tertiaryColor()) },
-    };
-  }
+  // Uniform sets for each layer
+  layer1Uniforms: { [uniform: string]: THREE.IUniform } = {
+    uTime: { value: 0.0 },
+    uOpacity: { value: 0.6 },
+    uNoiseScale: { value: 0.01 },
+    uFlowSpeed: { value: 0.5 },
+    uDensity: { value: 1.1 },
+    uEdgeSoftness: { value: 0.3 },
+    uContrast: { value: 1.0 },
+    uGlowIntensity: { value: 3.0 },
+    uColorIntensity: { value: 1.8 },
+    uPrimaryColor: { value: new THREE.Color('#0088ff') },
+    uSecondaryColor: { value: new THREE.Color('#00d4ff') },
+    uTertiaryColor: { value: new THREE.Color('#ff6bd4') },
+  };
 
-  /**
-   * Generate cloud data with positions and properties
-   */
-  readonly cloudData = computed(() => {
-    const count = this.cloudCount();
-    const radius = this.radius();
-    const minSize = this.minSize();
-    const maxSize = this.maxSize();
-
-    // Generate horizontal/elongated nebula distribution (not spherical)
-    const clouds: NebulaCloud[] = [];
-
-    for (let i = 0; i < count; i++) {
-      // Create elongated horizontal distribution with higher density in center
-      const t = i / count; // 0 to 1
-
-      // Use gaussian-like distribution for center density
-      const centerBias = Math.pow(Math.sin(t * Math.PI), 1.5);
-
-      const noise1 = (Math.random() - 0.5) * 2; // -1 to 1
-      const noise2 = (Math.random() - 0.5) * 2;
-      const noise3 = (Math.random() - 0.5) * 2;
-
-      // Horizontal spread (much wider, with denser center)
-      const x =
-        (t - 0.5) * radius * 3 + noise1 * radius * (0.3 + centerBias * 0.4);
-
-      // Vertical variation (tighter in center for defined core)
-      const y = noise2 * radius * (0.2 + (1 - centerBias) * 0.3);
-
-      // Depth variation (more depth at center)
-      const z = noise3 * radius * (0.3 + centerBias * 0.2);
-
-      const position: [number, number, number] = [x, y, z];
-
-      // Vary size: larger in center, much smaller at edges for wispy tendrils
-      const centerFactor = 1 - Math.abs(t - 0.5) * 2; // 0 at edges, 1 at center
-      const sizeVariation = minSize + Math.random() * (maxSize - minSize);
-      const size = sizeVariation * (0.4 + centerFactor * 0.6);
-
-      // Random rotation speed
-      const rotationSpeed = 0.02 + Math.random() * 0.05;
-
-      // Random pulse phase
-      const pulsePhase = Math.random() * Math.PI * 2;
-
-      // Color mix varies smoothly along the nebula length
-      const colorMix = t + (Math.random() - 0.5) * 0.2;
-
-      clouds.push({
-        id: i,
-        position,
-        scale: [size, size, 1] as [number, number, number],
-        rotationSpeed,
-        pulsePhase,
-        colorMix: Math.max(0, Math.min(1, colorMix)), // Clamp to 0-1
-      });
-    }
-
-    console.log(
-      `[NebulaVolumetric] Generated ${count} horizontal nebula clouds`
-    );
-    return clouds;
-  });
+  layer2Uniforms: { [uniform: string]: THREE.IUniform } = {
+    uTime: { value: 0.0 },
+    uOpacity: { value: 0.5 },
+    uNoiseScale: { value: 0.013 },
+    uFlowSpeed: { value: -0.3 },
+    uDensity: { value: 0.9 },
+    uEdgeSoftness: { value: 0.3 },
+    uContrast: { value: 1.0 },
+    uGlowIntensity: { value: 3.0 },
+    uColorIntensity: { value: 1.8 },
+    uPrimaryColor: { value: new THREE.Color('#0088ff') },
+    uSecondaryColor: { value: new THREE.Color('#00d4ff') },
+    uTertiaryColor: { value: new THREE.Color('#ff6bd4') },
+  };
 
   private time = 0;
 
   constructor() {
-    // Setup flow animation if enabled
-
+    // Update colors when inputs change
     effect(() => {
-      if (this.flow()) {
+      const primary = new THREE.Color(this.primaryColor());
+      const secondary = new THREE.Color(this.secondaryColor());
+      const tertiary = new THREE.Color(this.tertiaryColor());
+
+      this.layer1Uniforms['uPrimaryColor'].value = primary;
+      this.layer1Uniforms['uSecondaryColor'].value = secondary;
+      this.layer1Uniforms['uTertiaryColor'].value = tertiary;
+
+      this.layer2Uniforms['uPrimaryColor'].value = primary;
+      this.layer2Uniforms['uSecondaryColor'].value = secondary;
+      this.layer2Uniforms['uTertiaryColor'].value = tertiary;
+    });
+
+    // Update opacity
+    effect(() => {
+      const opacity = this.opacity();
+      this.layer1Uniforms['uOpacity'].value = opacity * 0.5;
+      this.layer2Uniforms['uOpacity'].value = opacity * 0.4;
+    });
+
+    // Update flow speed
+    effect(() => {
+      const speed = this.flowSpeed();
+      this.layer1Uniforms['uFlowSpeed'].value = speed;
+      this.layer2Uniforms['uFlowSpeed'].value = -speed * 0.6;
+    });
+
+    // Update noise scale (size)
+    effect(() => {
+      const scale = this.noiseScale();
+      this.layer1Uniforms['uNoiseScale'].value = scale;
+      this.layer2Uniforms['uNoiseScale'].value = scale * 1.3;
+    });
+
+    // Update density
+    effect(() => {
+      const density = this.density();
+      this.layer1Uniforms['uDensity'].value = density;
+      this.layer2Uniforms['uDensity'].value = density * 0.9;
+    });
+
+    // Update edge softness
+    effect(() => {
+      const softness = this.edgeSoftness();
+      this.layer1Uniforms['uEdgeSoftness'].value = softness;
+      this.layer2Uniforms['uEdgeSoftness'].value = softness;
+    });
+
+    // Update contrast
+    effect(() => {
+      const contrast = this.contrast();
+      this.layer1Uniforms['uContrast'].value = contrast;
+      this.layer2Uniforms['uContrast'].value = contrast;
+    });
+
+    // Update glow intensity
+    effect(() => {
+      const glow = this.glowIntensity();
+      this.layer1Uniforms['uGlowIntensity'].value = glow;
+      this.layer2Uniforms['uGlowIntensity'].value = glow;
+    });
+
+    // Update color intensity
+    effect(() => {
+      const intensity = this.colorIntensity();
+      this.layer1Uniforms['uColorIntensity'].value = intensity;
+      this.layer2Uniforms['uColorIntensity'].value = intensity;
+    });
+
+    // Setup animation
+    effect(() => {
+      if (this.enableFlow()) {
         injectBeforeRender(
           ({ delta }) => {
             const group = this.groupRef()?.nativeElement;
             if (!group) return;
 
-            // Track elapsed time
             this.time += delta;
 
-            // Slow rotation for nebula drift
-            group.rotation.y += delta * 0.01;
-
-            // Update shader uniforms for each cloud
-            const clouds = this.cloudData();
-            group.children.forEach((mesh, i) => {
-              const cloud = clouds[i];
-              if (!cloud) return;
-
-              const material = (mesh as THREE.Mesh)
-                .material as THREE.ShaderMaterial;
-
-              // Update time uniform for animated noise
-              material.uniforms['uTime'].value = this.time;
-
-              // Subtle rotation of individual clouds
-              mesh.rotation.z += delta * cloud.rotationSpeed;
-            });
+            // Update time uniforms
+            this.layer1Uniforms['uTime'].value = this.time;
+            this.layer2Uniforms['uTime'].value = this.time;
           },
           {
             injector: this.injector,

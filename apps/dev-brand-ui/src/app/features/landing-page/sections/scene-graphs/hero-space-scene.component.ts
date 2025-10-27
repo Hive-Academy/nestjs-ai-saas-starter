@@ -35,6 +35,7 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
 
 import { Float3dDirective } from '../../../../core/angular-3d';
 import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
+import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -47,6 +48,7 @@ import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.
     BloomEffectComponent,
     Float3dDirective,
     Glow3dDirective,
+    NebulaComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -132,55 +134,53 @@ import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.
     />
 
     <!-- ================================ -->
-    <!-- VOLUMETRIC NEBULA CLOUDS (Shader-based with procedural noise) -->
-    <!-- Horizontal elongated nebula with organic flowing shape -->
-    <!-- Planet at z=9.5, Camera at z=12 -->
+    <!-- VOLUMETRIC SMOKE/CLOUD NEBULA (Continuous shader, not circles) -->
+    <!-- Large plane with organic smoke patterns -->
+    <!-- Planet at z=9.5, Camera at z=12, Nebula at z=-60 (far behind) -->
+    <!--
+    TWEAKABLE PARAMETERS:
+    - [width]/[height]: Size of nebula (increase for larger coverage)
+    - [noiseScale]: 0.005-0.02 (smaller = larger features, bigger = more detail)
+    - [density]: 0.5-2.0 (cloud thickness)
+    - [edgeSoftness]: 0.1-0.5 (0.1 = hard edges, 0.5 = very soft/invisible)
+    - [contrast]: 0.5-2.0 (difference between bright and dim areas)
+    - [glowIntensity]: 1.0-5.0 (brightness of glowing areas)
+    - [colorIntensity]: 0.5-3.0 (overall color brightness)
+    - [opacity]: 0.3-1.0 (overall transparency)
+    - [flowSpeed]: 0.1-2.0 (animation speed, higher = faster)
+    -->
     <!-- ================================ -->
 
-    <!-- MAIN NEBULA - Horizontal nebula behind planet -->
+    <!-- MAIN NEBULA - Continuous smoke/cloud effect -->
+    <app-nebula
+      [particleCount]="120"
+      [radius]="80"
+      [colorPalette]="['#ffffff', '#cccccc']"
+      [minSize]="40"
+      [maxSize]="80"
+      [opacity]="0.2"
+      [flow]="false"
+      [position]="[-180, 0, -230]"
+    />
+
     <app-nebula-volumetric
-      [cloudCount]="80"
-      [radius]="25"
-      [minSize]="15"
-      [maxSize]="45"
-      [minOpacity]="0.3"
-      [maxOpacity]="0.6"
+      [width]="240"
+      [height]="100"
+      [layers]="6"
+      [opacity]="0.65"
       [primaryColor]="'#0088ff'"
       [secondaryColor]="'#00d4ff'"
       [tertiaryColor]="'#ff6bd4'"
-      [flow]="true"
-      [position]="[0, 3, -60]"
+      [enableFlow]="false"
+      [flowSpeed]="0.8"
+      [noiseScale]="0.01"
+      [density]="1.1"
+      [edgeSoftness]="0.5"
+      [contrast]="1.0"
+      [glowIntensity]="30"
+      [colorIntensity]="3"
+      [position]="[-90, 0, -90]"
     />
-
-    <!-- CORE NEBULA - Dense bright center layer -->
-    <!-- <app-nebula-volumetric
-      [cloudCount]="80"
-      [radius]="35"
-      [minSize]="15"
-      [maxSize]="40"
-      [minOpacity]="0.5"
-      [maxOpacity]="0.85"
-      [primaryColor]="'#4dd4ff'"
-      [secondaryColor]="'#ffffff'"
-      [tertiaryColor]="'#ffa0e0'"
-      [flow]="true"
-      [position]="[-135, 68, -188]"
-    /> -->
-
-    <!-- ACCENT NEBULA - Purple/pink accent layer for depth -->
-    <!-- <app-nebula-volumetric
-      [cloudCount]="60"
-      [radius]="38"
-      [minSize]="8"
-      [maxSize]="45"
-      [minOpacity]="0.3"
-      [maxOpacity]="0.65"
-      [primaryColor]="'#8060ff'"
-      [secondaryColor]="'#c060ff'"
-      [tertiaryColor]="'#00d4ff'"
-      [flow]="true"
-      [position]="[-130, 70, -185]"
-    /> -->
 
     <!-- ================================ -->
     <!-- BLOOM POST-PROCESSING -->
