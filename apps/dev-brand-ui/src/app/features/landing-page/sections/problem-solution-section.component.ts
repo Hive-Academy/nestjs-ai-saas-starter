@@ -1,16 +1,27 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { EnhancedCardComponent } from '../components/enhanced-card.component';
+import { GlassPillComponent } from '../components/glass-pill.component';
+import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
+import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
- * Problem/Solution Section
+ * Problem/Solution Section - Enhanced Visual Design
  * Establishes pain points TypeScript developers face when building AI applications
- * Positions solution with 4 proof metrics
+ * Positions solution with 4 proof metrics using enhanced visual components
  */
 @Component({
   selector: 'app-problem-solution-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective],
+  imports: [
+    CommonModule,
+    ScrollAnimationDirective,
+    EnhancedCardComponent,
+    GlassPillComponent,
+    Icon3DContainerComponent,
+    CountUpDirective,
+  ],
   template: `
     <section class="py-20 md:py-32 px-8 md:px-16 bg-gray-50">
       <div class="max-w-7xl mx-auto">
@@ -45,9 +56,12 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           production infrastructure (multi-tenancy, monitoring, approvals).
         </p>
 
-        <!-- Solution Card -->
-        <div
-          class="bg-white rounded-2xl shadow-lg p-8 md:p-12 max-w-4xl mx-auto mb-16"
+        <!-- Solution Card - Enhanced with glass morphism -->
+        <app-enhanced-card
+          [variant]="'solid'"
+          [padding]="'lg'"
+          [hoverable]="true"
+          class="max-w-4xl mx-auto mb-16 block"
           scrollAnimation
           [scrollConfig]="{
             animation: 'slideUp',
@@ -56,17 +70,57 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             once: true
           }"
         >
-          <h3 class="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
-            Our Solution: NestJS Patterns for AI/ML
-          </h3>
-          <p class="text-lg md:text-xl text-gray-600 leading-relaxed">
-            NestJS AI SaaS Starter applies familiar NestJS patterns (decorators,
-            dependency injection, modules) to AI/ML operations. ChromaDB and
-            Neo4j get TypeORM-style repositories. LangGraph workflows become
-            declarative classes with @Node and @Edge decorators. Enterprise
-            features (monitoring, approvals, streaming) work out-of-the-box.
-          </p>
-        </div>
+          <div class="flex items-start gap-6">
+            <app-icon-3d-container
+              [size]="'lg'"
+              [animation]="'float'"
+              class="flex-shrink-0"
+            >
+              <div
+                class="w-full h-full rounded-full bg-gradient-to-br from-accent-electric to-accent-primary flex items-center justify-center text-white text-4xl"
+              >
+                ⚡
+              </div>
+            </app-icon-3d-container>
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-4">
+                <h3 class="text-2xl md:text-4xl font-bold text-gray-900">
+                  Our Solution: NestJS Patterns for AI/ML
+                </h3>
+                <app-glass-pill
+                  [label]="'Revolutionary'"
+                  [color]="'electric'"
+                  [size]="'sm'"
+                ></app-glass-pill>
+              </div>
+              <p class="text-lg md:text-xl text-gray-600 leading-relaxed mb-4">
+                NestJS AI SaaS Starter applies familiar NestJS patterns
+                (decorators, dependency injection, modules) to AI/ML operations.
+                ChromaDB and Neo4j get TypeORM-style repositories. LangGraph
+                workflows become declarative classes with @Node and @Edge
+                decorators. Enterprise features (monitoring, approvals,
+                streaming) work out-of-the-box.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <app-glass-pill
+                  [label]="'ChromaDB'"
+                  [color]="'electric'"
+                  [size]="'sm'"
+                ></app-glass-pill>
+                <app-glass-pill
+                  [label]="'Neo4j'"
+                  [color]="'neon'"
+                  [size]="'sm'"
+                ></app-glass-pill>
+                <app-glass-pill
+                  [label]="'LangGraph'"
+                  [color]="'lime'"
+                  [size]="'sm'"
+                ></app-glass-pill>
+              </div>
+            </div>
+          </div>
+        </app-enhanced-card>
 
         <!-- Proof Points Grid (4 metrics with stagger) -->
         <div
@@ -82,8 +136,11 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           }"
         >
           @for (metric of metrics; track metric.value) {
-          <div
-            class="bg-white rounded-2xl shadow-lg p-8 text-center hover:shadow-xl hover:scale-105 transition-all duration-300"
+          <app-enhanced-card
+            [variant]="'solid'"
+            [padding]="'md'"
+            [hoverable]="true"
+            class="text-center"
           >
             <div class="text-5xl md:text-6xl font-bold text-indigo-600 mb-4">
               {{ metric.value }}
@@ -92,7 +149,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               {{ metric.label }}
             </div>
             <div class="text-sm text-gray-500">{{ metric.description }}</div>
-          </div>
+          </app-enhanced-card>
           }
         </div>
       </div>
