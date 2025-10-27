@@ -1,33 +1,46 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { EnhancedCardComponent } from './enhanced-card.component';
+import { GlassPillComponent } from './glass-pill.component';
+import { Icon3DContainerComponent } from './icon-3d-container.component';
+import { CountUpDirective } from '../directives/count-up.directive';
 import type { WorkflowExample } from '../interfaces';
 
 /**
  * Workflow Example Card Component
  *
- * TASK_2025_026 - Task 10
+ * TASK_2025_026 - Task 10 (Enhanced with Design System - TASK_2025_028)
  *
  * Reusable card component for displaying complete workflow examples.
  * Shows architecture diagram, code comparison (before/after), modules used, and value delivered.
  *
  * Design Specifications:
- * - Card base: bg-white rounded-card shadow-card p-12 mb-12
- * - Number badge: w-12 h-12 bg-accent-primary text-white rounded-full
- * - Modules pills: flex flex-wrap gap-2
- * - Diagram container: bg-gray-50 rounded-xl p-8
- * - Code comparison: grid-cols-1 md:grid-cols-2 gap-8
- * - Value delivered: grid-cols-1 md:grid-cols-2 gap-4
+ * - Enhanced with EnhancedCardComponent for glass morphism effects
+ * - 3D icon container for workflow number badge
+ * - Glass pills for module badges
+ * - Count-up animations for code line metrics
+ * - Hover effects with scale transformations
+ * - Scroll animation: slideUp from 85% viewport
  *
  * Reference: implementation-plan.md:398-432, design-handoff.md:834-947
  */
 @Component({
   selector: 'app-workflow-example-card',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective],
+  imports: [
+    CommonModule,
+    ScrollAnimationDirective,
+    EnhancedCardComponent,
+    GlassPillComponent,
+    Icon3DContainerComponent,
+    CountUpDirective,
+  ],
   template: `
-    <div
-      class="bg-white rounded-card shadow-card p-12 mb-12"
+    <app-enhanced-card
+      [variant]="'solid'"
+      [padding]="'xl'"
+      [hoverable]="true"
       scrollAnimation
       [scrollConfig]="{
         animation: 'slideUp',
@@ -36,15 +49,17 @@ import type { WorkflowExample } from '../interfaces';
         ease: 'power3.out',
         once: true
       }"
+      class="mb-12"
     >
-      <!-- Workflow Title + Number Badge -->
+      <!-- Workflow Title + 3D Number Badge -->
       <div class="flex items-start gap-6 mb-8">
-        <div
-          class="w-12 h-12 bg-accent-primary text-white rounded-full
-                 flex items-center justify-center font-bold text-lg flex-shrink-0"
-        >
-          {{ index }}
-        </div>
+        <app-icon-3d-container [size]="'md'" [animation]="'rotate'">
+          <div
+            class="w-full h-full bg-gradient-to-br from-accent-electric to-accent-primary text-white rounded-full flex items-center justify-center font-bold text-lg"
+          >
+            {{ index }}
+          </div>
+        </app-icon-3d-container>
         <div>
           <h3 class="text-3xl font-bold text-headline mb-2">
             {{ workflowExample.title }}
@@ -55,15 +70,14 @@ import type { WorkflowExample } from '../interfaces';
         </div>
       </div>
 
-      <!-- Modules Pills -->
+      <!-- Modules Pills with GlassPillComponent -->
       <div class="flex flex-wrap gap-2 mb-8">
         @for (module of workflowExample.modules; track module) {
-        <span
-          class="px-4 py-2 bg-accent-primary/10 text-accent-primary text-sm font-medium
-                 rounded-full border border-accent-primary/20"
-        >
-          {{ module }}
-        </span>
+        <app-glass-pill
+          [label]="module"
+          [color]="'electric'"
+          [size]="'md'"
+        ></app-glass-pill>
         }
       </div>
 
@@ -91,12 +105,15 @@ import type { WorkflowExample } from '../interfaces';
               Traditional Approach
             </h4>
             <span class="text-sm font-mono text-secondary">
-              {{ workflowExample.codeBeforeLines }}+ lines
+              <span
+                [appCountUp]="workflowExample.codeBeforeLines"
+                [suffix]="'+ lines'"
+                [duration]="1500"
+              ></span>
             </span>
           </div>
           <div
-            class="bg-gray-900 text-gray-100 p-6 rounded-lg font-mono text-sm
-                   overflow-x-auto"
+            class="bg-gray-900 text-gray-100 p-6 rounded-lg font-mono text-sm overflow-x-auto"
           >
             <pre class="whitespace-pre-wrap">{{
               workflowExample.codeBefore
@@ -113,14 +130,15 @@ import type { WorkflowExample } from '../interfaces';
               Our Approach
             </h4>
             <span class="text-sm font-mono text-accent-primary">
-              {{ workflowExample.codeAfterLines }} line{{
-                workflowExample.codeAfterLines > 1 ? 's' : ''
-              }}
+              <span
+                [appCountUp]="workflowExample.codeAfterLines"
+                [suffix]="' line' + (workflowExample.codeAfterLines > 1 ? 's' : '')"
+                [duration]="1500"
+              ></span>
             </span>
           </div>
           <div
-            class="bg-gray-900 text-gray-100 p-6 rounded-lg font-mono text-sm
-                   overflow-x-auto border-2 border-accent-primary/30"
+            class="bg-gray-900 text-gray-100 p-6 rounded-lg font-mono text-sm overflow-x-auto border-2 border-accent-primary/30"
           >
             <pre class="whitespace-pre-wrap">{{
               workflowExample.codeAfter
@@ -155,7 +173,7 @@ import type { WorkflowExample } from '../interfaces';
           }
         </div>
       </div>
-    </div>
+    </app-enhanced-card>
   `,
   styles: [
     `
