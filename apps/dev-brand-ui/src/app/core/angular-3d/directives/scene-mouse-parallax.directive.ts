@@ -4,6 +4,8 @@
  * Applies parallax effects to the ENTIRE scene - moves camera in orbital pattern
  * and applies parallax to ALL objects in the scene based on mouse position.
  *
+ * NEW: Optionally updates HeroSceneStateStore with mouse Y position for state-driven animations
+ *
  * ⚠️ SCENE-LEVEL ONLY: Apply to <ngt-canvas> / Scene3DComponent, NOT individual elements
  *
  * Features:
@@ -11,18 +13,30 @@
  * - Smooth camera orbital movement around scene origin
  * - Automatic parallax for ALL meshes and points in scene
  * - Configurable sensitivity and easing
+ * - Optional hero state updates (mouse Y → animation progress)
  *
  * Usage:
  * ```html
+ * <!-- Basic parallax -->
  * <ngt-canvas sceneMouseParallax [sensitivity]="0.4" />
- * <!-- OR -->
- * <app-scene-3d [enableMouseParallax]="true" [mouseParallax]="{ sensitivity: 0.4, ... }" />
+ *
+ * <!-- With hero state updates -->
+ * <app-scene-3d
+ *   [enableMouseParallax]="true"
+ *   [mouseParallax]="{
+ *     sensitivity: 0.4,
+ *     smoothing: 5,
+ *     cameraDistance: 12,
+ *     updateHeroState: true
+ *   }"
+ * />
  * ```
  */
 
-import { Directive, OnInit, OnDestroy, input } from '@angular/core';
+import { Directive, OnInit, OnDestroy, input, inject } from '@angular/core';
 import { injectStore } from 'angular-three';
 import * as THREE from 'three';
+import { HeroSceneStateStore } from '../services/hero-scene-state.store';
 
 @Directive({
   selector: '[sceneMouseParallax]',
@@ -31,10 +45,16 @@ import * as THREE from 'three';
 export class SceneMouseParallaxDirective implements OnInit, OnDestroy {
   private readonly store = injectStore();
 
+  // Optional hero state store injection
+  private readonly heroState = inject(HeroSceneStateStore, { optional: true });
+
   // Configuration inputs
   readonly sensitivity = input<number>(0.4); // Mouse rotation multiplier
   readonly smoothing = input<number>(5); // Interpolation speed (higher = faster)
   readonly cameraDistance = input<number>(12); // Orbit radius
+
+  // NEW: Enable state store updates
+  readonly updateHeroState = input<boolean>(false);
 
   // Mouse tracking state
   private mousePosition = { x: 0, y: 0 };
@@ -68,6 +88,16 @@ export class SceneMouseParallaxDirective implements OnInit, OnDestroy {
       // Calculate target rotation based on mouse position
       this.targetRotation.y = this.mousePosition.x * this.sensitivity();
       this.targetRotation.x = this.mousePosition.y * (this.sensitivity() * 0.5);
+
+      // NEW: Update hero state store if enabled and available
+      if (this.updateHeroState() && this.heroState) {
+        // Convert mouseY from -1/+1 to 0/1 progress
+        // mouseY = -1 (top) → progress = 0
+        // mouseY = 0 (middle) → progress = 0.5
+        // mouseY = +1 (bottom) → progress = 1.0
+        const progress = (this.mousePosition.y + 1) / 2;
+        this.heroState.setMouseProgress(progress);
+      }
     };
 
     window.addEventListener('mousemove', this.mouseMoveHandler, {

@@ -1,45 +1,305 @@
-import { Component } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ValuePropositionCardComponent } from '../components/value-proposition-card.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import type { ValueProposition } from '../interfaces';
 
 /**
- * Value Propositions Section Component
+ * Value Propositions Section Component - Scroll-Driven 3D Showcase
  *
- * TASK_2025_026 - Tasks 7-9
+ * REDESIGNED: Inspired by Design-4 (threejs.journey) - Sticky sidebar + scroll-reveal
  *
- * Container section for displaying all 11 value propositions.
- * Shows the complete ecosystem: ChromaDB, Neo4j, and 9 LangGraph modules.
+ * Features:
+ * - Sticky numbered sidebar (01-11) for navigation
+ * - Full-viewport sections for each library
+ * - Scroll-triggered content animations
+ * - Active section tracking with IntersectionObserver
+ * - Click-to-navigate from sidebar
  *
- * Design Specifications:
- * - Full-width individual spotlights (NOT card grids)
- * - 128px vertical spacing between value propositions (space-y-32)
- * - White background (bg-white)
- * - Reference: implementation-plan.md:344-387, design-handoff.md:804-862
+ * Future: 3D scene synchronized with scroll (Phase 2)
  */
 @Component({
   selector: 'app-value-propositions-section',
   standalone: true,
-  imports: [CommonModule, ValuePropositionCardComponent],
+  imports: [CommonModule, ScrollAnimationDirective],
   template: `
-    <section class="py-20 md:py-32 px-8 md:px-16 bg-white">
-      <div class="max-w-7xl mx-auto space-y-32">
-        @for (valueProposition of valuePropositions; track
-        valueProposition.packageName) {
-        <app-value-proposition-card [valueProposition]="valueProposition" />
+    <section class="relative bg-white">
+      <!-- Sticky Numbered Sidebar (Left) -->
+      <nav class="fixed left-8 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
+        <div class="space-y-6">
+          @for (valueProposition of valuePropositions; track $index) {
+          <button
+            (click)="scrollToLibrary($index)"
+            [class]="getSidebarItemClass($index)"
+            class="group relative flex items-center gap-4 transition-all duration-300"
+          >
+            <!-- Number Badge -->
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300"
+              [class.bg-accent-primary]="activeIndex() === $index"
+              [class.text-white]="activeIndex() === $index"
+              [class.bg-gray-200]="activeIndex() !== $index"
+              [class.text-gray-400]="activeIndex() !== $index"
+              [class.scale-125]="activeIndex() === $index"
+            >
+              <span class="text-sm font-bold">{{
+                ($index + 1).toString().padStart(2, '0')
+              }}</span>
+            </div>
+
+            <!-- Active Indicator Bar -->
+            @if (activeIndex() === $index) {
+            <div
+              class="absolute -left-4 w-1 h-8 bg-accent-primary rounded-full"
+            ></div>
+            }
+
+            <!-- Hover Tooltip -->
+            <div
+              class="absolute left-12 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+            >
+              <div
+                class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg"
+              >
+                {{ valueProposition.packageName.replace('@hive-academy/', '') }}
+              </div>
+            </div>
+          </button>
+          }
+        </div>
+      </nav>
+
+      <!-- Main Content Area (Right) -->
+      <div class="lg:ml-24">
+        @for (valueProposition of valuePropositions; track $index) {
+        <article
+          [id]="'library-' + $index"
+          class="min-h-screen flex items-center px-8 md:px-16 py-20"
+          [class.bg-white]="$index % 2 === 0"
+          [class.bg-gray-50]="$index % 2 === 1"
+        >
+          <div class="max-w-4xl mx-auto w-full">
+            <!-- Package Number + Name -->
+            <div
+              class="mb-8"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'fadeIn',
+                start: 'top 80%',
+                duration: 0.6,
+                once: true
+              }"
+            >
+              <div class="flex items-center gap-4 mb-4">
+                <span
+                  class="text-6xl md:text-7xl font-bold text-accent-primary/20"
+                >
+                  {{ ($index + 1).toString().padStart(2, '0') }}
+                </span>
+                <div
+                  class="h-px flex-1 bg-gradient-to-r from-accent-primary/30 to-transparent"
+                ></div>
+              </div>
+              <h3 class="text-base md:text-lg font-mono text-accent-primary">
+                {{ valueProposition.packageName }}
+              </h3>
+            </div>
+
+            <!-- Business Headline -->
+            <h2
+              class="text-4xl md:text-6xl font-bold text-text-headline leading-tight mb-8"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideUp',
+                start: 'top 75%',
+                duration: 0.8,
+                once: true
+              }"
+            >
+              {{ valueProposition.businessHeadline }}
+            </h2>
+
+            <!-- Pain Point -->
+            <div
+              class="mb-8"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'fadeIn',
+                start: 'top 70%',
+                duration: 0.8,
+                delay: 0.2,
+                once: true
+              }"
+            >
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-2 h-2 rounded-full bg-accent-danger"></span>
+                <span
+                  class="text-sm font-semibold text-accent-danger uppercase tracking-wide"
+                  >The Problem</span
+                >
+              </div>
+              <p class="text-lg md:text-xl text-text-secondary leading-relaxed">
+                {{ valueProposition.painPoint }}
+              </p>
+            </div>
+
+            <!-- Solution -->
+            <div
+              class="mb-8"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'fadeIn',
+                start: 'top 70%',
+                duration: 0.8,
+                delay: 0.4,
+                once: true
+              }"
+            >
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-2 h-2 rounded-full bg-accent-success"></span>
+                <span
+                  class="text-sm font-semibold text-accent-success uppercase tracking-wide"
+                  >Our Solution</span
+                >
+              </div>
+              <p class="text-lg md:text-xl text-text-primary leading-relaxed">
+                {{ valueProposition.solution }}
+              </p>
+            </div>
+
+            <!-- Capabilities -->
+            <div
+              class="mb-12"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideUp',
+                start: 'top 75%',
+                duration: 0.6,
+                delay: 0.6,
+                once: true
+              }"
+            >
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (capability of valueProposition.capabilities; track
+                capability) {
+                <div class="flex items-start gap-3">
+                  <span class="text-accent-primary text-xl mt-0.5">✓</span>
+                  <span class="text-base text-text-primary">{{
+                    capability
+                  }}</span>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Metric Callout -->
+            <div
+              class="inline-flex items-center gap-4 px-8 py-6 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 rounded-2xl border border-accent-primary/20"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'scaleIn',
+                start: 'top 80%',
+                duration: 0.6,
+                delay: 0.8,
+                ease: 'back.out',
+                once: true
+              }"
+            >
+              <div
+                class="text-5xl md:text-6xl font-bold bg-gradient-to-br from-accent-primary to-accent-secondary bg-clip-text text-transparent"
+              >
+                {{ valueProposition.metricValue }}
+              </div>
+              <div>
+                <div class="text-lg font-bold text-text-headline">
+                  {{ valueProposition.metricLabel }}
+                </div>
+                <div class="text-sm text-text-secondary">
+                  vs traditional approach
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
         }
       </div>
     </section>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-    `,
-  ],
+  styles: [],
 })
-export class ValuePropositionsSectionComponent {
+export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
+  // Active section tracking
+  activeIndex = signal(0);
+
+  private observer?: IntersectionObserver;
+
+  constructor(private elementRef: ElementRef) {}
+
+  ngOnInit(): void {
+    this.setupIntersectionObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
+
+  /**
+   * Setup IntersectionObserver to track which library is in view
+   */
+  private setupIntersectionObserver(): void {
+    if (typeof window === 'undefined') return;
+
+    const options: IntersectionObserverInit = {
+      root: null,
+      rootMargin: '-50% 0px -50% 0px', // Trigger when center of viewport
+      threshold: 0,
+    };
+
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          const index = parseInt(id.replace('library-', ''), 10);
+          if (!isNaN(index)) {
+            this.activeIndex.set(index);
+          }
+        }
+      });
+    }, options);
+
+    // Observe all library sections
+    setTimeout(() => {
+      const sections = this.elementRef.nativeElement.querySelectorAll(
+        '[id^="library-"]'
+      );
+      sections.forEach((section: Element) => {
+        this.observer?.observe(section);
+      });
+    }, 100);
+  }
+
+  /**
+   * Scroll to specific library section
+   */
+  scrollToLibrary(index: number): void {
+    const element = document.getElementById(`library-${index}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  /**
+   * Get sidebar item classes based on active state
+   */
+  getSidebarItemClass(index: number): string {
+    return this.activeIndex() === index ? 'active' : '';
+  }
+
   /**
    * All 11 Value Propositions
    * Reference: research-report.md (TASK_2025_026), design-handoff.md:844-923

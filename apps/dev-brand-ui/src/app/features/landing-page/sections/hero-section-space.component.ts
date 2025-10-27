@@ -4,6 +4,8 @@ import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.c
 import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.component';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.store';
+import { HeroInteractivePlanetSceneComponent } from './scene-graphs/hero-interactive-planet-scene.component';
+import { HeroSceneStateStore } from '../../../core/angular-3d/services/hero-scene-state.store';
 
 @Component({
   selector: 'brand-hero-section-space',
@@ -14,6 +16,14 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
       class="relative w-full h-screen flex flex-col overflow-hidden"
       [style.background]="backgroundGradient"
       style="perspective: 1000px;"
+      scrollAnimation
+      [scrollConfig]="{
+        animation: 'custom',
+        scrub: 0.5,
+        start: 'top top',
+        end: 'bottom top',
+        onUpdate: updateScrollProgress
+      }"
     >
       <!-- 3D Space Background Scene -->
       <app-scene-3d
@@ -21,7 +31,7 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
         [sceneGraph]="sceneGraph"
         [camera]="cameraConfig"
         [gl]="rendererConfig"
-        [enableMouseParallax]="false"
+        [enableMouseParallax]="true"
         [mouseParallax]="{
           sensitivity: 0.4,
           smoothing: 5,
@@ -70,24 +80,52 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
         </div>
       </div>
 
-      <!-- DOM Content Overlay - Hero Text -->
+      <!-- DOM Content Overlay - Hero Text with Phase Transition -->
       <div
         class="flex-1 flex flex-col items-center justify-center mb-5 z-10 pointer-events-none"
-        scrollAnimation
-        [scrollConfig]="{
-          animation: 'custom',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 0.5,
-          from: { y: 0, opacity: 1 },
-          to: { y: -150, opacity: 0, ease: 'none' }
-        }"
       >
         <div
-          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
+          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu relative"
         >
-          <!-- Hero Title -->
-          <h1 class="font-bold leading-tight animate-fade-in-up space-y-3">
+          <!-- Phase 1 Text: "Want to Build Production Grade AI System?" -->
+          <h1
+            class="font-bold leading-tight animate-fade-in-up space-y-3 transition-opacity duration-700"
+            [style.opacity]="heroSceneState.phase1Opacity()"
+            [style.pointer-events]="
+              heroSceneState.phase1Opacity() > 0.1 ? 'auto' : 'none'
+            "
+          >
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500
+                     border-2 border-red-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse-glow"
+            >
+              Want to Build
+            </span>
+            <br />
+            <span
+              class="text-2xl sm:text-4xl md:text-6xl lg:text-7xl text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+            >
+              Production Grade AI System?
+            </span>
+            <br />
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-gray-500 to-gray-600
+                     border-2 border-gray-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(107,114,128,0.3)]"
+            >
+              It's Complex & Fragmented
+            </span>
+          </h1>
+
+          <!-- Phase 2 Text: "Use Typescript Patterns you already know - NestJS-AI" -->
+          <h1
+            class="absolute inset-0 font-bold leading-tight animate-fade-in-up space-y-3 transition-opacity duration-700"
+            [style.opacity]="heroSceneState.phase2Opacity()"
+            [style.pointer-events]="
+              heroSceneState.phase2Opacity() > 0.1 ? 'auto' : 'none'
+            "
+          >
             <span
               class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
                      border-2 border-indigo-400/50 rounded-full text-white
@@ -103,9 +141,9 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
             </span>
             <br />
             <span
-              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
-                     border-2 border-indigo-400/50 rounded-full text-white
-                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
+              class="inline-block px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500
+                     border-2 border-green-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(34,197,94,0.3)] animate-pulse-glow"
             >
               You Already Know
             </span>
@@ -217,8 +255,9 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
 export class HeroSectionSpaceComponent {
   // Inject theme store for centralized theme management
   private readonly themeStore = inject(SpaceThemeStore);
+  public readonly heroSceneState = inject(HeroSceneStateStore);
 
-  readonly sceneGraph = HeroSpaceSceneComponent;
+  readonly sceneGraph = HeroInteractivePlanetSceneComponent;
 
   // Camera configuration for 3D scene
   // Camera at z=12 looking toward origin (where planet is at z=0)
@@ -277,4 +316,11 @@ export class HeroSectionSpaceComponent {
   selectTheme(themeId: string): void {
     this.themeStore.setTheme(themeId);
   }
+
+  /**
+   * Update scroll progress for hero scene state
+   */
+  updateScrollProgress = (progress: number): void => {
+    this.heroSceneState.setMouseProgress(progress);
+  };
 }

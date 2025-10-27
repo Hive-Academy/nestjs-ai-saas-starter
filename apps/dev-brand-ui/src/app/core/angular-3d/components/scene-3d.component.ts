@@ -57,6 +57,7 @@ export interface MouseParallaxConfig {
   sensitivity: number;
   smoothing: number;
   cameraDistance: number;
+  updateHeroState?: boolean; // NEW: Enable state store updates
 }
 
 @Component({
@@ -74,6 +75,7 @@ export interface MouseParallaxConfig {
       [sensitivity]="mouseParallax().sensitivity"
       [smoothing]="mouseParallax().smoothing"
       [cameraDistance]="mouseParallax().cameraDistance"
+      [updateHeroState]="mouseParallax().updateHeroState ?? false"
     />
     } @else {
     <ngt-canvas
