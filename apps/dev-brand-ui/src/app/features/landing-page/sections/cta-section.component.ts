@@ -3,16 +3,26 @@ import { Component } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
 import { CTASceneGraphComponent } from './scene-graphs/cta-scene-graph.component';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { EnhancedCardComponent } from '../components/enhanced-card.component';
+import { GlassPillComponent } from '../components/glass-pill.component';
+import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
 
 /**
- * CTA Section
+ * CTA Section - Enhanced Visual Design
  * Drives conversions to explore examples, read documentation, see production use case
- * Features 3D background accent at 30% opacity with 3 action cards
+ * Features 3D background accent at 30% opacity with 3 enhanced action cards
  */
 @Component({
   selector: 'app-cta-section',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
+  imports: [
+    CommonModule,
+    Scene3DComponent,
+    ScrollAnimationDirective,
+    EnhancedCardComponent,
+    GlassPillComponent,
+    Icon3DContainerComponent,
+  ],
   template: `
     <section
       class="relative min-h-[600px] bg-white py-20 md:py-32 px-6 md:px-16"
@@ -66,18 +76,32 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           }"
         >
           <!-- Card 1: Explore Examples (Primary CTA) -->
-          <div
-            class="bg-white rounded-card shadow-card p-8 hover:shadow-card-hover hover:scale-105 transition-all duration-300 border border-gray-100"
+          <app-enhanced-card
+            [variant]="'solid'"
+            [padding]="'md'"
+            [hoverable]="true"
+            class="border border-gray-100"
           >
-            <div class="text-4xl mb-4">📚</div>
-            <h3 class="text-xl font-bold text-headline mb-3">
-              Explore Examples
-            </h3>
+            <app-icon-3d-container
+              [size]="'md'"
+              [animation]="'float'"
+              class="mb-4 inline-block"
+            >
+              <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-electric to-accent-primary flex items-center justify-center text-white text-2xl">
+                📚
+              </div>
+            </app-icon-3d-container>
+            <div class="flex justify-center gap-2 mb-3">
+              <h3 class="text-xl font-bold text-headline">
+                Explore Examples
+              </h3>
+              <app-glass-pill [label]="'Popular'" [color]="'electric'" [size]="'sm'"></app-glass-pill>
+            </div>
             <p class="text-sm text-secondary mb-6">
               See 3 complete workflows: RAG, multi-agent, document processing
             </p>
             <button
-              class="w-full px-6 py-3 bg-accent-primary text-white font-semibold rounded-button hover:bg-accent-primary-dark hover:shadow-button-hover transition-all duration-300"
+              class="w-full px-6 py-3 bg-gradient-to-r from-accent-electric to-accent-primary text-white font-semibold rounded-button hover:scale-105 hover:shadow-lg transition-all duration-300"
             >
               View Examples
             </button>

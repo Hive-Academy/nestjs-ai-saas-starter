@@ -21,15 +21,18 @@ import { CommonModule } from '@angular/common';
     <div
       [class]="cardClasses"
       [class.hover:scale-105]="hoverable"
-      [class.hover:shadow-card-hover]="hoverable">
+      [class.hover:shadow-card-hover]="hoverable"
+    >
       <ng-content></ng-content>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+    `,
+  ],
 })
 export class EnhancedCardComponent {
   /**
@@ -56,15 +59,17 @@ export class EnhancedCardComponent {
     const variantClasses = {
       glass: 'bg-white/5 backdrop-blur-md border border-white/10',
       solid: 'bg-white shadow-card',
-      minimal: 'border border-border-subtle'
+      minimal: 'border border-border-subtle',
     };
 
     const paddingClasses = {
       sm: 'p-6',
       md: 'p-8',
-      lg: 'p-12'
+      lg: 'p-12',
     };
 
-    return `${base} ${variantClasses[this.variant]} ${paddingClasses[this.padding]}`;
+    return `${base} ${variantClasses[this.variant]} ${
+      paddingClasses[this.padding]
+    }`;
   }
 }

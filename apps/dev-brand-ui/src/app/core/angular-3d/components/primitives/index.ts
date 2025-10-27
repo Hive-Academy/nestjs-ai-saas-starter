@@ -6,3 +6,4 @@
  */
 
 export { FloatingSphereComponent } from './floating-sphere.component';
+export { TechMarkerComponent } from './tech-marker.component';

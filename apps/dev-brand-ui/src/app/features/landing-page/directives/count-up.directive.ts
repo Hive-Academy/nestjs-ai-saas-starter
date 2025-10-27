@@ -5,7 +5,7 @@ import {
   OnInit,
   OnDestroy,
   effect,
-  signal
+  signal,
 } from '@angular/core';
 
 /**
@@ -22,7 +22,7 @@ import {
  */
 @Directive({
   selector: '[appCountUp]',
-  standalone: true
+  standalone: true,
 })
 export class CountUpDirective implements OnInit, OnDestroy {
   /**
@@ -88,7 +88,7 @@ export class CountUpDirective implements OnInit, OnDestroy {
         });
       },
       {
-        threshold: 0.5 // Trigger when 50% visible
+        threshold: 0.5, // Trigger when 50% visible
       }
     );
 
