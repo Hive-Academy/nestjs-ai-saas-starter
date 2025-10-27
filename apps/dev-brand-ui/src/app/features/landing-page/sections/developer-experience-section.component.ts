@@ -1,5 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EnhancedCardComponent } from '../components/enhanced-card.component';
+import { GlassPillComponent } from '../components/glass-pill.component';
+import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
+import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
  * Developer Experience Section Component
@@ -24,7 +28,13 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-developer-experience-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    EnhancedCardComponent,
+    GlassPillComponent,
+    Icon3DContainerComponent,
+    CountUpDirective,
+  ],
   template: `
     <section
       class="bg-secondary py-20 md:py-32"
@@ -52,9 +62,21 @@ import { CommonModule } from '@angular/common';
           class="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto mb-16"
         >
           <!-- Traditional NestJS Controller -->
-          <div>
-            <div class="text-xl font-bold text-headline mb-4">
-              Traditional NestJS Controller
+          <app-enhanced-card [variant]="'solid'" [padding]="'md'" [hoverable]="true">
+            <div class="flex items-center gap-3 mb-4">
+              <app-icon-3d-container [size]="'sm'" [animation]="'float'">
+                <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-primary to-accent-electric flex items-center justify-center text-white text-lg">
+                  🎮
+                </div>
+              </app-icon-3d-container>
+              <div class="text-xl font-bold text-headline">
+                Traditional NestJS Controller
+              </div>
+            </div>
+            <div class="flex gap-2 mb-4 flex-wrap">
+              <app-glass-pill [label]="'NestJS'" [color]="'electric'" [size]="'sm'"></app-glass-pill>
+              <app-glass-pill [label]="'TypeScript'" [color]="'neon'" [size]="'sm'"></app-glass-pill>
+              <app-glass-pill [label]="'REST API'" [color]="'lime'" [size]="'sm'"></app-glass-pill>
             </div>
             <pre
               class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
@@ -80,12 +102,24 @@ export class UserController &#123;
     return this.userService.create(dto);
   &#125;
 &#125;</code></pre>
-          </div>
+          </app-enhanced-card>
 
           <!-- AI/ML Workflow (Our Approach) -->
-          <div>
-            <div class="text-xl font-bold text-accent-primary mb-4">
-              Our AI/ML Workflow (Same Patterns)
+          <app-enhanced-card [variant]="'solid'" [padding]="'md'" [hoverable]="true">
+            <div class="flex items-center gap-3 mb-4">
+              <app-icon-3d-container [size]="'sm'" [animation]="'rotate'">
+                <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-electric to-accent-neon flex items-center justify-center text-white text-lg">
+                  🤖
+                </div>
+              </app-icon-3d-container>
+              <div class="text-xl font-bold text-accent-primary">
+                Our AI/ML Workflow (Same Patterns)
+              </div>
+            </div>
+            <div class="flex gap-2 mb-4 flex-wrap">
+              <app-glass-pill [label]="'LangGraph'" [color]="'electric'" [size]="'sm'"></app-glass-pill>
+              <app-glass-pill [label]="'LangChain'" [color]="'neon'" [size]="'sm'"></app-glass-pill>
+              <app-glass-pill [label]="'AI Agents'" [color]="'lime'" [size]="'sm'"></app-glass-pill>
             </div>
             <pre
               class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
@@ -124,19 +158,25 @@ export class UserAnalysisWorkflow &#123;
   &#64;Edge(&#123; from: 'fetch', to: 'analyze' &#125;)
   defineFlow() &#123;&#125;
 &#125;</code></pre>
-          </div>
+          </app-enhanced-card>
         </div>
 
         <!-- Pattern Mapping Table -->
         <div class="mt-16">
-          <div class="text-2xl font-bold text-headline mb-8 text-center">
-            Familiar Patterns Applied to AI/ML
+          <div class="flex items-center justify-center gap-4 mb-8">
+            <app-icon-3d-container [size]="'md'" [animation]="'glow'">
+              <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-primary to-accent-lime flex items-center justify-center text-white text-2xl">
+                🔄
+              </div>
+            </app-icon-3d-container>
+            <div class="text-2xl font-bold text-headline text-center">
+              Familiar Patterns Applied to AI/ML
+            </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table
-              class="w-full border-collapse bg-white rounded-card shadow-card"
-            >
+          <app-enhanced-card [variant]="'solid'" [padding]="'lg'" [hoverable]="false">
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse">
               <thead>
                 <tr class="bg-gray-50">
                   <th
@@ -174,7 +214,8 @@ export class UserAnalysisWorkflow &#123;
                 }
               </tbody>
             </table>
-          </div>
+            </div>
+          </app-enhanced-card>
         </div>
       </div>
     </section>
