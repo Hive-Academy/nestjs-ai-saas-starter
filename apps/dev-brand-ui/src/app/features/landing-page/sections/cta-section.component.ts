@@ -105,7 +105,7 @@ import { Icon3DContainerComponent } from '../components/icon-3d-container.compon
             >
               View Examples
             </button>
-          </div>
+          </app-enhanced-card>
 
           <!-- Card 2: Read Documentation (Secondary CTA) -->
           <div

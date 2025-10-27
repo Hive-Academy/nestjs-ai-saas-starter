@@ -39,7 +39,7 @@ import type { WorkflowExample } from '../interfaces';
   template: `
     <app-enhanced-card
       [variant]="'solid'"
-      [padding]="'xl'"
+      [padding]="'lg'"
       [hoverable]="true"
       scrollAnimation
       [scrollConfig]="{
@@ -106,7 +106,8 @@ import type { WorkflowExample } from '../interfaces';
             </h4>
             <span class="text-sm font-mono text-secondary">
               <span
-                [appCountUp]="workflowExample.codeBeforeLines"
+                appCountUp
+                [targetValue]="workflowExample.codeBeforeLines"
                 [suffix]="'+ lines'"
                 [duration]="1500"
               ></span>
@@ -131,7 +132,8 @@ import type { WorkflowExample } from '../interfaces';
             </h4>
             <span class="text-sm font-mono text-accent-primary">
               <span
-                [appCountUp]="workflowExample.codeAfterLines"
+                appCountUp
+                [targetValue]="workflowExample.codeAfterLines"
                 [suffix]="' line' + (workflowExample.codeAfterLines > 1 ? 's' : '')"
                 [duration]="1500"
               ></span>

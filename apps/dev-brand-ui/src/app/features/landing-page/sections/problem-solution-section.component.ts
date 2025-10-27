@@ -4,7 +4,6 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
 import { EnhancedCardComponent } from '../components/enhanced-card.component';
 import { GlassPillComponent } from '../components/glass-pill.component';
 import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
-import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
  * Problem/Solution Section - Enhanced Visual Design
@@ -20,7 +19,6 @@ import { CountUpDirective } from '../directives/count-up.directive';
     EnhancedCardComponent,
     GlassPillComponent,
     Icon3DContainerComponent,
-    CountUpDirective,
   ],
   template: `
     <section class="py-20 md:py-32 px-8 md:px-16 bg-gray-50">

@@ -129,7 +129,8 @@ import type { ValueProposition } from '../interfaces';
       <div class="text-center">
         <div class="text-4xl font-bold text-accent-primary mb-2">
           <span
-            [appCountUp]="parseMetricValue(valueProposition.metricValue)"
+            appCountUp
+            [targetValue]="parseMetricValue(valueProposition.metricValue)"
             [suffix]="getMetricSuffix(valueProposition.metricValue)"
             [duration]="2000"
           ></span>

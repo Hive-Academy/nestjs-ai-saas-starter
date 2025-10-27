@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { EnhancedCardComponent } from '../components/enhanced-card.component';
 import { GlassPillComponent } from '../components/glass-pill.component';
 import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
-import { CountUpDirective } from '../directives/count-up.directive';
 
 /**
  * Developer Experience Section Component
@@ -33,7 +32,6 @@ import { CountUpDirective } from '../directives/count-up.directive';
     EnhancedCardComponent,
     GlassPillComponent,
     Icon3DContainerComponent,
-    CountUpDirective,
   ],
   template: `
     <section
