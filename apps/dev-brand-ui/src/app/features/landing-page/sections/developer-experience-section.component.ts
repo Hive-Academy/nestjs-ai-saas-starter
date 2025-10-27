@@ -1,85 +1,108 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { EnhancedCardComponent } from '../components/enhanced-card.component';
-import { GlassPillComponent } from '../components/glass-pill.component';
-import { Icon3DContainerComponent } from '../components/icon-3d-container.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 
 /**
  * Developer Experience Section Component
  *
- * TASK_2025_026 - Task 13 (BATCH 3)
+ * POLISHED: Modern, clean design with scroll animations
  *
  * Shows familiar NestJS patterns applied to AI/ML workflows.
- * Demonstrates side-by-side code comparison and pattern mapping table.
+ * Side-by-side code comparison + visual pattern mapping cards.
  *
- * Design Specifications:
- * - Background: bg-secondary (#F9FAFB)
- * - Section padding: py-20 md:py-32
- * - Container: max-w-7xl mx-auto px-8 md:px-12
- * - Code blocks: bg-gray-900 text-gray-100 p-6 rounded-lg font-mono text-sm
- * - Grid: grid-cols-1 lg:grid-cols-2 gap-12 for code comparison
- * - Table: bg-white rounded-card shadow-card
- *
- * Reference:
- * - visual-design-specification.md:1173-1302
- * - design-handoff.md:1085-1185
+ * Design Philosophy:
+ * - No more EnhancedCard components - clean, minimal design
+ * - Scroll-driven animations for all elements
+ * - Pattern mapping as visual cards instead of table
+ * - Gradient text and modern spacing
+ * - Code comparison remains the hero
  */
 @Component({
   selector: 'app-developer-experience-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    EnhancedCardComponent,
-    GlassPillComponent,
-    Icon3DContainerComponent,
-  ],
+  imports: [CommonModule, ScrollAnimationDirective],
   template: `
     <section
-      class="bg-secondary py-20 md:py-32"
+      class="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 py-20 md:py-32"
       aria-labelledby="devex-headline"
     >
-      <div class="max-w-7xl mx-auto px-8 md:px-12">
+      <div class="max-w-7xl mx-auto px-8 md:px-16">
         <!-- Section Headline -->
-        <h2
-          id="devex-headline"
-          class="text-4xl md:text-6xl font-bold text-headline leading-tight mb-8 text-center"
-        >
-          Write AI Workflows Like NestJS Controllers
-        </h2>
-
-        <!-- Section Intro -->
-        <p
-          class="text-lg md:text-xl text-secondary leading-relaxed max-w-3xl mx-auto text-center mb-16"
-        >
-          Same decorators. Same dependency injection. Same module system. Zero
-          learning curve.
-        </p>
+        <div class="text-center mb-20">
+          <h2
+            id="devex-headline"
+            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 80%',
+              duration: 0.8,
+              once: true
+            }"
+          >
+            Write AI Workflows Like NestJS Controllers
+          </h2>
+          <p
+            class="text-xl md:text-2xl text-text-secondary max-w-4xl mx-auto leading-relaxed"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'slideUp',
+              start: 'top 75%',
+              duration: 0.8,
+              delay: 0.2,
+              once: true
+            }"
+          >
+            Same decorators. Same dependency injection. Same module system. Zero
+            learning curve.
+          </p>
+        </div>
 
         <!-- Side-by-Side Code Comparison -->
         <div
-          class="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto mb-16"
+          class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-20"
         >
           <!-- Traditional NestJS Controller -->
-          <app-enhanced-card [variant]="'solid'" [padding]="'md'" [hoverable]="true">
-            <div class="flex items-center gap-3 mb-4">
-              <app-icon-3d-container [size]="'sm'" [animation]="'float'">
-                <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-primary to-accent-electric flex items-center justify-center text-white text-lg">
+          <div
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 75%',
+              duration: 0.8,
+              once: true
+            }"
+          >
+            <div class="mb-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div
+                  class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-2xl"
+                >
                   🎮
                 </div>
-              </app-icon-3d-container>
-              <div class="text-xl font-bold text-headline">
-                Traditional NestJS Controller
+                <div class="text-2xl font-bold text-text-headline">
+                  Traditional NestJS Controller
+                </div>
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <span
+                  class="px-3 py-1 bg-accent-primary/10 text-accent-primary text-xs font-semibold rounded-full"
+                >
+                  NestJS
+                </span>
+                <span
+                  class="px-3 py-1 bg-accent-secondary/10 text-accent-secondary text-xs font-semibold rounded-full"
+                >
+                  TypeScript
+                </span>
+                <span
+                  class="px-3 py-1 bg-accent-tertiary/10 text-accent-tertiary text-xs font-semibold rounded-full"
+                >
+                  REST API
+                </span>
               </div>
             </div>
-            <div class="flex gap-2 mb-4 flex-wrap">
-              <app-glass-pill [label]="'NestJS'" [color]="'electric'" [size]="'sm'"></app-glass-pill>
-              <app-glass-pill [label]="'TypeScript'" [color]="'neon'" [size]="'sm'"></app-glass-pill>
-              <app-glass-pill [label]="'REST API'" [color]="'lime'" [size]="'sm'"></app-glass-pill>
-            </div>
             <pre
-              class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
-              role="region"
-              aria-label="Traditional NestJS controller code example"
+              class="bg-gray-900 text-gray-100 p-6 rounded-xl text-sm overflow-x-auto border border-gray-700"
             ><code class="font-mono">&#64;Controller('users')
 export class UserController &#123;
   constructor(
@@ -100,29 +123,52 @@ export class UserController &#123;
     return this.userService.create(dto);
   &#125;
 &#125;</code></pre>
-          </app-enhanced-card>
+          </div>
 
           <!-- AI/ML Workflow (Our Approach) -->
-          <app-enhanced-card [variant]="'solid'" [padding]="'md'" [hoverable]="true">
-            <div class="flex items-center gap-3 mb-4">
-              <app-icon-3d-container [size]="'sm'" [animation]="'rotate'">
-                <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-electric to-accent-neon flex items-center justify-center text-white text-lg">
+          <div
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 75%',
+              duration: 0.8,
+              delay: 0.2,
+              once: true
+            }"
+          >
+            <div class="mb-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div
+                  class="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-tertiary to-accent-success flex items-center justify-center text-2xl"
+                >
                   🤖
                 </div>
-              </app-icon-3d-container>
-              <div class="text-xl font-bold text-accent-primary">
-                Our AI/ML Workflow (Same Patterns)
+                <div
+                  class="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-tertiary bg-clip-text text-transparent"
+                >
+                  AI/ML Workflow (Same Patterns)
+                </div>
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <span
+                  class="px-3 py-1 bg-accent-tertiary/10 text-accent-tertiary text-xs font-semibold rounded-full"
+                >
+                  LangGraph
+                </span>
+                <span
+                  class="px-3 py-1 bg-accent-secondary/10 text-accent-secondary text-xs font-semibold rounded-full"
+                >
+                  LangChain
+                </span>
+                <span
+                  class="px-3 py-1 bg-accent-success/10 text-accent-success text-xs font-semibold rounded-full"
+                >
+                  AI Agents
+                </span>
               </div>
             </div>
-            <div class="flex gap-2 mb-4 flex-wrap">
-              <app-glass-pill [label]="'LangGraph'" [color]="'electric'" [size]="'sm'"></app-glass-pill>
-              <app-glass-pill [label]="'LangChain'" [color]="'neon'" [size]="'sm'"></app-glass-pill>
-              <app-glass-pill [label]="'AI Agents'" [color]="'lime'" [size]="'sm'"></app-glass-pill>
-            </div>
             <pre
-              class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
-              role="region"
-              aria-label="AI workflow code example using same NestJS patterns"
+              class="bg-gray-900 text-gray-100 p-6 rounded-xl text-sm overflow-x-auto border border-gray-700"
             ><code class="font-mono">&#64;Workflow(&#123; name: 'user-analysis' &#125;)
 export class UserAnalysisWorkflow &#123;
   constructor(
@@ -156,64 +202,68 @@ export class UserAnalysisWorkflow &#123;
   &#64;Edge(&#123; from: 'fetch', to: 'analyze' &#125;)
   defineFlow() &#123;&#125;
 &#125;</code></pre>
-          </app-enhanced-card>
+          </div>
         </div>
 
-        <!-- Pattern Mapping Table -->
-        <div class="mt-16">
-          <div class="flex items-center justify-center gap-4 mb-8">
-            <app-icon-3d-container [size]="'md'" [animation]="'glow'">
-              <div class="w-full h-full rounded-full bg-gradient-to-br from-accent-primary to-accent-lime flex items-center justify-center text-white text-2xl">
-                🔄
-              </div>
-            </app-icon-3d-container>
-            <div class="text-2xl font-bold text-headline text-center">
-              Familiar Patterns Applied to AI/ML
-            </div>
-          </div>
+        <!-- Pattern Mapping Visual Cards -->
+        <div class="mt-20">
+          <h3
+            class="text-3xl md:text-4xl font-bold text-text-headline text-center mb-12"
+            scrollAnimation
+            [scrollConfig]="{
+              animation: 'fadeIn',
+              start: 'top 80%',
+              duration: 0.8,
+              once: true
+            }"
+          >
+            <span class="text-4xl mr-3">🔄</span>
+            Familiar Patterns Applied to AI/ML
+          </h3>
 
-          <app-enhanced-card [variant]="'solid'" [padding]="'lg'" [hoverable]="false">
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse">
-              <thead>
-                <tr class="bg-gray-50">
-                  <th
-                    class="text-left p-4 text-sm font-semibold text-secondary border-b border-gray-200"
-                  >
-                    NestJS Pattern
-                  </th>
-                  <th
-                    class="text-left p-4 text-sm font-semibold text-secondary border-b border-gray-200"
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @for (pattern of patternMappings; track pattern.nestjsPattern) {
+            <div
+              class="bg-white rounded-2xl border border-gray-200 shadow-card p-6 hover:shadow-card-elevated transition-all duration-300"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideUp',
+                start: 'top 80%',
+                duration: 0.6,
+                delay: $index * 0.1,
+                once: true
+              }"
+            >
+              <div
+                class="text-2xl font-bold font-mono text-accent-primary mb-3"
+              >
+                {{ pattern.nestjsPattern }}
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <div
+                    class="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-1"
                   >
                     Traditional Use
-                  </th>
-                  <th
-                    class="text-left p-4 text-sm font-semibold text-secondary border-b border-gray-200"
-                  >
-                    Our AI/ML Application
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (pattern of patternMappings; track pattern.nestjsPattern) {
-                <tr
-                  class="border-t border-gray-200 hover:bg-accent-primary/5 transition-colors"
-                >
-                  <td class="p-4 text-sm font-mono text-accent-primary">
-                    {{ pattern.nestjsPattern }}
-                  </td>
-                  <td class="p-4 text-sm text-secondary">
+                  </div>
+                  <div class="text-sm text-text-primary">
                     {{ pattern.traditionalUse }}
-                  </td>
-                  <td class="p-4 text-sm text-primary">
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 pt-3">
+                  <div
+                    class="text-xs font-semibold text-accent-success uppercase tracking-wide mb-1"
+                  >
+                    AI/ML Application
+                  </div>
+                  <div class="text-sm font-semibold text-text-headline">
                     {{ pattern.aimlApplication }}
-                  </td>
-                </tr>
-                }
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
             </div>
-          </app-enhanced-card>
+            }
+          </div>
         </div>
       </div>
     </section>
