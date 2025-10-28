@@ -14,6 +14,14 @@ export const routes: Routes = [
       ),
     title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
+  {
+    path: 'devbrand-poc',
+    loadChildren: () =>
+      import('./features/devbrand-poc/devbrand-poc.routes').then(
+        (m) => m.DEVBRAND_POC_ROUTES
+      ),
+    title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
+  },
 
   {
     path: '**',
