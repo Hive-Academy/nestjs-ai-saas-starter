@@ -31,7 +31,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         <div class="text-center mb-20">
           <h2
             id="devex-headline"
-            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
+            class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
             scrollAnimation
             [scrollConfig]="{
               animation: 'fadeIn',
@@ -208,7 +208,7 @@ export class UserAnalysisWorkflow &#123;
         <!-- Pattern Mapping Visual Cards -->
         <div class="mt-20">
           <h3
-            class="text-3xl md:text-4xl font-bold text-text-headline text-center mb-12"
+            class="text-4xl md:text-5xl font-bold text-text-headline text-center mb-12"
             scrollAnimation
             [scrollConfig]="{
               animation: 'fadeIn',

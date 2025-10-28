@@ -529,7 +529,7 @@ template: `
 
       <!-- Content Column (70% width) -->
       <div class="lg:w-[70%] p-12">
-        <h3 class="text-3xl md:text-4xl font-bold text-headline mb-6">
+        <h3 class="text-4xl md:text-5xl font-bold text-headline mb-6">
           {{ valueProposition.businessHeadline }}
         </h3>
 
@@ -642,7 +642,7 @@ template: `
 
           <!-- Title + Description -->
           <div class="flex-1">
-            <h3 class="text-3xl md:text-4xl font-bold text-headline mb-4">
+            <h3 class="text-4xl md:text-5xl font-bold text-headline mb-4">
               {{ workflowExample.title }}
             </h3>
             <p class="text-lg text-secondary">{{ workflowExample.description }}</p>

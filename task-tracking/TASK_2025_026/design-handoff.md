@@ -101,9 +101,9 @@ module.exports = {
 
 | Element          | Tailwind Class         | Desktop Size | Mobile Size |
 | ---------------- | ---------------------- | ------------ | ----------- |
-| Hero Headline    | `text-5xl md:text-7xl` | 72px         | 40px        |
+| Hero Headline    | `text-4xl md:text-5xl` | 72px         | 40px        |
 | Section Headline | `text-4xl md:text-6xl` | 60px         | 36px        |
-| Subsection       | `text-3xl md:text-4xl` | 40px         | 28px        |
+| Subsection       | `text-4xl md:text-5xl` | 40px         | 28px        |
 | Card Title       | `text-xl md:text-2xl`  | 28px         | 24px        |
 | Body Large       | `text-lg md:text-xl`   | 20px         | 18px        |
 | Body Base        | `text-base`            | 18px         | 16px        |
@@ -488,7 +488,7 @@ export class LandingPageComponent {
     }"
   >
     <!-- Main Headline -->
-    <h1 class="text-5xl md:text-7xl font-bold text-headline leading-tight mb-6">
+    <h1 class="text-4xl md:text-5xl font-bold text-headline leading-tight mb-6">
       Build Production-Grade AI Applications<br />
       with TypeScript Patterns You Already Know
     </h1>

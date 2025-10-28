@@ -1,35 +1,26 @@
-# Mouse Interaction System
+# Mouse Interaction System V2
 
-**Composable element-level mouse interactions for Angular Three scenes**
+**Component-Internal Mouse Interactions for Angular Three Scenes**
 
 ## Overview
 
-The Mouse Interaction System provides declarative, composable directives for adding mouse-responsive behavior to 3D objects. Instead of scene-level traversal with hardcoded logic, each element controls its own interaction through explicit directives in the template.
+The Mouse Interaction System V2 provides mouse-responsive behavior directly within 3D components through optional configuration inputs. Instead of external directives, each component handles its own interactions via config objects passed as inputs.
 
 ### Philosophy
 
-Think **Tailwind CSS but for 3D interactions** - declarative, composable, and element-scoped.
+**Think "Built-in Interactivity"** - components handle their own mouse interactions when configured, no external directives needed.
 
 ```html
-<!-- OLD WAY: Scene-level, implicit, hardcoded -->
-<ngt-canvas sceneMouseParallax [sensitivity]="0.4">
-  <app-planet />
-  <!-- Need userData hack to exclude -->
-  <app-stars />
-  <!-- Implicitly gets parallax -->
-</ngt-canvas>
+<!-- Simple: Components are fixed by default -->
+<app-planet [position]="[0, 0, 0]" [radius]="5" />
 
-<!-- NEW WAY: Element-level, explicit, composable -->
-<ngt-canvas>
-  <!-- Nebula: Explicitly fixed -->
-  <app-nebula mouseFixed />
-
-  <!-- Stars: Configurable parallax -->
-  <app-stars mouseParallax [parallaxFactor]="0.3" [parallaxAxis]="'xy'" />
-
-  <!-- Planet: Rotation + hover (composable!) -->
-  <app-planet mouseRotation [rotationFactor]="0.5" mouseHover [hoverScale]="1.12" />
-</ngt-canvas>
+<!-- Interactive: Opt-in via config inputs -->
+<app-planet
+  [position]="[0, 0, 0]"
+  [radius]="5"
+  [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+  [mouseHover]="{ scale: 1.12, speed: 6 }"
+/>
 ```
 
 ## Architecture
@@ -40,11 +31,13 @@ Think **Tailwind CSS but for 3D interactions** - declarative, composable, and el
 MouseInteractionService (singleton)
   └─ Centralized mouse tracking with signals
 
-MouseInteractionDirective (base class)
-  ├─ MouseParallaxDirective    // Position offset based on depth
-  ├─ MouseRotationDirective    // Rotation following mouse
-  ├─ MouseHoverDirective       // Scale/glow on hover (raycasting)
-  └─ MouseFixedDirective       // Explicit opt-out marker
+Components with Optional Interaction Inputs:
+  ├─ PlanetComponent
+  │   ├─ mouseRotation?: RotationConfig
+  │   └─ mouseHover?: HoverConfig
+  │
+  └─ StarFieldEnhancedComponent
+      └─ mouseParallax?: ParallaxConfig
 ```
 
 ### How It Works
@@ -56,135 +49,112 @@ MouseInteractionDirective (base class)
    - Optional smoothing for professional animations
    - Reference-counted initialization/cleanup
 
-2. **Base Directive** (abstract)
+2. **Component-Internal Handling**
 
-   - Handles Three.js object resolution
-   - Stores original transform state
-   - Manages lifecycle and cleanup
-   - Provides utility methods for depth calculations
+   - Components check for config inputs in constructor
+   - If config provided, inject MouseInteractionService
+   - Use `injectBeforeRender()` for per-frame updates
+   - Direct access to own Three.js objects (no searching needed)
 
-3. **Specific Directives**
-   - Extend base directive
-   - Define interaction-specific behavior
-   - Use `injectBeforeRender()` for frame-by-frame updates
-   - Composable - multiple directives on same element
+3. **Type-Safe Configuration**
+   - `ParallaxConfig`, `RotationConfig`, `HoverConfig` interfaces
+   - Optional inputs: `input<ConfigType | undefined>()`
+   - Components only initialize interactions when config provided
 
-## Directives
+## Component APIs
 
-### MouseParallaxDirective
+### PlanetComponent
 
-Applies depth-based position offset based on mouse movement.
+Supports rotation and hover interactions.
 
-**Usage:**
+**Rotation Input:**
+
+```typescript
+[mouseRotation] = "{ factor: 0.3, axis: 'xy', smoothing: 8 }";
+```
+
+**Config Interface:**
+
+```typescript
+interface RotationConfig {
+  factor: number; // Intensity (0-1), default: 0.5
+  axis: 'x' | 'y' | 'z' | 'xy'; // Rotation axes, default: 'xy'
+  smoothing: number; // Transition speed, default: 8
+}
+```
+
+**Hover Input:**
+
+```typescript
+[mouseHover] = '{ scale: 1.12, speed: 6 }';
+```
+
+**Config Interface:**
+
+```typescript
+interface HoverConfig {
+  scale: number; // Scale multiplier, default: 1.15
+  glow: number; // Glow intensity multiplier, default: 1.0
+  speed: number; // Transition speed, default: 8
+}
+```
+
+**Example:**
 
 ```html
-<!-- Simple parallax -->
-<app-star-field mouseParallax [parallaxFactor]="0.5" />
+<app-planet
+  [position]="[0, 0, 9.5]"
+  [radius]="5.0"
+  [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+  [mouseHover]="{ scale: 1.12, speed: 6 }"
+/>
+```
 
-<!-- With depth scaling (farther = less movement) -->
-<app-star-field
-  mouseParallax
-  [parallaxFactor]="0.3"
-  [parallaxAxis]="'xy'"
-  [parallaxDepthScale]="true"
-  [parallaxDepthBase]="50"
+### StarFieldEnhancedComponent
+
+Supports parallax depth effect.
+
+**Parallax Input:**
+
+```typescript
+[mouseParallax] = "{ factor: 0.3, axis: 'xy', depthScale: true }";
+```
+
+**Config Interface:**
+
+```typescript
+interface ParallaxConfig {
+  factor: number; // Intensity (0-1), default: 0.3
+  axis: 'x' | 'y' | 'xy'; // Axes to affect, default: 'xy'
+  depthScale: boolean; // Scale by Z-depth, default: true
+}
+```
+
+**Example:**
+
+```html
+<!-- Background stars - subtle parallax -->
+<app-star-field-enhanced
+  [starCount]="3000"
+  [radius]="50"
+  [mouseParallax]="{ factor: 0.15, axis: 'xy', depthScale: true }"
 />
 
-<!-- Horizontal only -->
-<app-nebula mouseParallax [parallaxFactor]="0.2" [parallaxAxis]="'x'" />
+<!-- Foreground stars - stronger parallax -->
+<app-star-field-enhanced
+  [starCount]="2500"
+  [radius]="30"
+  [mouseParallax]="{ factor: 0.4, axis: 'xy', depthScale: true }"
+/>
 ```
 
-**Inputs:**
+### Nebula Components
 
-- `parallaxFactor: number` - Intensity (0-1), default: 0.3
-- `parallaxAxis: 'x' | 'y' | 'xy'` - Axes to affect, default: 'xy'
-- `parallaxDepthScale: boolean` - Scale by Z-depth, default: true
-- `parallaxDepthBase: number` - Base distance for scaling, default: 50
-
-**Effect:**
-Objects move opposite to mouse movement, creating depth perception. Farther objects (higher Z) move less when depth scaling is enabled.
-
----
-
-### MouseRotationDirective
-
-Rotates object based on mouse position, creating a "following" effect.
-
-**Usage:**
+Nebula components (NebulaComponent, NebulaVolumetricComponent) are **fixed by default** with no interaction inputs. They don't respond to mouse movement, serving as static atmospheric backgrounds.
 
 ```html
-<!-- Planet that "looks at" mouse -->
-<app-planet mouseRotation [rotationFactor]="0.5" [rotationAxis]="'xy'" />
-
-<!-- Spinning logo following mouse on Y axis -->
-<app-logo mouseRotation [rotationFactor]="0.3" [rotationAxis]="'y'" [rotationSmoothing]="8" />
-```
-
-**Inputs:**
-
-- `rotationFactor: number` - Intensity (0-1), default: 0.5
-- `rotationAxis: 'x' | 'y' | 'z' | 'xy'` - Rotation axes, default: 'xy'
-- `rotationSmoothing: number` - Transition speed, default: 8
-
-**Effect:**
-Object rotates to track mouse position. Rotation is additive (doesn't replace existing rotation from animations).
-
----
-
-### MouseHoverDirective
-
-Detects hover via raycasting and applies scale/glow effects.
-
-**Usage:**
-
-```html
-<!-- Simple hover scale -->
-<app-planet mouseHover [hoverScale]="1.12" />
-
-<!-- Scale + glow + custom speed -->
-<app-planet mouseHover [hoverScale]="1.15" [hoverGlow]="1.5" [hoverSpeed]="8" />
-```
-
-**Inputs:**
-
-- `hoverScale: number` - Scale multiplier, default: 1.15 (15% larger)
-- `hoverGlow: number` - Glow intensity multiplier, default: 1.0 (no change)
-- `hoverSpeed: number` - Transition speed, default: 8
-
-**Effect:**
-Uses Three.js raycasting to detect when mouse cursor intersects the 3D object. Smoothly scales up/down with configurable transition speed.
-
-**Note:** Glow effect requires material emissive properties (TODO: implementation pending).
-
----
-
-### MouseFixedDirective
-
-Explicitly marks an object as non-interactive (documentation/clarity marker).
-
-**Usage:**
-
-```html
-<!-- Nebula explicitly marked as fixed -->
-<app-nebula-volumetric mouseFixed />
-
-<!-- Background that should never move -->
-<app-gradient-background mouseFixed />
-```
-
-**Inputs:** None
-
-**Effect:**
-This is a no-op directive that serves as documentation. It makes intent clear in templates - "this object SHOULD be fixed, not forgotten to add interaction."
-
-**Why it exists:**
-
-```html
-<!-- Without mouseFixed: Did we forget interaction? Or is it intentionally fixed? -->
-<app-nebula-volumetric />
-
-<!-- With mouseFixed: Clear intent, no ambiguity -->
-<app-nebula-volumetric mouseFixed />
+<!-- No interaction configuration needed -->
+<app-nebula [particleCount]="120" [radius]="80" [position]="[-180, 0, -230]" />
 ```
 
 ## Real-World Example
@@ -192,37 +162,37 @@ This is a no-op directive that serves as documentation. It makes intent clear in
 ### Hero Space Scene
 
 ```html
-<ngt-canvas>
-  <!-- PLANET: Rotation + Hover -->
-  <app-planet
-    [position]="[0, 0, 9.5]"
-    [radius]="5.0"
-    mouseRotation
-    [rotationFactor]="0.3"
-    [rotationAxis]="'xy'"
-    mouseHover
-    [hoverScale]="1.12"
-  />
+<!-- PLANET: Rotation + Hover -->
+<app-planet
+  [position]="[0, 0, 9.5]"
+  [radius]="5.0"
+  [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+  [mouseHover]="{ scale: 1.12, speed: 6 }"
+/>
 
-  <!-- BACKGROUND STARS: Subtle parallax -->
-  <app-star-field-enhanced
-    [starCount]="3000"
-    [radius]="50"
-    mouseParallax
-    [parallaxFactor]="0.15"
-    [parallaxDepthScale]="true"
-  />
+<!-- BACKGROUND STARS: Subtle parallax -->
+<app-star-field-enhanced
+  [starCount]="3000"
+  [radius]="50"
+  [mouseParallax]="{ factor: 0.15, axis: 'xy', depthScale: true }"
+/>
 
-  <!-- MIDGROUND STARS: Moderate parallax -->
-  <app-star-field-enhanced [starCount]="2000" [radius]="40" mouseParallax [parallaxFactor]="0.25" />
+<!-- MIDGROUND STARS: Moderate parallax -->
+<app-star-field-enhanced
+  [starCount]="2000"
+  [radius]="40"
+  [mouseParallax]="{ factor: 0.25, axis: 'xy', depthScale: true }"
+/>
 
-  <!-- FOREGROUND STARS: Strong parallax -->
-  <app-star-field-enhanced [starCount]="2500" [radius]="30" mouseParallax [parallaxFactor]="0.4" />
+<!-- FOREGROUND STARS: Strong parallax -->
+<app-star-field-enhanced
+  [starCount]="2500"
+  [radius]="30"
+  [mouseParallax]="{ factor: 0.4, axis: 'xy', depthScale: true }"
+/>
 
-  <!-- NEBULA: Fixed position, no interaction -->
-  <app-nebula-volumetric mouseFixed />
-  <app-nebula mouseFixed />
-</ngt-canvas>
+<!-- NEBULA: Fixed position, no interaction -->
+<app-nebula-volumetric [width]="240" [height]="100" [position]="[-90, 0, -90]" />
 ```
 
 **Result:**
@@ -231,126 +201,105 @@ This is a no-op directive that serves as documentation. It makes intent clear in
 - Stars create depth perception with varying parallax
 - Nebula stays completely still (atmospheric background)
 - All interactions smooth and professional
-- Template clearly documents interaction intent
+- Template is clean and configuration is explicit
 
 ## Benefits
 
-### ✅ **Declarative**
+### ✅ **Simplicity**
 
-Interaction behavior visible in template, not hidden in TypeScript.
-
-### ✅ **Composable**
-
-Combine multiple directives on the same element:
-
-```html
-<app-planet mouseRotation mouseHover />
-```
-
-### ✅ **Configurable**
-
-Fine-grained control per element:
-
-```html
-<app-stars mouseParallax [parallaxFactor]="0.15" />
-<app-stars mouseParallax [parallaxFactor]="0.40" />
-```
-
-### ✅ **Reusable**
-
-Works across any scene without hardcoding:
-
-```html
-<!-- Same directives work in hero scene, about scene, etc. -->
-<app-scene-3d [sceneGraph]="HeroSceneComponent" />
-<app-scene-3d [sceneGraph]="AboutSceneComponent" />
-```
+No external directives to import or apply. Components handle their own interactions.
 
 ### ✅ **Type-Safe**
 
-All inputs properly typed with IntelliSense:
+All configuration via typed interfaces with IntelliSense support.
 
-```typescript
-parallaxFactor: number; // 0-1 intensity
-parallaxAxis: 'x' | 'y' | 'xy'; // Clear options
-```
-
-### ✅ **Performant**
+### ✅ **Performance**
 
 - Single mouse listener for entire app
-- Signals for reactive updates
-- No scene traversal needed
-- Reference-counted cleanup
+- One handler per component, not per Three.js object
+- Star fields: one parallax handler for entire group of thousands of stars
 
-## Performance
+### ✅ **Direct Object Access**
 
-### Single Mouse Tracker
+Components access their own Three.js objects via `viewChild` refs, no searching needed.
+
+### ✅ **Opt-In**
+
+Components are fixed by default. Only initialize interactions when config provided.
+
+### ✅ **Clean Templates**
+
+```html
+<!-- Before: Verbose directive syntax -->
+<app-planet mouseRotation [rotationFactor]="0.3" [rotationAxis]="'xy'" [rotationSmoothing]="8" />
+
+<!-- After: Single config object -->
+<app-planet [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }" />
+```
+
+## Implementation Pattern
+
+### Adding Mouse Interactions to a Component
+
+**1. Add Configuration Input:**
 
 ```typescript
-@Injectable({ providedIn: 'root' })
-export class MouseInteractionService {
-  readonly mouseX = signal(0); // -1 to 1
-  readonly mouseY = signal(0);
-  // ... smoothing, lifecycle, etc.
+export class MyComponent implements AfterViewInit, OnDestroy {
+  readonly mouseRotation = input<RotationConfig | undefined>();
+
+  private mouseService?: MouseInteractionService;
+  private originalRotation?: THREE.Euler;
 }
 ```
 
-**Benefits:**
-
-- One `mousemove` listener total
-- All directives read from shared signals
-- Automatic cleanup via reference counting
-
-### Efficient Updates
+**2. Check Config in Lifecycle Hook:**
 
 ```typescript
-injectBeforeRender(() => {
-  const x = this.mouseService.smoothMouseX();
-  const y = this.mouseService.smoothMouseY();
-  // Apply transformation only to this element
-});
+ngAfterViewInit(): void {
+  const mesh = this.meshRef()?.nativeElement;
+  if (!mesh) return;
+
+  // Store original state
+  this.originalRotation = mesh.rotation.clone();
+
+  // Setup interactions if configured
+  if (this.mouseRotation()) {
+    this.mouseService = inject(MouseInteractionService);
+    this.mouseService.initialize();
+    this.setupMouseRotation(mesh);
+  }
+}
 ```
 
-**Benefits:**
-
-- Per-frame updates via `injectBeforeRender`
-- Only affected elements updated
-- No scene traversal overhead
-
-## Migration from Old System
-
-### Before (Scene-Level Directive)
+**3. Implement Interaction Handler:**
 
 ```typescript
-// scene-3d.component.ts
-<ngt-canvas sceneMouseParallax [sensitivity]="0.4">
-  <app-planet />  <!-- Needs userData hack to exclude -->
-  <app-stars />   <!-- Implicitly gets parallax -->
-</ngt-canvas>
+private setupMouseRotation(mesh: THREE.Mesh): void {
+  const config = this.mouseRotation();
+  if (!config) return;
 
-// scene-mouse-parallax.directive.ts
-scene.traverse((object) => {
-  if (object.userData?.excludeFromParallax) return; // userData hack
-  // Apply parallax to ALL objects
-});
+  injectBeforeRender(() => {
+    if (!this.mouseService || !mesh || !this.originalRotation) return;
 
-// planet.component.ts
-mesh.userData['excludeFromParallax'] = true; // Hacky exclusion
+    const mouseX = this.mouseService.smoothMouseX();
+    const mouseY = this.mouseService.smoothMouseY();
+    const factor = config.factor ?? 0.5;
+
+    // Apply rotation
+    mesh.rotation.x = this.originalRotation.x + mouseY * factor;
+    mesh.rotation.y = this.originalRotation.y + mouseX * factor;
+  });
+}
 ```
 
-### After (Element-Level Directives)
+**4. Cleanup:**
 
 ```typescript
-// hero-space-scene.component.ts
-<ngt-canvas>
-  <app-planet mouseRotation mouseHover />  <!-- Explicit behavior -->
-  <app-stars mouseParallax [parallaxFactor]="0.3" />  <!-- Configurable -->
-  <app-nebula mouseFixed />  <!-- Clear intent -->
-</ngt-canvas>
-
-// No userData hacks needed
-// No scene traversal
-// Clear template-level configuration
+ngOnDestroy(): void {
+  if (this.mouseService) {
+    this.mouseService.destroy();
+  }
+}
 ```
 
 ## API Reference
@@ -362,7 +311,7 @@ mesh.userData['excludeFromParallax'] = true; // Hacky exclusion
 **Methods:**
 
 ```typescript
-initialize(): void;  // Called automatically by directives
+initialize(): void;  // Called by components (reference counted)
 destroy(): void;     // Reference-counted cleanup
 setSmoothingFactor(factor: number): void;
 getSmoothingFactor(): number;
@@ -377,125 +326,84 @@ readonly smoothMouseX: Signal<number>; // Interpolated position
 readonly smoothMouseY: Signal<number>;
 ```
 
-### Base Directive
-
-**Location:** `@core/angular-3d/directives/mouse-interaction-base.directive.ts`
-
-**Protected Properties:**
-
-```typescript
-targetObject: THREE.Object3D | null;
-originalPosition: THREE.Vector3 | null;
-originalRotation: THREE.Euler | null;
-originalScale: THREE.Vector3 | null;
-```
-
-**Protected Methods:**
-
-```typescript
-abstract setupInteraction(): void;
-calculateDepthFactor(baseDistance: number): number;
-isTargetValid(): boolean;
-```
-
-### Types
+### Type Definitions
 
 **Location:** `@core/angular-3d/types/mouse-interaction.types.ts`
 
 ```typescript
 export interface ParallaxConfig {
-  factor: number;
+  factor: number; // 0-1 intensity
   axis: 'x' | 'y' | 'xy';
-  depthScale: boolean;
+  depthScale: boolean; // Scale effect by Z-depth
 }
 
 export interface RotationConfig {
-  factor: number;
+  factor: number; // 0-1 intensity
   axis: 'x' | 'y' | 'z' | 'xy';
-  smoothing: number;
+  smoothing: number; // Interpolation speed
 }
 
 export interface HoverConfig {
-  scale: number;
-  glow: number;
-  speed: number;
+  scale: number; // Scale multiplier (>1.0)
+  glow: number; // Glow intensity multiplier
+  speed: number; // Transition speed
 }
 ```
 
 ## Best Practices
 
-### 1. Start with Sensible Defaults
+### 1. Use Sensible Defaults
 
 ```html
-<!-- Good: Start simple -->
-<app-stars mouseParallax />
-
-<!-- Then tune if needed -->
-<app-stars mouseParallax [parallaxFactor]="0.25" />
+<!-- Start simple, components have default values -->
+<app-planet [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }" />
 ```
 
-### 2. Use mouseFixed for Clarity
-
-```html
-<!-- Good: Intent is clear -->
-<app-nebula mouseFixed />
-
-<!-- Bad: Is it forgotten or intentional? -->
-<app-nebula />
-```
-
-### 3. Compose Interactions Thoughtfully
-
-```html
-<!-- Good: Complementary interactions -->
-<app-planet mouseRotation mouseHover />
-
-<!-- Questionable: Parallax + Rotation may conflict -->
-<app-planet mouseParallax mouseRotation />
-```
-
-### 4. Depth-Scale Background Elements
-
-```html
-<!-- Good: Farther stars move less -->
-<app-star-field [radius]="50" mouseParallax [parallaxDepthScale]="true" />
-```
-
-### 5. Match Smoothing Across Scene
+### 2. Match Smoothing Across Scene
 
 ```html
 <!-- Consistent smoothing for professional feel -->
-<app-planet mouseRotation [rotationSmoothing]="8" />
-<app-stars mouseParallax <!-- Uses service smoothing (8 by default) --> /></app-stars>
+<app-planet [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }" />
+<app-star-field-enhanced [mouseParallax]="{ factor: 0.3, axis: 'xy', depthScale: true }" />
+<!-- Service smoothing is 8 by default -->
+```
+
+### 3. Layer Parallax Depths
+
+```html
+<!-- Vary parallax factor to create depth layers -->
+<app-star-field-enhanced [radius]="50" [mouseParallax]="{ factor: 0.15 }" />
+<!-- Far -->
+<app-star-field-enhanced [radius]="40" [mouseParallax]="{ factor: 0.25 }" />
+<!-- Mid -->
+<app-star-field-enhanced [radius]="30" [mouseParallax]="{ factor: 0.40 }" />
+<!-- Near -->
+```
+
+### 4. Fixed Backgrounds Don't Need Config
+
+```html
+<!-- Nebula is fixed by default, no config needed -->
+<app-nebula [position]="[-180, 0, -230]" />
 ```
 
 ## Troubleshooting
 
-### Directive Not Working
+### Interactions Not Working
 
-**Check 1: Is the element a Three.js object?**
+**Check 1: Is config provided?**
 
 ```typescript
-// Must be one of:
-// - Direct THREE.Object3D (ngt-mesh, ngt-group)
-// - Component with getMesh() method
-// - Component with getObject3D() method
+// Must provide config object
+[mouseRotation] = "{ factor: 0.3, axis: 'xy', smoothing: 8 }";
+// NOT just boolean flag
 ```
 
-**Check 2: Import the directive**
+**Check 2: Check console for errors**
 
 ```typescript
-imports: [
-  MouseParallaxDirective, // Don't forget!
-  // ...
-];
-```
-
-**Check 3: Check console for warnings**
-
-```typescript
-[MouseInteraction] Could not find Three.js object
-[MouseParallax] Target object is invalid
+[PlanetComponent] Mouse rotation enabled { factor: 0.3, axis: 'xy' }
+[StarFieldEnhanced] Mouse parallax enabled { factor: 0.3, axis: 'xy', depthScale: true }
 ```
 
 ### Interactions Feel Janky
@@ -503,118 +411,49 @@ imports: [
 **Fix 1: Increase smoothing**
 
 ```typescript
-// Service-level (all directives)
-constructor() {
-  inject(MouseInteractionService).setSmoothingFactor(10);
-}
+[mouseRotation] = "{ factor: 0.3, axis: 'xy', smoothing: 12 }";
+// Higher smoothing = slower, smoother transitions
+```
 
-// Per-directive (rotation only)
+**Fix 2: Reduce factor**
+
+```typescript
+// Too strong
+[mouseParallax] = // Better
+  "{ factor: 1.0, axis: 'xy', depthScale: true }"[mouseParallax] =
+    "{ factor: 0.3, axis: 'xy', depthScale: true }";
+```
+
+## Migration from V1 (Directive-Based)
+
+### Before (External Directives)
+
+```html
 <app-planet
   mouseRotation
-  [rotationSmoothing]="10"
+  [rotationFactor]="0.3"
+  [rotationAxis]="'xy'"
+  [rotationSmoothing]="8"
+  mouseHover
+  [hoverScale]="1.12"
 />
 ```
 
-**Fix 2: Reduce intensity**
+### After (Component Inputs)
 
-```typescript
-<!-- Too strong -->
-<app-stars mouseParallax [parallaxFactor]="1.0" />
-
-<!-- Better -->
-<app-stars mouseParallax [parallaxFactor]="0.3" />
+```html
+<app-planet
+  [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+  [mouseHover]="{ scale: 1.12, speed: 6 }"
+/>
 ```
 
-### Hover Not Detecting
+**Key Changes:**
 
-**Issue:** Raycasting requires proper mesh structure
-
-**Fix:**
-
-```typescript
-// In your component
-getMesh(): THREE.Mesh {
-  return this.meshRef()?.nativeElement;
-}
-```
-
-**Verify:**
-
-```typescript
-// Check if mesh is a Group or Mesh
-console.log(component.getMesh().type);
-// Should be 'Mesh' for hover to work reliably
-```
-
-## Future Enhancements
-
-### Planned Features
-
-1. **Glow Effect Implementation**
-
-   - Currently `hoverGlow` input exists but not implemented
-   - Needs material emissive intensity manipulation
-
-2. **Custom Interaction Directive**
-
-   ```typescript
-   <app-object
-     mouseCustom
-     [transformFn]="(mouseX, mouseY, object) => { ... }"
-   />
-   ```
-
-3. **Interaction Presets**
-
-   ```typescript
-   <app-object mouseInteraction="floating-card" />
-   <app-object mouseInteraction="3d-button" />
-   ```
-
-4. **Touch Support**
-
-   - Extend MouseInteractionService for touch events
-   - Normalized touch position tracking
-
-5. **VR/AR Support**
-   - Controller-based interactions
-   - Gaze-based hover detection
-
-## Contributing
-
-### Adding a New Directive
-
-1. **Extend Base Class**
-
-   ```typescript
-   @Directive({ selector: '[myInteraction]' })
-   export class MyInteractionDirective extends MouseInteractionDirective {
-     protected setupInteraction(): void {
-       // Your logic here
-     }
-   }
-   ```
-
-2. **Export from Index**
-
-   ```typescript
-   // angular-3d/index.ts
-   export { MyInteractionDirective } from './directives/my-interaction.directive';
-   ```
-
-3. **Add Tests**
-
-   ```typescript
-   // my-interaction.directive.spec.ts
-   describe('MyInteractionDirective', () => {
-     // Test initialization, transformation, cleanup
-   });
-   ```
-
-4. **Document Usage**
-   - Add section to this file
-   - Include real-world examples
-   - Document all inputs and effects
+- No directive imports needed
+- Single config object instead of multiple separate inputs
+- Components handle their own interactions internally
+- Fixed by default, opt-in via config
 
 ## License
 

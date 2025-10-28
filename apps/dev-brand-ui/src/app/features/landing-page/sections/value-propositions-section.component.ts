@@ -134,7 +134,7 @@ import type { ValueProposition } from '../interfaces';
 
               <!-- Business Headline -->
               <h2
-                class="text-3xl md:text-4xl font-bold text-white leading-tight mb-6"
+                class="text-4xl md:text-5xl font-bold text-white leading-tight mb-6"
                 scrollAnimation
                 [scrollConfig]="{
                   animation: 'slideUp',

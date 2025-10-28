@@ -35,7 +35,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
         <div class="text-center mb-20">
           <h2
             id="features-headline"
-            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight"
+            class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight"
             scrollAnimation
             [scrollConfig]="{
               animation: 'fadeIn',
@@ -116,7 +116,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
                 <!-- Title & Description -->
                 <div class="flex-1">
                   <h3
-                    class="text-3xl md:text-4xl font-bold text-text-headline mb-3"
+                    class="text-4xl md:text-5xl font-bold text-text-headline mb-3"
                   >
                     {{ feature.name }}
                   </h3>

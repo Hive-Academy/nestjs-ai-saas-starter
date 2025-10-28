@@ -39,7 +39,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         <!-- Large Gradient Headline -->
         <h2
           id="cta-headline"
-          class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
+          class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
           scrollAnimation
           [scrollConfig]="{
             animation: 'fadeIn',

@@ -37,11 +37,7 @@ import { Float3dDirective } from '../../../../core/angular-3d';
 import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 
-// Import new mouse interaction directives
-import { MouseParallaxDirective } from '../../../../core/angular-3d/directives/mouse-parallax.directive';
-import { MouseRotationDirective } from '../../../../core/angular-3d/directives/mouse-rotation.directive';
-import { MouseHoverDirective } from '../../../../core/angular-3d/directives/mouse-hover.directive';
-import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mouse-fixed.directive';
+// Mouse interaction directives removed - now handled via component inputs
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -55,10 +51,6 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
     Float3dDirective,
     Glow3dDirective,
     NebulaComponent,
-    MouseParallaxDirective,
-    MouseRotationDirective,
-    MouseHoverDirective,
-    MouseFixedDirective,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -118,13 +110,8 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       [glowDistance]="20"
       [rotationSpeed]="0.5"
       [rotationAxis]="'y'"
-      mouseRotation
-      [rotationFactor]="0.3"
-      [rotationAxis]="'xy'"
-      [rotationSmoothing]="8"
-      mouseHover
-      [hoverScale]="1.12"
-      [hoverSpeed]="6"
+      [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+      [mouseHover]="{ scale: 1.12, speed: 6, glow: 0.4 }"
     />
 
     <!-- ================================ -->
@@ -135,10 +122,7 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       [starCount]="3000"
       [radius]="50"
       [enableTwinkle]="true"
-      mouseParallax
-      [parallaxFactor]="0.15"
-      [parallaxAxis]="'xy'"
-      [parallaxDepthScale]="true"
+      [mouseParallax]="{ factor: 0.15, axis: 'xy', depthScale: true }"
     />
 
     <!-- Midground stars (brighter) - Moderate parallax -->
@@ -146,10 +130,7 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       [starCount]="2000"
       [radius]="40"
       [enableTwinkle]="false"
-      mouseParallax
-      [parallaxFactor]="0.25"
-      [parallaxAxis]="'xy'"
-      [parallaxDepthScale]="true"
+      [mouseParallax]="{ factor: 0.25, axis: 'xy', depthScale: true }"
     />
 
     <!-- Foreground stars (closest, brightest) - Stronger parallax -->
@@ -161,10 +142,7 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       glow3d
       [glowColor]="darkPlanetGlowColor"
       [glowIntensity]="0.3"
-      mouseParallax
-      [parallaxFactor]="0.4"
-      [parallaxAxis]="'xy'"
-      [parallaxDepthScale]="true"
+      [mouseParallax]="{ factor: 0.4, axis: 'xy', depthScale: true }"
     />
 
     <!-- ================================ -->
@@ -185,7 +163,7 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
     -->
     <!-- ================================ -->
 
-    <!-- MAIN NEBULA - Continuous smoke/cloud effect (FIXED position) -->
+    <!-- MAIN NEBULA - Continuous smoke/cloud effect (FIXED position by default) -->
     <app-nebula
       [particleCount]="120"
       [radius]="80"
@@ -195,7 +173,6 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       [opacity]="0.2"
       [flow]="false"
       [position]="[-180, 0, -230]"
-      mouseFixed
     />
 
     <app-nebula-volumetric
@@ -215,7 +192,6 @@ import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mous
       [glowIntensity]="30"
       [colorIntensity]="3"
       [position]="[-90, 0, -90]"
-      mouseFixed
     />
 
     <!-- ================================ -->
@@ -338,7 +314,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetGlowIntensity(): number {
-    return 0.6; // Moderate glow for realistic atmospheric halo
+    return 0.2; // Moderate glow for realistic atmospheric halo
   }
 
   // ================================

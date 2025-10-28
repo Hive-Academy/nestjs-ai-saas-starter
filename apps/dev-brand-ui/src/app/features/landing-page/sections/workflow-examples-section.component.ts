@@ -34,7 +34,7 @@ import type { WorkflowExample } from '../interfaces';
         <div class="text-center mb-20">
           <h2
             id="workflow-examples-headline"
-            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
+            class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-tertiary bg-clip-text text-transparent mb-6 leading-tight"
             scrollAnimation
             [scrollConfig]="{
               animation: 'fadeIn',
@@ -149,7 +149,7 @@ import type { WorkflowExample } from '../interfaces';
                 <div class="flex items-center justify-center gap-4">
                   <div class="text-center">
                     <div
-                      class="text-3xl md:text-4xl font-bold text-accent-danger"
+                      class="text-4xl md:text-5xl font-bold text-accent-danger"
                     >
                       {{ activeWorkflow.codeBeforeLines }}
                     </div>
@@ -160,7 +160,7 @@ import type { WorkflowExample } from '../interfaces';
                   <div class="text-2xl md:text-3xl text-text-secondary">→</div>
                   <div class="text-center">
                     <div
-                      class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent"
+                      class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent"
                     >
                       {{ activeWorkflow.codeAfterLines }}
                     </div>

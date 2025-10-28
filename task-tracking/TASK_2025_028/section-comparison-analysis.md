@@ -298,7 +298,7 @@
 
 4. **Typography Refinement**:
 
-   - Headline: Increase size to `text-5xl md:text-7xl` (from `text-4xl md:text-6xl`)
+   - Headline: Increase size to `text-4xl md:text-5xl` (from `text-4xl md:text-6xl`)
    - Add decorative accent word with color or weight difference
    - Increase metric value size: `text-6xl md:text-7xl` (from `text-5xl md:text-6xl`)
 
@@ -346,7 +346,7 @@
 
 3. **Typography Hierarchy**:
 
-   - Business headline: `text-3xl md:text-4xl` with unique font weight
+   - Business headline: `text-4xl md:text-5xl` with unique font weight
    - Add decorative label for package name (pill badge style)
    - Pain point/solution: Color-code with muted red/green tints
 

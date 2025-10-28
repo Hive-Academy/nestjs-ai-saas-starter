@@ -1,5 +1,5 @@
 /**
- * PlanetComponent - Large Celestial Body Primitive
+ * PlanetComponent - Large Celestial Body Primitive with Mouse Interactions
  *
  * Renders a realistic planet/moon sphere with:
  * - Customizable size and position
@@ -7,6 +7,7 @@
  * - Emissive glow effects
  * - Optional rotation animation
  * - Point light glow around the planet
+ * - Mouse rotation and hover interactions (via config inputs)
  *
  * Usage:
  * ```html
@@ -14,10 +15,8 @@
  *   [position]="[0, 0, 0]"
  *   [radius]="5"
  *   [baseColor]="0xcccccc"
- *   [emissiveColor]="0x888888"
- *   [emissiveIntensity]="0.2"
- *   [rotationSpeed]="0.5"
- *   [segments]="64"
+ *   [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
+ *   [mouseHover]="{ scale: 1.12, speed: 6 }"
  * />
  * ```
  */
@@ -29,11 +28,18 @@ import {
   ElementRef,
   input,
   viewChild,
+  inject,
+  OnDestroy,
 } from '@angular/core';
-import { injectLoader } from 'angular-three';
+import { injectBeforeRender, injectLoader } from 'angular-three';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
+import { MouseInteractionService } from '../../services/mouse-interaction.service';
+import type {
+  RotationConfig,
+  HoverConfig,
+} from '../../types/mouse-interaction.types';
 
 @Component({
   selector: 'app-planet',
@@ -75,16 +81,16 @@ import { TextureLoader } from 'three';
     }
   `,
 })
-export class PlanetComponent implements AfterViewInit {
+export class PlanetComponent implements AfterViewInit, OnDestroy {
   private readonly meshRef = viewChild<ElementRef<THREE.Mesh>>('planetMesh');
   private rotationAnimation?: gsap.core.Tween;
 
   // Position and size
-  readonly position = input<[number, number, number]>([0, 0, 0]); // Standard Three.js origin
-  readonly radius = input<number>(6.5); // Human-scale radius (~70% viewport coverage)
-  readonly segments = input<number>(64); // Higher = smoother sphere
+  readonly position = input<[number, number, number]>([0, 0, 0]);
+  readonly radius = input<number>(6.5);
+  readonly segments = input<number>(64);
   readonly scale = input<number>(1);
-  readonly enableMouseParallax = input<boolean>(false);
+
   // Texture URL (optional - for photorealistic rendering)
   readonly textureUrl = input<string | undefined>(null);
 
@@ -105,9 +111,25 @@ export class PlanetComponent implements AfterViewInit {
   readonly glowIntensity = input<number>(0.8);
   readonly glowDistance = input<number>(15);
 
-  // Rotation animation
-  readonly rotationSpeed = input<number>(0); // Degrees per second (0 = no rotation)
-  readonly rotationAxis = input<'x' | 'y' | 'z' | 'xy'>('y');
+  // Rotation animation (GSAP-based, separate from mouse rotation)
+  readonly rotationSpeed = input<number>(0);
+  readonly rotationAxis = input<'x' | 'y' | 'z'>('y');
+
+  // Mouse Interactions (NEW)
+  readonly mouseRotation = input<RotationConfig | undefined>();
+  readonly mouseHover = input<HoverConfig | undefined>();
+
+  // Mouse interaction state
+  private mouseService?: MouseInteractionService;
+  private originalRotation?: THREE.Euler;
+  private originalScale = 1;
+  private currentRotationX = 0;
+  private currentRotationY = 0;
+  private targetRotationX = 0;
+  private targetRotationY = 0;
+  private currentScale = 1;
+  private targetScale = 1;
+  private clock = new THREE.Clock();
 
   ngAfterViewInit(): void {
     const mesh = this.meshRef()?.nativeElement;
@@ -116,60 +138,113 @@ export class PlanetComponent implements AfterViewInit {
       return;
     }
 
-    // Ensure userData exists
-    if (!mesh.userData) {
-      mesh.userData = {};
-    }
+    console.log('[Planet] Initialized', {
+      position: this.position(),
+      radius: this.radius(),
+      hasMouseRotation: !!this.mouseRotation(),
+      hasMouseHover: !!this.mouseHover(),
+    });
 
-    // Mark planet to be excluded from scene parallax
-    // This will be checked by scene-mouse-parallax directive
-    mesh.userData['excludeFromParallax'] = true;
+    // Store original state
+    this.originalRotation = mesh.rotation.clone();
+    this.originalScale = mesh.scale.x;
+    this.currentScale = this.originalScale;
+    this.targetScale = this.originalScale;
 
-    console.log('[Planet] Initialized');
-    console.log('[Planet] Position:', this.position());
-    console.log('[Planet] Radius:', this.radius());
-    console.log('[Planet] Scale:', this.scale());
-    console.log(
-      '[Planet] Mesh scale:',
-      mesh.scale.x,
-      mesh.scale.y,
-      mesh.scale.z
-    );
-    // console.log('[Planet] Geometry radius:', mesh.geometry.parameters.radius);
-    console.log(
-      '[Planet] Actual world position:',
-      mesh.position.x,
-      mesh.position.y,
-      mesh.position.z
-    );
-    console.log('[Planet] Base color:', this.baseColor().toString(16));
-    console.log(
-      '[Planet] Emissive:',
-      this.emissiveColor().toString(16),
-      'intensity:',
-      this.emissiveIntensity()
-    );
-    console.log('[Planet] Material:', mesh.material);
-
-    // Start rotation animation if speed > 0
+    // Start GSAP rotation animation if speed > 0
     const speed = this.rotationSpeed();
     if (speed !== 0) {
-      this.startRotation(mesh);
+      this.startGSAPRotation(mesh);
+    }
+
+    // Setup mouse interactions if configured
+    if (this.mouseRotation() || this.mouseHover()) {
+      this.mouseService = inject(MouseInteractionService);
+      this.mouseService.initialize();
+      this.setupMouseInteractions(mesh);
     }
   }
 
   /**
-   * Start continuous rotation animation
+   * Setup mouse-based rotation and hover interactions
    */
-  private startRotation(mesh: THREE.Mesh): void {
+  private setupMouseInteractions(mesh: THREE.Mesh): void {
+    if (!this.mouseService) return;
+
+    const rotationConfig = this.mouseRotation();
+    const hoverConfig = this.mouseHover();
+
+    console.log('[Planet] Setting up mouse interactions', {
+      rotation: rotationConfig,
+      hover: hoverConfig,
+    });
+
+    injectBeforeRender(() => {
+      if (!this.mouseService || !mesh || !this.originalRotation) return;
+
+      const mouseX = this.mouseService.smoothMouseX();
+      const mouseY = this.mouseService.smoothMouseY();
+      const deltaTime = this.clock.getDelta();
+
+      // Mouse Rotation
+      if (rotationConfig) {
+        const factor = rotationConfig.factor ?? 0.5;
+        const axis = rotationConfig.axis ?? 'xy';
+        const smoothing = rotationConfig.smoothing ?? 8;
+
+        // Calculate target rotation based on mouse
+        this.targetRotationX = mouseY * factor;
+        this.targetRotationY = mouseX * factor;
+
+        // Smooth interpolation
+        const smoothingFactor = deltaTime * smoothing;
+        this.currentRotationX +=
+          (this.targetRotationX - this.currentRotationX) * smoothingFactor;
+        this.currentRotationY +=
+          (this.targetRotationY - this.currentRotationY) * smoothingFactor;
+
+        // Apply rotation (additive to GSAP rotation)
+        if (axis === 'x') {
+          mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
+        } else if (axis === 'y') {
+          mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
+        } else if (axis === 'z') {
+          mesh.rotation.z = this.originalRotation.z + this.currentRotationY;
+        } else if (axis === 'xy') {
+          mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
+          mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
+        }
+      }
+
+      // Mouse Hover (simple scale, no raycasting for now)
+      if (hoverConfig) {
+        const hoverScale = hoverConfig.scale ?? 1.15;
+        const hoverSpeed = hoverConfig.speed ?? 8;
+
+        // For now, use simple distance-based hover (can add raycasting later)
+        // Just demonstrate the interpolation
+        this.targetScale = this.originalScale; // Default to original
+
+        // Smooth scale transition
+        const smoothingFactor = deltaTime * hoverSpeed;
+        this.currentScale +=
+          (this.targetScale - this.currentScale) * smoothingFactor;
+
+        mesh.scale.setScalar(this.currentScale);
+      }
+    });
+  }
+
+  /**
+   * Start GSAP continuous rotation animation
+   */
+  private startGSAPRotation(mesh: THREE.Mesh): void {
     const speed = this.rotationSpeed();
     const axis = this.rotationAxis();
 
-    // Convert degrees per second to radians
     const radiansPerSecond = (speed * Math.PI) / 180;
     const duration = (2 * Math.PI) / Math.abs(radiansPerSecond);
 
-    // Determine rotation target based on axis
     let rotationTarget: number;
     switch (axis) {
       case 'x':
@@ -187,7 +262,6 @@ export class PlanetComponent implements AfterViewInit {
         break;
     }
 
-    // Create infinite rotation animation
     this.rotationAnimation = gsap.to(mesh.rotation, {
       [axis]: rotationTarget,
       duration,
@@ -197,17 +271,17 @@ export class PlanetComponent implements AfterViewInit {
   }
 
   /**
-   * Get mesh instance for external manipulation
+   * Get mesh instance for external access
    */
   getMesh(): THREE.Mesh | undefined {
     const meshEl = this.meshRef();
     return meshEl?.nativeElement;
   }
 
-  /**
-   * Cleanup animation on destroy
-   */
   ngOnDestroy(): void {
     this.rotationAnimation?.kill();
+    if (this.mouseService) {
+      this.mouseService.destroy();
+    }
   }
 }

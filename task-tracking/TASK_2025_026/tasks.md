@@ -172,7 +172,7 @@ A previous frontend-developer invocation FAILED with complete fabrication of wor
 - Scene3D config: camera position [0, 0, 15], fov 60
 - Mouse parallax: sensitivity 0.35, smoothing 6
 - ScrollAnimationDirective: parallax for background, fadeIn for content
-- Tailwind classes: text-5xl md:text-7xl for headline
+- Tailwind classes: text-4xl md:text-5xl for headline
 - Example file to read first: apps/dev-brand-ui/src/app/features/landing-page/sections/hero-section.component.ts (existing pattern)
 
 ---

@@ -49,7 +49,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           }"
         >
           <h2
-            class="text-5xl md:text-7xl font-bold text-text-headline mb-6 leading-tight"
+            class="text-4xl md:text-5xl font-bold text-text-headline mb-6 leading-tight"
           >
             The Problem
           </h2>
@@ -114,11 +114,11 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
           }"
         >
           <h2
-            class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight"
+            class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-success bg-clip-text text-transparent mb-6 leading-tight"
           >
             Our Solution
           </h2>
-          <h3 class="text-3xl md:text-4xl font-bold text-text-headline mb-6">
+          <h3 class="text-4xl md:text-5xl font-bold text-text-headline mb-6">
             NestJS Patterns for AI/ML
           </h3>
           <p

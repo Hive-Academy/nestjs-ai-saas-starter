@@ -419,7 +419,7 @@ This landing page targets senior TypeScript developers and CTOs who value techni
 1. **Main Headline** (Display - 72px bold):
 
    ```html
-   <h1 class="text-5xl md:text-7xl font-bold text-headline leading-tight mb-6">
+   <h1 class="text-4xl md:text-5xl font-bold text-headline leading-tight mb-6">
      Build Production-Grade AI Applications<br />
      with TypeScript Patterns You Already Know
    </h1>

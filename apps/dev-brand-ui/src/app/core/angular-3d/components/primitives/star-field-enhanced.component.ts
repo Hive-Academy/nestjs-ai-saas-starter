@@ -1,17 +1,12 @@
 /**
- * StarFieldEnhancedComponent - Multi-Size Glowing Star System
+ * StarFieldEnhancedComponent - Multi-Size Glowing Star System with Mouse Parallax
  *
  * Creates a realistic star field with:
  * - Multiple size variations (tiny, small, medium, large)
  * - Per-star glow using sprite materials
  * - Color temperature variation (blue, white, yellow, orange)
  * - Twinkle animation (optional)
- *
- * Features:
- * - Individual star sprites with glow textures
- * - Additive blending for realistic star glow
- * - Depth-based size attenuation
- * - Color palette based on stellar classification
+ * - Mouse parallax effect (optional, via config input)
  *
  * Usage:
  * ```html
@@ -19,6 +14,7 @@
  *   [starCount]="2000"
  *   [radius]="40"
  *   [enableTwinkle]="true"
+ *   [mouseParallax]="{ factor: 0.3, axis: 'xy', depthScale: true }"
  * />
  * ```
  */
@@ -30,10 +26,14 @@ import {
   ElementRef,
   input,
   viewChild,
+  inject,
+  OnDestroy,
 } from '@angular/core';
 import { injectBeforeRender } from 'angular-three';
 import { random } from 'maath';
 import * as THREE from 'three';
+import { MouseInteractionService } from '../../services/mouse-interaction.service';
+import type { ParallaxConfig } from '../../types/mouse-interaction.types';
 
 interface StarData {
   position: [number, number, number];
@@ -59,19 +59,17 @@ interface StarData {
         <ngt-sprite-material
           [map]="starTexture()"
           [color]="star.color"
-          [transparent]="true"
           [opacity]="star.brightness"
+          [transparent]="true"
           [blending]="additiveBlending"
           [depthWrite]="false"
-          [depthTest]="true"
-          [fog]="false"
         />
       </ngt-sprite>
       }
     </ngt-group>
   `,
 })
-export class StarFieldEnhancedComponent {
+export class StarFieldEnhancedComponent implements OnDestroy {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('starGroup');
 
   // Configuration inputs
@@ -79,8 +77,16 @@ export class StarFieldEnhancedComponent {
   readonly radius = input<number>(40);
   readonly enableTwinkle = input<boolean>(false);
 
+  // Mouse Interaction (NEW)
+  readonly mouseParallax = input<ParallaxConfig | undefined>();
+
+  // Mouse interaction state
+  private mouseService?: MouseInteractionService;
+  private originalPosition?: THREE.Vector3;
+  private clock = new THREE.Clock();
+
   /**
-   * Get Three.js Group for mouse interaction directives
+   * Get Three.js Group for external access
    */
   getObject3D(): THREE.Group | undefined {
     const groupEl = this.groupRef();
@@ -124,11 +130,11 @@ export class StarFieldEnhancedComponent {
     );
 
     // Bright center fading to transparent edges
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); // Bright center
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
     gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
     gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.4)');
     gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.1)');
-    gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0)'); // Transparent edge
+    gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0)');
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
@@ -166,21 +172,17 @@ export class StarFieldEnhancedComponent {
       let brightness: number;
 
       if (rand < 0.8) {
-        // Tiny stars (most common)
-        size = 0.05 + Math.random() * 0.05; // 0.05-0.1
-        brightness = 0.4 + Math.random() * 0.3; // 0.4-0.7
+        size = 0.05 + Math.random() * 0.05;
+        brightness = 0.4 + Math.random() * 0.3;
       } else if (rand < 0.95) {
-        // Small stars
-        size = 0.1 + Math.random() * 0.1; // 0.1-0.2
-        brightness = 0.6 + Math.random() * 0.3; // 0.6-0.9
+        size = 0.1 + Math.random() * 0.1;
+        brightness = 0.6 + Math.random() * 0.3;
       } else if (rand < 0.99) {
-        // Medium stars
-        size = 0.2 + Math.random() * 0.15; // 0.2-0.35
-        brightness = 0.8 + Math.random() * 0.2; // 0.8-1.0
+        size = 0.2 + Math.random() * 0.15;
+        brightness = 0.8 + Math.random() * 0.2;
       } else {
-        // Large bright stars (rare)
-        size = 0.35 + Math.random() * 0.25; // 0.35-0.6
-        brightness = 1.0;
+        size = 0.35 + Math.random() * 0.25;
+        brightness = 0.9 + Math.random() * 0.1;
       }
 
       // Random color from stellar palette
@@ -189,53 +191,96 @@ export class StarFieldEnhancedComponent {
           Math.floor(Math.random() * this.stellarColors.length)
         ];
 
-      // Twinkle parameters (if enabled)
-      const twinkleSpeed = 0.5 + Math.random() * 1.5; // 0.5-2.0
-      const twinklePhase = Math.random() * Math.PI * 2; // Random starting phase
-
       stars.push({
         position,
         size,
         color,
         brightness,
-        twinkleSpeed,
-        twinklePhase,
+        twinkleSpeed: 0.5 + Math.random() * 1.5,
+        twinklePhase: Math.random() * Math.PI * 2,
       });
     }
 
-    console.log(
-      `[StarFieldEnhanced] Generated ${count} stars with size variation`
-    );
+    console.log('[StarFieldEnhanced] Generated', count, 'stars with glow');
     return stars;
   });
 
-  private time = 0;
-
   constructor() {
-    // Setup twinkle animation if enabled
+    // Setup mouse parallax if configured
+    const parallaxConfig = this.mouseParallax();
+    if (parallaxConfig) {
+      this.mouseService = inject(MouseInteractionService);
+      this.mouseService.initialize();
+
+      console.log('[StarFieldEnhanced] Mouse parallax enabled', parallaxConfig);
+
+      // Apply parallax to group
+      injectBeforeRender(() => {
+        const group = this.groupRef()?.nativeElement;
+        if (!group || !parallaxConfig) return;
+
+        // Store original position
+        if (!this.originalPosition) {
+          this.originalPosition = group.position.clone();
+        }
+
+        const mouseX = this.mouseService!.smoothMouseX();
+        const mouseY = this.mouseService!.smoothMouseY();
+        const factor = parallaxConfig.factor ?? 0.3;
+        const axis = parallaxConfig.axis ?? 'xy';
+        const depthScale = parallaxConfig.depthScale ?? true;
+
+        // Calculate depth factor if enabled
+        let depthFactor = 1.0;
+        if (depthScale) {
+          const depth = Math.abs(this.originalPosition.z);
+          depthFactor = depth / 50; // Normalize based on typical camera distance
+        }
+
+        // Apply parallax offset
+        if (axis === 'x' || axis === 'xy') {
+          group.position.x =
+            this.originalPosition.x + mouseX * factor * depthFactor;
+        }
+
+        if (axis === 'y' || axis === 'xy') {
+          group.position.y =
+            this.originalPosition.y + mouseY * factor * depthFactor;
+        }
+
+        // Always preserve original Z
+        group.position.z = this.originalPosition.z;
+      });
+    }
+
+    // Twinkle animation (if enabled)
     if (this.enableTwinkle()) {
-      injectBeforeRender(({ delta }) => {
+      let time = 0;
+      injectBeforeRender(() => {
+        const deltaTime = this.clock.getDelta();
+        time += deltaTime;
+
         const group = this.groupRef()?.nativeElement;
         if (!group) return;
 
-        // Track elapsed time
-        this.time += delta;
-
-        // Animate star brightness (twinkle effect)
         const stars = this.starData();
-        group.children.forEach((sprite, i) => {
-          const star = stars[i];
-          if (!star) return;
-
-          const spriteMaterial = (sprite as THREE.Sprite)
-            .material as THREE.SpriteMaterial;
-
-          // Subtle brightness oscillation
-          const twinkle =
-            Math.sin(this.time * star.twinkleSpeed + star.twinklePhase) * 0.1;
-          spriteMaterial.opacity = Math.max(0.3, star.brightness + twinkle);
+        group.children.forEach((sprite, index) => {
+          if (sprite instanceof THREE.Sprite && stars[index]) {
+            const star = stars[index];
+            const material = sprite.material as THREE.SpriteMaterial;
+            const twinkle =
+              Math.sin(time * star.twinkleSpeed + star.twinklePhase) * 0.3 +
+              0.7;
+            material.opacity = star.brightness * twinkle;
+          }
         });
       });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.mouseService) {
+      this.mouseService.destroy();
     }
   }
 }

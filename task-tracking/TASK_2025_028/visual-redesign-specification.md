@@ -290,7 +290,7 @@ template: `
       >
         Our Solution
       </div>
-      <h3 class="text-3xl md:text-4xl font-bold text-headline mb-6 leading-tight">
+      <h3 class="text-4xl md:text-5xl font-bold text-headline mb-6 leading-tight">
         NestJS Patterns for AI/ML
       </h3>
       <p class="text-lg md:text-xl text-secondary leading-relaxed">
@@ -311,7 +311,7 @@ template: `
 - Padding: `p-12 md:p-16` (from `p-8 md:p-12`)
 - Add badge label above headline
 - Increased bottom margin: `mb-20` (from `mb-16`)
-- Typography: `text-3xl md:text-4xl` for headline
+- Typography: `text-4xl md:text-5xl` for headline
 
 #### 1.4 Metric Cards Grid
 
@@ -514,7 +514,7 @@ export class ProblemSolutionDecorativeComponent {}
       <div class="lg:w-[70%] p-12">
         <!-- Business Value Headline -->
         <h3
-          class="text-3xl md:text-4xl font-bold text-headline mb-6 leading-tight group-hover:text-accent-primary transition-colors duration-300"
+          class="text-4xl md:text-5xl font-bold text-headline mb-6 leading-tight group-hover:text-accent-primary transition-colors duration-300"
         >
           {{ valueProposition.businessHeadline }}
         </h3>
@@ -608,7 +608,7 @@ export class ValuePropositionCardComponent {
 1. **Asymmetric Layout**: 30% icon column, 70% content column
 2. **Alternating Sides**: `layoutVariant` prop for left/right alternation
 3. **Gradient Background**: Icon column has subtle gradient (`from-indigo-50/50 to-purple-50/30`)
-4. **Enhanced Typography**: Larger headline `text-3xl md:text-4xl`
+4. **Enhanced Typography**: Larger headline `text-4xl md:text-5xl`
 5. **Badge Labels**: Color-coded pain point (red) vs solution (green)
 6. **Glassmorphism Pill**: Package name uses glass effect
 7. **Enhanced Checkmarks**: Circular background with hover effect
@@ -743,7 +743,7 @@ template: `
 
         <!-- Title + Description -->
         <div class="flex-1">
-          <h3 class="text-3xl md:text-4xl font-bold text-headline mb-4 leading-tight">
+          <h3 class="text-4xl md:text-5xl font-bold text-headline mb-4 leading-tight">
             {{ workflowExample.title }}
           </h3>
           <p class="text-lg text-secondary leading-relaxed">
