@@ -97,6 +97,14 @@ export class NebulaVolumetricComponent {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('nebulaGroup');
   private readonly injector = inject(Injector);
 
+  /**
+   * Get Three.js Group for mouse interaction directives
+   */
+  getObject3D(): THREE.Group | undefined {
+    const groupEl = this.groupRef();
+    return groupEl?.nativeElement;
+  }
+
   // Configuration inputs
   readonly position = input<[number, number, number]>([0, 0, 0]);
   readonly width = input<number>(120);

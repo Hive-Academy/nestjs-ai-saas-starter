@@ -1,14 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.component';
+import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.store';
-import { HeroInteractivePlanetSceneComponent } from './scene-graphs/hero-interactive-planet-scene.component';
-import { HeroSceneStateStore } from '../../../core/angular-3d/services/hero-scene-state.store';
 
 @Component({
   selector: 'brand-hero-section-space',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent],
+  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
   template: `
     <div
       class="relative w-full h-screen flex flex-col overflow-hidden"
@@ -21,13 +21,6 @@ import { HeroSceneStateStore } from '../../../core/angular-3d/services/hero-scen
         [sceneGraph]="sceneGraph"
         [camera]="cameraConfig"
         [gl]="rendererConfig"
-        [enableMouseParallax]="true"
-        [mouseParallax]="{
-          sensitivity: 0.4,
-          smoothing: 5,
-          cameraDistance: 12,
-          updateHeroState: true
-        }"
       />
 
       <!-- Theme Switcher - Top Right Corner -->
@@ -71,18 +64,155 @@ import { HeroSceneStateStore } from '../../../core/angular-3d/services/hero-scen
         </div>
       </div>
 
-      <!-- Spacer for layout (3D text is rendered in the scene) -->
-      <div class="flex-1"></div>
+      <!-- DOM Content Overlay - Hero Text -->
+      <div
+        class="flex-1 flex flex-col items-center justify-center mb-5 z-10 pointer-events-none"
+        scrollAnimation
+        [scrollConfig]="{
+          animation: 'custom',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.5,
+          from: { y: 0, opacity: 1 },
+          to: { y: -150, opacity: 0, ease: 'none' }
+        }"
+      >
+        <div
+          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
+        >
+          <!-- Hero Title -->
+          <h1 class="font-bold leading-tight animate-fade-in-up space-y-3">
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
+                     border-2 border-indigo-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
+            >
+              Build Production Grade AI Applications
+            </span>
+            <br />
+            <span
+              class="text-2xl sm:text-4xl md:text-6xl lg:text-7xl text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+            >
+              With TypeScript Patterns
+            </span>
+            <br />
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
+                     border-2 border-indigo-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
+            >
+              You Already Know
+            </span>
+          </h1>
+        </div>
+      </div>
     </div>
   `,
-  styles: [],
+  styles: [
+    `
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-fade-in-up {
+        animation: fade-in-up 0.8s ease-out forwards;
+        opacity: 0;
+      }
+
+      .animation-delay-200 {
+        animation-delay: 0.2s;
+      }
+
+      .animation-delay-400 {
+        animation-delay: 0.4s;
+      }
+
+      .animation-delay-500 {
+        animation-delay: 0.5s;
+      }
+
+      .animation-delay-600 {
+        animation-delay: 0.6s;
+      }
+
+      .animation-delay-700 {
+        animation-delay: 0.7s;
+      }
+
+      @keyframes slide-up-fade {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slide-up-fade {
+        animation: slide-up-fade 0.8s ease-out forwards;
+        opacity: 0;
+      }
+
+      @keyframes scale-in {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .animate-scale-in {
+        animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        opacity: 0;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+        }
+      }
+
+      .animate-pulse-glow {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+    `,
+  ],
 })
 export class HeroSectionSpaceComponent {
   // Inject theme store for centralized theme management
   private readonly themeStore = inject(SpaceThemeStore);
-  public readonly heroSceneState = inject(HeroSceneStateStore);
 
-  readonly sceneGraph = HeroInteractivePlanetSceneComponent;
+  readonly sceneGraph = HeroSpaceSceneComponent;
 
   // Camera configuration for 3D scene
   // Camera at z=12 looking toward origin (where planet is at z=0)

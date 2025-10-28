@@ -2,10 +2,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   CUSTOM_ELEMENTS_SCHEMA,
-  effect,
   input,
 } from '@angular/core';
-import * as THREE from 'three';
 
 /**
  * Value Propositions 3D Scene - Scroll-Driven Geometry Showcase

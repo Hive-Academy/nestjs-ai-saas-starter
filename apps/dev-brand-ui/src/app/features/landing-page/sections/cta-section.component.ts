@@ -45,7 +45,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             animation: 'fadeIn',
             start: 'top 80%',
             duration: 0.8,
-            once: true
+            once: false
           }"
         >
           Start Building AI Workflows Today
@@ -59,7 +59,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             start: 'top 75%',
             duration: 0.8,
             delay: 0.2,
-            once: true
+            once: false
           }"
         >
           Explore complete examples, dive into comprehensive docs, or see a real
@@ -76,7 +76,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               animation: 'slideUp',
               start: 'top 80%',
               duration: 0.6,
-              once: true
+              once: false
             }"
           >
             <div class="text-5xl mb-4">📚</div>
@@ -108,7 +108,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               start: 'top 80%',
               duration: 0.6,
               delay: 0.1,
-              once: true
+              once: false
             }"
           >
             <div class="text-5xl mb-4">📖</div>
@@ -134,7 +134,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               start: 'top 80%',
               duration: 0.6,
               delay: 0.2,
-              once: true
+              once: false
             }"
           >
             <div class="text-5xl mb-4">🚀</div>
@@ -161,7 +161,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             start: 'top 80%',
             duration: 0.8,
             delay: 0.4,
-            once: true
+            once: false
           }"
         >
           <div class="flex items-center gap-2">

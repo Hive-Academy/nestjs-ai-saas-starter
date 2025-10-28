@@ -243,7 +243,7 @@ export class LandingPageComponent {}
     start: 'top 80%',
     duration: 1.2,
     ease: 'power3.out',
-    once: true
+    once: false
   }"
 >
   <!-- Content -->
@@ -259,7 +259,7 @@ export class LandingPageComponent {}
     duration: 0.8,
     ease: 'power3.out',
     stagger: 0.15,
-    once: true
+    once: false
   }"
 >
   <div class="card">Card 1</div>
@@ -429,7 +429,7 @@ export class HeroSceneGraphComponent {}
       start: 'top 80%',
       duration: 1.2,
       ease: 'power3.out',
-      once: true
+      once: false
     }"
   >
     <!-- Hero content -->
@@ -484,7 +484,7 @@ export class LandingPageComponent {
       start: 'top 80%',
       duration: 1.2,
       ease: 'power3.out',
-      once: true
+      once: false
     }"
   >
     <!-- Main Headline -->
@@ -622,7 +622,7 @@ export class HeroSectionComponent {
         start: 'top 80%',
         duration: 1.0,
         ease: 'power2.out',
-        once: true
+        once: false
       }"
     >
       The Problem TypeScript Developers Face
@@ -638,7 +638,7 @@ export class HeroSectionComponent {
         duration: 0.8,
         ease: 'power2.out',
         delay: 0.2,
-        once: true
+        once: false
       }"
     >
       TypeScript developers building AI applications face a painful choice: use Python-style
@@ -655,7 +655,7 @@ export class HeroSectionComponent {
         start: 'top 80%',
         duration: 1.0,
         ease: 'back.out(1.2)',
-        once: true
+        once: false
       }"
     >
       <h3 class="text-2xl md:text-4xl font-bold text-headline mb-6">
@@ -679,7 +679,7 @@ export class HeroSectionComponent {
         duration: 0.8,
         ease: 'power3.out',
         stagger: 0.15,
-        once: true
+        once: false
       }"
     >
       <!-- Metric Card 1 -->
@@ -764,7 +764,7 @@ export interface ValueProposition {
         start: 'top 85%',
         duration: 0.8,
         ease: 'power3.out',
-        once: true
+        once: false
       }"
     >
       <!-- Icon -->

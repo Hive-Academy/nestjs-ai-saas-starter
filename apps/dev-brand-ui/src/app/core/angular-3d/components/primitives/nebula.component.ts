@@ -72,6 +72,14 @@ import * as THREE from 'three';
 export class NebulaComponent {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('nebulaGroup');
 
+  /**
+   * Get Three.js Group for mouse interaction directives
+   */
+  getObject3D(): THREE.Group | undefined {
+    const groupEl = this.groupRef();
+    return groupEl?.nativeElement;
+  }
+
   // Configuration inputs
   readonly position = input<[number, number, number]>([0, 0, 0]); // Group position
   readonly particleCount = input<number>(20); // Fewer, larger clouds

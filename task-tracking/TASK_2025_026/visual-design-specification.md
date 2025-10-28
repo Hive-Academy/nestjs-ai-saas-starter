@@ -554,7 +554,7 @@ const hero3DElements = [
     start: 'top 80%',
     duration: 1.2,
     ease: 'power3.out',
-    once: true
+    once: false
   }"
   class="relative z-10 max-w-7xl mx-auto px-8 md:px-16 text-center"
 >
@@ -687,7 +687,7 @@ const metricCardScrollConfig = {
   duration: 0.8,
   ease: 'power3.out',
   stagger: 0.15, // 150ms delay between cards
-  once: true,
+  once: false,
 };
 ```
 
@@ -756,7 +756,7 @@ Each value proposition follows this pattern:
     start: 'top 85%',
     duration: 0.8,
     ease: 'power3.out',
-    once: true
+    once: false
   }"
 >
   <!-- Icon with Glow -->
@@ -1073,7 +1073,7 @@ const workflowCardScrollConfig = {
   start: 'top 75%',
   duration: 1.0,
   ease: 'power2.out',
-  once: true,
+  once: false,
 };
 ```
 
@@ -1410,7 +1410,7 @@ const sectionEntryConfig = {
   start: 'top 80%',
   duration: 1.2,
   ease: 'power3.out',
-  once: true,
+  once: false,
 };
 ```
 
@@ -1423,7 +1423,7 @@ const cardStaggerConfig = {
   duration: 0.8,
   ease: 'power3.out',
   stagger: 0.15, // 150ms delay between cards
-  once: true,
+  once: false,
 };
 ```
 
@@ -1447,7 +1447,7 @@ const headlineScaleConfig = {
   start: 'top 75%',
   duration: 1.0,
   ease: 'back.out(1.2)',
-  once: true,
+  once: false,
 };
 ```
 

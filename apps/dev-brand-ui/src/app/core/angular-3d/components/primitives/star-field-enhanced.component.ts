@@ -79,6 +79,14 @@ export class StarFieldEnhancedComponent {
   readonly radius = input<number>(40);
   readonly enableTwinkle = input<boolean>(false);
 
+  /**
+   * Get Three.js Group for mouse interaction directives
+   */
+  getObject3D(): THREE.Group | undefined {
+    const groupEl = this.groupRef();
+    return groupEl?.nativeElement;
+  }
+
   // Stellar color palette based on temperature
   // Blue (hot) -> White -> Yellow -> Orange (cool)
   private readonly stellarColors = [

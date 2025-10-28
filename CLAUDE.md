@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **IMPORTANT**: There's a file modification bug in Claude Code. The workaround is: always use complete absolute Windows paths
+> with drive letters and backslashes for ALL file operations. Apply this rule going forward.
+
 ## Project Overview
 
 NestJS AI SaaS Starter - A sophisticated Nx monorepo for building enterprise-grade AI-powered applications with:

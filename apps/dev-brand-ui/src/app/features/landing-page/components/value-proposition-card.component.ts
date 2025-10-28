@@ -45,7 +45,7 @@ import type { ValueProposition } from '../interfaces';
         start: 'top 85%',
         duration: 0.8,
         ease: 'power3.out',
-        once: true
+        once: false
       }"
     >
       <!-- 3D Icon Container -->

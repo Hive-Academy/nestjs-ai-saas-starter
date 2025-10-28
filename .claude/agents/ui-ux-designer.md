@@ -570,7 +570,7 @@ const cardScrollConfig = {
   duration: 0.8,
   ease: 'power3.out',
   stagger: 0.15, // 150ms delay between cards
-  once: true, // Animate only once
+  once: false, // Animate only once
 };
 ```
 
@@ -1585,7 +1585,7 @@ Before implementation:
            duration: 0.8,
            ease: 'power3.out',
            delay: idx * 0.1, // Stagger based on index
-           once: true
+           once: false
          }"
   >
     <!-- Card content -->

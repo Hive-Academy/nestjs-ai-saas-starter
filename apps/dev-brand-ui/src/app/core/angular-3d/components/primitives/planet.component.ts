@@ -34,7 +34,6 @@ import { injectLoader } from 'angular-three';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
-import { ElementMouseParallaxDirective } from '../../directives/element-mouse-parallax.directive';
 
 @Component({
   selector: 'app-planet',
@@ -87,12 +86,11 @@ export class PlanetComponent implements AfterViewInit {
   readonly scale = input<number>(1);
   readonly enableMouseParallax = input<boolean>(false);
   // Texture URL (optional - for photorealistic rendering)
-  readonly textureUrl = input<string | undefined>(undefined);
+  readonly textureUrl = input<string | undefined>(null);
 
-  // Load moon texture conditionally
   readonly moonTexture = injectLoader(
     () => TextureLoader,
-    () => this.textureUrl() || 'assets/moon_1024.jpg'
+    () => this.textureUrl() ?? 'assets/earth.jpg'
   );
 
   // Material properties
@@ -109,7 +107,7 @@ export class PlanetComponent implements AfterViewInit {
 
   // Rotation animation
   readonly rotationSpeed = input<number>(0); // Degrees per second (0 = no rotation)
-  readonly rotationAxis = input<'x' | 'y' | 'z'>('y');
+  readonly rotationAxis = input<'x' | 'y' | 'z' | 'xy'>('y');
 
   ngAfterViewInit(): void {
     const mesh = this.meshRef()?.nativeElement;
@@ -117,6 +115,15 @@ export class PlanetComponent implements AfterViewInit {
       console.error('[Planet] Mesh ref not found!');
       return;
     }
+
+    // Ensure userData exists
+    if (!mesh.userData) {
+      mesh.userData = {};
+    }
+
+    // Mark planet to be excluded from scene parallax
+    // This will be checked by scene-mouse-parallax directive
+    mesh.userData['excludeFromParallax'] = true;
 
     console.log('[Planet] Initialized');
     console.log('[Planet] Position:', this.position());

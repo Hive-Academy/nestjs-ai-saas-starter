@@ -130,6 +130,13 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
     // React to config changes
     effect(() => {
       const config = this.scrollConfig();
+      // Safety check: Ensure config is defined
+      if (!config) {
+        console.warn(
+          '[ScrollAnimation] Config is undefined, skipping animation'
+        );
+        return;
+      }
       if (this.scrollTrigger) {
         this.cleanup();
         this.initializeAnimation(config);
@@ -138,7 +145,15 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.initializeAnimation(this.scrollConfig());
+    const config = this.scrollConfig();
+    // Safety check: Ensure config is defined
+    if (!config) {
+      console.warn(
+        '[ScrollAnimation] Config is undefined in ngOnInit, skipping animation'
+      );
+      return;
+    }
+    this.initializeAnimation(config);
   }
 
   ngOnDestroy(): void {
@@ -148,15 +163,13 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
   private initializeAnimation(config: ScrollAnimationConfig): void {
     const element = this.elementRef.nativeElement;
 
-    // Debug logging
-    const elementInfo = {
-      tagName: element.tagName,
-      className: element.className,
-      offsetTop: element.offsetTop,
-      offsetHeight: element.offsetHeight,
-      boundingRect: element.getBoundingClientRect(),
-    };
-    // console.log('[ScrollAnimation] Initializing on element:', elementInfo);
+    // Safety check: Ensure this is a DOM element, not a Three.js object
+    if (!element || !(element instanceof HTMLElement)) {
+      console.warn(
+        '[ScrollAnimation] Directive can only be applied to DOM elements, not Three.js objects'
+      );
+      return;
+    }
 
     // Determine animation based on type
     const animationProps = this.getAnimationProperties(config);
@@ -204,17 +217,21 @@ export class ScrollAnimationDirective implements OnInit, OnDestroy {
         // console.log('[ScrollAnimation] ScrollTrigger REFRESH');
       },
     });
-
-    // Refresh ScrollTrigger after a short delay to ensure DOM is ready
-    setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 100);
   }
 
   private getAnimationProperties(config: ScrollAnimationConfig): {
     from: gsap.TweenVars;
     to: gsap.TweenVars;
   } {
+    // Safety check: Validate config object
+    if (!config || typeof config !== 'object') {
+      console.error('[ScrollAnimation] Invalid config object:', config);
+      return {
+        from: { opacity: 0 },
+        to: { opacity: 1, duration: 1, ease: 'power2.out' },
+      };
+    }
+
     const duration = config.duration ?? 1;
     const delay = config.delay ?? 0;
     const ease = config.ease ?? 'power2.out';

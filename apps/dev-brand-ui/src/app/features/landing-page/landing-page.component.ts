@@ -47,7 +47,16 @@ import { CTASectionComponent } from './sections/cta-section.component';
     [class.opacity-100]="isLoaded()"
     #landingContainer
   >
-    <main class="w-full" role="main">
+    <!-- Hero Section Toggle Button (Top Left) -->
+    <button
+      (click)="toggleHeroVersion()"
+      class="fixed top-6 left-6 z-[1000] px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-black/60 transition-all duration-300 shadow-lg"
+    >
+      {{ useSpaceHero() ? '🌌 Space' : '☀️ Sky' }} Hero
+      <span class="text-xs opacity-70 ml-2">Click to switch</span>
+    </button>
+
+    <main class="w-full " role="main">
       <div id="hero" class="section-container">
         @if (useSpaceHero()) { <brand-hero-section-space /> } @else {
         <brand-hero-section /> }
@@ -72,7 +81,37 @@ import { CTASectionComponent } from './sections/cta-section.component';
       </div>
     </main>
   </div>`,
-  styles: [],
+  styles: [
+    `
+      .section-container {
+        width: 100%;
+        min-height: 100vh;
+        scroll-margin-top: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* Hide scrollbar but allow scrolling */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+    `,
+  ],
 })
 export class LandingPageComponent implements AfterViewInit {
   @ViewChild('landingContainer', { static: true })

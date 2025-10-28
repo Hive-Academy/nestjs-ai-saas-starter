@@ -75,7 +75,7 @@
   duration: 1.0,
   ease: 'power3.out',
   stagger: 0.15,  // For child elements
-  once: true
+  once: false
 }"
 ```
 
@@ -298,7 +298,7 @@ export class HeroSectionComponent {
           duration: 0.8,
           ease: 'power3.out',
           stagger: 0.15,  // 150ms delay between cards
-          once: true
+          once: false
         }"
       >
         <!-- 4 metric cards: 90%, 60%, 75+, $262K -->
@@ -350,7 +350,7 @@ export interface ValueProposition {
         start: 'top 85%',
         duration: 0.8,
         ease: 'power3.out',
-        once: true
+        once: false
       }"
     >
       <!-- Icon, Package Name, Headline, Pain/Solution, Capabilities, Metric -->

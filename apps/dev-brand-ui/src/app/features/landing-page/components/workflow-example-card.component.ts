@@ -47,7 +47,7 @@ import type { WorkflowExample } from '../interfaces';
         start: 'top 85%',
         duration: 0.8,
         ease: 'power3.out',
-        once: true
+        once: false
       }"
       class="mb-12"
     >
@@ -134,7 +134,9 @@ import type { WorkflowExample } from '../interfaces';
               <span
                 appCountUp
                 [targetValue]="workflowExample.codeAfterLines"
-                [suffix]="' line' + (workflowExample.codeAfterLines > 1 ? 's' : '')"
+                [suffix]="
+                  ' line' + (workflowExample.codeAfterLines > 1 ? 's' : '')
+                "
                 [duration]="1500"
               ></span>
             </span>

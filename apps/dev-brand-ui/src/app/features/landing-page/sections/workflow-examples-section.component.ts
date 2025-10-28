@@ -6,7 +6,7 @@ import type { WorkflowExample } from '../interfaces';
 /**
  * Workflow Examples Section Component
  *
- * REDESIGNED: Inspired by Design-3 (Stripe) - Clean, professional, code-focused
+ * REDESIGNED: Interactive navigation tiles with card view
  *
  * Shows 3 complete workflow examples demonstrating multi-library integrations:
  * 1. RAG Pipeline - ChromaDB + Neo4j + Memory
@@ -14,12 +14,11 @@ import type { WorkflowExample } from '../interfaces';
  * 3. Production API - Workflow-Engine + Platform + Monitoring
  *
  * Design Philosophy:
- * - Vertical stacked full-width cards
- * - Side-by-side code comparison (before/after)
- * - Module badges as glass pills
- * - Prominent metric callouts (line reduction)
- * - Scroll-reveal animations
- * - Clean, professional, Stripe-inspired aesthetic
+ * - Left: Vertical navigation tiles (numbered 01-03)
+ * - Right: Large interactive card showing selected workflow
+ * - Click-to-navigate interaction
+ * - Smooth transitions between workflows
+ * - Modern, clean, professional aesthetic
  */
 @Component({
   selector: 'app-workflow-examples-section',
@@ -41,7 +40,7 @@ import type { WorkflowExample } from '../interfaces';
               animation: 'fadeIn',
               start: 'top 80%',
               duration: 0.8,
-              once: true
+              once: false
             }"
           >
             Real Integrations in Action
@@ -54,7 +53,7 @@ import type { WorkflowExample } from '../interfaces';
               start: 'top 75%',
               duration: 0.8,
               delay: 0.2,
-              once: true
+              once: false
             }"
           >
             These aren't isolated tools—they're a cohesive ecosystem. See how
@@ -62,149 +61,217 @@ import type { WorkflowExample } from '../interfaces';
           </p>
         </div>
 
-        <!-- Workflow Cards -->
-        @for (workflow of workflows; track workflow.title) {
-        <article
-          class="mb-24 last:mb-0"
-          scrollAnimation
-          [scrollConfig]="{
-            animation: 'fadeIn',
-            start: 'top 75%',
-            duration: 1,
-            delay: $index * 0.2,
-            once: true
-          }"
-        >
-          <!-- Workflow Header -->
-          <div class="mb-8">
-            <div class="flex items-center gap-4 mb-4">
-              <span class="text-6xl font-bold text-accent-primary/20">
-                {{ ($index + 1).toString().padStart(2, '0') }}
-              </span>
-              <div class="flex-1">
-                <h3
-                  class="text-3xl md:text-4xl font-bold text-text-headline mb-2"
+        <!-- Interactive Layout: Navigation Tiles + Card -->
+        <div class="flex flex-col lg:flex-row gap-8">
+          <!-- Left: Navigation Tiles -->
+          <nav class="lg:w-2/5 space-y-6" aria-label="Workflow examples">
+            @for (workflow of workflows; track workflow.title) {
+            <button
+              type="button"
+              [ngClass]="{
+                'w-full text-left p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-lg group': true,
+                'border-accent-primary bg-gradient-to-br from-accent-primary/5 to-accent-secondary/5 shadow-card-elevated':
+                  activeWorkflowIndex === $index,
+                'border-gray-200 bg-white hover:border-accent-primary/50':
+                  activeWorkflowIndex !== $index
+              }"
+              (click)="selectWorkflow($index)"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideRight',
+                start: 'top 75%',
+                duration: 0.6,
+                delay: $index * 0.15,
+                once: false
+              }"
+              [attr.aria-pressed]="activeWorkflowIndex === $index"
+              [attr.aria-label]="'View ' + workflow.title + ' workflow example'"
+            >
+              <!-- Tile Header -->
+              <div class="flex items-start gap-4 mb-4">
+                <span
+                  [ngClass]="{
+                    'text-5xl font-bold transition-colors duration-300': true,
+                    'text-accent-primary': activeWorkflowIndex === $index,
+                    'text-accent-primary/20 group-hover:text-accent-primary/40':
+                      activeWorkflowIndex !== $index
+                  }"
                 >
-                  {{ workflow.title }}
-                </h3>
-                <p class="text-lg text-text-secondary">
-                  {{ workflow.description }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Module Badges -->
-            <div class="flex flex-wrap gap-2 mb-6">
-              @for (module of workflow.modules; track module) {
-              <span
-                class="px-4 py-2 bg-accent-primary/10 text-accent-primary text-sm font-semibold rounded-full border border-accent-primary/20"
-              >
-                {{ module }}
-              </span>
-              }
-            </div>
-          </div>
-
-          <!-- Code Comparison Card -->
-          <div
-            class="bg-white rounded-2xl border border-gray-200 shadow-card-elevated overflow-hidden"
-          >
-            <!-- Metric Banner -->
-            <div
-              class="bg-gradient-to-r from-accent-primary/10 via-accent-secondary/10 to-accent-tertiary/10 px-8 py-6 border-b border-gray-200"
-            >
-              <div class="flex items-center justify-center gap-4">
-                <div class="text-center">
-                  <div class="text-4xl font-bold text-accent-danger">
-                    {{ workflow.codeBeforeLines }}
-                  </div>
-                  <div class="text-sm text-text-secondary">lines before</div>
-                </div>
-                <div class="text-3xl text-text-secondary">→</div>
-                <div class="text-center">
-                  <div
-                    class="text-4xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent"
+                  {{ formatIndex($index + 1) }}
+                </span>
+                <div class="flex-1">
+                  <h3
+                    class="text-xl md:text-2xl font-bold text-text-headline mb-2 leading-tight"
                   >
-                    {{ workflow.codeAfterLines }}
-                  </div>
-                  <div class="text-sm text-text-secondary">lines after</div>
+                    {{ workflow.title }}
+                  </h3>
+                  <p class="text-sm text-text-secondary leading-relaxed">
+                    {{ workflow.description }}
+                  </p>
                 </div>
-                <div
-                  class="ml-8 px-6 py-3 bg-accent-success/20 rounded-full border border-accent-success/30"
+              </div>
+
+              <!-- Module Badges -->
+              <div class="flex flex-wrap gap-2">
+                @for (module of workflow.modules; track module) {
+                <span
+                  [ngClass]="{
+                    'px-3 py-1 text-xs font-semibold rounded-full transition-colors duration-300': true,
+                    'bg-accent-primary/20 text-accent-primary border border-accent-primary/30':
+                      activeWorkflowIndex === $index,
+                    'bg-gray-100 text-gray-600': activeWorkflowIndex !== $index
+                  }"
                 >
-                  <div class="text-2xl font-bold text-accent-success">
-                    {{
-                      calculateReduction(
-                        workflow.codeBeforeLines,
-                        workflow.codeAfterLines
-                      )
-                    }}% less code
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Code Blocks -->
-            <div
-              class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200"
-            >
-              <!-- Before Code -->
-              <div class="p-8">
-                <div class="flex items-center gap-2 mb-4">
-                  <span class="w-3 h-3 rounded-full bg-accent-danger"></span>
-                  <span
-                    class="text-sm font-semibold text-accent-danger uppercase tracking-wide"
-                  >
-                    Before: Manual Setup
-                  </span>
-                </div>
-                <pre
-                  class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
-                ><code class="font-mono">{{ workflow.codeBefore }}</code></pre>
-              </div>
-
-              <!-- After Code -->
-              <div class="p-8 bg-gray-50">
-                <div class="flex items-center gap-2 mb-4">
-                  <span class="w-3 h-3 rounded-full bg-accent-success"></span>
-                  <span
-                    class="text-sm font-semibold text-accent-success uppercase tracking-wide"
-                  >
-                    After: NestJS Patterns
-                  </span>
-                </div>
-                <pre
-                  class="bg-gray-900 text-gray-100 p-6 rounded-lg text-sm overflow-x-auto"
-                ><code class="font-mono">{{ workflow.codeAfter }}</code></pre>
-              </div>
-            </div>
-
-            <!-- Value Delivered -->
-            <div
-              class="px-8 py-6 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200"
-            >
-              <div
-                class="text-sm font-semibold text-text-headline uppercase tracking-wide mb-4"
-              >
-                Value Delivered
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @for (value of workflow.valueDelivered; track value) {
-                <div class="flex items-start gap-3">
-                  <span class="text-accent-success text-xl mt-0.5">✓</span>
-                  <span class="text-base text-text-primary">{{ value }}</span>
-                </div>
+                  {{ module }}
+                </span>
                 }
               </div>
+            </button>
+            }
+          </nav>
+
+          <!-- Right: Active Workflow Card -->
+          <div class="lg:w-3/5">
+            <div
+              class="bg-white rounded-2xl border border-gray-200 shadow-card-elevated overflow-hidden transition-all duration-500"
+              scrollAnimation
+              [scrollConfig]="{
+                animation: 'slideLeft',
+                start: 'top 75%',
+                duration: 0.8,
+                once: false
+              }"
+            >
+              <!-- Metric Banner -->
+              <div
+                class="bg-gradient-to-r from-accent-primary/10 via-accent-secondary/10 to-accent-tertiary/10 px-6 py-5 border-b border-gray-200"
+              >
+                <div class="flex items-center justify-center gap-4">
+                  <div class="text-center">
+                    <div
+                      class="text-3xl md:text-4xl font-bold text-accent-danger"
+                    >
+                      {{ activeWorkflow.codeBeforeLines }}
+                    </div>
+                    <div class="text-xs md:text-sm text-text-secondary">
+                      lines before
+                    </div>
+                  </div>
+                  <div class="text-2xl md:text-3xl text-text-secondary">→</div>
+                  <div class="text-center">
+                    <div
+                      class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent-success to-accent-tertiary bg-clip-text text-transparent"
+                    >
+                      {{ activeWorkflow.codeAfterLines }}
+                    </div>
+                    <div class="text-xs md:text-sm text-text-secondary">
+                      lines after
+                    </div>
+                  </div>
+                  <div
+                    class="ml-4 px-4 md:px-6 py-2 md:py-3 bg-accent-success/20 rounded-full border border-accent-success/30"
+                  >
+                    <div
+                      class="text-xl md:text-2xl font-bold text-accent-success"
+                    >
+                      {{
+                        calculateReduction(
+                          activeWorkflow.codeBeforeLines,
+                          activeWorkflow.codeAfterLines
+                        )
+                      }}% less code
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Code Blocks -->
+              <div
+                class="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-gray-200"
+              >
+                <!-- Before Code -->
+                <div class="p-6">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="w-3 h-3 rounded-full bg-accent-danger"></span>
+                    <span
+                      class="text-xs font-semibold text-accent-danger uppercase tracking-wide"
+                    >
+                      Before: Manual Setup
+                    </span>
+                  </div>
+                  <pre
+                    class="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto max-h-96 overflow-y-auto"
+                  ><code class="font-mono">{{ activeWorkflow.codeBefore }}</code></pre>
+                </div>
+
+                <!-- After Code -->
+                <div class="p-6 bg-gray-50">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="w-3 h-3 rounded-full bg-accent-success"></span>
+                    <span
+                      class="text-xs font-semibold text-accent-success uppercase tracking-wide"
+                    >
+                      After: NestJS Patterns
+                    </span>
+                  </div>
+                  <pre
+                    class="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto max-h-96 overflow-y-auto"
+                  ><code class="font-mono">{{ activeWorkflow.codeAfter }}</code></pre>
+                </div>
+              </div>
+
+              <!-- Value Delivered -->
+              <div
+                class="px-6 py-5 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200"
+              >
+                <div
+                  class="text-xs font-semibold text-text-headline uppercase tracking-wide mb-3"
+                >
+                  Value Delivered
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  @for (value of activeWorkflow.valueDelivered; track value) {
+                  <div class="flex items-start gap-2">
+                    <span class="text-accent-success text-lg mt-0.5">✓</span>
+                    <span class="text-sm text-text-primary">{{ value }}</span>
+                  </div>
+                  }
+                </div>
+              </div>
             </div>
           </div>
-        </article>
-        }
+        </div>
       </div>
     </section>
   `,
 })
 export class WorkflowExamplesSectionComponent {
+  /**
+   * Index of the currently active workflow
+   */
+  activeWorkflowIndex = 0;
+
+  /**
+   * Get the currently active workflow
+   */
+  get activeWorkflow(): WorkflowExample {
+    return this.workflows[this.activeWorkflowIndex];
+  }
+
+  /**
+   * Select a workflow to display
+   */
+  selectWorkflow(index: number): void {
+    this.activeWorkflowIndex = index;
+  }
+
+  /**
+   * Format index with leading zero (01, 02, 03)
+   */
+  formatIndex(index: number): string {
+    return index.toString().padStart(2, '0');
+  }
+
   /**
    * Calculate percentage reduction from before to after
    */

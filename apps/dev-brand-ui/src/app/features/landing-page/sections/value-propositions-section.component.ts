@@ -8,8 +8,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
+import { SectionStickyDirective } from '../../../core/angular-3d/directives/section-sticky.directive';
+// import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+// import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
 import type { ValueProposition } from '../interfaces';
 
 /**
@@ -28,18 +29,16 @@ import type { ValueProposition } from '../interfaces';
 @Component({
   selector: 'app-value-propositions-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective, Scene3DComponent],
+  imports: [CommonModule, ScrollAnimationDirective, SectionStickyDirective],
   template: `
-    <section class="relative bg-white">
-      <!-- Fixed 3D Scene Background (Center-Right) -->
-      <div
-        class="fixed right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 z-10 pointer-events-none hidden lg:block opacity-40"
-      >
-        <app-scene-3d [sceneGraph]="ValuePropositions3DSceneComponent" />
-      </div>
-      <!-- Sticky Numbered Sidebar (Left) -->
-      <nav class="fixed left-8 top-1/2 -translate-y-1/2 z-20 hidden lg:block">
-        <div class="space-y-6">
+    <section
+      sectionSticky
+      [stickyRootMargin]="'-300px'"
+      class="relative bg-gradient-to-b from-gray-900 to-black text-white"
+    >
+      <!-- Sidebar - Sticky only when section is in viewport -->
+      <nav class="section-sticky-target left-8 top-32 z-20 hidden lg:block">
+        <div class="space-y-3">
           @for (valueProposition of valuePropositions; track $index) {
           <button
             (click)="scrollToLibrary($index)"
@@ -48,187 +47,208 @@ import type { ValueProposition } from '../interfaces';
           >
             <!-- Number Badge -->
             <div
-              class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300"
+              class="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300"
               [class.bg-accent-primary]="activeIndex() === $index"
               [class.text-white]="activeIndex() === $index"
-              [class.bg-gray-200]="activeIndex() !== $index"
-              [class.text-gray-400]="activeIndex() !== $index"
-              [class.scale-125]="activeIndex() === $index"
+              [class.bg-gray-800]="activeIndex() !== $index"
+              [class.text-gray-500]="activeIndex() !== $index"
+              [class.ring-2]="activeIndex() === $index"
+              [class.ring-accent-primary]="activeIndex() === $index"
             >
-              <span class="text-sm font-bold">{{
+              <span class="text-xs font-bold">{{
                 ($index + 1).toString().padStart(2, '0')
               }}</span>
             </div>
 
-            <!-- Active Indicator Bar -->
+            <!-- Active Indicator Bar (Left edge) -->
             @if (activeIndex() === $index) {
             <div
-              class="absolute -left-4 w-1 h-8 bg-accent-primary rounded-full"
+              class="absolute -left-6 w-1 h-10 bg-accent-primary rounded-r-full"
             ></div>
             }
-
-            <!-- Hover Tooltip -->
-            <div
-              class="absolute left-12 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-            >
-              <div
-                class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg"
-              >
-                {{ valueProposition.packageName.replace('@hive-academy/', '') }}
-              </div>
-            </div>
           </button>
           }
         </div>
       </nav>
 
-      <!-- Main Content Area (Right) -->
-      <div class="lg:ml-24">
+      <!-- Main Content Area with left margin for sidebar -->
+      <div class="lg:ml-32 pl-8 pr-8">
         @for (valueProposition of valuePropositions; track $index) {
         <article
           [id]="'library-' + $index"
-          class="min-h-screen flex items-center px-8 md:px-16 py-20"
-          [class.bg-white]="$index % 2 === 0"
-          [class.bg-gray-50]="$index % 2 === 1"
+          class="min-h-screen flex items-center py-16"
+          [class.border-b]="$index < valuePropositions.length - 1"
+          [class.border-gray-800]="$index < valuePropositions.length - 1"
         >
-          <div class="max-w-4xl mx-auto w-full">
-            <!-- Package Number + Name -->
+          <!-- Two-column layout: 3D Scene (left) + Content (right) -->
+          <div class="grid lg:grid-cols-2 gap-12 w-full max-w-7xl mx-auto">
+            <!-- LEFT: 3D Scene Placeholder -->
             <div
-              class="mb-8"
+              class="flex items-center justify-center bg-gray-800/30 rounded-2xl border border-gray-700/50 min-h-[500px]"
               scrollAnimation
               [scrollConfig]="{
                 animation: 'fadeIn',
-                start: 'top 80%',
-                duration: 0.6,
-                once: true
-              }"
-            >
-              <div class="flex items-center gap-4 mb-4">
-                <span
-                  class="text-6xl md:text-7xl font-bold text-accent-primary/20"
-                >
-                  {{ ($index + 1).toString().padStart(2, '0') }}
-                </span>
-                <div
-                  class="h-px flex-1 bg-gradient-to-r from-accent-primary/30 to-transparent"
-                ></div>
-              </div>
-              <h3 class="text-base md:text-lg font-mono text-accent-primary">
-                {{ valueProposition.packageName }}
-              </h3>
-            </div>
-
-            <!-- Business Headline -->
-            <h2
-              class="text-4xl md:text-6xl font-bold text-text-headline leading-tight mb-8"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
                 start: 'top 75%',
                 duration: 0.8,
-                once: true
+                once: false
               }"
             >
-              {{ valueProposition.businessHeadline }}
-            </h2>
-
-            <!-- Pain Point -->
-            <div
-              class="mb-8"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'fadeIn',
-                start: 'top 70%',
-                duration: 0.8,
-                delay: 0.2,
-                once: true
-              }"
-            >
-              <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-accent-danger"></span>
-                <span
-                  class="text-sm font-semibold text-accent-danger uppercase tracking-wide"
-                  >The Problem</span
-                >
+              <div class="text-center text-gray-600 p-8">
+                <div class="text-6xl mb-4">🎨</div>
+                <p class="text-sm">3D Scene Coming Soon</p>
+                <p class="text-xs text-gray-700 mt-2">
+                  {{ valueProposition.packageName }}
+                </p>
               </div>
-              <p class="text-lg md:text-xl text-text-secondary leading-relaxed">
-                {{ valueProposition.painPoint }}
-              </p>
             </div>
 
-            <!-- Solution -->
-            <div
-              class="mb-8"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'fadeIn',
-                start: 'top 70%',
-                duration: 0.8,
-                delay: 0.4,
-                once: true
-              }"
-            >
-              <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-accent-success"></span>
+            <!-- RIGHT: Content -->
+            <div class="flex flex-col justify-center">
+              <!-- Section Title -->
+              <div
+                class="mb-6"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'fadeIn',
+                  start: 'top 80%',
+                  duration: 0.6,
+                  once: false
+                }"
+              >
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="text-2xl font-bold text-accent-primary/60">
+                    {{ ($index + 1).toString().padStart(2, '0') }}
+                  </span>
+                  <div
+                    class="h-px flex-1 bg-gradient-to-r from-accent-primary/30 to-transparent"
+                  ></div>
+                </div>
+                <h3
+                  class="text-xs font-mono text-accent-primary/80 uppercase tracking-wide"
+                >
+                  {{
+                    valueProposition.packageName.replace('@hive-academy/', '')
+                  }}
+                </h3>
+              </div>
+
+              <!-- Business Headline -->
+              <h2
+                class="text-3xl md:text-4xl font-bold text-white leading-tight mb-6"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'slideUp',
+                  start: 'top 75%',
+                  duration: 0.8,
+                  once: false
+                }"
+              >
+                {{ valueProposition.businessHeadline }}
+              </h2>
+
+              <!-- Lesson/Feature Count Badge -->
+              <div
+                class="flex items-center gap-2 text-xs text-gray-400 mb-6"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'fadeIn',
+                  start: 'top 75%',
+                  duration: 0.6,
+                  delay: 0.2,
+                  once: false
+                }"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
                 <span
-                  class="text-sm font-semibold text-accent-success uppercase tracking-wide"
-                  >Our Solution</span
+                  >{{ valueProposition.capabilities.length }} key
+                  capabilities</span
                 >
               </div>
-              <p class="text-lg md:text-xl text-text-primary leading-relaxed">
+
+              <!-- Description/Solution -->
+              <p
+                class="text-sm text-gray-300 leading-relaxed mb-6"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'fadeIn',
+                  start: 'top 70%',
+                  duration: 0.8,
+                  delay: 0.3,
+                  once: false
+                }"
+              >
                 {{ valueProposition.solution }}
               </p>
-            </div>
 
-            <!-- Capabilities -->
-            <div
-              class="mb-12"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'slideUp',
-                start: 'top 75%',
-                duration: 0.6,
-                delay: 0.6,
-                once: true
-              }"
-            >
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Capabilities List (Styled like lessons) -->
+              <div
+                class="space-y-2 mb-8"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'slideUp',
+                  start: 'top 75%',
+                  duration: 0.6,
+                  delay: 0.4,
+                  once: false
+                }"
+              >
                 @for (capability of valueProposition.capabilities; track
-                capability) {
-                <div class="flex items-start gap-3">
-                  <span class="text-accent-primary text-xl mt-0.5">✓</span>
-                  <span class="text-base text-text-primary">{{
-                    capability
-                  }}</span>
+                capability; let capIdx = $index) {
+                <div
+                  class="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-800/30 border border-gray-700/30 hover:border-accent-primary/30 transition-colors group"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="text-accent-primary/60 text-xs font-mono">
+                      {{ (capIdx + 1).toString().padStart(2, '0') }}
+                    </span>
+                    <span
+                      class="text-sm text-gray-200 group-hover:text-white transition-colors"
+                    >
+                      {{ capability }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-gray-600">Feature</span>
                 </div>
                 }
               </div>
-            </div>
 
-            <!-- Metric Callout -->
-            <div
-              class="inline-flex items-center gap-4 px-8 py-6 bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 rounded-2xl border border-accent-primary/20"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'scaleIn',
-                start: 'top 80%',
-                duration: 0.6,
-                delay: 0.8,
-                ease: 'back.out',
-                once: true
-              }"
-            >
+              <!-- Metric Badge -->
               <div
-                class="text-5xl md:text-6xl font-bold bg-gradient-to-br from-accent-primary to-accent-secondary bg-clip-text text-transparent"
+                class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-accent-primary/20 to-accent-secondary/20 rounded-xl border border-accent-primary/30"
+                scrollAnimation
+                [scrollConfig]="{
+                  animation: 'scaleIn',
+                  start: 'top 80%',
+                  duration: 0.6,
+                  delay: 0.6,
+                  ease: 'back.out',
+                  once: false
+                }"
               >
-                {{ valueProposition.metricValue }}
-              </div>
-              <div>
-                <div class="text-lg font-bold text-text-headline">
-                  {{ valueProposition.metricLabel }}
+                <div
+                  class="text-3xl font-bold bg-gradient-to-br from-accent-primary to-accent-secondary bg-clip-text text-transparent"
+                >
+                  {{ valueProposition.metricValue }}
                 </div>
-                <div class="text-sm text-text-secondary">
-                  vs traditional approach
+                <div>
+                  <div class="text-sm font-bold text-white">
+                    {{ valueProposition.metricLabel }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    vs traditional approach
+                  </div>
                 </div>
               </div>
             </div>
@@ -238,7 +258,25 @@ import type { ValueProposition } from '../interfaces';
       </div>
     </section>
   `,
-  styles: [],
+  styles: [
+    `
+      /* Sidebar is hidden by default */
+      .section-sticky-target {
+        position: absolute !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.3s ease !important;
+      }
+
+      /* When section is in viewport, sidebar becomes fixed and visible */
+      section[data-section-in-view='true'] .section-sticky-target,
+      section.section-in-view .section-sticky-target {
+        position: fixed !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+    `,
+  ],
 })
 export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   // Active section tracking
@@ -246,9 +284,8 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   // Scroll progress within active section (0-1)
   scrollProgress = signal(0);
 
-  // Expose 3D scene component for template
-  readonly ValuePropositions3DSceneComponent =
-    ValuePropositions3DSceneComponent;
+  // Expose 3D scene component for template (commented out until 3D scene is implemented)
+  // readonly ValuePropositions3DSceneComponent = ValuePropositions3DSceneComponent;
 
   private observer?: IntersectionObserver;
 

@@ -41,7 +41,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
               animation: 'fadeIn',
               start: 'top 80%',
               duration: 0.8,
-              once: true
+              once: false
             }"
           >
             Enterprise-Ready Out of the Box
@@ -54,7 +54,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
               start: 'top 75%',
               duration: 0.8,
               delay: 0.2,
-              once: true
+              once: false
             }"
           >
             Zero infrastructure code. Built-in production capabilities across
@@ -71,7 +71,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
               duration: 0.6,
               delay: 0.4,
               ease: 'back.out',
-              once: true
+              once: false
             }"
           >
             <span
@@ -95,7 +95,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
             start: 'top 70%',
             duration: 1,
             delay: ($index % 3) * 0.15,
-            once: true
+            once: false
           }"
         >
           <div
@@ -193,7 +193,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
             start: 'top 80%',
             duration: 1,
             ease: 'back.out',
-            once: true
+            once: false
           }"
         >
           <div class="text-center">

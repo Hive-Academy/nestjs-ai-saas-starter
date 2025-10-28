@@ -37,7 +37,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               animation: 'fadeIn',
               start: 'top 80%',
               duration: 0.8,
-              once: true
+              once: false
             }"
           >
             Write AI Workflows Like NestJS Controllers
@@ -50,7 +50,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               start: 'top 75%',
               duration: 0.8,
               delay: 0.2,
-              once: true
+              once: false
             }"
           >
             Same decorators. Same dependency injection. Same module system. Zero
@@ -69,7 +69,7 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
               animation: 'fadeIn',
               start: 'top 75%',
               duration: 0.8,
-              once: true
+              once: false
             }"
           >
             <div class="mb-4">
@@ -133,7 +133,7 @@ export class UserController &#123;
               start: 'top 75%',
               duration: 0.8,
               delay: 0.2,
-              once: true
+              once: false
             }"
           >
             <div class="mb-4">
@@ -214,7 +214,7 @@ export class UserAnalysisWorkflow &#123;
               animation: 'fadeIn',
               start: 'top 80%',
               duration: 0.8,
-              once: true
+              once: false
             }"
           >
             <span class="text-4xl mr-3">🔄</span>
@@ -231,7 +231,7 @@ export class UserAnalysisWorkflow &#123;
                 start: 'top 80%',
                 duration: 0.6,
                 delay: $index * 0.1,
-                once: true
+                once: false
               }"
             >
               <div

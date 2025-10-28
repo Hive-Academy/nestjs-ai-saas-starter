@@ -20,7 +20,10 @@
       "Read(//tmp/chrome-devtools-mcp-8tjF0W/**)",
       "mcp__chrome-devtools__evaluate_script",
       "mcp__chrome-devtools__navigate_page",
-      "Read(//c/Users/abdal/Downloads/**)"
+      "Read(//c/Users/abdal/Downloads/**)",
+      "Bash(npx nx build:*)",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__get_console_message"
     ],
     "deny": [],
     "ask": [],

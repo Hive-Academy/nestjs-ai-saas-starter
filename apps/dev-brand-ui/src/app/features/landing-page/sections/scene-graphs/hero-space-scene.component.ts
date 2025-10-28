@@ -37,6 +37,12 @@ import { Float3dDirective } from '../../../../core/angular-3d';
 import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 
+// Import new mouse interaction directives
+import { MouseParallaxDirective } from '../../../../core/angular-3d/directives/mouse-parallax.directive';
+import { MouseRotationDirective } from '../../../../core/angular-3d/directives/mouse-rotation.directive';
+import { MouseHoverDirective } from '../../../../core/angular-3d/directives/mouse-hover.directive';
+import { MouseFixedDirective } from '../../../../core/angular-3d/directives/mouse-fixed.directive';
+
 @Component({
   selector: 'app-hero-space-scene',
   standalone: true,
@@ -49,6 +55,10 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     Float3dDirective,
     Glow3dDirective,
     NebulaComponent,
+    MouseParallaxDirective,
+    MouseRotationDirective,
+    MouseHoverDirective,
+    MouseFixedDirective,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -91,38 +101,58 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     }
 
     <!-- ================================ -->
-    <!-- LARGE DARK PLANET (Background - behind text, Textured) -->
+    <!-- REALISTIC EARTH PLANET (Background - behind text, Daylight Texture) -->
     <!-- ================================ -->
+    <!-- Photorealistic Earth with subtle atmospheric glow and hover zoom -->
+    <!-- Mouse Interactions: Rotation following mouse + hover zoom effect -->
     <app-planet
       [position]="darkPlanetPosition"
       [radius]="darkPlanetRadius"
       [segments]="150"
-      [textureUrl]="'assets/moon_1024.jpg'"
+      [textureUrl]="'assets/earth.jpg'"
+      [baseColor]="darkPlanetBaseColor"
+      [emissiveColor]="darkPlanetEmissiveColor"
+      [emissiveIntensity]="darkPlanetEmissiveIntensity"
       [glowColor]="darkPlanetGlowColor"
-      [glowIntensity]="0"
+      [glowIntensity]="darkPlanetGlowIntensity"
       [glowDistance]="20"
       [rotationSpeed]="0.5"
       [rotationAxis]="'y'"
+      mouseRotation
+      [rotationFactor]="0.3"
+      [rotationAxis]="'xy'"
+      [rotationSmoothing]="8"
+      mouseHover
+      [hoverScale]="1.12"
+      [hoverSpeed]="6"
     />
 
     <!-- ================================ -->
     <!-- ENHANCED STAR FIELD (Multi-size with glow) -->
     <!-- ================================ -->
-    <!-- Background stars (distant) -->
+    <!-- Background stars (distant) - Subtle parallax against mouse -->
     <app-star-field-enhanced
       [starCount]="3000"
       [radius]="50"
       [enableTwinkle]="true"
+      mouseParallax
+      [parallaxFactor]="0.15"
+      [parallaxAxis]="'xy'"
+      [parallaxDepthScale]="true"
     />
 
-    <!-- Midground stars (brighter) -->
+    <!-- Midground stars (brighter) - Moderate parallax -->
     <app-star-field-enhanced
       [starCount]="2000"
       [radius]="40"
       [enableTwinkle]="false"
+      mouseParallax
+      [parallaxFactor]="0.25"
+      [parallaxAxis]="'xy'"
+      [parallaxDepthScale]="true"
     />
 
-    <!-- Foreground stars (closest, brightest) -->
+    <!-- Foreground stars (closest, brightest) - Stronger parallax -->
     <app-star-field-enhanced
       [starCount]="2500"
       [radius]="30"
@@ -131,6 +161,10 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       glow3d
       [glowColor]="darkPlanetGlowColor"
       [glowIntensity]="0.3"
+      mouseParallax
+      [parallaxFactor]="0.4"
+      [parallaxAxis]="'xy'"
+      [parallaxDepthScale]="true"
     />
 
     <!-- ================================ -->
@@ -151,7 +185,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     -->
     <!-- ================================ -->
 
-    <!-- MAIN NEBULA - Continuous smoke/cloud effect -->
+    <!-- MAIN NEBULA - Continuous smoke/cloud effect (FIXED position) -->
     <app-nebula
       [particleCount]="120"
       [radius]="80"
@@ -161,6 +195,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [opacity]="0.2"
       [flow]="false"
       [position]="[-180, 0, -230]"
+      mouseFixed
     />
 
     <app-nebula-volumetric
@@ -180,17 +215,18 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [glowIntensity]="30"
       [colorIntensity]="3"
       [position]="[-90, 0, -90]"
+      mouseFixed
     />
 
     <!-- ================================ -->
     <!-- BLOOM POST-PROCESSING -->
     <!-- ================================ -->
-    <!-- Enhanced bloom for luminous nebula core -->
+    <!-- Subtle bloom for atmospheric glow effect -->
     <app-bloom-effect
       [kernelSize]="5"
-      [luminanceThreshold]="0.15"
-      [luminanceSmoothing]="0.75"
-      [intensity]="2.8"
+      [luminanceThreshold]="0.4"
+      [luminanceSmoothing]="0.7"
+      [intensity]="1.8"
     />
   `,
 })
@@ -207,7 +243,7 @@ export class HeroSpaceSceneComponent {
   // LIGHTING (Theme-based getters)
   // ================================
   get ambientLightIntensity(): number {
-    return this.theme.lights.ambient.intensity * 0.02; // Very dark ambient for deep space
+    return this.theme.lights.ambient.intensity * 0.25; // Increased to show Earth's colors
   }
 
   get ambientLightColor(): number {
@@ -215,7 +251,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get directionalLightIntensity(): number {
-    return this.theme.lights.directional.intensity * 1.5; // Reduced for darker planet
+    return this.theme.lights.directional.intensity * 2.0; // Strong sunlight to illuminate Earth
   }
 
   get directionalLightColor(): number {
@@ -286,23 +322,23 @@ export class HeroSpaceSceneComponent {
   readonly darkPlanetRadius = 5.0; // Human-scale units for 55% viewport coverage
 
   get darkPlanetBaseColor(): number {
-    return this.theme.planet.baseColor;
+    return 0xffffff; // White base to let texture colors show naturally
   }
 
   get darkPlanetEmissiveColor(): number {
-    return this.theme.planet.emissiveColor;
+    return 0x4488ff; // Subtle blue atmospheric glow
   }
 
   get darkPlanetEmissiveIntensity(): number {
-    return 0.05; // Minimal emissive - let directional light define shape realistically
+    return 0.3; // Very subtle emissive for atmospheric rim lighting
   }
 
   get darkPlanetGlowColor(): number {
-    return this.theme.planet.glowColor;
+    return 0x6699ff; // Cyan/blue atmospheric glow (like Earth's atmosphere)
   }
 
   get darkPlanetGlowIntensity(): number {
-    return 0.5; // Very subtle atmospheric glow for realism
+    return 0.6; // Moderate glow for realistic atmospheric halo
   }
 
   // ================================

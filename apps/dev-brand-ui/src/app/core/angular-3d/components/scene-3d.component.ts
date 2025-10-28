@@ -36,7 +36,6 @@
 
 import { Component, input } from '@angular/core';
 import { NgtCanvas } from 'angular-three';
-import { SceneMouseParallaxDirective } from '../directives/scene-mouse-parallax.directive';
 
 export interface CameraConfig {
   position: [number, number, number];
@@ -53,38 +52,17 @@ export interface WebGLRendererConfig {
   precision?: 'highp' | 'mediump' | 'lowp';
 }
 
-export interface MouseParallaxConfig {
-  sensitivity: number;
-  smoothing: number;
-  cameraDistance: number;
-  updateHeroState?: boolean; // NEW: Enable state store updates
-}
-
 @Component({
   selector: 'app-scene-3d',
   standalone: true,
-  imports: [NgtCanvas, SceneMouseParallaxDirective],
+  imports: [NgtCanvas],
   template: `
-    @if (enableMouseParallax()) {
-    <ngt-canvas
-      [sceneGraph]="sceneGraph()"
-      [camera]="camera()"
-      [gl]="gl()"
-      [shadows]="shadows()"
-      sceneMouseParallax
-      [sensitivity]="mouseParallax().sensitivity"
-      [smoothing]="mouseParallax().smoothing"
-      [cameraDistance]="mouseParallax().cameraDistance"
-      [updateHeroState]="mouseParallax().updateHeroState ?? false"
-    />
-    } @else {
     <ngt-canvas
       [sceneGraph]="sceneGraph()"
       [camera]="camera()"
       [gl]="gl()"
       [shadows]="shadows()"
     />
-    }
   `,
   styles: `
     :host {
@@ -125,29 +103,4 @@ export class Scene3DComponent {
    * Default: true
    */
   shadows = input<boolean>(true);
-
-  /**
-   * Enable mouse parallax effect
-   * Default: true
-   */
-  enableMouseParallax = input<boolean>(true);
-
-  /**
-   * Mouse parallax configuration
-   * Default: Moderate sensitivity and smoothing
-   */
-  mouseParallax = input<MouseParallaxConfig>({
-    sensitivity: 0.4,
-    smoothing: 5,
-    cameraDistance: 12,
-  });
-
-  constructor() {
-    // Debug logging to check what values are being used
-    setTimeout(() => {
-      console.log('[Scene3D] Camera config:', this.camera());
-      console.log('[Scene3D] Enable parallax:', this.enableMouseParallax());
-      console.log('[Scene3D] Mouse parallax config:', this.mouseParallax());
-    }, 100);
-  }
 }
