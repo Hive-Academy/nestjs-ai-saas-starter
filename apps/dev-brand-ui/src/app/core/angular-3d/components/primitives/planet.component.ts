@@ -99,6 +99,8 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
     () => this.textureUrl() ?? 'assets/earth.jpg'
   );
 
+  readonly mouseService = inject(MouseInteractionService);
+
   // Material properties
   readonly baseColor = input<number>(0xcccccc);
   readonly emissiveColor = input<number>(0x888888);
@@ -119,8 +121,6 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
   readonly mouseRotation = input<RotationConfig | undefined>();
   readonly mouseHover = input<HoverConfig | undefined>();
 
-  // Mouse interaction state
-  private mouseService?: MouseInteractionService;
   private originalRotation?: THREE.Euler;
   private originalScale = 1;
   private currentRotationX = 0;
@@ -159,7 +159,6 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
 
     // Setup mouse interactions if configured
     if (this.mouseRotation() || this.mouseHover()) {
-      this.mouseService = inject(MouseInteractionService);
       this.mouseService.initialize();
       this.setupMouseInteractions(mesh);
     }
