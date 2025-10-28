@@ -1,4 +1,5 @@
 import { Component, signal, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
@@ -194,9 +195,9 @@ export class EventStreamComponent {
   private readonly stateService = inject(DevBrandWorkflowStateService);
 
   /**
-   * Event history from state service
+   * Event history from state service (converted to signal)
    */
-  readonly eventHistory = computed(() => this.stateService.eventHistory$.value);
+  readonly eventHistory = toSignal(this.stateService.eventHistory$, { initialValue: [] });
 
   /**
    * Selected filter type
