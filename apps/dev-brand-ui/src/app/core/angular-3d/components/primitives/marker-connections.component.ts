@@ -69,13 +69,24 @@ export class MarkerConnectionsComponent {
    */
   protected lines: ConnectionLine[] = [];
 
-  // Marker positions (reference from hero-scene-graph)
-  private readonly positions = {
-    langchain: new THREE.Vector3(-3, 3, 9.5),
-    langgraph: new THREE.Vector3(3.5, 2.5, 9.5),
-    neo4j: new THREE.Vector3(-2.5, -3, 9.5),
-    chromadb: new THREE.Vector3(3, -2.5, 9.5),
-  };
+  /**
+   * Input for marker positions (calculated from parent scene)
+   * Allows dynamic positioning based on sphere surface coordinates
+   */
+  langchainPos = input<[number, number, number]>([-3, 3, 9.5]);
+  langgraphPos = input<[number, number, number]>([3.5, 2.5, 9.5]);
+  neo4jPos = input<[number, number, number]>([-2.5, -3, 9.5]);
+  chromadbPos = input<[number, number, number]>([3, -2.5, 9.5]);
+
+  // Reactive marker positions
+  private get positions() {
+    return {
+      langchain: new THREE.Vector3(...this.langchainPos()),
+      langgraph: new THREE.Vector3(...this.langgraphPos()),
+      neo4j: new THREE.Vector3(...this.neo4jPos()),
+      chromadb: new THREE.Vector3(...this.chromadbPos()),
+    };
+  }
 
   // Theme color: indigo-500
   private readonly lineColor = 0x6366f1;

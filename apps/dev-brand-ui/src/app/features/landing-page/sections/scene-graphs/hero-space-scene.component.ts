@@ -29,6 +29,8 @@ import { NebulaVolumetricComponent } from '../../../../core/angular-3d/component
 import { FogComponent } from '../../../../core/angular-3d/components/primitives/fog.component';
 import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
 import { OrbitControlsComponent } from '../../../../core/angular-3d/components/orbit-controls.component';
+import { Tech3DMarkerComponent } from '../../../../core/angular-3d/components/primitives/tech-3d-marker.component';
+import { MarkerConnectionsComponent } from '../../../../core/angular-3d/components/primitives/marker-connections.component';
 
 // Import theme store and types
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
@@ -49,6 +51,8 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     BloomEffectComponent,
     OrbitControlsComponent,
     NebulaComponent,
+    Tech3DMarkerComponent,
+    MarkerConnectionsComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -106,10 +110,10 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     }
 
     <!-- ================================ -->
-    <!-- REALISTIC EARTH PLANET (Background - behind text, Daylight Texture) -->
+    <!-- REALISTIC EARTH PLANET with Native 3D Markers -->
     <!-- ================================ -->
-    <!-- Photorealistic Earth with subtle atmospheric glow and hover zoom -->
-    <!-- Mouse Interactions: Rotation following mouse + hover zoom effect -->
+    <!-- Photorealistic Earth with subtle atmospheric glow -->
+    <!-- Markers are nested inside planet to rotate with it -->
     <app-planet
       [position]="darkPlanetPosition"
       [radius]="darkPlanetRadius"
@@ -123,6 +127,63 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [glowDistance]="20"
       [rotationSpeed]="0.5"
       [rotationAxis]="'y'"
+    >
+      <!-- ================================ -->
+      <!-- TECH STACK MARKERS (Billboard Sprites on Planet Surface) -->
+      <!-- ================================ -->
+      <!-- 4 tech markers with glowing spots ON planet surface + billboard text -->
+      <!-- Markers are children of planet group, so they rotate with planet -->
+      <!-- Text sprites automatically face camera for readability -->
+
+      <!-- LangChain - North-West (Upper hemisphere, 45° west) -->
+      <app-tech-3d-marker
+        [surfacePosition]="langchainLocalPosition"
+        label="LangChain"
+        [textOffset]="0.5"
+        [textScale]="0.015"
+        [spotSize]="0.15"
+      />
+
+      <!-- LangGraph - North-East (Upper hemisphere, 45° east) -->
+      <app-tech-3d-marker
+        [surfacePosition]="langgraphLocalPosition"
+        label="LangGraph"
+        [textOffset]="0.5"
+        [textScale]="0.015"
+        [spotSize]="0.15"
+      />
+
+      <!-- Neo4j - South-West (Lower hemisphere, 45° west) -->
+      <app-tech-3d-marker
+        [surfacePosition]="neo4jLocalPosition"
+        label="Neo4j"
+        [textOffset]="0.5"
+        [textScale]="0.015"
+        [spotSize]="0.15"
+      />
+
+      <!-- ChromaDB - South-East (Lower hemisphere, 45° east) -->
+      <app-tech-3d-marker
+        [surfacePosition]="chromadbLocalPosition"
+        label="ChromaDB"
+        [textOffset]="0.5"
+        [textScale]="0.015"
+        [spotSize]="0.15"
+      />
+    </app-planet>
+
+    <!-- ================================ -->
+    <!-- MARKER CONNECTION LINES (On sphere surface) -->
+    <!-- ================================ -->
+    <!-- Lines connecting tech markers to show integration -->
+    <!-- Positions dynamically calculated to match marker surface positions -->
+    <app-marker-connections
+      [langchainPos]="langchainPosition"
+      [langgraphPos]="langgraphPosition"
+      [neo4jPos]="neo4jPosition"
+      [chromadbPos]="chromadbPosition"
+      [opacity]="0.6"
+      [enableGlow]="true"
     />
 
     <!-- ================================ -->
@@ -214,6 +275,9 @@ export class HeroSpaceSceneComponent {
   // ✅ Inject theme store for reactive theme support
   private readonly themeStore = inject(SpaceThemeStore);
 
+  // ✅ Expose Math for template usage
+  protected readonly Math = Math;
+
   // ✅ Computed getter for current theme
   get theme(): SpaceTheme {
     return this.themeStore.currentTheme();
@@ -300,6 +364,147 @@ export class HeroSpaceSceneComponent {
   // For 55% coverage: diameter ≈ 10.1 units, radius ≈ 5.0 units
   readonly darkPlanetPosition: [number, number, number] = [0, 0, 9.5];
   readonly darkPlanetRadius = 5.0; // Human-scale units for 55% viewport coverage
+
+  // ================================
+  // TECH MARKER POSITIONS (On sphere surface)
+  // ================================
+  // Helper to calculate position on sphere surface using spherical coordinates
+  // theta: angle around Y axis (longitude), phi: angle from Y axis (latitude)
+  private sphericalToCartesian(
+    theta: number,
+    phi: number,
+    radius: number
+  ): [number, number, number] {
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.cos(phi);
+    const z = radius * Math.sin(phi) * Math.sin(theta);
+    return [
+      x + this.darkPlanetPosition[0],
+      y + this.darkPlanetPosition[1],
+      z + this.darkPlanetPosition[2],
+    ];
+  }
+
+  // Helper for local positions (relative to planet center, for child components)
+  private sphericalToCartesianLocal(
+    theta: number,
+    phi: number,
+    radius: number
+  ): [number, number, number] {
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.cos(phi);
+    const z = radius * Math.sin(phi) * Math.sin(theta);
+    console.log('[HeroSpaceScene] Marker position:', {
+      theta,
+      phi,
+      radius,
+      x,
+      y,
+      z,
+    });
+    return [x, y, z];
+  }
+
+  // Tech marker positions on planet surface
+  // Positioned at cardinal directions with slight offset for visibility
+  get langchainPosition(): [number, number, number] {
+    // North-West: 45° angle, upper hemisphere
+    return this.sphericalToCartesian(
+      -Math.PI / 4, // theta: 45° west
+      Math.PI / 3, // phi: 60° from top (upper hemisphere)
+      this.darkPlanetRadius + 0.1 // Slightly above surface
+    );
+  }
+
+  get langgraphPosition(): [number, number, number] {
+    // North-East: -45° angle, upper hemisphere
+    return this.sphericalToCartesian(
+      Math.PI / 4, // theta: 45° east
+      Math.PI / 3, // phi: 60° from top (upper hemisphere)
+      this.darkPlanetRadius + 0.1
+    );
+  }
+
+  get neo4jPosition(): [number, number, number] {
+    // South-West: 45° angle, lower hemisphere
+    return this.sphericalToCartesian(
+      -Math.PI / 4, // theta: 45° west
+      (2 * Math.PI) / 3, // phi: 120° from top (lower hemisphere)
+      this.darkPlanetRadius + 0.1
+    );
+  }
+
+  get chromadbPosition(): [number, number, number] {
+    // South-East: -45° angle, lower hemisphere
+    return this.sphericalToCartesian(
+      Math.PI / 4, // theta: 45° east
+      (2 * Math.PI) / 3, // phi: 120° from top (lower hemisphere)
+      this.darkPlanetRadius + 0.1
+    );
+  }
+
+  // Helper to calculate rotation to face outward from sphere center
+  // This makes markers point away from planet (normal to surface)
+  private getSurfaceRotation(
+    theta: number,
+    phi: number
+  ): [number, number, number] {
+    // Euler angles to orient marker perpendicular to surface
+    // x-rotation based on phi (latitude), y-rotation based on theta (longitude)
+    return [phi - Math.PI / 2, theta, 0];
+  }
+
+  get langchainRotation(): [number, number, number] {
+    return this.getSurfaceRotation(-Math.PI / 4, Math.PI / 3);
+  }
+
+  get langgraphRotation(): [number, number, number] {
+    return this.getSurfaceRotation(Math.PI / 4, Math.PI / 3);
+  }
+
+  get neo4jRotation(): [number, number, number] {
+    return this.getSurfaceRotation(-Math.PI / 4, (2 * Math.PI) / 3);
+  }
+
+  get chromadbRotation(): [number, number, number] {
+    return this.getSurfaceRotation(Math.PI / 4, (2 * Math.PI) / 3);
+  }
+
+  // ================================
+  // LOCAL MARKER POSITIONS (For child components within planet group)
+  // ================================
+  // These are relative to planet center (no position offset added)
+  get langchainLocalPosition(): [number, number, number] {
+    return this.sphericalToCartesianLocal(
+      -Math.PI / 4,
+      Math.PI / 3,
+      this.darkPlanetRadius
+    );
+  }
+
+  get langgraphLocalPosition(): [number, number, number] {
+    return this.sphericalToCartesianLocal(
+      Math.PI / 4,
+      Math.PI / 3,
+      this.darkPlanetRadius
+    );
+  }
+
+  get neo4jLocalPosition(): [number, number, number] {
+    return this.sphericalToCartesianLocal(
+      -Math.PI / 4,
+      (2 * Math.PI) / 3,
+      this.darkPlanetRadius
+    );
+  }
+
+  get chromadbLocalPosition(): [number, number, number] {
+    return this.sphericalToCartesianLocal(
+      Math.PI / 4,
+      (2 * Math.PI) / 3,
+      this.darkPlanetRadius
+    );
+  }
 
   get darkPlanetBaseColor(): number {
     return 0xffffff; // White base to let texture colors show naturally

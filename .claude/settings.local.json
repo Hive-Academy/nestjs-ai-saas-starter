@@ -23,7 +23,8 @@
       "Read(//c/Users/abdal/Downloads/**)",
       "Bash(npx nx build:*)",
       "mcp__chrome-devtools__list_console_messages",
-      "mcp__chrome-devtools__get_console_message"
+      "mcp__chrome-devtools__get_console_message",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": [],
