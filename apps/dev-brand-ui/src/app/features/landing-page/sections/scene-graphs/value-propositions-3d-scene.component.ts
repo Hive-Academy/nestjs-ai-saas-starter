@@ -50,7 +50,7 @@ import {
       @switch (activeLibraryIndex()) { @case (0) {
       <!-- ChromaDB: Cube -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -66,7 +66,7 @@ import {
       } @case (1) {
       <!-- Neo4j: Icosahedron (graph nodes) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -83,7 +83,7 @@ import {
       } @case (2) {
       <!-- Memory: Torus (circular context) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -99,7 +99,7 @@ import {
       } @case (3) {
       <!-- Checkpoint: Octahedron (state snapshots) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -115,7 +115,7 @@ import {
       } @case (4) {
       <!-- Functional: Tetrahedron (declarative structure) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -131,7 +131,7 @@ import {
       } @case (5) {
       <!-- Multi-Agent: Dodecahedron (coordination) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -147,7 +147,7 @@ import {
       } @case (6) {
       <!-- Platform: Cylinder (cloud platform) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -163,7 +163,7 @@ import {
       } @case (7) {
       <!-- Time-Travel: Torus Knot (timeline loops) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -179,7 +179,7 @@ import {
       } @case (8) {
       <!-- Monitoring: Sphere (360° observability) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -195,7 +195,7 @@ import {
       } @case (9) {
       <!-- HITL: Cone (approval funnel) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -211,7 +211,7 @@ import {
       } @case (10) {
       <!-- Streaming: Capsule (data flow) -->
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
@@ -229,7 +229,7 @@ import {
       <!-- Wireframe Overlay for Extra Detail -->
       @if (showWireframe()) {
       <ngt-mesh
-        [position]="[0, 0, 0]"
+        [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="[
           getScale()[0] * 1.02,

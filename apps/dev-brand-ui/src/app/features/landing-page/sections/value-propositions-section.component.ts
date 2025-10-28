@@ -92,11 +92,17 @@ import { ValuePropositions3DSceneComponent } from './scene-graphs/value-proposit
             <!-- LEFT: 3D Scene Placeholder -->
             <div
               class="flex items-center justify-center bg-gray-800/30 rounded-2xl border border-gray-700/50 min-h-[500px]"
-
             >
               <div class="text-center text-gray-600 p-8">
                 <app-scene-3d
                   [sceneGraph]="ValuePropositions3DSceneComponent"
+                  [camera]="{
+                    position: [0, 0, 12],
+                    fov: 75,
+                    near: 0.1,
+                    far: 1000
+                  }"
+                  [gl]="rendererConfig"
                 />
               </div>
             </div>
@@ -282,6 +288,15 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   activeIndex = signal(0);
   // Scroll progress within active section (0-1)
   scrollProgress = signal(0);
+
+  readonly rendererConfig = {
+    antialias: true,
+    alpha: false,
+    pixelRatio: Math.min(
+      (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
+      2
+    ),
+  };
 
   // Expose 3D scene component for template (commented out until 3D scene is implemented)
   readonly ValuePropositions3DSceneComponent =

@@ -28,6 +28,7 @@ import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/componen
 import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
 import { FogComponent } from '../../../../core/angular-3d/components/primitives/fog.component';
 import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
+import { OrbitControlsComponent } from '../../../../core/angular-3d/components/orbit-controls.component';
 
 // Import theme store and types
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
@@ -36,8 +37,6 @@ import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.t
 import { Float3dDirective } from '../../../../core/angular-3d';
 import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
-
-// Mouse interaction directives removed - now handled via component inputs
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -48,8 +47,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     NebulaVolumetricComponent,
     FogComponent,
     BloomEffectComponent,
-    Float3dDirective,
-    Glow3dDirective,
+    OrbitControlsComponent,
     NebulaComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
@@ -58,6 +56,21 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     <!-- SCENE BACKGROUND COLOR -->
     <!-- ================================ -->
     <!-- <ngt-color attach="background" *args="[backgroundColorHex]" /> -->
+
+    <!-- ================================ -->
+    <!-- CAMERA CONTROLS (OrbitControls) -->
+    <!-- ================================ -->
+    <!-- Click and drag to orbit around planet, scroll to zoom -->
+    <app-orbit-controls
+      [target]="darkPlanetPosition"
+      [enableDamping]="true"
+      [dampingFactor]="0.05"
+      [enableZoom]="false"
+      [minDistance]="0"
+      [maxDistance]="4.5"
+      [rotateSpeed]="0.8"
+      [enablePan]="false"
+    />
 
     <!-- ================================ -->
     <!-- LIGHTING SETUP (Theme-based) -->
