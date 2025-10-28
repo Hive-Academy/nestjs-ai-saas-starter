@@ -9,7 +9,6 @@ interface NavItem {
   title: string;
   icon: string;
   description: string;
-  category: 'showcase' | 'interface';
 }
 
 /**
@@ -42,29 +41,9 @@ interface NavItem {
             <div class="nav-subtitle">v1.0.0-showcase</div>
           </div>
 
-          <!-- Showcase Routes -->
+          <!-- Navigation Routes -->
           <div class="nav-section">
-            <div class="section-title">Showcase Experience</div>
-            @for (item of showcaseItems; track item.path) {
-            <a
-              class="nav-item"
-              [routerLink]="item.path"
-              [class.active]="currentRoute() === item.path"
-              (click)="closeNav()"
-            >
-              <span class="nav-icon">{{ item.icon }}</span>
-              <div class="nav-info">
-                <div class="nav-label">{{ item.title }}</div>
-                <div class="nav-desc">{{ item.description }}</div>
-              </div>
-            </a>
-            }
-          </div>
-
-          <!-- Interface Modes -->
-          <div class="nav-section">
-            <div class="section-title">Interface Modes</div>
-            @for (item of interfaceItems; track item.path) {
+            @for (item of navItems; track item.path) {
             <a
               class="nav-item"
               [routerLink]="item.path"
@@ -302,58 +281,18 @@ export class ShowcaseNavigationComponent {
   readonly isExpanded = signal(false);
   readonly currentRoute = signal('');
 
-  readonly showcaseItems: NavItem[] = [
+  readonly navItems: NavItem[] = [
     {
       path: '/landing',
       title: 'Landing Page',
       icon: '🏠',
       description: 'Platform landing & overview',
-      category: 'showcase',
     },
     {
       path: '/devbrand-poc',
       title: 'DevBrand Workflow POC',
       icon: '🚀',
       description: 'Real-time LangGraph demo',
-      category: 'showcase',
-    },
-  ];
-
-  readonly interfaceItems: NavItem[] = [
-    {
-      path: '/spatial-interface',
-      title: '3D Agent Visualization',
-      icon: '🌌',
-      description: 'Interactive spatial interface',
-      category: 'interface',
-    },
-    {
-      path: '/workflow-canvas',
-      title: 'Workflow Canvas',
-      icon: '🎨',
-      description: 'Visual workflow designer',
-      category: 'interface',
-    },
-    {
-      path: '/memory-constellation',
-      title: 'Memory Constellation',
-      icon: '🧠',
-      description: 'Distributed memory system',
-      category: 'interface',
-    },
-    {
-      path: '/chat-interface',
-      title: 'AI Chat Interface',
-      icon: '💬',
-      description: 'Conversational AI experience',
-      category: 'interface',
-    },
-    {
-      path: '/content-forge',
-      title: 'Content Forge',
-      icon: '⚒️',
-      description: 'AI-powered content creation',
-      category: 'interface',
     },
   ];
 
