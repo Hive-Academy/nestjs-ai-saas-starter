@@ -12,6 +12,8 @@ import { SectionStickyDirective } from '../../../core/angular-3d/directives/sect
 // import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
 // import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
 import type { ValueProposition } from '../interfaces';
+import { Scene3DComponent } from '../../../core/angular-3d';
+import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
 
 /**
  * Value Propositions Section Component - Scroll-Driven 3D Showcase
@@ -29,7 +31,12 @@ import type { ValueProposition } from '../interfaces';
 @Component({
   selector: 'app-value-propositions-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective, SectionStickyDirective],
+  imports: [
+    CommonModule,
+    ScrollAnimationDirective,
+    SectionStickyDirective,
+    Scene3DComponent,
+  ],
   template: `
     <section
       sectionSticky
@@ -85,20 +92,12 @@ import type { ValueProposition } from '../interfaces';
             <!-- LEFT: 3D Scene Placeholder -->
             <div
               class="flex items-center justify-center bg-gray-800/30 rounded-2xl border border-gray-700/50 min-h-[500px]"
-              scrollAnimation
-              [scrollConfig]="{
-                animation: 'fadeIn',
-                start: 'top 75%',
-                duration: 0.8,
-                once: false
-              }"
+
             >
               <div class="text-center text-gray-600 p-8">
-                <div class="text-6xl mb-4">🎨</div>
-                <p class="text-sm">3D Scene Coming Soon</p>
-                <p class="text-xs text-gray-700 mt-2">
-                  {{ valueProposition.packageName }}
-                </p>
+                <app-scene-3d
+                  [sceneGraph]="ValuePropositions3DSceneComponent"
+                />
               </div>
             </div>
 
@@ -285,7 +284,8 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   scrollProgress = signal(0);
 
   // Expose 3D scene component for template (commented out until 3D scene is implemented)
-  // readonly ValuePropositions3DSceneComponent = ValuePropositions3DSceneComponent;
+  readonly ValuePropositions3DSceneComponent =
+    ValuePropositions3DSceneComponent;
 
   private observer?: IntersectionObserver;
 

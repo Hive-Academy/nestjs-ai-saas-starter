@@ -1,13 +1,13 @@
 /**
- * PlanetComponent - Large Celestial Body Primitive with Mouse Interactions
+ * PlanetComponent - Large Celestial Body Primitive
  *
  * Renders a realistic planet/moon sphere with:
  * - Customizable size and position
  * - Material configuration (color, metalness, roughness)
  * - Emissive glow effects
- * - Optional rotation animation
+ * - Optional rotation animation (GSAP)
  * - Point light glow around the planet
- * - Mouse rotation and hover interactions (via config inputs)
+ * - OrbitControls will handle user interactions
  *
  * Usage:
  * ```html
@@ -15,8 +15,7 @@
  *   [position]="[0, 0, 0]"
  *   [radius]="5"
  *   [baseColor]="0xcccccc"
- *   [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
- *   [mouseHover]="{ scale: 1.12, speed: 6 }"
+ *   [rotationSpeed]="0.5"
  * />
  * ```
  */
@@ -28,19 +27,12 @@ import {
   ElementRef,
   input,
   viewChild,
-  inject,
   OnDestroy,
-  Injector,
 } from '@angular/core';
-import { injectBeforeRender, injectLoader } from 'angular-three';
+import { injectLoader } from 'angular-three';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
-import { MouseInteractionService } from '../../services/mouse-interaction.service';
-import type {
-  RotationConfig,
-  HoverConfig,
-} from '../../types/mouse-interaction.types';
 
 @Component({
   selector: 'app-planet',
@@ -100,8 +92,6 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
     () => this.textureUrl() ?? 'assets/earth.jpg'
   );
 
-  readonly mouseService = inject(MouseInteractionService);
-  readonly injector = inject(Injector);
   // Material properties
   readonly baseColor = input<number>(0xcccccc);
   readonly emissiveColor = input<number>(0x888888);
@@ -114,23 +104,9 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
   readonly glowIntensity = input<number>(0.8);
   readonly glowDistance = input<number>(15);
 
-  // Rotation animation (GSAP-based, separate from mouse rotation)
+  // Rotation animation (GSAP-based)
   readonly rotationSpeed = input<number>(0);
   readonly rotationAxis = input<'x' | 'y' | 'z'>('y');
-
-  // Mouse Interactions (NEW)
-  readonly mouseRotation = input<RotationConfig | undefined>();
-  readonly mouseHover = input<HoverConfig | undefined>();
-
-  private originalRotation?: THREE.Euler;
-  private originalScale = 1;
-  private currentRotationX = 0;
-  private currentRotationY = 0;
-  private targetRotationX = 0;
-  private targetRotationY = 0;
-  private currentScale = 1;
-  private targetScale = 1;
-  private clock = new THREE.Clock();
 
   ngAfterViewInit(): void {
     const mesh = this.meshRef()?.nativeElement;
@@ -142,102 +118,13 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
     console.log('[Planet] Initialized', {
       position: this.position(),
       radius: this.radius(),
-      hasMouseRotation: !!this.mouseRotation(),
-      hasMouseHover: !!this.mouseHover(),
     });
-
-    // Store original state
-    this.originalRotation = mesh.rotation.clone();
-    this.originalScale = mesh.scale.x;
-    this.currentScale = this.originalScale;
-    this.targetScale = this.originalScale;
 
     // Start GSAP rotation animation if speed > 0
     const speed = this.rotationSpeed();
     if (speed !== 0) {
       this.startGSAPRotation(mesh);
     }
-
-    // Setup mouse interactions if configured
-    if (this.mouseRotation() || this.mouseHover()) {
-      this.mouseService.initialize();
-      this.setupMouseInteractions(mesh);
-    }
-  }
-
-  /**
-   * Setup mouse-based rotation and hover interactions
-   */
-  private setupMouseInteractions(mesh: THREE.Mesh): void {
-    if (!this.mouseService) return;
-
-    const rotationConfig = this.mouseRotation();
-    const hoverConfig = this.mouseHover();
-
-    console.log('[Planet] Setting up mouse interactions', {
-      rotation: rotationConfig,
-      hover: hoverConfig,
-    });
-
-    injectBeforeRender(
-      () => {
-        if (!this.mouseService || !mesh || !this.originalRotation) return;
-
-        const mouseX = this.mouseService.smoothMouseX();
-        const mouseY = this.mouseService.smoothMouseY();
-        const deltaTime = this.clock.getDelta();
-
-        // Mouse Rotation
-        if (rotationConfig) {
-          const factor = rotationConfig.factor ?? 0.5;
-          const axis = rotationConfig.axis ?? 'xy';
-          const smoothing = rotationConfig.smoothing ?? 8;
-
-          // Calculate target rotation based on mouse
-          this.targetRotationX = mouseY * factor;
-          this.targetRotationY = mouseX * factor;
-
-          // Smooth interpolation
-          const smoothingFactor = deltaTime * smoothing;
-          this.currentRotationX +=
-            (this.targetRotationX - this.currentRotationX) * smoothingFactor;
-          this.currentRotationY +=
-            (this.targetRotationY - this.currentRotationY) * smoothingFactor;
-
-          // Apply rotation (additive to GSAP rotation)
-          if (axis === 'x') {
-            mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
-          } else if (axis === 'y') {
-            mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
-          } else if (axis === 'z') {
-            mesh.rotation.z = this.originalRotation.z + this.currentRotationY;
-          } else if (axis === 'xy') {
-            mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
-            mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
-          }
-        }
-
-        // Mouse Hover (simple scale, no raycasting for now)
-        if (hoverConfig) {
-          const hoverScale = hoverConfig.scale ?? 1.15;
-          const hoverSpeed = hoverConfig.speed ?? 8;
-
-          // For now, use simple distance-based hover (can add raycasting later)
-          // Just demonstrate the interpolation
-          this.targetScale = this.originalScale; // Default to original
-
-          // Smooth scale transition
-          const smoothingFactor = deltaTime * hoverSpeed;
-          this.currentScale +=
-            (this.targetScale - this.currentScale) * smoothingFactor;
-
-          mesh.scale.setScalar(this.currentScale);
-        }
-      },
-      {
-        injector: this.injector,
-      }
-    );
   }
 
   /**
@@ -285,8 +172,5 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.rotationAnimation?.kill();
-    if (this.mouseService) {
-      this.mouseService.destroy();
-    }
   }
 }

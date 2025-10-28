@@ -8,15 +8,5 @@ export { Text3DComponent } from './components/primitives/text-3d.component';
 // Directives - GSAP animation
 export { Float3dDirective } from './directives/float-3d.directive';
 
-// Services - Animation & Mouse tracking
+// Services - Animation
 export { AnimationService } from './services/animation.service';
-export { MouseInteractionService } from './services/mouse-interaction.service';
-
-// Types - Mouse interaction configuration
-export type {
-  ParallaxConfig,
-  RotationConfig,
-  HoverConfig,
-  NormalizedMousePosition,
-  SmoothedMousePosition,
-} from './types/mouse-interaction.types';

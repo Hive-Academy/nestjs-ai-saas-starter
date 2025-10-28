@@ -1,12 +1,12 @@
 /**
- * StarFieldEnhancedComponent - Multi-Size Glowing Star System with Mouse Parallax
+ * StarFieldEnhancedComponent - Multi-Size Glowing Star System
  *
  * Creates a realistic star field with:
  * - Multiple size variations (tiny, small, medium, large)
  * - Per-star glow using sprite materials
  * - Color temperature variation (blue, white, yellow, orange)
  * - Twinkle animation (optional)
- * - Mouse parallax effect (optional, via config input)
+ * - Parallax effect achieved via camera movement (OrbitControls)
  *
  * Usage:
  * ```html
@@ -14,7 +14,6 @@
  *   [starCount]="2000"
  *   [radius]="40"
  *   [enableTwinkle]="true"
- *   [mouseParallax]="{ factor: 0.3, axis: 'xy', depthScale: true }"
  * />
  * ```
  */
@@ -26,14 +25,10 @@ import {
   ElementRef,
   input,
   viewChild,
-  inject,
-  OnDestroy,
 } from '@angular/core';
 import { injectBeforeRender } from 'angular-three';
 import { random } from 'maath';
 import * as THREE from 'three';
-import { MouseInteractionService } from '../../services/mouse-interaction.service';
-import type { ParallaxConfig } from '../../types/mouse-interaction.types';
 
 interface StarData {
   position: [number, number, number];
@@ -69,7 +64,7 @@ interface StarData {
     </ngt-group>
   `,
 })
-export class StarFieldEnhancedComponent implements OnDestroy {
+export class StarFieldEnhancedComponent {
   private readonly groupRef = viewChild<ElementRef<THREE.Group>>('starGroup');
 
   // Configuration inputs
@@ -77,12 +72,6 @@ export class StarFieldEnhancedComponent implements OnDestroy {
   readonly radius = input<number>(40);
   readonly enableTwinkle = input<boolean>(false);
 
-  // Mouse Interaction (NEW)
-  readonly mouseParallax = input<ParallaxConfig | undefined>();
-
-  // Mouse interaction state
-  private mouseService?: MouseInteractionService;
-  private originalPosition?: THREE.Vector3;
   private clock = new THREE.Clock();
 
   /**
@@ -206,53 +195,6 @@ export class StarFieldEnhancedComponent implements OnDestroy {
   });
 
   constructor() {
-    // Setup mouse parallax if configured
-    const parallaxConfig = this.mouseParallax();
-    if (parallaxConfig) {
-      this.mouseService = inject(MouseInteractionService);
-      this.mouseService.initialize();
-
-      console.log('[StarFieldEnhanced] Mouse parallax enabled', parallaxConfig);
-
-      // Apply parallax to group
-      injectBeforeRender(() => {
-        const group = this.groupRef()?.nativeElement;
-        if (!group || !parallaxConfig) return;
-
-        // Store original position
-        if (!this.originalPosition) {
-          this.originalPosition = group.position.clone();
-        }
-
-        const mouseX = this.mouseService!.smoothMouseX();
-        const mouseY = this.mouseService!.smoothMouseY();
-        const factor = parallaxConfig.factor ?? 0.3;
-        const axis = parallaxConfig.axis ?? 'xy';
-        const depthScale = parallaxConfig.depthScale ?? true;
-
-        // Calculate depth factor if enabled
-        let depthFactor = 1.0;
-        if (depthScale) {
-          const depth = Math.abs(this.originalPosition.z);
-          depthFactor = depth / 50; // Normalize based on typical camera distance
-        }
-
-        // Apply parallax offset
-        if (axis === 'x' || axis === 'xy') {
-          group.position.x =
-            this.originalPosition.x + mouseX * factor * depthFactor;
-        }
-
-        if (axis === 'y' || axis === 'xy') {
-          group.position.y =
-            this.originalPosition.y + mouseY * factor * depthFactor;
-        }
-
-        // Always preserve original Z
-        group.position.z = this.originalPosition.z;
-      });
-    }
-
     // Twinkle animation (if enabled)
     if (this.enableTwinkle()) {
       let time = 0;
@@ -275,12 +217,6 @@ export class StarFieldEnhancedComponent implements OnDestroy {
           }
         });
       });
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (this.mouseService) {
-      this.mouseService.destroy();
     }
   }
 }

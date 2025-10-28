@@ -110,39 +110,30 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [glowDistance]="20"
       [rotationSpeed]="0.5"
       [rotationAxis]="'y'"
-      [mouseRotation]="{ factor: 0.3, axis: 'xy', smoothing: 8 }"
-      [mouseHover]="{ scale: 1.12, speed: 6, glow: 0.4 }"
     />
 
     <!-- ================================ -->
     <!-- ENHANCED STAR FIELD (Multi-size with glow) -->
     <!-- ================================ -->
-    <!-- Background stars (distant) - Subtle parallax against mouse -->
+    <!-- Background stars (distant) - Parallax from camera movement -->
     <app-star-field-enhanced
       [starCount]="3000"
       [radius]="50"
       [enableTwinkle]="true"
-      [mouseParallax]="{ factor: 0.15, axis: 'xy', depthScale: true }"
     />
 
-    <!-- Midground stars (brighter) - Moderate parallax -->
+    <!-- Midground stars (brighter) - Natural depth parallax -->
     <app-star-field-enhanced
       [starCount]="2000"
       [radius]="40"
       [enableTwinkle]="false"
-      [mouseParallax]="{ factor: 0.25, axis: 'xy', depthScale: true }"
     />
 
-    <!-- Foreground stars (closest, brightest) - Stronger parallax -->
+    <!-- Foreground stars (closest, brightest) - Depth-based parallax -->
     <app-star-field-enhanced
       [starCount]="2500"
       [radius]="30"
       [enableTwinkle]="true"
-      float3d
-      glow3d
-      [glowColor]="darkPlanetGlowColor"
-      [glowIntensity]="0.3"
-      [mouseParallax]="{ factor: 0.4, axis: 'xy', depthScale: true }"
     />
 
     <!-- ================================ -->
