@@ -310,6 +310,13 @@ export class ShowcaseNavigationComponent {
       description: 'Platform landing & overview',
       category: 'showcase',
     },
+    {
+      path: '/devbrand-poc',
+      title: 'DevBrand Workflow POC',
+      icon: '🚀',
+      description: 'Real-time LangGraph demo',
+      category: 'showcase',
+    },
   ];
 
   readonly interfaceItems: NavItem[] = [
