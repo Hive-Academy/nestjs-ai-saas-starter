@@ -30,6 +30,7 @@ import {
   viewChild,
   inject,
   OnDestroy,
+  Injector,
 } from '@angular/core';
 import { injectBeforeRender, injectLoader } from 'angular-three';
 import gsap from 'gsap';
@@ -100,7 +101,7 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
   );
 
   readonly mouseService = inject(MouseInteractionService);
-
+  readonly injector = inject(Injector);
   // Material properties
   readonly baseColor = input<number>(0xcccccc);
   readonly emissiveColor = input<number>(0x888888);
@@ -178,60 +179,65 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
       hover: hoverConfig,
     });
 
-    injectBeforeRender(() => {
-      if (!this.mouseService || !mesh || !this.originalRotation) return;
+    injectBeforeRender(
+      () => {
+        if (!this.mouseService || !mesh || !this.originalRotation) return;
 
-      const mouseX = this.mouseService.smoothMouseX();
-      const mouseY = this.mouseService.smoothMouseY();
-      const deltaTime = this.clock.getDelta();
+        const mouseX = this.mouseService.smoothMouseX();
+        const mouseY = this.mouseService.smoothMouseY();
+        const deltaTime = this.clock.getDelta();
 
-      // Mouse Rotation
-      if (rotationConfig) {
-        const factor = rotationConfig.factor ?? 0.5;
-        const axis = rotationConfig.axis ?? 'xy';
-        const smoothing = rotationConfig.smoothing ?? 8;
+        // Mouse Rotation
+        if (rotationConfig) {
+          const factor = rotationConfig.factor ?? 0.5;
+          const axis = rotationConfig.axis ?? 'xy';
+          const smoothing = rotationConfig.smoothing ?? 8;
 
-        // Calculate target rotation based on mouse
-        this.targetRotationX = mouseY * factor;
-        this.targetRotationY = mouseX * factor;
+          // Calculate target rotation based on mouse
+          this.targetRotationX = mouseY * factor;
+          this.targetRotationY = mouseX * factor;
 
-        // Smooth interpolation
-        const smoothingFactor = deltaTime * smoothing;
-        this.currentRotationX +=
-          (this.targetRotationX - this.currentRotationX) * smoothingFactor;
-        this.currentRotationY +=
-          (this.targetRotationY - this.currentRotationY) * smoothingFactor;
+          // Smooth interpolation
+          const smoothingFactor = deltaTime * smoothing;
+          this.currentRotationX +=
+            (this.targetRotationX - this.currentRotationX) * smoothingFactor;
+          this.currentRotationY +=
+            (this.targetRotationY - this.currentRotationY) * smoothingFactor;
 
-        // Apply rotation (additive to GSAP rotation)
-        if (axis === 'x') {
-          mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
-        } else if (axis === 'y') {
-          mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
-        } else if (axis === 'z') {
-          mesh.rotation.z = this.originalRotation.z + this.currentRotationY;
-        } else if (axis === 'xy') {
-          mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
-          mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
+          // Apply rotation (additive to GSAP rotation)
+          if (axis === 'x') {
+            mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
+          } else if (axis === 'y') {
+            mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
+          } else if (axis === 'z') {
+            mesh.rotation.z = this.originalRotation.z + this.currentRotationY;
+          } else if (axis === 'xy') {
+            mesh.rotation.x = this.originalRotation.x + this.currentRotationX;
+            mesh.rotation.y = this.originalRotation.y + this.currentRotationY;
+          }
         }
+
+        // Mouse Hover (simple scale, no raycasting for now)
+        if (hoverConfig) {
+          const hoverScale = hoverConfig.scale ?? 1.15;
+          const hoverSpeed = hoverConfig.speed ?? 8;
+
+          // For now, use simple distance-based hover (can add raycasting later)
+          // Just demonstrate the interpolation
+          this.targetScale = this.originalScale; // Default to original
+
+          // Smooth scale transition
+          const smoothingFactor = deltaTime * hoverSpeed;
+          this.currentScale +=
+            (this.targetScale - this.currentScale) * smoothingFactor;
+
+          mesh.scale.setScalar(this.currentScale);
+        }
+      },
+      {
+        injector: this.injector,
       }
-
-      // Mouse Hover (simple scale, no raycasting for now)
-      if (hoverConfig) {
-        const hoverScale = hoverConfig.scale ?? 1.15;
-        const hoverSpeed = hoverConfig.speed ?? 8;
-
-        // For now, use simple distance-based hover (can add raycasting later)
-        // Just demonstrate the interpolation
-        this.targetScale = this.originalScale; // Default to original
-
-        // Smooth scale transition
-        const smoothingFactor = deltaTime * hoverSpeed;
-        this.currentScale +=
-          (this.targetScale - this.currentScale) * smoothingFactor;
-
-        mesh.scale.setScalar(this.currentScale);
-      }
-    });
+    );
   }
 
   /**
