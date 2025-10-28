@@ -147,17 +147,9 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
 
               <!-- Event Data/Message -->
               <div class="text-sm text-gray-700 mb-1">
-                @if (event.data?.message) {
-                  {{ event.data.message }}
-                } @else if (event.data?.step) {
-                  Step: {{ event.data.step }}
-                } @else if (event.data?.nodeId) {
-                  Node: {{ event.data.nodeId }}
-                } @else {
-                  <code class="text-xs bg-gray-100 px-2 py-1 rounded">
-                    {{ getEventDataPreview(event) }}
-                  </code>
-                }
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded">
+                  {{ getEventDataPreview(event) }}
+                </code>
               </div>
 
               <!-- Sequence Number -->
