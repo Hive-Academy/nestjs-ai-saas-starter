@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, inject, OnDestroy, effect } from '@angular/core';
 import { ExecutionControlComponent } from '../components/execution-control.component';
 import { ProgressVisualizationComponent } from '../components/progress-visualization.component';
 import { EventStreamComponent } from '../components/event-stream.component';
@@ -144,6 +144,23 @@ export class DevbrandPocPageComponent implements OnDestroy {
   private readonly workflowStateService = inject(DevBrandWorkflowStateService);
 
   /**
+   * Pending execution ID waiting for WebSocket connection
+   */
+  private pendingExecutionId: string | null = null;
+
+  constructor() {
+    // Wait for WebSocket connection before subscribing
+    effect(() => {
+      const isConnected = this.webSocketService.isConnected();
+      if (isConnected && this.pendingExecutionId) {
+        this.webSocketService.subscribeToExecution(this.pendingExecutionId);
+        this.workflowStateService.startExecution(this.pendingExecutionId);
+        this.pendingExecutionId = null;
+      }
+    });
+  }
+
+  /**
    * Event handler for workflow execution start.
    *
    * **Triggered By**: ExecutionControlComponent emits executionStarted event
@@ -182,14 +199,12 @@ export class DevbrandPocPageComponent implements OnDestroy {
    * - Workflow state service coordinates all child component state updates
    */
   onExecutionStarted(executionId: string): void {
+    // Store execution ID for subscription once connected
+    this.pendingExecutionId = executionId;
+
     // Connect WebSocket (uses environment.websocketUrl from backend response)
+    // The effect above will call subscribeToExecution() once connected
     this.webSocketService.connect('http://localhost:8080');
-
-    // Subscribe to specific execution ID (backend filters events)
-    this.webSocketService.subscribeToExecution(executionId);
-
-    // Initialize workflow state tracking
-    this.workflowStateService.startExecution(executionId);
   }
 
   /**
