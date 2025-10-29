@@ -41,7 +41,9 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">
         Event Stream
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 ml-2">
+        <span
+          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 ml-2"
+        >
           {{ filteredEvents().length }}
         </span>
       </h3>
@@ -120,62 +122,61 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
 
       <!-- Event List with Virtual Scrolling -->
       <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <cdk-virtual-scroll-viewport
-          #viewport
-          itemSize="80"
-          class="h-96"
-        >
-          @for (event of filteredEvents(); track event.metadata.sequenceNumber) {
-            <div
-              class="border-b border-gray-100 p-4 hover:bg-gray-50 transition"
-            >
-              <!-- Event Header -->
-              <div class="flex items-center justify-between mb-2">
-                <!-- Event Type Badge -->
-                <span
-                  class="px-2 py-1 text-xs font-semibold rounded"
-                  [class]="getEventTypeBadgeClass(event.type)"
-                >
-                  {{ event.type }}
-                </span>
+        <cdk-virtual-scroll-viewport #viewport itemSize="80" class="h-96">
+          @for (event of filteredEvents(); track event.metadata.sequenceNumber)
+          {
+          <div class="border-b border-gray-100 p-4 hover:bg-gray-50 transition">
+            <!-- Event Header -->
+            <div class="flex items-center justify-between mb-2">
+              <!-- Event Type Badge -->
+              <span
+                class="px-2 py-1 text-xs font-semibold rounded"
+                [class]="getEventTypeBadgeClass(event.type)"
+              >
+                {{ event.type }}
+              </span>
 
-                <!-- Relative Timestamp -->
-                <span class="text-xs text-gray-500">
-                  {{ getRelativeTime(event.metadata.timestamp) }}
-                </span>
-              </div>
-
-              <!-- Event Data/Message -->
-              <div class="text-sm text-gray-700 mb-1">
-                <code class="text-xs bg-gray-100 px-2 py-1 rounded">
-                  {{ getEventDataPreview(event) }}
-                </code>
-              </div>
-
-              <!-- Sequence Number -->
-              <div class="text-xs text-gray-500">
-                Sequence: #{{ event.metadata.sequenceNumber }}
-                @if (event.metadata.nodeId) {
-                  <span class="ml-2">
-                    Node: <code class="bg-gray-100 px-1 rounded">{{ event.metadata.nodeId }}</code>
-                  </span>
-                }
-              </div>
+              <!-- Relative Timestamp -->
+              <span class="text-xs text-gray-500">
+                {{ getRelativeTime(event.metadata.timestamp) }}
+              </span>
             </div>
-          } @empty {
-            <div class="p-8 text-center text-gray-500">
-              <p class="text-sm">No events to display</p>
-              @if (selectedFilter() !== 'all') {
-                <p class="text-xs mt-1">Try adjusting your filter</p>
+
+            <!-- Event Data/Message -->
+            <div class="text-sm text-gray-700 mb-1">
+              <code class="text-xs bg-gray-100 px-2 py-1 rounded">
+                {{ getEventDataPreview(event) }}
+              </code>
+            </div>
+
+            <!-- Sequence Number -->
+            <div class="text-xs text-gray-500">
+              Sequence: #{{ event.metadata.sequenceNumber }}
+              @if (event.metadata.nodeId) {
+              <span class="ml-2">
+                Node:
+                <code class="bg-gray-100 px-1 rounded">{{
+                  event.metadata.nodeId
+                }}</code>
+              </span>
               }
             </div>
+          </div>
+          } @empty {
+          <div class="p-8 text-center text-gray-500">
+            <p class="text-sm">No events to display</p>
+            @if (selectedFilter() !== 'all') {
+            <p class="text-xs mt-1">Try adjusting your filter</p>
+            }
+          </div>
           }
         </cdk-virtual-scroll-viewport>
       </div>
 
       <!-- Event Count Summary -->
       <div class="mt-4 text-sm text-gray-600">
-        Showing {{ filteredEvents().length }} of {{ eventHistory().length }} events
+        Showing {{ filteredEvents().length }} of
+        {{ eventHistory().length }} events
       </div>
     </div>
   `,
@@ -189,7 +190,9 @@ export class EventStreamComponent {
   /**
    * Event history from state service (converted to signal)
    */
-  readonly eventHistory = toSignal(this.stateService.eventHistory$, { initialValue: [] });
+  readonly eventHistory = toSignal(this.stateService.eventHistory$, {
+    initialValue: [],
+  });
 
   /**
    * Selected filter type
@@ -200,7 +203,9 @@ export class EventStreamComponent {
    * - 'token': TOKEN
    * - 'error': ERROR, WORKFLOW_ERROR, NODE_ERROR
    */
-  private readonly _selectedFilter = signal<'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'>('all');
+  private readonly _selectedFilter = signal<
+    'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'
+  >('all');
 
   /**
    * Readonly accessor for selected filter
@@ -249,7 +254,9 @@ export class EventStreamComponent {
   /**
    * Set event filter
    */
-  setFilter(filter: 'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'): void {
+  setFilter(
+    filter: 'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'
+  ): void {
     this._selectedFilter.set(filter);
   }
 
@@ -263,7 +270,9 @@ export class EventStreamComponent {
   /**
    * Get filter button class (active vs inactive)
    */
-  getFilterButtonClass(filter: 'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'): string {
+  getFilterButtonClass(
+    filter: 'all' | 'workflow' | 'node' | 'progress' | 'token' | 'error'
+  ): string {
     const isActive = this._selectedFilter() === filter;
     return isActive
       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -364,7 +373,9 @@ export class EventStreamComponent {
    * Check if event is progress type
    */
   private isProgressEvent(type: StreamEventType): boolean {
-    return type === StreamEventType.PROGRESS || type === StreamEventType.MILESTONE;
+    return (
+      type === StreamEventType.PROGRESS || type === StreamEventType.MILESTONE
+    );
   }
 
   /**

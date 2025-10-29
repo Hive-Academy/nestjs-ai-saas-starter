@@ -11,19 +11,12 @@ import {
   ChromaDBTimeoutError,
 } from '../../errors/chromadb.errors';
 import { CHROMADB_CLIENT } from '../../constants';
+import { Semaphore } from 'semaphore-promise';
 import { IChromaConnection } from '../../interfaces/core/database-abstractions.interface';
-
-/**
- * Connection configuration interface
- */
-export interface ConnectionConfig {
-  host: string;
-  port: number;
-  ssl?: boolean;
-  timeout?: number;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
+import type {
+  ConnectionConfig,
+  QueueMetrics,
+} from '../../interfaces/core/database-abstractions.interface';
 
 /**
  * Connection health status
@@ -46,6 +39,9 @@ export class ChromaDBConnectionService
   implements IChromaConnection, OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(ChromaDBConnectionService.name);
+  private readonly semaphore: Semaphore;
+  private activeOperations = 0;
+  private queuedOperations = 0;
   private isConnected = false;
   private connectionTime?: number;
   private lastHealthCheck?: Date;
@@ -53,7 +49,14 @@ export class ChromaDBConnectionService
   constructor(
     @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
     @Inject('ConnectionConfig') private readonly config: ConnectionConfig
-  ) {}
+  ) {
+    // Initialize semaphore with configurable concurrency limit
+    const maxConcurrent = this.config.maxConcurrentOperations || 5;
+    this.semaphore = new Semaphore(maxConcurrent);
+    this.logger.log(
+      `ChromaDB semaphore initialized: max ${maxConcurrent} concurrent operations`
+    );
+  }
 
   /**
    * Initialize connection on module startup
@@ -173,6 +176,41 @@ export class ChromaDBConnectionService
     const operationId = `op-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
+    const queueStart = Date.now();
+
+    this.queuedOperations++;
+
+    // Acquire semaphore permit (blocks if at max concurrency)
+    const release = await this.semaphore.acquire();
+
+    this.queuedOperations--;
+    this.activeOperations++;
+
+    try {
+      const queueWaitTime = Date.now() - queueStart;
+
+      this.logger.debug(
+        `[${operationId}] Semaphore acquired after ${queueWaitTime}ms wait (active: ${this.activeOperations}, queued: ${this.queuedOperations})`
+      );
+
+      // Execute with existing retry logic
+      return await this.executeWithRetryInternal(operation, operationId);
+    } finally {
+      this.activeOperations--;
+      // Always release semaphore, even on error
+      release();
+      this.logger.debug(`[${operationId}] Semaphore released`);
+    }
+  }
+
+  /**
+   * Internal retry implementation (existing retry logic)
+   * @private
+   */
+  private async executeWithRetryInternal<T>(
+    operation: () => Promise<T>,
+    operationId: string
+  ): Promise<T> {
     const startTime = Date.now();
     let lastError: Error;
 
@@ -422,5 +460,17 @@ export class ChromaDBConnectionService
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get operation queue metrics for observability
+   */
+  getQueueMetrics(): QueueMetrics {
+    const maxConcurrent = this.config.maxConcurrentOperations || 5;
+    return {
+      availablePermits: maxConcurrent - this.activeOperations,
+      queueDepth: this.queuedOperations,
+      maxConcurrent,
+    };
   }
 }

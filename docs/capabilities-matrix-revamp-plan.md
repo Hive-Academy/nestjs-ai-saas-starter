@@ -407,12 +407,14 @@ HitlModule.forRootAsync({
 - **The Problem**: "Traditional polling wastes bandwidth and adds latency"
 - **Our Solution**: "3-tier streaming architecture initialized in 3 lines"
 - **Code Example**:
+
   ```typescript
   // main.ts
   const streamingManager = app.get(AppStreamingManager);
   await streamingManager.initializeStreaming();
   // ✅ ALL workflows now stream token-by-token
   ```
+
 - **What You Get**:
 
   - Token-by-token LLM streaming
@@ -439,6 +441,7 @@ HitlModule.forRootAsync({
 - **The Problem**: "Vector search finds similar content, but loses relationships. Graph databases track relationships, but struggle with semantic search."
 - **Our Solution**: "Hybrid vector+graph memory with automatic relationship building"
 - **Code Example**:
+
   ```typescript
   // memory.config.ts
   adapters: {
@@ -450,6 +453,7 @@ HitlModule.forRootAsync({
     similarityThreshold: 0.7,
   }
   ```
+
 - **What You Get**:
 
   - Semantic search across memories
@@ -461,6 +465,7 @@ HitlModule.forRootAsync({
 - **Real-World Use**: "DevBrand remembers: 'This user prefers TypeScript, avoids Java, engages with React content.' Each recommendation builds on past interactions."
 
 - **Architecture Visual**:
+
   ```
   Query → ChromaDB (top 10 similar) → Neo4j (expand relationships) → Merged Results
   ```
@@ -658,6 +663,7 @@ Total: 200 lines vs 1000 lines (80% reduction)
 - **The Problem**: "Multi-agent coordination requires 500+ lines of boilerplate: network setup, message routing, state management"
 - **Our Solution**: "@MultiAgent decorator handles setup automatically"
 - **Code Example**:
+
   ```typescript
   @MultiAgent({
     topology: MultiAgentTopology.SUPERVISOR,
@@ -675,6 +681,7 @@ Total: 200 lines vs 1000 lines (80% reduction)
     }
   }
   ```
+
 - **What You Get**:
 
   - 3 topologies: Supervisor, Hierarchical, Sequential
@@ -703,6 +710,7 @@ SEQUENTIAL:    Agent A → Agent B → Agent C (fixed order)
 **Keep Existing Content**, but add:
 
 - **Code Example**:
+
   ```typescript
   // monitoring.config.ts
   metrics: {
@@ -711,6 +719,7 @@ SEQUENTIAL:    Agent A → Agent B → Agent C (fixed order)
   // ✅ Auto-exposes /metrics endpoint
   // ✅ Grafana dashboard ready
   ```
+
 - **Metrics Dashboard Screenshot**: Show real Grafana dashboard with:
   - Workflow execution times
   - Token usage per agent
@@ -724,6 +733,7 @@ SEQUENTIAL:    Agent A → Agent B → Agent C (fixed order)
 **Keep Existing Content**, but add:
 
 - **Code Example**:
+
   ```typescript
   // Tenant isolation is automatic
   await memoryService.storeMemory(threadId, content, metadata, userId);
@@ -737,6 +747,7 @@ SEQUENTIAL:    Agent A → Agent B → Agent C (fixed order)
 **Keep Existing Content**, but add:
 
 - **Retry Visual**:
+
   ```
   OpenAI Rate Limit → Exponential Backoff → Retry (wait 2s)
                    → Rate Limit → Retry (wait 4s)

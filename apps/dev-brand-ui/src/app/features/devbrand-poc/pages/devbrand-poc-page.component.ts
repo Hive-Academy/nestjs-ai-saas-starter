@@ -92,9 +92,7 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
     <div class="container mx-auto px-4 py-8">
       <!-- Page Header -->
       <header class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">
-          DevBrand Workflow POC
-        </h1>
+        <h1 class="text-3xl font-bold text-gray-900">DevBrand Workflow POC</h1>
         <p class="mt-2 text-gray-600">
           Real-time LangGraph multi-agent workflow demonstration with WebSocket
           streaming
