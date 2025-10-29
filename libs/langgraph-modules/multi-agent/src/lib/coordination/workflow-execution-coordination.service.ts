@@ -10,6 +10,7 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { MultiAgentResult } from '../interfaces/multi-agent.interface';
 import { NetworkManagerService } from '../network/network-manager.service';
 import { MemoryCoordinationService } from './memory-coordination.service';
+import { CoordinationLearningService } from './coordination-learning.service';
 
 /**
  * Workflow Execution Coordination Service
@@ -36,7 +37,9 @@ export class WorkflowExecutionCoordinationService {
     private readonly streamingService: IStreamingService,
     @Optional()
     @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: IMemoryAdapter
+    private readonly memoryAdapter?: IMemoryAdapter,
+    @Optional()
+    private readonly coordinationLearningService?: CoordinationLearningService
   ) {}
 
   /**
@@ -246,6 +249,17 @@ export class WorkflowExecutionCoordinationService {
           }`
         );
       }
+    }
+
+    // Background coordination learning (fire-and-forget)
+    if (this.coordinationLearningService && result) {
+      this.coordinationLearningService
+        .learnFromExecution(result)
+        .catch((err) =>
+          this.logger.warn(
+            `Background coordination learning failed (non-blocking): ${err}`
+          )
+        );
     }
 
     // Stream workflow completion event
