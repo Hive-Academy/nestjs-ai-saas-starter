@@ -54,53 +54,70 @@ export class WorkflowExecutionCoordinationService {
     const executionId = this.generateExecutionId(networkId);
     const threadId = this.generateThreadId(networkId);
 
+    /**
+     * REMOVED: Pre-execution memory loading (LangGraph 2025 alignment)
+     *
+     * Rationale:
+     * - Blocking memory operations caused 25+ second workflow start delays
+     * - LangGraph 2025 recommends "memory-in-nodes" pattern via store parameter
+     * - Pre-execution memory loading violates instant workflow execution principle
+     * - Coordination context will be provided via BaseStore interface (Priority 4)
+     *
+     * See: implementation-plan.md:113-208 (Priority 1: Remove Pre-Execution Memory)
+     */
+
     // Memory superpowers: Get optimal agent coordination based on learned patterns
-    let coordinationContext: any = {};
-    if (this.memoryAdapter) {
-      try {
-        coordinationContext =
-          await this.memoryCoordination.getOptimalCoordinationContext(
-            networkId,
-            input
-          );
-        this.logger.debug(
-          `Retrieved coordination context for network ${networkId}`,
-          {
-            agentCompatibility:
-              coordinationContext.agentCompatibility?.length || 0,
-            networkOptimizations:
-              coordinationContext.networkOptimizations?.length || 0,
-            performancePatterns:
-              coordinationContext.performancePatterns?.length || 0,
-          }
-        );
-      } catch (error) {
-        this.logger.warn(`Failed to get coordination context: ${error}`);
-      }
-    }
-
+    // COMMENTED OUT: Blocking pre-execution memory call (25+ second delay)
+    // let coordinationContext: any = {};
+    // if (this.memoryAdapter) {
+    // try {
+    // coordinationContext =
+    // await this.memoryCoordination.getOptimalCoordinationContext(
+    // networkId,
+    // input
+    // );
+    // this.logger.debug(
+    // `Retrieved coordination context for network ${networkId}`,
+    // {
+    // agentCompatibility:
+    // coordinationContext.agentCompatibility?.length || 0,
+    // networkOptimizations:
+    // coordinationContext.networkOptimizations?.length || 0,
+    // performancePatterns:
+    // coordinationContext.performancePatterns?.length || 0,
+    // }
+    // );
+    // } catch (error) {
+    // this.logger.warn(`Failed to get coordination context: ${error}`);
+    // }
+    // }
+    //
     // Automagical: Enhance initial state with memory context if available
-    let enhancedInput = input;
-    if (this.memoryAdapter) {
-      try {
-        enhancedInput =
-          await this.memoryCoordination.enhanceInputWithMemoryContext(
-            input,
-            threadId,
-            networkId
-          );
-        this.logger.debug(
-          `Enhanced input with memory context for execution ${executionId}`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to enhance input with memory context: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
-    }
+    // COMMENTED OUT: Blocking input enhancement (causes cascade failures)
+    // let enhancedInput = input;
+    // if (this.memoryAdapter) {
+    // try {
+    // enhancedInput =
+    // await this.memoryCoordination.enhanceInputWithMemoryContext(
+    // input,
+    // threadId,
+    // networkId
+    // );
+    // this.logger.debug(
+    // `Enhanced input with memory context for execution ${executionId}`
+    // );
+    // } catch (error) {
+    // this.logger.warn(
+    // `Failed to enhance input with memory context: ${
+    // error instanceof Error ? error.message : String(error)
+    // }`
+    // );
+    // }
+    // }
 
+    // Initialize empty coordination context and use input directly (instant start)
+    const coordinationContext: any = {};
+    const enhancedInput = input;
     // Prepare checkpoint-enabled config
     const checkpointConfig: RunnableConfig = {
       ...enhancedInput.config,
