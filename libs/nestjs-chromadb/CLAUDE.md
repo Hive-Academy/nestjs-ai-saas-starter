@@ -1628,3 +1628,331 @@ multiTenant: {
 ```
 
 This comprehensive enterprise-grade module provides declarative, type-safe, and highly performant ChromaDB integration with advanced features for building sophisticated AI-powered applications with zero boilerplate code.
+
+---
+
+## Operation Queueing and Concurrency Control
+
+### Overview
+
+The ChromaDB module implements **semaphore-based operation queueing** to prevent database overwhelm and ensure stable performance under high concurrency. This feature provides automatic concurrency control with configurable limits and comprehensive observability.
+
+### Implementation (Completed: Commit 259ff7f)
+
+**Problem**: High concurrency operations could overwhelm ChromaDB, causing timeouts and connection failures
+
+**Solution**: Implemented semaphore-based queueing using `semaphore-promise` library to limit concurrent operations
+
+### Architecture
+
+**Key Components**:
+
+1. **Semaphore Wrapper**: All ChromaDB operations routed through `executeWithRetry()` method
+2. **Concurrency Limit**: Configurable via `maxConcurrentOperations` (default: 5)
+3. **Queue Metrics**: Real-time monitoring via `getQueueMetrics()` API
+4. **Retry Integration**: Semaphore works seamlessly with existing retry logic
+
+### Configuration
+
+**Basic Configuration** (default: 5 concurrent operations):
+
+```typescript
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    ssl: false,
+    maxConcurrentOperations: 5, // Default: 5 concurrent ops
+  },
+  embedding: {
+    provider: 'openai',
+    config: { apiKey: process.env.OPENAI_API_KEY },
+  },
+});
+```
+
+**High-Throughput Configuration** (increase concurrency):
+
+```typescript
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    maxConcurrentOperations: 10, // Increase for high-performance deployments
+    timeout: 30000,
+    retryAttempts: 3,
+  },
+  embedding: { provider: 'openai', config: { apiKey: '...' } },
+});
+```
+
+**Conservative Configuration** (lower concurrency for stability):
+
+```typescript
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    maxConcurrentOperations: 3, // Lower for resource-constrained environments
+    timeout: 60000, // Longer timeout for queued operations
+  },
+  embedding: { provider: 'openai', config: { apiKey: '...' } },
+});
+```
+
+### How It Works
+
+**Semaphore Lifecycle** (chromadb-connection.service.ts:175-204):
+
+```typescript
+async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+  const operationId = `op-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const queueStart = Date.now();
+
+  this.queuedOperations++;
+
+  // 1. Acquire semaphore permit (blocks if at max concurrency)
+  const release = await this.semaphore.acquire();
+
+  this.queuedOperations--;
+  this.activeOperations++;
+
+  try {
+    const queueWaitTime = Date.now() - queueStart;
+
+    this.logger.debug(
+      `[${operationId}] Semaphore acquired after ${queueWaitTime}ms wait (active: ${this.activeOperations}, queued: ${this.queuedOperations})`
+    );
+
+    // 2. Execute with existing retry logic
+    return await this.executeWithRetryInternal(operation, operationId);
+  } finally {
+    this.activeOperations--;
+    // 3. Always release semaphore, even on error
+    release();
+    this.logger.debug(`[${operationId}] Semaphore released`);
+  }
+}
+```
+
+**Flow Diagram**:
+
+```
+Operation Request
+    ↓
+Increment queuedOperations counter
+    ↓
+Acquire Semaphore Permit
+  - If available: Proceed immediately
+  - If at max: Wait in queue (async blocking)
+    ↓
+Decrement queuedOperations counter
+Increment activeOperations counter
+    ↓
+Execute Operation (with retry logic)
+    ↓
+Decrement activeOperations counter
+Release Semaphore Permit
+    ↓
+Next Queued Operation Proceeds
+```
+
+### Queue Metrics API
+
+Monitor queue performance in real-time:
+
+```typescript
+import { ChromaDBConnectionService } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class MonitoringService {
+  constructor(private chromaConnection: ChromaDBConnectionService) {}
+
+  async getOperationMetrics() {
+    const metrics = this.chromaConnection.getQueueMetrics();
+
+    return {
+      availablePermits: metrics.availablePermits, // Free slots for operations
+      queueDepth: metrics.queueDepth, // Operations waiting in queue
+      maxConcurrent: metrics.maxConcurrent, // Configured limit
+      utilizationRate: (metrics.maxConcurrent - metrics.availablePermits) / metrics.maxConcurrent,
+    };
+  }
+
+  async checkQueueHealth() {
+    const metrics = this.chromaConnection.getQueueMetrics();
+
+    if (metrics.queueDepth > 10) {
+      this.logger.warn(`High queue depth detected: ${metrics.queueDepth} operations waiting`);
+    }
+
+    if (metrics.availablePermits === 0) {
+      this.logger.warn(`All permits exhausted - operations will queue`);
+    }
+
+    return {
+      status: metrics.queueDepth < 10 ? 'healthy' : 'degraded',
+      metrics,
+    };
+  }
+}
+```
+
+**Queue Metrics Interface** (chromadb-connection.service.ts:466-475):
+
+```typescript
+interface QueueMetrics {
+  availablePermits: number; // maxConcurrent - activeOperations
+  queueDepth: number; // Operations waiting for permits
+  maxConcurrent: number; // Configured limit
+}
+
+getQueueMetrics(): QueueMetrics {
+  const maxConcurrent = this.config.maxConcurrentOperations || 5;
+  return {
+    availablePermits: maxConcurrent - this.activeOperations,
+    queueDepth: this.queuedOperations,
+    maxConcurrent,
+  };
+}
+```
+
+### Benefits
+
+**Performance**:
+
+- **Prevents Overwhelm**: ChromaDB stays within operational limits
+- **Graceful Degradation**: Operations queue instead of failing
+- **Predictable Latency**: Queue wait time monitored and logged
+
+**Reliability**:
+
+- **Error Recovery**: Semaphore released even on failures (finally block)
+- **Connection Stability**: Prevents connection pool exhaustion
+- **Timeout Protection**: Works with existing timeout mechanisms
+
+**Observability**:
+
+- **Detailed Logging**: Every operation logged with queue metrics
+- **Real-Time Metrics**: `getQueueMetrics()` API for monitoring
+- **Operation Tracing**: Unique operation IDs for debugging
+
+### Code References
+
+**Semaphore Initialization** (chromadb-connection.service.ts:49-59):
+
+```typescript
+constructor(
+  @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
+  @Inject('ConnectionConfig') private readonly config: ConnectionConfig
+) {
+  // Initialize semaphore with configurable concurrency limit
+  const maxConcurrent = this.config.maxConcurrentOperations || 5;
+  this.semaphore = new Semaphore(maxConcurrent);
+  this.logger.log(
+    `ChromaDB semaphore initialized: max ${maxConcurrent} concurrent operations`
+  );
+}
+```
+
+**Operation Execution** (chromadb-connection.service.ts:175-204):
+
+All ChromaDB operations use `executeWithRetry()` which wraps operations with semaphore control:
+
+- `addDocuments()` → `executeWithRetry(() => collection.add(...))`
+- `searchDocuments()` → `executeWithRetry(() => collection.query(...))`
+- `updateDocuments()` → `executeWithRetry(() => collection.update(...))`
+- `deleteDocuments()` → `executeWithRetry(() => collection.delete(...))`
+
+### Usage Examples
+
+**Standard Usage** (automatic queueing):
+
+```typescript
+@Injectable()
+export class DocumentService {
+  constructor(private chromaDB: ChromaDBService) {}
+
+  async bulkIndex(documents: Document[]) {
+    // All operations automatically queued
+    await this.chromaDB.addDocuments('docs', documents);
+  }
+
+  async searchDocuments(query: string) {
+    // Queuing handled transparently
+    return this.chromaDB.searchDocuments('docs', [query]);
+  }
+}
+```
+
+**With Monitoring**:
+
+```typescript
+@Injectable()
+export class MonitoredDocumentService {
+  constructor(
+    private chromaDB: ChromaDBService,
+    private chromaConnection: ChromaDBConnectionService
+  ) {}
+
+  async bulkIndexWithMonitoring(documents: Document[]) {
+    const beforeMetrics = this.chromaConnection.getQueueMetrics();
+    this.logger.log(`Queue before: ${beforeMetrics.queueDepth} waiting`);
+
+    await this.chromaDB.addDocuments('docs', documents);
+
+    const afterMetrics = this.chromaConnection.getQueueMetrics();
+    this.logger.log(`Queue after: ${afterMetrics.queueDepth} waiting`);
+  }
+}
+```
+
+### Performance Tuning Guide
+
+**Determining Optimal Concurrency**:
+
+1. **Start Conservative**: Begin with default (5 concurrent operations)
+2. **Monitor Metrics**: Track queue depth and wait times
+3. **Increase Gradually**: Raise limit if queue depth consistently high
+4. **Watch for Errors**: Connection/timeout errors indicate limit too high
+
+**Typical Configurations**:
+
+| Environment        | Max Concurrent | Timeout | Retry Attempts | Use Case                     |
+| ------------------ | -------------- | ------- | -------------- | ---------------------------- |
+| Development        | 3              | 30000ms | 3              | Local ChromaDB, conservative |
+| Production (Small) | 5              | 30000ms | 3              | Standard deployment          |
+| Production (Large) | 10             | 30000ms | 5              | High-throughput needs        |
+| Resource-Limited   | 2              | 60000ms | 5              | Shared/constrained resources |
+
+### Best Practices
+
+1. **Monitor Queue Metrics**: Use `getQueueMetrics()` in health checks
+2. **Set Appropriate Limits**: Match ChromaDB server capacity
+3. **Increase Timeouts**: Allow for queue wait time in timeouts
+4. **Log Queue Depth**: Track queue performance in production
+5. **Alert on High Queue**: Set up alerts for queueDepth > threshold
+
+### Migration Guide
+
+No code changes required - semaphore queueing is automatic for all operations. Simply configure `maxConcurrentOperations` in your module setup:
+
+```typescript
+// Before (no queue control)
+ChromaDBModule.forRoot({
+  connection: { host: 'localhost', port: 8000 },
+  embedding: { provider: 'openai', config: { apiKey: '...' } },
+});
+
+// After (with queue control)
+ChromaDBModule.forRoot({
+  connection: {
+    host: 'localhost',
+    port: 8000,
+    maxConcurrentOperations: 5, // Add concurrency limit
+  },
+  embedding: { provider: 'openai', config: { apiKey: '...' } },
+});
+```
+
+---
