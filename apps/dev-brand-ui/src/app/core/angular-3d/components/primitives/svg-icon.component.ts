@@ -133,6 +133,7 @@ export class SVGIconComponent implements OnInit {
 
   // Material properties
   readonly color = input<number>(Colors3D.accent.gold.hex);
+  readonly colorOverride = input<boolean | undefined>(undefined); // If true, always use color input; if false/undefined, preserve SVG colors
   readonly metalness = input<number>(0.7);
   readonly roughness = input<number>(0.2);
   readonly emissive = input<number>(Colors3D.material.black.hex);
@@ -276,10 +277,10 @@ export class SVGIconComponent implements OnInit {
 
   /**
    * Create a Three.js Group from SVG data
+   * Preserves original SVG colors from the SVG file when colorOverride is not provided
    */
   private createGroupFromSVGData(data: ReturnType<SVGLoader['parse']>): Group {
     const group = new Group();
-    const material = this.createMaterial();
 
     const extrudeSettings: ExtrudeGeometryOptions = {
       depth: this.extrudeDepth(),
@@ -288,7 +289,7 @@ export class SVGIconComponent implements OnInit {
       bevelSize: this.bevelSize(),
     };
 
-    // Process SVG paths
+    // Process SVG paths - each path may have its own color
     data.paths.forEach((path) => {
       const shapes = SVGLoader.createShapes(path);
 
@@ -301,7 +302,10 @@ export class SVGIconComponent implements OnInit {
           geometry = new ShapeGeometry(shape);
         }
 
-        const mesh = new Mesh(geometry, material.clone());
+        // Create material - use SVG's original fill color if available, otherwise use override
+        const material = this.createMaterialForPath(path);
+
+        const mesh = new Mesh(geometry, material);
         mesh.castShadow = this.castShadow();
         mesh.receiveShadow = this.receiveShadow();
 
@@ -320,6 +324,36 @@ export class SVGIconComponent implements OnInit {
     }
 
     return group;
+  }
+
+  /**
+   * Create material for a specific SVG path
+   * Preserves original SVG path color when colorOverride is false/undefined
+   */
+  private createMaterialForPath(path: any): MeshStandardMaterial {
+    let materialColor = this.color();
+
+    // Check if we should preserve original SVG colors
+    const shouldPreserveColors = !this.colorOverride();
+
+    // Check if path has a fill color from the SVG
+    if (shouldPreserveColors && path.userData?.style?.fill) {
+      // Parse SVG color (handles #RRGGBB format)
+      const svgColor = path.userData.style.fill;
+      if (typeof svgColor === 'string' && svgColor.startsWith('#')) {
+        materialColor = parseInt(svgColor.replace('#', '0x'), 16);
+      }
+    }
+
+    return new MeshStandardMaterial({
+      color: materialColor,
+      metalness: this.metalness(),
+      roughness: this.roughness(),
+      emissive: this.emissive(),
+      emissiveIntensity: this.emissiveIntensity(),
+      transparent: this.transparent(),
+      opacity: this.opacity(),
+    });
   }
 
   /**

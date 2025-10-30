@@ -251,7 +251,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [position]="logoPositions.chroma"
       [scale]="0.015"
       [extrudeDepth]="0.5"
-      [color]="colors.material.white.hex"
+      [color]="colors.brand.chromadb.hex"
       [emissive]="colors.brand.chromadbEmissive.hex"
       [emissiveIntensity]="0.5"
       [metalness]="0.1"

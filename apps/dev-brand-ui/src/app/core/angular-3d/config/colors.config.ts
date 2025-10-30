@@ -111,6 +111,15 @@ export const Colors3D = {
   particle: {
     darkPurple: ['#4a1d6b', '#2d1b47', '#1a0d2e', '#261242', '#1e1139'],
   },
+
+  // Brand colors for tech stack logos
+  brand: {
+    nestjs: { hex: 0xe0234e, css: '#e0234e' }, // Official NestJS red
+    langchain: { hex: 0x1c3c3c, css: '#1c3c3c' }, // LangChain dark green
+    chromadb: { hex: 0xffffff, css: '#ffffff' }, // ChromaDB white (multi-color logo)
+    chromadbEmissive: { hex: 0x1a1a2e, css: '#1a1a2e' }, // ChromaDB subtle dark emissive
+    neo4j: { hex: 0x008cc1, css: '#008cc1' }, // Official Neo4j blue
+  },
 } as const;
 
 /**
