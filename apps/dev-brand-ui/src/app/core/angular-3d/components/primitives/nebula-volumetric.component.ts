@@ -39,13 +39,13 @@ import {
   input,
   viewChild,
 } from '@angular/core';
-import { injectBeforeRender } from 'angular-three';
+import { injectBeforeRender, NgtArgs } from 'angular-three';
 import * as THREE from 'three';
 
 @Component({
   selector: 'app-nebula-volumetric',
   standalone: true,
-  imports: [],
+  imports: [NgtArgs],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <ngt-group #nebulaGroup [position]="position()">
@@ -55,7 +55,7 @@ import * as THREE from 'three';
         [scale]="[width(), height(), 1]"
         [renderOrder]="997"
       >
-        <ngt-plane-geometry [args]="[1, 1, 256, 256]" />
+        <ngt-plane-geometry *args="[1, 1, 256, 256]" />
         <ngt-shader-material
           [vertexShader]="vertexShader"
           [fragmentShader]="fragmentShader"
@@ -76,7 +76,7 @@ import * as THREE from 'three';
         [scale]="[width() * 0.85, height() * 0.85, 1]"
         [renderOrder]="998"
       >
-        <ngt-plane-geometry [args]="[1, 1, 256, 256]" />
+        <ngt-plane-geometry *args="[1, 1, 256, 256]" />
         <ngt-shader-material
           [vertexShader]="vertexShader"
           [fragmentShader]="fragmentShader"

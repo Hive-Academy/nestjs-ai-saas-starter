@@ -33,6 +33,7 @@ export const Colors3D = {
   material: {
     white: { hex: 0xffffff, css: '#ffffff' },
     lightGray: { hex: 0xcccccc, css: '#cccccc' },
+    gray: { hex: 0xaaaaaa, css: '#aaaaaa' }, // Between lightGray and mediumGray
     mediumGray: { hex: 0x888888, css: '#888888' },
     darkGray: { hex: 0x444444, css: '#444444' },
     black: { hex: 0x000000, css: '#000000' },

@@ -7,6 +7,10 @@
  * Uses Angular Three's injectBeforeRender for proper frame-loop integration
  * and supports directive composition API for easy application to any component.
  *
+ * **IMPORTANT**: This directive is optional. If no `flightPath` is provided,
+ * the directive will do nothing, allowing the component to work normally without
+ * animation. This makes it safe to include via hostDirectives.
+ *
  * Features:
  * - Configurable multi-phase flight path
  * - Continuous rotation during flight
@@ -15,14 +19,22 @@
  * - Infinite loop with seamless restart
  * - Automatic cleanup via injectBeforeRender
  * - Works with directive composition (hostDirectives)
+ * - Optional - no errors if flight path is not provided
  *
  * Usage with Directive Composition:
  * ```html
+ * <!-- With animation -->
  * <app-gltf-model
  *   [modelPath]="'/assets/3d/spaceship.glb'"
  *   spaceFlight3d
  *   [flightPath]="customPath"
  *   [rotationsPerCycle]="10"
+ * />
+ *
+ * <!-- Without animation (directive is ignored) -->
+ * <app-gltf-model
+ *   [modelPath]="'/assets/3d/spaceship.glb'"
+ *   [position]="[0, 0, 0]"
  * />
  * ```
  *
@@ -113,7 +125,7 @@ export class SpaceFlight3dDirective implements OnInit, AfterViewInit {
   private object3D: Object3D | null = null;
 
   // Configuration inputs
-  readonly flightPath = input<SpaceFlightWaypoint[]>(DEFAULT_FLIGHT_PATH);
+  readonly flightPath = input<SpaceFlightWaypoint[] | undefined>(undefined);
   readonly rotationsPerCycle = input<number>(8);
   readonly loop = input<boolean>(true);
   readonly autoStart = input<boolean>(true);
@@ -148,7 +160,7 @@ export class SpaceFlight3dDirective implements OnInit, AfterViewInit {
 
     // Get current waypoint
     const path = this.flightPath();
-    if (path.length === 0) return;
+    if (!path || path.length === 0) return;
 
     const waypoint = path[this.currentWaypointIndex];
 
@@ -205,18 +217,20 @@ export class SpaceFlight3dDirective implements OnInit, AfterViewInit {
   });
 
   ngOnInit(): void {
-    // Calculate total cycle duration
-    this.totalCycleDuration = this.flightPath().reduce(
-      (sum, wp) => sum + wp.duration,
-      0
-    );
+    // Calculate total cycle duration only if flight path is provided
+    const path = this.flightPath();
+    if (path && path.length > 0) {
+      this.totalCycleDuration = path.reduce((sum, wp) => sum + wp.duration, 0);
+    }
   }
 
   ngAfterViewInit(): void {
     // Get the Three.js object from the element
     this.object3D = this.elementRef.nativeElement as Object3D;
 
-    if (this.autoStart()) {
+    // Only start animation if flight path is provided and autoStart is enabled
+    const path = this.flightPath();
+    if (this.autoStart() && path && path.length > 0) {
       // Delay start if specified
       const delayMs = this.delay();
       if (delayMs > 0) {

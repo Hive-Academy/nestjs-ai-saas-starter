@@ -51,6 +51,10 @@ import {
   SpaceFlight3dDirective,
   type SpaceFlightWaypoint,
 } from '../../directives/space-flight-3d.directive';
+import {
+  Rotate3dDirective,
+  type RotateConfig,
+} from '../../directives/rotate-3d.directive';
 import { Colors3D } from '../../config/colors.config';
 
 @Component({
@@ -61,6 +65,7 @@ import { Colors3D } from '../../config/colors.config';
     Float3dDirective,
     Performance3dDirective,
     SpaceFlight3dDirective,
+    Rotate3dDirective,
   ],
   template: `
     @if (model(); as modelScene) {
@@ -81,12 +86,14 @@ import { Colors3D } from '../../config/colors.config';
       [rotationsPerCycle]="spaceFlightRotations()"
       [autoStart]="spaceFlightAutoStart()"
       [loop]="spaceFlightLoop()"
+      rotate3d
+      [rotateConfig]="rotateConfig()"
     />
     } @else {
     <!-- Loading state - optional placeholder -->
     @if (showLoadingPlaceholder()) {
     <ngt-mesh [position]="position()">
-      <ngt-box-geometry [args]="[0.5, 0.5, 0.5]" />
+      <ngt-box-geometry *args="[0.5, 0.5, 0.5]" />
       <ngt-mesh-standard-material [color]="baseColor()" [wireframe]="true" />
     </ngt-mesh>
     } }
@@ -130,6 +137,9 @@ export class GLTFModelComponent implements OnInit {
   readonly spaceFlightRotations = input<number>(8);
   readonly spaceFlightAutoStart = input<boolean>(true);
   readonly spaceFlightLoop = input<boolean>(true);
+
+  // Rotation animation configuration
+  readonly rotateConfig = input<RotateConfig | undefined>(undefined);
 
   // Loading state
   readonly showLoadingPlaceholder = input<boolean>(false);

@@ -5,6 +5,7 @@ import {
   input,
 } from '@angular/core';
 import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 /**
  * Value Propositions 3D Scene - Scroll-Driven Geometry Showcase
@@ -31,7 +32,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 @Component({
   selector: 'app-value-propositions-3d-scene',
   standalone: true,
-  imports: [],
+  imports: [NgtArgs],
   template: `
     <ngt-group>
       <!-- Ambient Light -->
@@ -55,7 +56,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-box-geometry [args]="[2, 2, 2]" />
+        <ngt-box-geometry *args="[2, 2, 2]" />
         <ngt-mesh-standard-material
           [color]="indigoColor"
           [emissive]="indigoColor"
@@ -71,7 +72,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-icosahedron-geometry [args]="[1.5, 0]" />
+        <ngt-icosahedron-geometry *args="[1.5, 0]" />
         <ngt-mesh-standard-material
           [color]="purpleColor"
           [emissive]="purpleColor"
@@ -88,7 +89,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-torus-geometry [args]="[1.2, 0.4, 16, 100]" />
+        <ngt-torus-geometry *args="[1.2, 0.4, 16, 100]" />
         <ngt-mesh-standard-material
           [color]="cyanColor"
           [emissive]="cyanColor"
@@ -104,7 +105,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-octahedron-geometry [args]="[1.5, 0]" />
+        <ngt-octahedron-geometry *args="[1.5, 0]" />
         <ngt-mesh-standard-material
           [color]="greenColor"
           [emissive]="greenColor"
@@ -120,7 +121,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-tetrahedron-geometry [args]="[1.5, 0]" />
+        <ngt-tetrahedron-geometry *args="[1.5, 0]" />
         <ngt-mesh-standard-material
           [color]="amberColor"
           [emissive]="amberColor"
@@ -136,7 +137,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-dodecahedron-geometry [args]="[1.5, 0]" />
+        <ngt-dodecahedron-geometry *args="[1.5, 0]" />
         <ngt-mesh-standard-material
           [color]="pinkColor"
           [emissive]="pinkColor"
@@ -152,7 +153,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-cylinder-geometry [args]="[1, 1, 2, 32]" />
+        <ngt-cylinder-geometry *args="[1, 1, 2, 32]" />
         <ngt-mesh-standard-material
           [color]="blueColor"
           [emissive]="blueColor"
@@ -168,7 +169,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-torus-knot-geometry [args]="[1, 0.3, 100, 16]" />
+        <ngt-torus-knot-geometry *args="[1, 0.3, 100, 16]" />
         <ngt-mesh-standard-material
           [color]="violetColor"
           [emissive]="violetColor"
@@ -184,7 +185,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-sphere-geometry [args]="[1.5, 32, 32]" />
+        <ngt-sphere-geometry *args="[1.5, 32, 32]" />
         <ngt-mesh-standard-material
           [color]="tealColor"
           [emissive]="tealColor"
@@ -200,7 +201,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-cone-geometry [args]="[1.2, 2.5, 32]" />
+        <ngt-cone-geometry *args="[1.2, 2.5, 32]" />
         <ngt-mesh-standard-material
           [color]="redColor"
           [emissive]="redColor"
@@ -216,7 +217,7 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         [rotation]="getRotation()"
         [scale]="getScale()"
       >
-        <ngt-capsule-geometry [args]="[0.6, 2, 4, 8]" />
+        <ngt-capsule-geometry *args="[0.6, 2, 4, 8]" />
         <ngt-mesh-standard-material
           [color]="cyanBrightColor"
           [emissive]="cyanBrightColor"
@@ -239,27 +240,27 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
         ]"
       >
         @switch (activeLibraryIndex()) { @case (0) {
-        <ngt-box-geometry [args]="[2, 2, 2]" />
+        <ngt-box-geometry *args="[2, 2, 2]" />
         } @case (1) {
-        <ngt-icosahedron-geometry [args]="[1.5, 0]" />
+        <ngt-icosahedron-geometry *args="[1.5, 0]" />
         } @case (2) {
-        <ngt-torus-geometry [args]="[1.2, 0.4, 16, 100]" />
+        <ngt-torus-geometry *args="[1.2, 0.4, 16, 100]" />
         } @case (3) {
-        <ngt-octahedron-geometry [args]="[1.5, 0]" />
+        <ngt-octahedron-geometry *args="[1.5, 0]" />
         } @case (4) {
-        <ngt-tetrahedron-geometry [args]="[1.5, 0]" />
+        <ngt-tetrahedron-geometry *args="[1.5, 0]" />
         } @case (5) {
-        <ngt-dodecahedron-geometry [args]="[1.5, 0]" />
+        <ngt-dodecahedron-geometry *args="[1.5, 0]" />
         } @case (6) {
-        <ngt-cylinder-geometry [args]="[1, 1, 2, 32]" />
+        <ngt-cylinder-geometry *args="[1, 1, 2, 32]" />
         } @case (7) {
-        <ngt-torus-knot-geometry [args]="[1, 0.3, 100, 16]" />
+        <ngt-torus-knot-geometry *args="[1, 0.3, 100, 16]" />
         } @case (8) {
-        <ngt-sphere-geometry [args]="[1.5, 32, 32]" />
+        <ngt-sphere-geometry *args="[1.5, 32, 32]" />
         } @case (9) {
-        <ngt-cone-geometry [args]="[1.2, 2.5, 32]" />
+        <ngt-cone-geometry *args="[1.2, 2.5, 32]" />
         } @case (10) {
-        <ngt-capsule-geometry [args]="[0.6, 2, 4, 8]" />
+        <ngt-capsule-geometry *args="[0.6, 2, 4, 8]" />
         } }
         <ngt-mesh-basic-material
           [color]="whiteColor"

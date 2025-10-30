@@ -29,7 +29,7 @@ import {
   viewChild,
   OnDestroy,
 } from '@angular/core';
-import { injectLoader } from 'angular-three';
+import { injectLoader, NgtArgs } from 'angular-three';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
@@ -38,7 +38,7 @@ import { Colors3D } from '../../config/colors.config';
 @Component({
   selector: 'app-planet',
   standalone: true,
-  imports: [],
+  imports: [NgtArgs],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <!-- Planet Sphere -->
@@ -49,7 +49,7 @@ import { Colors3D } from '../../config/colors.config';
       [castShadow]="true"
       [receiveShadow]="true"
     >
-      <ngt-sphere-geometry [args]="[radius(), segments(), segments()]" />
+      <ngt-sphere-geometry *args="[radius(), segments(), segments()]" />
       <!-- Always use standard material, texture loaded if URL provided -->
       <ngt-mesh-standard-material
         [color]="baseColor()"

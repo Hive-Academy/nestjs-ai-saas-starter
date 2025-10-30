@@ -72,12 +72,7 @@ import { Colors3D } from '../../config/colors.config';
 @Component({
   selector: 'app-svg-icon',
   standalone: true,
-  imports: [
-    NgtArgs,
-    Float3dDirective,
-    Performance3dDirective,
-    SpaceFlight3dDirective,
-  ],
+  imports: [NgtArgs, Float3dDirective, Performance3dDirective],
   template: `
     @if (svgGroup(); as group) {
     <ngt-primitive
@@ -92,17 +87,12 @@ import { Colors3D } from '../../config/colors.config';
       float3d
       [floatConfig]="floatConfig()"
       performance3d
-      spaceFlight3d
-      [flightPath]="spaceFlightPath()"
-      [rotationsPerCycle]="spaceFlightRotations()"
-      [autoStart]="spaceFlightAutoStart()"
-      [loop]="spaceFlightLoop()"
     />
     } @else if (isLoading()) {
     <!-- Loading placeholder -->
     @if (showLoadingPlaceholder()) {
     <ngt-mesh [position]="position()">
-      <ngt-box-geometry [args]="[0.5, 0.5, 0.1]" />
+      <ngt-box-geometry *args="[0.5, 0.5, 0.1]" />
       <ngt-mesh-standard-material [color]="color()" [wireframe]="true" />
     </ngt-mesh>
     } }
@@ -156,14 +146,6 @@ export class SVGIconComponent implements OnInit {
       }
     | undefined
   >(undefined);
-
-  // Space flight animation configuration
-  readonly spaceFlightPath = input<SpaceFlightWaypoint[] | undefined>(
-    undefined
-  );
-  readonly spaceFlightRotations = input<number>(8);
-  readonly spaceFlightAutoStart = input<boolean>(true);
-  readonly spaceFlightLoop = input<boolean>(true);
 
   // Loading state
   readonly showLoadingPlaceholder = input<boolean>(false);
@@ -236,7 +218,18 @@ export class SVGIconComponent implements OnInit {
       this.isLoading.set(true);
 
       const svgPath = this.svgPath();
-      const data = await this.loader.loadAsync(svgPath);
+
+      // Fetch SVG text and preprocess to handle 'currentColor'
+      const response = await fetch(svgPath);
+      let svgText = await response.text();
+
+      // Replace 'currentColor' with a default color to prevent Three.js parsing errors
+      // Use the component's configured color as hex string
+      const defaultColor = `#${this.color().toString(16).padStart(6, '0')}`;
+      svgText = svgText.replace(/currentColor/g, defaultColor);
+
+      // Parse the preprocessed SVG text
+      const data = this.loader.parse(svgText);
 
       const group = this.createGroupFromSVGData(data);
 
@@ -337,31 +330,26 @@ export class SVGIconComponent implements OnInit {
     const shouldPreserveColors = !this.colorOverride();
 
     // Check if path has a fill color from the SVG
-    if (shouldPreserveColors && path.userData?.style?.fill) {
-      // Parse SVG color (handles #RRGGBB format)
-      const svgColor = path.userData.style.fill;
-      if (typeof svgColor === 'string' && svgColor.startsWith('#')) {
-        materialColor = parseInt(svgColor.replace('#', '0x'), 16);
+    if (shouldPreserveColors) {
+      // SVGLoader stores color in path.color (Color object) or path.userData.style.fill
+      if (path.color) {
+        // path.color is a Three.js Color object
+        materialColor = path.color.getHex();
+      } else if (path.userData?.style?.fill) {
+        // Parse SVG color (handles #RRGGBB format)
+        const svgColor = path.userData.style.fill;
+
+        // Handle 'currentColor' - replace with component's color
+        if (svgColor === 'currentColor') {
+          materialColor = this.color();
+        } else if (typeof svgColor === 'string' && svgColor.startsWith('#')) {
+          materialColor = parseInt(svgColor.replace('#', '0x'), 16);
+        }
       }
     }
 
     return new MeshStandardMaterial({
       color: materialColor,
-      metalness: this.metalness(),
-      roughness: this.roughness(),
-      emissive: this.emissive(),
-      emissiveIntensity: this.emissiveIntensity(),
-      transparent: this.transparent(),
-      opacity: this.opacity(),
-    });
-  }
-
-  /**
-   * Create material with current settings
-   */
-  private createMaterial(): MeshStandardMaterial {
-    return new MeshStandardMaterial({
-      color: this.color(),
       metalness: this.metalness(),
       roughness: this.roughness(),
       emissive: this.emissive(),

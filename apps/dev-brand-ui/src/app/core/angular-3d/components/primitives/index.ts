@@ -6,3 +6,4 @@
 
 export { FloatingSphereComponent } from './floating-sphere.component';
 export { SVGIconComponent } from './svg-icon.component';
+export { InstancedParticleTextComponent } from './instanced-particle-text.component';

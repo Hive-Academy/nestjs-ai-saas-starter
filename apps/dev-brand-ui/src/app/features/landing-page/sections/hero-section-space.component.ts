@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.component';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.store';
+import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.component';
 
 @Component({
   selector: 'brand-hero-section-space',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
+  imports: [CommonModule, Scene3DComponent],
   template: `
     <div
       class="relative w-full h-screen flex flex-col overflow-hidden"
@@ -65,8 +64,8 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
       </div>
 
       <!-- DOM Content Overlay - Hero Text (COMMENTED OUT - Replaced with 3D Text in Scene) -->
-      <!--
-      <div
+
+      <!-- <div
         class="flex-1 flex flex-col items-center justify-center mb-5 z-10 pointer-events-none"
         scrollAnimation
         [scrollConfig]="{
@@ -105,8 +104,7 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
             </span>
           </h1>
         </div>
-      </div>
-      -->
+      </div> -->
     </div>
   `,
   styles: [

@@ -29,6 +29,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   ElementRef,
   input,
+  output,
   viewChild,
 } from '@angular/core';
 import {
@@ -110,6 +111,19 @@ export class OrbitControlsComponent {
   // Rotation speed
   readonly rotateSpeed = input<number>(1.0);
 
+  // ================================
+  // OUTPUTS - Events
+  // ================================
+
+  /**
+   * Emits whenever controls change (camera moves, zooms, rotates)
+   * Useful for monitoring camera distance and state
+   */
+  readonly controlsChange = output<{
+    distance: number;
+    controls: OrbitControls;
+  }>();
+
   constructor() {
     // Update controls in render loop (required when damping is enabled)
     injectBeforeRender(() => {
@@ -117,6 +131,10 @@ export class OrbitControlsComponent {
       if (controlsEl && this.enableDamping()) {
         const controls = controlsEl.nativeElement;
         controls.update();
+
+        // Emit change event with current distance
+        const distance = controls.object.position.distanceTo(controls.target);
+        this.controlsChange.emit({ distance, controls });
       }
     });
   }

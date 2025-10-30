@@ -66,6 +66,7 @@ import {
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 /**
  * FloatingSphere Component
@@ -76,7 +77,7 @@ import { Colors3D } from '../../config/colors.config';
 @Component({
   selector: 'app-floating-sphere',
   standalone: true,
-  imports: [Float3dDirective],
+  imports: [Float3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -90,7 +91,7 @@ import { Colors3D } from '../../config/colors.config';
     >
       <!-- Sphere geometry with reactive args -->
       <ngt-sphere-geometry
-        [args]="[radius(), widthSegments(), heightSegments()]"
+        *args="[radius(), widthSegments(), heightSegments()]"
       />
 
       <!-- Physical material for metallic appearance -->
@@ -111,7 +112,7 @@ import { Colors3D } from '../../config/colors.config';
       @if (glowConfig()) {
       <ngt-mesh>
         <ngt-sphere-geometry
-          [args]="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
+          *args="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
         />
         <ngt-mesh-standard-material
           [color]="glowConfig()!.color ?? emissive()"

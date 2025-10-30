@@ -40,11 +40,12 @@ import type { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
 import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 @Component({
   selector: 'app-box',
   standalone: true,
-  imports: [Float3dDirective, Performance3dDirective],
+  imports: [Float3dDirective, Performance3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -57,7 +58,7 @@ import { Colors3D } from '../../config/colors.config';
       [floatConfig]="floatConfig()"
       performance3d
     >
-      <ngt-box-geometry [args]="[width(), height(), depth()]" />
+      <ngt-box-geometry *args="[width(), height(), depth()]" />
 
       <ngt-mesh-standard-material
         [color]="color()"

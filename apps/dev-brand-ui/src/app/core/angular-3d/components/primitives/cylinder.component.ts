@@ -38,10 +38,12 @@ import {
 } from '@angular/core';
 import { Mesh } from 'three';
 import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 @Component({
   selector: 'app-cylinder',
   standalone: true,
+  imports: [NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -52,7 +54,7 @@ import { Colors3D } from '../../config/colors.config';
       [receiveShadow]="receiveShadow()"
     >
       <ngt-cylinder-geometry
-        [args]="[
+        *args="[
           radiusTop(),
           radiusBottom(),
           height(),

@@ -65,6 +65,7 @@ import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
 import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 /**
  * BackgroundCube Component
@@ -75,7 +76,7 @@ import { Colors3D } from '../../config/colors.config';
 @Component({
   selector: 'app-background-cube',
   standalone: true,
-  imports: [Float3dDirective, Performance3dDirective],
+  imports: [Float3dDirective, Performance3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -90,7 +91,7 @@ import { Colors3D } from '../../config/colors.config';
       [performanceConfig]="performanceConfig()"
     >
       <!-- Box geometry with reactive size -->
-      <ngt-box-geometry [args]="boxGeometryArgs()" />
+      <ngt-box-geometry *args="boxGeometryArgs()" />
 
       <!-- Lambert material for simple, performant rendering -->
       <ngt-mesh-lambert-material

@@ -21,6 +21,7 @@
  */
 
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
+import { OrbitControls } from 'three-stdlib';
 
 // Import space primitives
 import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
@@ -43,6 +44,12 @@ import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 import { SVGIconComponent } from '../../../../core/angular-3d/components/primitives/svg-icon.component';
 import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3d-positioning';
+import { InstancedParticleTextComponent } from '../../../../core/angular-3d/components/primitives';
+import { Rotate3dDirective } from '../../../../core/angular-3d/directives/rotate-3d.directive';
+import {
+  ScrollZoomCoordinatorDirective,
+  type ScrollZoomState,
+} from '../../../../core/angular-3d/directives';
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -56,9 +63,11 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     NebulaComponent,
     GLTFModelComponent,
     SmokeParticleTextComponent,
-    GlowParticleTextComponent,
     SVGIconComponent,
     SceneLightingComponent,
+    InstancedParticleTextComponent,
+    Rotate3dDirective,
+    ScrollZoomCoordinatorDirective,
   ],
   template: `
     <!-- ================================ -->
@@ -67,18 +76,26 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <!-- <ngt-color attach="background" *args="[backgroundColorHex]" /> -->
 
     <!-- ================================ -->
-    <!-- CAMERA CONTROLS (OrbitControls) -->
+    <!-- CAMERA CONTROLS (OrbitControls with Scroll Coordination) -->
     <!-- ================================ -->
     <!-- Click and drag to orbit around viewport center, scroll to zoom -->
+    <!-- When max zoom distance is reached, additional scroll triggers page scroll -->
     <app-orbit-controls
+      scrollZoomCoordinator
+      [orbitControls]="orbitControlsInstance"
       [target]="[0, 0, 0]"
       [enableDamping]="true"
       [dampingFactor]="0.05"
-      [enableZoom]="true"
+      [enableZoom]="isZoomEnabled"
       [minDistance]="5"
       [maxDistance]="50"
       [rotateSpeed]="0.5"
       [enablePan]="false"
+      [scrollThreshold]="0.5"
+      (controlsChange)="onControlsChange($event)"
+      (stateChange)="onScrollZoomStateChange($event)"
+      (scrollTransition)="onScrollTransition($event)"
+      (zoomEnabledChange)="onZoomEnabledChange($event)"
     />
 
     <!-- ================================ -->
@@ -90,12 +107,12 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <app-gltf-model
       [modelPath]="'/assets/3d/mini_robot.glb'"
       [position]="[3, 6, -8]"
-      [scale]="0.015"
+      [scale]="0.05"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.8"
-      [roughness]="0.2"
+      [emissiveIntensity]="0.2"
+      [metalness]="0.4"
+      [roughness]="0.6"
       [spaceFlightPath]="robot1FlightPath"
       [spaceFlightRotations]="4"
       [spaceFlightAutoStart]="true"
@@ -105,15 +122,15 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <!-- Robo Head - Flying through space (Smaller scale for new viewport) -->
     <app-gltf-model
       [modelPath]="'/assets/3d/robo_head/scene.gltf'"
-      [position]="[4, 0, -6]"
-      [scale]="0.25"
+      [position]="[4, 6, -6]"
+      [scale]="1"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [emissiveIntensity]="0.5"
-      [metalness]="0.9"
-      [roughness]="0.1"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.5"
+      [roughness]="0.5"
       [spaceFlightPath]="robot2FlightPath"
-      [spaceFlightRotations]="2"
+      [spaceFlightRotations]="4"
       [spaceFlightAutoStart]="true"
       [spaceFlightLoop]="true"
     />
@@ -121,62 +138,67 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <!-- ================================ -->
     <!-- REALISTIC EARTH PLANET (COMMENTED OUT - Replaced with 3D Text) -->
     <!-- ================================ -->
-    <!--
+
+    <app-gltf-model
+      [modelPath]="'/assets/3d/planet_earth/scene.gltf'"
+      [position]="planetPosition"
+      [scale]="2.3"
+      [rotation]="[0, 0, 0]"
+      [useDraco]="false"
+      [emissiveIntensity]="0.05"
+      [metalness]="0.2"
+      [roughness]="0.8"
+      rotate3d
+      [rotateConfig]="{
+        axis: 'y',
+        speed: 60,
+        direction: 1,
+        autoStart: true
+      }"
+    />
+
     <app-planet
-      [position]="[0, 0, 8.5]"
+      [position]="moonPosition"
       [radius]="darkPlanetRadius"
       [segments]="150"
-      [textureUrl]="'assets/earth.jpg'"
+      [textureUrl]="'assets/moon.jpg'"
       [baseColor]="darkPlanetBaseColor"
       [emissiveColor]="darkPlanetEmissiveColor"
       [emissiveIntensity]="darkPlanetEmissiveIntensity"
       [glowColor]="darkPlanetGlowColor"
       [glowIntensity]="darkPlanetGlowIntensity"
       [glowDistance]="20"
-      [rotationSpeed]="0.7"
+      [rotationSpeed]="0.9"
       [rotationAxis]="'y'"
     />
-    -->
 
-    <!-- ================================ -->
-    <!-- 3D TEXT ELEMENTS (Hero Section - 3 Lines) -->
-    <!-- ================================ -->
-
-    <!-- Top Text: "Build Production Grade AI Apps" (Indigo Glow) -->
-    <app-glow-particle-text
+    <app-instanced-particle-text
       text="Build Production Grade AI Apps"
       [position]="topTextPosition"
-      [fontSize]="100"
-      [particleDensity]="70"
-      [glowColor]="colors.neon.indigo.hex"
-      [glowIntensity]="4.0"
-      [pulseSpeed]="1.5"
-      [pulseAmount]="0.25"
+      [fontSize]="25"
+      [particleColor]="colors.material.gray.hex"
+      [opacity]="0.35"
+      [maxParticleScale]="0.04"
+      [particlesPerPixel]="3"
+      [blendMode]="'normal'"
+      [skipInitialGrowth]="true"
+      [particleGrowSpeed]="0.02"
+      [pulseSpeed]="0.005"
     />
 
-    <!-- Center Text: "With TypeScript Patterns" (White Smoke) -->
+    <!-- colors.accent.blueViolet.hex -->
+
+    <!-- Center Text: "With TypeScript Patterns" (White Smoke)-->
     <app-smoke-particle-text
-      text="With TypeScript Patterns"
-      [position]="centerTextPosition"
-      [fontSize]="180"
+      text="Hive Academy"
+      [position]="hiveAcademyPosition"
+      [fontSize]="40"
       [particleDensity]="60"
       [particleSize]="0.05"
       [smokeColor]="colors.material.white.hex"
       [opacity]="0.9"
       [driftSpeed]="0.015"
       [driftAmount]="0.04"
-    />
-
-    <!-- Bottom Text: "You Already Know" (Indigo Glow) -->
-    <app-glow-particle-text
-      text="You Already Know"
-      [position]="bottomTextPosition"
-      [fontSize]="100"
-      [particleDensity]="70"
-      [glowColor]="colors.neon.indigo.hex"
-      [glowIntensity]="4.0"
-      [pulseSpeed]="1.8"
-      [pulseAmount]="0.25"
     />
 
     <!-- ================================ -->
@@ -199,13 +221,20 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
     />
 
     <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) - Extra large and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/langchain.svg'"
       [position]="logoPositions.langchain"
-      [scale]="0.06"
+      [scale]="0.2"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
@@ -216,13 +245,20 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
     />
 
     <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) - Much bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
-      [scale]="0.05"
+      [scale]="0.02"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [emissiveIntensity]="0.5"
@@ -230,6 +266,13 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [roughness]="0.7"
       [castShadow]="true"
       [receiveShadow]="true"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
     />
 
     <!-- Neo4j Logo - Bottom Right (Official Blue) - Much bigger and rotated -->
@@ -247,6 +290,13 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
     />
 
     <!-- ================================ -->
@@ -275,44 +325,43 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
 
     <!-- MAIN NEBULA - Far background layer (much further back) -->
     <app-nebula
-      [particleCount]="120"
-      [radius]="40"
+      [particleCount]="60"
+      [radius]="20"
       [colorPalette]="['#ffffff', '#cccccc']"
-      [minSize]="20"
-      [maxSize]="40"
-      [maxOpacity]="0.2"
+      [minSize]="5"
+      [maxSize]="20"
       [flow]="false"
-      [position]="[-60, 0, -100]"
+      [position]="nebulaPosition"
     />
 
     <app-nebula-volumetric
-      [width]="120"
-      [height]="60"
-      [layers]="6"
-      [opacity]="0.5"
+      [width]="60"
+      [height]="20"
+      [layers]="2"
+      [opacity]="0.9"
       [primaryColor]="'#0088ff'"
       [secondaryColor]="'#00d4ff'"
       [tertiaryColor]="'#ff6bd4'"
       [enableFlow]="false"
       [flowSpeed]="0.8"
-      [noiseScale]="0.01"
-      [density]="1.1"
+      [noiseScale]="0.03"
+      [density]="1.2"
       [edgeSoftness]="0.5"
       [contrast]="1.0"
       [glowIntensity]="20"
       [colorIntensity]="2"
-      [position]="[-30, 0, -80]"
+      [position]="nebulaVolumetricPosition"
     />
 
     <!-- ================================ -->
     <!-- BLOOM POST-PROCESSING -->
     <!-- ================================ -->
-    <!-- Subtle bloom for atmospheric glow effect -->
+    <!-- Very subtle bloom to prevent eye strain -->
     <app-bloom-effect
-      [kernelSize]="5"
-      [luminanceThreshold]="0.4"
-      [luminanceSmoothing]="0.7"
-      [intensity]="1.8"
+      [kernelSize]="3"
+      [luminanceThreshold]="0.8"
+      [luminanceSmoothing]="0.5"
+      [intensity]="0.5"
     />
   `,
 })
@@ -325,6 +374,12 @@ export class HeroSpaceSceneComponent {
 
   // ✅ Color configuration for 3D elements
   readonly colors = Colors3D;
+
+  // ✅ Store orbit controls reference for scroll coordinator
+  orbitControlsInstance?: OrbitControls;
+
+  // ✅ Reactive zoom enable/disable for scroll coordination
+  isZoomEnabled = true;
 
   // ✅ Viewport positioner for CSS-like positioning in 3D
   // Camera is at Z=20, elements positioned at Z=0 plane (viewport plane)
@@ -363,14 +418,15 @@ export class HeroSpaceSceneComponent {
   // Hero section centered layout with 3 lines - closer together
   // ================================
 
+  readonly nebulaPosition = this.positioner.getPosition('top-right');
+
+  readonly nebulaVolumetricPosition = this.positioner.getPosition('top-right');
+
   /** Top text: "Build Production Grade AI Apps" - positioned at 38% from top */
   readonly topTextPosition = this.positioner.getPosition({
     x: '50%',
     y: '38%',
   });
-
-  /** Center text: "With TypeScript Patterns" - positioned at center (50%) */
-  readonly centerTextPosition = this.positioner.getPosition('center');
 
   /** Bottom text: "You Already Know" - positioned at 62% from top */
   readonly bottomTextPosition = this.positioner.getPosition({
@@ -378,6 +434,21 @@ export class HeroSpaceSceneComponent {
     y: '62%',
   });
 
+  /** Center text: "Hive Academy" - positioned at center (50%) */
+  readonly hiveAcademyPosition = this.positioner.getPosition(
+    { x: '100%', y: '50%' },
+    { offsetZ: -5 }
+  );
+
+  readonly planetPosition = this.positioner.getPosition(
+    { x: '50%', y: '50%' },
+    { offsetZ: -9 }
+  );
+
+  readonly moonPosition = this.positioner.getPosition('top-left', {
+    offsetX: 10,
+    offsetY: -5,
+  });
   // ================================
   // LOGO POSITIONS (Viewport-mapped)
   // ================================
@@ -388,60 +459,21 @@ export class HeroSpaceSceneComponent {
    */
   readonly logoPositions = {
     nestjs: this.positioner.getPosition(
-      { x: '85%', y: '20%' },
-      { offsetZ: -2 }
+      { x: '20%', y: '85%' },
+      { offsetZ: -15 }
     ), // Top right
     langchain: this.positioner.getPosition(
-      { x: '15%', y: '20%' },
-      { offsetZ: -2 }
+      { x: '40%', y: '85%' },
+      { offsetZ: -15 }
     ), // Top left
     chroma: this.positioner.getPosition(
-      { x: '15%', y: '80%' },
-      { offsetZ: -2 }
+      { x: '60%', y: '85%' },
+      { offsetZ: -15 }
     ), // Bottom left
-    neo4j: this.positioner.getPosition({ x: '85%', y: '80%' }, { offsetZ: -2 }), // Bottom right
-  };
-
-  /**
-   * Flight paths for each logo
-   * Each logo orbits in its own unique pattern
-   */
-  readonly logoFlightPaths = {
-    // NestJS - Circular orbit (clockwise)
-    nestjs: [
-      { position: [6, 4, 5], duration: 10, ease: 'easeInOut' },
-      { position: [6, -4, 5], duration: 10, ease: 'easeInOut' },
-      { position: [-6, -4, 5], duration: 10, ease: 'easeInOut' },
-      { position: [-6, 4, 5], duration: 10, ease: 'easeInOut' },
-      { position: [6, 4, 5], duration: 10, ease: 'easeInOut' },
-    ] as SpaceFlightWaypoint[],
-
-    // LangChain - Figure-8 pattern
-    langchain: [
-      { position: [-6, 4, 5], duration: 8, ease: 'easeInOut' },
-      { position: [0, 0, 7], duration: 8, ease: 'easeInOut' },
-      { position: [-6, -4, 5], duration: 8, ease: 'easeInOut' },
-      { position: [0, 0, 3], duration: 8, ease: 'easeInOut' },
-      { position: [-6, 4, 5], duration: 8, ease: 'easeInOut' },
-    ] as SpaceFlightWaypoint[],
-
-    // ChromaDB - Vertical wave pattern
-    chroma: [
-      { position: [-6, -4, 5], duration: 9, ease: 'easeInOut' },
-      { position: [-8, 0, 6], duration: 9, ease: 'easeInOut' },
-      { position: [-6, 4, 5], duration: 9, ease: 'easeInOut' },
-      { position: [-4, 0, 4], duration: 9, ease: 'easeInOut' },
-      { position: [-6, -4, 5], duration: 9, ease: 'easeInOut' },
-    ] as SpaceFlightWaypoint[],
-
-    // Neo4j - Horizontal wave pattern
-    neo4j: [
-      { position: [6, -4, 5], duration: 9, ease: 'easeInOut' },
-      { position: [8, -2, 6], duration: 9, ease: 'easeInOut' },
-      { position: [6, 0, 7], duration: 9, ease: 'easeInOut' },
-      { position: [4, -2, 4], duration: 9, ease: 'easeInOut' },
-      { position: [6, -4, 5], duration: 9, ease: 'easeInOut' },
-    ] as SpaceFlightWaypoint[],
+    neo4j: this.positioner.getPosition(
+      { x: '80%', y: '85%' },
+      { offsetZ: -15 }
+    ), // Bottom right
   };
 
   // ================================
@@ -473,11 +505,11 @@ export class HeroSpaceSceneComponent {
    */
   readonly robot2FlightPath: SpaceFlightWaypoint[] = [
     // Phase 1: Start deep behind and low
-    { position: [4, -3, -20], duration: 9, ease: 'easeOut' },
+    { position: [4, -3, -8], duration: 9, ease: 'easeOut' },
     // Phase 2: Emerge from behind, moving left and forward
-    { position: [-8, -5, 8], duration: 10, ease: 'easeInOut' },
+    { position: [-8, -5, -5], duration: 10, ease: 'easeInOut' },
     // Phase 3: Cross low to the right side
-    { position: [12, -4, 6], duration: 8, ease: 'easeInOut' },
+    { position: [12, -4, 16], duration: 8, ease: 'easeInOut' },
     // Phase 4: Dive deep and right
     { position: [10, -6, -15], duration: 11, ease: 'easeIn' },
     // Phase 5: Low sweep back to center-left
@@ -490,7 +522,7 @@ export class HeroSpaceSceneComponent {
   // LIGHTING (Theme-based getters)
   // ================================
   get ambientLightIntensity(): number {
-    return this.theme.lights.ambient.intensity * 0.25; // Increased to show Earth's colors
+    return this.theme.lights.ambient.intensity * 0.05; // Very low for space atmosphere
   }
 
   get ambientLightColor(): number {
@@ -498,7 +530,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get directionalLightIntensity(): number {
-    return this.theme.lights.directional.intensity * 2.0; // Strong sunlight to illuminate Earth
+    return this.theme.lights.directional.intensity * 0.3; // Much lower to prevent eye strain
   }
 
   get directionalLightColor(): number {
@@ -554,22 +586,14 @@ export class HeroSpaceSceneComponent {
     return `#${color.toString(16).padStart(6, '0')}`;
   }
 
-  // ================================
-  // PLANETS (Theme-based getters)
-  // ================================
-  // Camera is at z=45 looking toward NEGATIVE z direction
-  // Scene composition: Large planet filling ~60-70% of viewport
-  // Math: At FOV=65° and distance=65, visible height ≈ 76.5 units
-  // For 65% coverage: diameter ≈ 50 units, so radius ≈ 25 units
-
-  readonly darkPlanetRadius = 5.0; // Human-scale units for 55% viewport coverage
+  readonly darkPlanetRadius = 3.0; // Human-scale units for 55% viewport coverage
 
   get darkPlanetBaseColor(): number {
     return Colors3D.material.white.hex; // White base to let texture colors show naturally
   }
 
   get darkPlanetEmissiveColor(): number {
-    return Colors3D.planet.atmosphereBlue.hex; // Subtle blue atmospheric glow
+    return Colors3D.planet.orchid.hex; // Subtle blue atmospheric glow
   }
 
   get darkPlanetEmissiveIntensity(): number {
@@ -612,5 +636,59 @@ export class HeroSpaceSceneComponent {
 
   get nebulaFlow(): boolean {
     return this.theme.nebula.flow;
+  }
+
+  // ================================
+  // SCROLL-ZOOM COORDINATION
+  // ================================
+
+  /**
+   * Captures the OrbitControls instance from the controls component
+   * This is needed to pass it to the scroll coordinator directive
+   */
+  onControlsChange(event: { distance: number; controls: OrbitControls }): void {
+    // Store controls instance on first change event
+    if (!this.orbitControlsInstance) {
+      this.orbitControlsInstance = event.controls;
+      console.log('✅ OrbitControls instance captured for scroll coordinator');
+    }
+  }
+
+  /**
+   * Handles scroll-zoom state changes from the coordinator directive
+   * Logs state for debugging and can be used for UI feedback
+   */
+  onScrollZoomStateChange(state: ScrollZoomState): void {
+    // Optional: Add visual feedback when at zoom limits
+    if (state.atMaxDistance) {
+      console.log('📏 At max zoom distance - page scroll enabled');
+    } else if (state.atMinDistance) {
+      console.log('📏 At min zoom distance - page scroll enabled');
+    }
+
+    // Optional: Store state for UI indicators
+    // this.currentZoomState = state;
+  }
+
+  /**
+   * Handles transitions from 3D zoom to page scroll
+   * Can be used to trigger visual effects or analytics
+   */
+  onScrollTransition(event: { direction: 'up' | 'down' }): void {
+    console.log(`🔄 Transitioning to page scroll: ${event.direction}`);
+
+    // Optional: Add visual feedback or analytics
+    // if (event.direction === 'down') {
+    //   this.showScrollHint = true;
+    // }
+  }
+
+  /**
+   * Handles zoom enable/disable changes from the scroll coordinator
+   * Updates the reactive property that's bound to [enableZoom]
+   */
+  onZoomEnabledChange(enabled: boolean): void {
+    this.isZoomEnabled = enabled;
+    console.log(`🎮 Zoom ${enabled ? 'enabled' : 'disabled'} via binding`);
   }
 }
