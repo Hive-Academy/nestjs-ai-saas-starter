@@ -139,69 +139,44 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     -->
 
     <!-- ================================ -->
-    <!-- 3D TEXT ELEMENTS (Replacing HTML Text) -->
+    <!-- 3D TEXT ELEMENTS (Hero Section - 3 Lines) -->
     <!-- ================================ -->
 
-    <!-- Top Pill Text: "Build Production" (Glow Particle Text) -->
+    <!-- Top Text: "Build Production Grade AI Apps" (Indigo Glow) -->
     <app-glow-particle-text
-      text="Build Production"
+      text="Build Production Grade AI Apps"
       [position]="topTextPosition"
-      [fontSize]="30"
+      [fontSize]="60"
       [particleDensity]="70"
       [glowColor]="colors.neon.indigo.hex"
-      [glowIntensity]="3.5"
+      [glowIntensity]="4.0"
       [pulseSpeed]="1.5"
-      [pulseAmount]="0.2"
+      [pulseAmount]="0.25"
     />
 
-    <!-- Large Text: "Grade AI Apps" (Glow Particle Text) -->
-    <app-glow-particle-text
-      text="Grade AI Apps"
-      [position]="largeTextPosition"
-      [fontSize]="90"
-      [particleDensity]="70"
-      [glowColor]="colors.neon.purple.hex"
-      [glowIntensity]="3.5"
-      [pulseSpeed]="1.8"
-      [pulseAmount]="0.2"
-    />
-
-    <!-- Center Smoke Text: "With TypeScript" (Smoke Particle Text) -->
+    <!-- Center Text: "With TypeScript Patterns" (White Smoke) -->
     <app-smoke-particle-text
-      text="With TypeScript"
+      text="With TypeScript Patterns"
       [position]="centerTextPosition"
-      [fontSize]="90"
-      [particleDensity]="50"
-      [particleSize]="0.03"
+      [fontSize]="120"
+      [particleDensity]="60"
+      [particleSize]="0.04"
       [smokeColor]="colors.material.white.hex"
-      [opacity]="0.8"
-      [driftSpeed]="0.02"
-      [driftAmount]="0.05"
+      [opacity]="0.9"
+      [driftSpeed]="0.015"
+      [driftAmount]="0.04"
     />
 
-    <!-- Second Smoke Text: "Patterns" (Smoke Particle Text) -->
-    <app-smoke-particle-text
-      text="Patterns"
-      [position]="patternsTextPosition"
-      [fontSize]="90"
-      [particleDensity]="50"
-      [particleSize]="0.03"
-      [smokeColor]="colors.material.lightGray.hex"
-      [opacity]="0.8"
-      [driftSpeed]="0.02"
-      [driftAmount]="0.05"
-    />
-
-    <!-- Bottom Pill Text: "You Already Know" (Glow Particle Text) -->
+    <!-- Bottom Text: "You Already Know" (Indigo Glow) -->
     <app-glow-particle-text
       text="You Already Know"
       [position]="bottomTextPosition"
-      [fontSize]="30"
+      [fontSize]="60"
       [particleDensity]="70"
-      [glowColor]="colors.neon.cyan.hex"
-      [glowIntensity]="3.5"
-      [pulseSpeed]="2.0"
-      [pulseAmount]="0.2"
+      [glowColor]="colors.neon.indigo.hex"
+      [glowIntensity]="4.0"
+      [pulseSpeed]="1.8"
+      [pulseAmount]="0.25"
     />
 
     <!-- ================================ -->
@@ -209,11 +184,12 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <!-- ================================ -->
     <!-- Circular orbit pattern around the center -->
 
-    <!-- NestJS Logo - Top Right (Official Red) -->
+    <!-- NestJS Logo - Top Right (Official Red) - Bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/nestjs.svg'"
       [position]="logoPositions.nestjs"
-      [scale]="0.015"
+      [scale]="0.03"
+      [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
       [color]="colors.brand.nestjs.hex"
@@ -225,11 +201,12 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) -->
+    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) - Bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/langchain.svg'"
       [position]="logoPositions.langchain"
-      [scale]="0.015"
+      [scale]="0.03"
+      [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
       [color]="colors.brand.langchain.hex"
@@ -241,11 +218,12 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) -->
+    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) - Bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
-      [scale]="0.015"
+      [scale]="0.03"
+      [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [emissiveIntensity]="0.5"
       [metalness]="0.1"
@@ -254,11 +232,12 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- Neo4j Logo - Bottom Right (Official Blue) -->
+    <!-- Neo4j Logo - Bottom Right (Official Blue) - Bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/neo4j.svg'"
       [position]="logoPositions.neo4j"
-      [scale]="0.015"
+      [scale]="0.03"
+      [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
       [color]="colors.brand.neo4j.hex"
@@ -341,6 +320,9 @@ export class HeroSpaceSceneComponent {
   // ✅ Inject theme store for reactive theme support
   private readonly themeStore = inject(SpaceThemeStore);
 
+  // ✅ Math constant for template
+  readonly Math = Math;
+
   // ✅ Color configuration for 3D elements
   readonly colors = Colors3D;
 
@@ -378,33 +360,22 @@ export class HeroSpaceSceneComponent {
 
   // ================================
   // TEXT POSITIONS (Viewport-mapped)
+  // Hero section centered layout with 3 lines
   // ================================
 
-  /** Top text: "Build Production" - positioned at 15% from top */
+  /** Top text: "Build Production Grade AI Apps" - positioned at 35% from top */
   readonly topTextPosition = this.positioner.getPosition({
     x: '50%',
-    y: '15%',
+    y: '35%',
   });
 
-  /** Large text: "Grade AI Apps" - positioned slightly below top text */
-  readonly largeTextPosition = this.positioner.getPosition({
-    x: '50%',
-    y: '25%',
-  });
-
-  /** Center smoke text: "With TypeScript" - positioned at center */
+  /** Center text: "With TypeScript Patterns" - positioned at center (50%) */
   readonly centerTextPosition = this.positioner.getPosition('center');
 
-  /** Second smoke text: "Patterns" - positioned slightly below center */
-  readonly patternsTextPosition = this.positioner.getPosition({
-    x: '50%',
-    y: '55%',
-  });
-
-  /** Bottom text: "You Already Know" - positioned at 85% from top */
+  /** Bottom text: "You Already Know" - positioned at 65% from top */
   readonly bottomTextPosition = this.positioner.getPosition({
     x: '50%',
-    y: '85%',
+    y: '65%',
   });
 
   // ================================
