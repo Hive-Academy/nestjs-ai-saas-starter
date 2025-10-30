@@ -18,7 +18,7 @@
  *   text="HELLO"
  *   [fontSize]="100"
  *   [particleDensity]="50"
- *   [smokeColor]="0x9d7bd8"
+ *   [smokeColor]="Colors3D.neon.purple.hex"
  *   [driftSpeed]="0.02"
  * />
  * ```
@@ -44,6 +44,7 @@ import {
   CanvasTexture,
   Group,
 } from 'three';
+import { Colors3D } from '../../config/colors.config';
 
 // Register Three.js objects with angular-three
 extend({ Group, BufferGeometry, Points, PointsMaterial });
@@ -75,7 +76,7 @@ export class SmokeParticleTextComponent {
   readonly position = input<[number, number, number]>([0, 0, 0]);
   readonly fontSize = input<number>(100); // Canvas font size
   readonly particleDensity = input<number>(50); // Particles per 100 pixels
-  readonly smokeColor = input<number>(0x9d7bd8); // Purple like reference
+  readonly smokeColor = input<number>(Colors3D.neon.purple.hex); // Purple smoke
   readonly particleSize = input<number>(0.02);
   readonly opacity = input<number>(0.8);
   readonly driftSpeed = input<number>(0.02);

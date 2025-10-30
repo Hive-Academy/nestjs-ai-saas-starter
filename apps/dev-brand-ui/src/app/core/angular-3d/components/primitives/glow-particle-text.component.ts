@@ -18,7 +18,7 @@
  *   text="NEON"
  *   [fontSize]="100"
  *   [particleDensity]="70"
- *   [glowColor]="0x00ffff"
+ *   [glowColor]="Colors3D.neon.cyan.hex"
  *   [glowIntensity]="3.0"
  * />
  * ```
@@ -44,6 +44,7 @@ import {
   CanvasTexture,
   Group,
 } from 'three';
+import { Colors3D } from '../../config/colors.config';
 
 // Register Three.js objects with angular-three
 extend({ Group, BufferGeometry, Points, PointsMaterial });
@@ -74,7 +75,7 @@ export class GlowParticleTextComponent {
   readonly position = input<[number, number, number]>([0, 0, 0]);
   readonly fontSize = input<number>(100);
   readonly particleDensity = input<number>(70); // Higher density for neon effect
-  readonly glowColor = input<number>(0x00ffff); // Cyan neon
+  readonly glowColor = input<number>(Colors3D.neon.cyan.hex); // Cyan neon
   readonly glowIntensity = input<number>(3.0);
   readonly particleSize = input<number>(0.025);
   readonly pulseSpeed = input<number>(2.0);
