@@ -30,11 +30,13 @@ import { PlanetComponent } from '../../../../core/angular-3d/components/primitiv
 import { SmokeParticleTextComponent } from '../../../../core/angular-3d/components/primitives/smoke-particle-text.component';
 import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
 import { GlowParticleTextComponent } from '../../../../core/angular-3d/components/primitives/glow-particle-text.component';
+import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
 
 // Import theme store and types
 import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
 import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
+import type { SceneLighting } from '../../../../core/angular-3d/types/scene-lighting.types';
 
 import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
 import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
@@ -55,6 +57,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     SmokeParticleTextComponent,
     GlowParticleTextComponent,
     SVGIconComponent,
+    SceneLightingComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -81,23 +84,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- ================================ -->
     <!-- LIGHTING SETUP (Theme-based) -->
     <!-- ================================ -->
-    <!-- Very low ambient for deep space darkness -->
-    <ngt-ambient-light
-      [intensity]="ambientLightIntensity"
-      [color]="ambientLightColor"
-    />
-    <!-- Softer directional "sun" light from upper-right for darker planet -->
-    <ngt-directional-light
-      [position]="[30, 15, 25]"
-      [intensity]="directionalLightIntensity"
-      [color]="directionalLightColor"
-      [castShadow]="true"
-      [shadow-mapSize-width]="2048"
-      [shadow-mapSize-height]="2048"
-      [shadow-camera-near]="0.5"
-      [shadow-camera-far]="500"
-    />
-    <!-- Point light removed for realistic space lighting (directional only) -->
+    <app-scene-lighting [config]="spaceLighting" />
 
     <!-- Mini Robot #1 - Flying through space (Default path) - ORANGE THEME -->
     <app-gltf-model
@@ -228,68 +215,76 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- ================================ -->
     <!-- Circular orbit pattern around the center -->
 
-    <!-- NestJS Logo - Top Right (Red #E0234E) -->
+    <!-- NestJS Logo - Top Right (Official Red) -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/nestjs.svg'"
       [position]="logoPositions.nestjs"
       [scale]="0.015"
-      [extrudeDepth]="0.15"
-      [color]="0xe0234e"
-      [emissiveColor]="0xe0234e"
-      [emissiveIntensity]="0.8"
-      [metalness]="0.3"
-      [roughness]="0.5"
+      [extrudeDepth]="0.5"
+      [color]="colors.brand.nestjs.hex"
+      [emissiveColor]="colors.brand.nestjs.hex"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.2"
+      [roughness]="0.6"
+      [castShadow]="true"
+      [receiveShadow]="true"
       [spaceFlightPath]="logoFlightPaths.nestjs"
       [spaceFlightRotations]="0"
       [spaceFlightAutoStart]="true"
       [spaceFlightLoop]="true"
     />
 
-    <!-- LangChain Logo - Top Left (Green #1C3C3C) -->
+    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/langchain.svg'"
       [position]="logoPositions.langchain"
       [scale]="0.015"
-      [extrudeDepth]="0.15"
-      [color]="0x1c3c3c"
-      [emissiveColor]="0x10b981"
-      [emissiveIntensity]="0.8"
-      [metalness]="0.3"
-      [roughness]="0.5"
+      [extrudeDepth]="0.5"
+      [color]="colors.brand.langchain.hex"
+      [emissiveColor]="colors.accent.emerald.hex"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.2"
+      [roughness]="0.6"
+      [castShadow]="true"
+      [receiveShadow]="true"
       [spaceFlightPath]="logoFlightPaths.langchain"
       [spaceFlightRotations]="0"
       [spaceFlightAutoStart]="true"
       [spaceFlightLoop]="true"
     />
 
-    <!-- ChromaDB Logo - Bottom Left (Multi-color) -->
+    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
       [scale]="0.015"
-      [extrudeDepth]="0.15"
+      [extrudeDepth]="0.5"
       [color]="colors.material.white.hex"
-      [emissiveColor]="colors.neon.purple.hex"
-      [emissiveIntensity]="0.8"
-      [metalness]="0.3"
-      [roughness]="0.5"
+      [emissiveColor]="0xffde2d"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.1"
+      [roughness]="0.7"
+      [castShadow]="true"
+      [receiveShadow]="true"
       [spaceFlightPath]="logoFlightPaths.chroma"
       [spaceFlightRotations]="0"
       [spaceFlightAutoStart]="true"
       [spaceFlightLoop]="true"
     />
 
-    <!-- Neo4j Logo - Bottom Right (Blue #008CC1) -->
+    <!-- Neo4j Logo - Bottom Right (Official Blue) -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/neo4j.svg'"
       [position]="logoPositions.neo4j"
       [scale]="0.015"
-      [extrudeDepth]="0.15"
-      [color]="0x008cc1"
-      [emissiveColor]="0x008cc1"
-      [emissiveIntensity]="0.8"
-      [metalness]="0.3"
-      [roughness]="0.5"
+      [extrudeDepth]="0.5"
+      [color]="colors.brand.neo4j.hex"
+      [emissiveColor]="colors.brand.neo4j.hex"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.2"
+      [roughness]="0.6"
+      [castShadow]="true"
+      [receiveShadow]="true"
       [spaceFlightPath]="logoFlightPaths.neo4j"
       [spaceFlightRotations]="0"
       [spaceFlightAutoStart]="true"
@@ -391,6 +386,25 @@ export class HeroSpaceSceneComponent {
   // ✅ Computed getter for current theme
   get theme(): SpaceTheme {
     return this.themeStore.currentTheme();
+  }
+
+  // ✅ Scene lighting configuration (reactive to theme)
+  get spaceLighting(): SceneLighting {
+    return {
+      ambient: {
+        color: this.ambientLightColor,
+        intensity: this.ambientLightIntensity,
+      },
+      directional: [
+        {
+          color: this.directionalLightColor,
+          intensity: this.directionalLightIntensity,
+          position: [30, 15, 25],
+          castShadow: true,
+          shadowMapSize: 2048,
+        },
+      ],
+    };
   }
 
   // ================================

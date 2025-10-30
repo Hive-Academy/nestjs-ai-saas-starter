@@ -20,7 +20,9 @@ import { BoxComponent } from '../../../../core/angular-3d/components/primitives/
 import { Text3DComponent } from '../../../../core/angular-3d/components/primitives/text-3d.component';
 import { BackgroundCubesComponent } from '../../../../core/angular-3d/components/primitives/background-cubes.component';
 import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
+import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
 import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
+import type { SceneLighting } from '../../../../core/angular-3d/types/scene-lighting.types';
 
 @Component({
   selector: 'app-hero-scene-graph',
@@ -33,36 +35,12 @@ import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
     Text3DComponent,
     BackgroundCubesComponent,
     GLTFModelComponent,
+    SceneLightingComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <!-- Enhanced Lighting Setup with Multiple Colored Lights -->
-    <ngt-ambient-light [intensity]="1.2" [color]="whiteColor" />
-    <ngt-directional-light
-      [position]="[10, 10, 10]"
-      [intensity]="2.0"
-      [castShadow]="true"
-    />
-    <!-- Purple accent light from left -->
-    <ngt-point-light
-      [position]="[-10, 5, 5]"
-      [intensity]="1.5"
-      [color]="purpleColor"
-      [castShadow]="true"
-    />
-    <!-- Pink accent light from right -->
-    <ngt-point-light
-      [position]="[10, 5, 5]"
-      [intensity]="1.5"
-      [color]="pinkColor"
-      [castShadow]="true"
-    />
-    <!-- Cyan bottom light for depth -->
-    <ngt-point-light
-      [position]="[0, -5, 8]"
-      [intensity]="1.0"
-      [color]="cyanColor"
-    />
+    <!-- Scene Lighting Configuration -->
+    <app-scene-lighting [config]="heroLighting" />
 
     <!-- Tech Shapes - Using dedicated primitive components + Text Labels + Glow Effects -->
 
@@ -379,6 +357,44 @@ export class HeroSceneGraphComponent {
   readonly greenColor = Colors3D.accent.limeGreen.hex;
   readonly goldColor = Colors3D.accent.gold.hex;
   readonly whiteColor = Colors3D.material.white.hex;
+
+  // Scene lighting configuration
+  readonly heroLighting: SceneLighting = {
+    ambient: {
+      color: this.whiteColor,
+      intensity: 1.2,
+    },
+    directional: [
+      {
+        color: this.whiteColor,
+        intensity: 2.0,
+        position: [10, 10, 10],
+        castShadow: true,
+      },
+    ],
+    point: [
+      // Purple accent light from left
+      {
+        color: this.purpleColor,
+        intensity: 1.5,
+        position: [-10, 5, 5],
+        castShadow: true,
+      },
+      // Pink accent light from right
+      {
+        color: this.pinkColor,
+        intensity: 1.5,
+        position: [10, 5, 5],
+        castShadow: true,
+      },
+      // Cyan bottom light for depth
+      {
+        color: this.cyanColor,
+        intensity: 1.0,
+        position: [0, -5, 8],
+      },
+    ],
+  };
 
   // Particle colors using Colors3D CSS values
   readonly particleColors = [

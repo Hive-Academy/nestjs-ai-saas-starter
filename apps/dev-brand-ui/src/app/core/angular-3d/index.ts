@@ -6,6 +6,7 @@ export { BackgroundCubeComponent } from './components/primitives/background-cube
 export { Text3DComponent } from './components/primitives/text-3d.component';
 export { SmokeParticleTextComponent } from './components/primitives/smoke-particle-text.component';
 export { GlowParticleTextComponent } from './components/primitives/glow-particle-text.component';
+export { SceneLightingComponent } from './components/primitives/scene-lighting.component';
 
 // Directives - GSAP animation
 export { Float3dDirective } from './directives/float-3d.directive';
@@ -26,3 +27,14 @@ export {
   type Color3DHex,
   type Color3DCSS,
 } from './config/colors.config';
+
+// Types - Scene Lighting
+export {
+  type SceneLighting,
+  type AmbientLightConfig,
+  type DirectionalLightConfig,
+  type PointLightConfig,
+  type SpotLightConfig,
+  type HemisphereLightConfig,
+  LIGHTING_PRESETS,
+} from './types/scene-lighting.types';
