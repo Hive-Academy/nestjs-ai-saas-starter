@@ -19,8 +19,10 @@ describe('Text3DVolumetricComponent', () => {
     const fixture = TestBed.createComponent(Text3DVolumetricComponent);
     const component = fixture.componentInstance;
 
-    expect(component.size()).toBe(1);
-    expect(component.depth()).toBe(0.2);
-    expect(component.glowIntensity()).toBe(3.0);
+    expect(component.fontSize()).toBe(1.0);
+    expect(component.glowIntensity()).toBe(2.5);
+    expect(component.pulseSpeed()).toBe(0);
+    expect(component.anchorX()).toBe('center');
+    expect(component.anchorY()).toBe('middle');
   });
 });
