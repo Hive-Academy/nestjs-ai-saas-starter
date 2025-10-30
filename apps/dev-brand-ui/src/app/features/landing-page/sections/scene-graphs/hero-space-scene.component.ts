@@ -27,18 +27,19 @@ import { BloomEffectComponent } from '../../../../core/angular-3d/components/eff
 import { OrbitControlsComponent } from '../../../../core/angular-3d/components/orbit-controls.component';
 import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
 import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
-import { SmokeText3DComponent } from '../../../../core/angular-3d/components/primitives/smoke-text-3d.component';
+import { SmokeParticleTextComponent } from '../../../../core/angular-3d/components/primitives/smoke-particle-text.component';
 import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
-import { Text3DVolumetricComponent } from '../../../../core/angular-3d/components/primitives/text-3d-volumetric.component';
+import { GlowParticleTextComponent } from '../../../../core/angular-3d/components/primitives/glow-particle-text.component';
 
 // Import theme store and types
 import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
 import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
 
-import { GLTFModelComponent } from 'apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/gltf-model.component';
+import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
 import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
+import { SVGIconComponent } from '../../../../core/angular-3d/components/primitives/svg-icon.component';
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -51,8 +52,9 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     OrbitControlsComponent,
     NebulaComponent,
     GLTFModelComponent,
-    SmokeText3DComponent,
-    Text3DVolumetricComponent,
+    SmokeParticleTextComponent,
+    GlowParticleTextComponent,
+    SVGIconComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -69,9 +71,9 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [target]="[0, 0, 6.5]"
       [enableDamping]="true"
       [dampingFactor]="0.05"
-      [enableZoom]="false"
+      [enableZoom]="true"
       [minDistance]="0"
-      [maxDistance]="4.5"
+      [maxDistance]="45"
       [rotateSpeed]="0.8"
       [enablePan]="false"
     />
@@ -104,8 +106,6 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [scale]="0.03"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [colorOverride]="'#ff6b35'"
-      [emissiveColor]="'#ff4500'"
       [emissiveIntensity]="0.3"
       [metalness]="0.8"
       [roughness]="0.2"
@@ -122,8 +122,6 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [scale]="0.5"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [colorOverride]="'#00d4ff'"
-      [emissiveColor]="'#0088ff'"
       [emissiveIntensity]="0.5"
       [metalness]="0.9"
       [roughness]="0.1"
@@ -174,7 +172,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     <app-text-3d-volumetric
       text="Grade AI Apps"
       [position]="[-1.8, 2.1, 6.5]"
-      [size]="0.3"
+      [size]="0.9"
       [depth]="0.1"
       [bevelSize]="0.01"
       [bevelThickness]="0.02"
@@ -188,7 +186,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     <app-smoke-text-3d
       text="With TypeScript"
       [position]="[0, 0.3, 8]"
-      [fontSize]="80"
+      [fontSize]="0.9"
       [particleCount]="15000"
       [particleSize]="0.3"
       [smokeColor]="colors.material.white.hex"
@@ -201,7 +199,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     <app-smoke-text-3d
       text="Patterns"
       [position]="[0, -0.5, 8]"
-      [fontSize]="80"
+      [fontSize]="0.9"
       [particleCount]="12000"
       [particleSize]="0.3"
       [smokeColor]="colors.material.lightGray.hex"
@@ -223,6 +221,79 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [glowIntensity]="3.5"
       [pulseSpeed]="2.0"
       [pulseAmount]="0.2"
+    />
+
+    <!-- ================================ -->
+    <!-- TECH STACK LOGOS (SVG Icons) -->
+    <!-- ================================ -->
+    <!-- Circular orbit pattern around the center -->
+
+    <!-- NestJS Logo - Top Right (Red #E0234E) -->
+    <app-svg-icon
+      [svgPath]="'/assets/images/logos/nestjs.svg'"
+      [position]="logoPositions.nestjs"
+      [scale]="0.015"
+      [extrudeDepth]="0.15"
+      [color]="0xe0234e"
+      [emissiveColor]="0xe0234e"
+      [emissiveIntensity]="0.8"
+      [metalness]="0.3"
+      [roughness]="0.5"
+      [spaceFlightPath]="logoFlightPaths.nestjs"
+      [spaceFlightRotations]="0"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
+    />
+
+    <!-- LangChain Logo - Top Left (Green #1C3C3C) -->
+    <app-svg-icon
+      [svgPath]="'/assets/images/logos/langchain.svg'"
+      [position]="logoPositions.langchain"
+      [scale]="0.015"
+      [extrudeDepth]="0.15"
+      [color]="0x1c3c3c"
+      [emissiveColor]="0x10b981"
+      [emissiveIntensity]="0.8"
+      [metalness]="0.3"
+      [roughness]="0.5"
+      [spaceFlightPath]="logoFlightPaths.langchain"
+      [spaceFlightRotations]="0"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
+    />
+
+    <!-- ChromaDB Logo - Bottom Left (Multi-color) -->
+    <app-svg-icon
+      [svgPath]="'/assets/images/logos/chroma.svg'"
+      [position]="logoPositions.chroma"
+      [scale]="0.015"
+      [extrudeDepth]="0.15"
+      [color]="colors.material.white.hex"
+      [emissiveColor]="colors.neon.purple.hex"
+      [emissiveIntensity]="0.8"
+      [metalness]="0.3"
+      [roughness]="0.5"
+      [spaceFlightPath]="logoFlightPaths.chroma"
+      [spaceFlightRotations]="0"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
+    />
+
+    <!-- Neo4j Logo - Bottom Right (Blue #008CC1) -->
+    <app-svg-icon
+      [svgPath]="'/assets/images/logos/neo4j.svg'"
+      [position]="logoPositions.neo4j"
+      [scale]="0.015"
+      [extrudeDepth]="0.15"
+      [color]="0x008cc1"
+      [emissiveColor]="0x008cc1"
+      [emissiveIntensity]="0.8"
+      [metalness]="0.3"
+      [roughness]="0.5"
+      [spaceFlightPath]="logoFlightPaths.neo4j"
+      [spaceFlightRotations]="0"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
     />
 
     <!-- ================================ -->
@@ -321,6 +392,63 @@ export class HeroSpaceSceneComponent {
   get theme(): SpaceTheme {
     return this.themeStore.currentTheme();
   }
+
+  // ================================
+  // LOGO POSITIONS & FLIGHT PATHS
+  // ================================
+
+  /**
+   * Initial positions for tech stack logos
+   * Positioned in a circular pattern around the center text
+   */
+  readonly logoPositions = {
+    nestjs: [6, 4, 5] as const, // Top right
+    langchain: [-6, 4, 5] as const, // Top left
+    chroma: [-6, -4, 5] as const, // Bottom left
+    neo4j: [6, -4, 5] as const, // Bottom right
+  };
+
+  /**
+   * Flight paths for each logo
+   * Each logo orbits in its own unique pattern
+   */
+  readonly logoFlightPaths = {
+    // NestJS - Circular orbit (clockwise)
+    nestjs: [
+      { position: [6, 4, 5], duration: 10, ease: 'easeInOut' },
+      { position: [6, -4, 5], duration: 10, ease: 'easeInOut' },
+      { position: [-6, -4, 5], duration: 10, ease: 'easeInOut' },
+      { position: [-6, 4, 5], duration: 10, ease: 'easeInOut' },
+      { position: [6, 4, 5], duration: 10, ease: 'easeInOut' },
+    ] as SpaceFlightWaypoint[],
+
+    // LangChain - Figure-8 pattern
+    langchain: [
+      { position: [-6, 4, 5], duration: 8, ease: 'easeInOut' },
+      { position: [0, 0, 7], duration: 8, ease: 'easeInOut' },
+      { position: [-6, -4, 5], duration: 8, ease: 'easeInOut' },
+      { position: [0, 0, 3], duration: 8, ease: 'easeInOut' },
+      { position: [-6, 4, 5], duration: 8, ease: 'easeInOut' },
+    ] as SpaceFlightWaypoint[],
+
+    // ChromaDB - Vertical wave pattern
+    chroma: [
+      { position: [-6, -4, 5], duration: 9, ease: 'easeInOut' },
+      { position: [-8, 0, 6], duration: 9, ease: 'easeInOut' },
+      { position: [-6, 4, 5], duration: 9, ease: 'easeInOut' },
+      { position: [-4, 0, 4], duration: 9, ease: 'easeInOut' },
+      { position: [-6, -4, 5], duration: 9, ease: 'easeInOut' },
+    ] as SpaceFlightWaypoint[],
+
+    // Neo4j - Horizontal wave pattern
+    neo4j: [
+      { position: [6, -4, 5], duration: 9, ease: 'easeInOut' },
+      { position: [8, -2, 6], duration: 9, ease: 'easeInOut' },
+      { position: [6, 0, 7], duration: 9, ease: 'easeInOut' },
+      { position: [4, -2, 4], duration: 9, ease: 'easeInOut' },
+      { position: [6, -4, 5], duration: 9, ease: 'easeInOut' },
+    ] as SpaceFlightWaypoint[],
+  };
 
   // ================================
   // ROBOT FLIGHT PATHS

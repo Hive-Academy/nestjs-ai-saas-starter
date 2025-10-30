@@ -18,3 +18,4 @@
 | TASK_2025_028 | Website Sections Re-styling                             | ✅ Complete                                                     | Feature       | P1-High     | XL     | 2025-10-27 | 2025-10-27          |            | feature/028 |
 | TASK_2025_029 | LangGraph Memory Integration Refactoring (5 Priorities) | 🔄 Active (Architecture Complete - Ready for Decomposition)     | Refactoring   | P0-Critical | XL     | 2025-10-29 | 2025-10-29          |            | feature/029 |
 | TASK_2025_030 | Angular 3D Color System - Centralized Configuration     | 📋 Planned (Ready for Implementation)                           | Refactoring   | P2-Medium   | M      | 2025-10-29 | 2025-10-29          |            | feature/030 |
+| TASK_2025_031 | Troika Text Components - Remove Broken & Create New     | 🔄 Active (Architecture Complete)                               | Refactoring   | P2-Medium   | M      | 2025-10-30 | 2025-10-30          |            | feature/031 |
