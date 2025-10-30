@@ -59,7 +59,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     SVGIconComponent,
     SceneLightingComponent,
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  schemas: [],
   template: `
     <!-- ================================ -->
     <!-- SCENE BACKGROUND COLOR -->
@@ -142,68 +142,60 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- 3D TEXT ELEMENTS (Replacing HTML Text) -->
     <!-- ================================ -->
 
-    <!-- Top Pill Text: "Build Production Grade AI Applications" (3D Volumetric Glow) -->
-    <app-text-3d-volumetric
+    <!-- Top Pill Text: "Build Production Grade AI Applications" (Glow Particle Text) -->
+    <app-glow-particle-text
       text="Build Production"
       [position]="[-2, 2.5, 6.5]"
-      [size]="0.3"
-      [depth]="0.1"
-      [bevelSize]="0.01"
-      [bevelThickness]="0.02"
+      [fontSize]="30"
+      [particleDensity]="70"
       [glowColor]="colors.neon.indigo.hex"
       [glowIntensity]="3.5"
       [pulseSpeed]="1.5"
       [pulseAmount]="0.2"
     />
 
-    <app-text-3d-volumetric
+    <app-glow-particle-text
       text="Grade AI Apps"
       [position]="[-1.8, 2.1, 6.5]"
-      [size]="0.9"
-      [depth]="0.1"
-      [bevelSize]="0.01"
-      [bevelThickness]="0.02"
+      [fontSize]="90"
+      [particleDensity]="70"
       [glowColor]="colors.neon.purple.hex"
       [glowIntensity]="3.5"
       [pulseSpeed]="1.8"
       [pulseAmount]="0.2"
     />
 
-    <!-- Center Smoke Text: "With TypeScript Patterns" (Particle Smoke) -->
-    <app-smoke-text-3d
+    <!-- Center Smoke Text: "With TypeScript Patterns" (Smoke Particle Text) -->
+    <app-smoke-particle-text
       text="With TypeScript"
       [position]="[0, 0.3, 8]"
-      [fontSize]="0.9"
-      [particleCount]="15000"
-      [particleSize]="0.3"
+      [fontSize]="90"
+      [particleDensity]="50"
+      [particleSize]="0.03"
       [smokeColor]="colors.material.white.hex"
-      [baseOpacity]="1.0"
-      [turbulenceSpeed]="0.1"
-      [turbulenceScale]="0.2"
-      [particleLifespan]="10"
+      [opacity]="0.8"
+      [driftSpeed]="0.02"
+      [driftAmount]="0.05"
     />
 
-    <app-smoke-text-3d
+    <app-smoke-particle-text
       text="Patterns"
       [position]="[0, -0.5, 8]"
-      [fontSize]="0.9"
-      [particleCount]="12000"
-      [particleSize]="0.3"
+      [fontSize]="90"
+      [particleDensity]="50"
+      [particleSize]="0.03"
       [smokeColor]="colors.material.lightGray.hex"
-      [baseOpacity]="1.0"
-      [turbulenceSpeed]="0.12"
-      [turbulenceScale]="0.22"
-      [particleLifespan]="10"
+      [opacity]="0.8"
+      [driftSpeed]="0.02"
+      [driftAmount]="0.05"
     />
 
-    <!-- Bottom Pill Text: "You Already Know" (3D Volumetric Glow) -->
-    <app-text-3d-volumetric
+    <!-- Bottom Pill Text: "You Already Know" (Glow Particle Text) -->
+    <app-glow-particle-text
       text="You Already Know"
       [position]="[-1.5, -2, 6.5]"
-      [size]="0.3"
-      [depth]="0.1"
-      [bevelSize]="0.01"
-      [bevelThickness]="0.02"
+      [fontSize]="30"
+      [particleDensity]="70"
       [glowColor]="colors.neon.cyan.hex"
       [glowIntensity]="3.5"
       [pulseSpeed]="2.0"
@@ -222,7 +214,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [scale]="0.015"
       [extrudeDepth]="0.5"
       [color]="colors.brand.nestjs.hex"
-      [emissiveColor]="colors.brand.nestjs.hex"
+      [emissive]="colors.brand.nestjs.hex"
       [emissiveIntensity]="0.3"
       [metalness]="0.2"
       [roughness]="0.6"
@@ -241,7 +233,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [scale]="0.015"
       [extrudeDepth]="0.5"
       [color]="colors.brand.langchain.hex"
-      [emissiveColor]="colors.accent.emerald.hex"
+      [emissive]="colors.accent.emerald.hex"
       [emissiveIntensity]="0.4"
       [metalness]="0.2"
       [roughness]="0.6"
@@ -260,7 +252,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [scale]="0.015"
       [extrudeDepth]="0.5"
       [color]="colors.material.white.hex"
-      [emissiveColor]="0xffde2d"
+      [emissive]="colors.brand.chromadbEmissive.hex"
       [emissiveIntensity]="0.5"
       [metalness]="0.1"
       [roughness]="0.7"
@@ -279,7 +271,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [scale]="0.015"
       [extrudeDepth]="0.5"
       [color]="colors.brand.neo4j.hex"
-      [emissiveColor]="colors.brand.neo4j.hex"
+      [emissive]="colors.brand.neo4j.hex"
       [emissiveIntensity]="0.3"
       [metalness]="0.2"
       [roughness]="0.6"
@@ -340,7 +332,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [colorPalette]="['#ffffff', '#cccccc']"
       [minSize]="40"
       [maxSize]="80"
-      [opacity]="0.2"
+      [maxOpacity]="0.3"
       [flow]="false"
       [position]="[-180, 0, -250]"
     />
