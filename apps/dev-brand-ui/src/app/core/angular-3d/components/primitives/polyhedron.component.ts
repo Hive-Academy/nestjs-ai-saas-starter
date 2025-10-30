@@ -43,6 +43,7 @@ import {
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
+import { Colors3D } from '../../config/colors.config';
 
 export type PolyhedronType =
   | 'icosahedron'
@@ -107,10 +108,10 @@ export class PolyhedronComponent implements OnInit {
   readonly detail = input<number>(0); // 0 = flat faces, higher = more subdivisions
 
   // Material properties
-  readonly color = input<number>(0x8a2be2);
+  readonly color = input<number>(Colors3D.accent.blueViolet.hex);
   readonly metalness = input<number>(0.7);
   readonly roughness = input<number>(0.2);
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0);
   readonly transparent = input<boolean>(false);
   readonly opacity = input<number>(1.0);

@@ -37,6 +37,7 @@ import {
   OnInit,
 } from '@angular/core';
 import { Mesh } from 'three';
+import { Colors3D } from '../../config/colors.config';
 
 @Component({
   selector: 'app-cylinder',
@@ -95,7 +96,7 @@ export class CylinderComponent implements OnInit {
   readonly thetaLength = input<number>(Math.PI * 2);
 
   // Material properties
-  readonly color = input<number>(0x00ff00);
+  readonly color = input<number>(Colors3D.accent.limeGreen.hex);
   readonly metalness = input<number>(0.5);
   readonly roughness = input<number>(0.5);
   readonly transparent = input<boolean>(false);

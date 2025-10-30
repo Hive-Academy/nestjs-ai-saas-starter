@@ -2,9 +2,10 @@
  * HeroSceneGraphComponent - Hero Section 3D Background Scene
  *
  * Renders the 3D background elements for the hero section:
- * - Lighting setup (ambient + directional + point)
+ * - Lighting setup (ambient + directional + point + spotlight)
  * - Floating spheres with GSAP animations
  * - Animated background cubes via BackgroundCubesComponent
+ * - Mini Robot GLTF model (center stage)
  * - Particle system
  *
  * DOM content (text, badges, buttons) is rendered as HTML overlay, not 3D meshes.
@@ -18,6 +19,8 @@ import { TorusComponent } from '../../../../core/angular-3d/components/primitive
 import { BoxComponent } from '../../../../core/angular-3d/components/primitives/box.component';
 import { Text3DComponent } from '../../../../core/angular-3d/components/primitives/text-3d.component';
 import { BackgroundCubesComponent } from '../../../../core/angular-3d/components/primitives/background-cubes.component';
+import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
+import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 
 @Component({
   selector: 'app-hero-scene-graph',
@@ -29,6 +32,7 @@ import { BackgroundCubesComponent } from '../../../../core/angular-3d/components
     BoxComponent,
     Text3DComponent,
     BackgroundCubesComponent,
+    GLTFModelComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -220,6 +224,34 @@ import { BackgroundCubesComponent } from '../../../../core/angular-3d/components
       }"
     />
 
+    <!-- Mini Robot GLTF Model - CENTER STAGE -->
+    <app-gltf-model
+      [modelPath]="'/assets/3d/mini_robot.glb'"
+      [position]="[0, -1, -5]"
+      [scale]="0.005"
+      [rotation]="[0, 0, 0]"
+      [castShadow]="true"
+      [receiveShadow]="true"
+      [autoCenter]="false"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Spotlight for the robot -->
+    <ngt-spot-light
+      [position]="[0, 5, 0]"
+      [intensity]="1.5"
+      [color]="whiteColor"
+      [angle]="0.6"
+      [penumbra]="0.5"
+      [castShadow]="true"
+      [target-position]="[0, -1, -5]"
+    />
+
     <!-- ================================ -->
     <!-- FLOATING TECH KEYWORDS (Far Background Layer) -->
     <!-- Positioned much further back (z: -15 to -20) and near edges for depth -->
@@ -339,33 +371,33 @@ import { BackgroundCubesComponent } from '../../../../core/angular-3d/components
   `,
 })
 export class HeroSceneGraphComponent {
-  // Color constants (hex literals not allowed in Angular templates)
-  readonly ambientColor = 0x404080;
-  readonly purpleColor = 0x8a2be2;
-  readonly pinkColor = 0xff69b4;
-  readonly cyanColor = 0x00bfff;
-  readonly greenColor = 0x32cd32;
-  readonly goldColor = 0xffd700;
-  readonly whiteColor = 0xffffff;
+  // Color constants using Colors3D configuration
+  readonly ambientColor = Colors3D.space.ambientBlue.hex;
+  readonly purpleColor = Colors3D.neon.purple.hex;
+  readonly pinkColor = Colors3D.accent.hotPink.hex;
+  readonly cyanColor = Colors3D.accent.deepSkyBlue.hex;
+  readonly greenColor = Colors3D.accent.limeGreen.hex;
+  readonly goldColor = Colors3D.accent.gold.hex;
+  readonly whiteColor = Colors3D.material.white.hex;
 
-  // Particle colors - brighter/more visible colors for better contrast
+  // Particle colors using Colors3D CSS values
   readonly particleColors = [
-    '#8a2be2', // Bright purple
-    '#9b59d6', // Medium bright purple
-    '#7b3ab3', // Visible purple
-    '#a960ee', // Light purple
-    '#6a2ba7', // Deep purple (but still visible)
+    Colors3D.neon.purple.css,
+    Colors3D.neon.indigo.css,
+    Colors3D.accent.blueViolet.css,
+    Colors3D.neon.cyan.css,
+    Colors3D.accent.deepPurple.css,
   ];
 
-  // Cube colors - brighter colors matching the hero theme
+  // Cube colors using Colors3D hex values
   readonly cubeColors = [
-    0x8a2be2, // Bright purple (matches AI icon)
-    0xff69b4, // Hot pink (matches Network icon)
-    0x00bfff, // Deep sky blue (matches Database icon)
-    0x9b59d6, // Medium purple
-    0xba55d3, // Medium orchid
-    0x7b68ee, // Medium slate blue
-    0x6a5acd, // Slate blue
-    0x4169e1, // Royal blue
+    Colors3D.neon.purple.hex,
+    Colors3D.accent.hotPink.hex,
+    Colors3D.accent.deepSkyBlue.hex,
+    Colors3D.neon.indigo.hex,
+    Colors3D.accent.mediumOrchid.hex,
+    Colors3D.accent.mediumSlateBlue.hex,
+    Colors3D.accent.slateBlue.hex,
+    Colors3D.accent.royalBlue.hex,
   ];
 }

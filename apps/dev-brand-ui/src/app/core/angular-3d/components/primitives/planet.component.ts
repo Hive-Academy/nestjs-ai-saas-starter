@@ -33,6 +33,7 @@ import { injectLoader } from 'angular-three';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
+import { Colors3D } from '../../config/colors.config';
 
 @Component({
   selector: 'app-planet',
@@ -93,14 +94,14 @@ export class PlanetComponent implements AfterViewInit, OnDestroy {
   );
 
   // Material properties
-  readonly baseColor = input<number>(0xcccccc);
-  readonly emissiveColor = input<number>(0x888888);
+  readonly baseColor = input<number>(Colors3D.material.lightGray.hex);
+  readonly emissiveColor = input<number>(Colors3D.material.mediumGray.hex);
   readonly emissiveIntensity = input<number>(0.2);
   readonly metalness = input<number>(0.3);
   readonly roughness = input<number>(0.7);
 
   // Glow effect
-  readonly glowColor = input<number>(0xffffff);
+  readonly glowColor = input<number>(Colors3D.material.white.hex);
   readonly glowIntensity = input<number>(0.8);
   readonly glowDistance = input<number>(15);
 

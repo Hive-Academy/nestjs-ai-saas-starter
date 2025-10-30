@@ -65,6 +65,7 @@ import {
 
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
+import { Colors3D } from '../../config/colors.config';
 
 /**
  * FloatingSphere Component
@@ -143,7 +144,7 @@ export class FloatingSphereComponent implements OnInit {
   readonly heightSegments = input<number>(32);
 
   // Material properties - Physical Material for metallic appearance
-  readonly color = input<number>(0xff0000);
+  readonly color = input<number>(Colors3D.neon.red.hex);
   readonly metalness = input<number>(0.8);
   readonly roughness = input<number>(0.2);
   readonly clearcoat = input<number>(1.0);
@@ -153,7 +154,7 @@ export class FloatingSphereComponent implements OnInit {
   readonly thickness = input<number>(0.5);
 
   // Emissive properties for glow effect
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0.2);
 
   // Shadow configuration

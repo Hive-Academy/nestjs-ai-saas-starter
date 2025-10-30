@@ -50,7 +50,7 @@ import { CTASectionComponent } from './sections/cta-section.component';
     <!-- Hero Section Toggle Button (Top Left) -->
     <button
       (click)="toggleHeroVersion()"
-      class="fixed top-6 left-6 z-[1000] px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-black/60 transition-all duration-300 shadow-lg"
+      class="fixed top-4 right-6 z-[1000] px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-black/60 transition-all duration-300 shadow-lg"
     >
       {{ useSpaceHero() ? '🌌 Space' : '☀️ Sky' }} Hero
       <span class="text-xs opacity-70 ml-2">Click to switch</span>

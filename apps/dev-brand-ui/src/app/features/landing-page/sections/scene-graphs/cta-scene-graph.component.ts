@@ -23,6 +23,7 @@ import {
 import { extend } from 'angular-three';
 import { AmbientLight, DirectionalLight } from 'three';
 import { PolyhedronComponent } from '../../../../core/angular-3d/components/primitives/polyhedron.component';
+import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 
 // Register Three.js lights as Angular Three components
 extend({ AmbientLight, DirectionalLight });
@@ -106,6 +107,6 @@ extend({ AmbientLight, DirectionalLight });
   `,
 })
 export class CTASceneGraphComponent {
-  // Accent color matching design spec (0x6366F1 = accent-primary)
-  readonly accentColor = 0x6366f1;
+  // Accent color using Colors3D configuration (accent-primary)
+  readonly accentColor = Colors3D.neon.indigo.hex;
 }

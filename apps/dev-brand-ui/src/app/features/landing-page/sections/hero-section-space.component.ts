@@ -25,7 +25,7 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
 
       <!-- Theme Switcher - Top Right Corner -->
       <div
-        class="absolute top-6 right-6 z-20 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-3 shadow-2xl"
+        class="absolute top-16 right-6 max-w-18  z-20 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-3 shadow-2xl"
       >
         <div class="text-white text-xs font-medium mb-2 px-2 opacity-70">
           Space Theme
@@ -64,7 +64,8 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
         </div>
       </div>
 
-      <!-- DOM Content Overlay - Hero Text -->
+      <!-- DOM Content Overlay - Hero Text (COMMENTED OUT - Replaced with 3D Text in Scene) -->
+      <!--
       <div
         class="flex-1 flex flex-col items-center justify-center mb-5 z-10 pointer-events-none"
         scrollAnimation
@@ -80,7 +81,6 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
         <div
           class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title -->
           <h1 class="font-bold leading-tight animate-fade-in-up space-y-3">
             <span
               class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
@@ -106,6 +106,7 @@ import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.s
           </h1>
         </div>
       </div>
+      -->
     </div>
   `,
   styles: [
@@ -215,9 +216,9 @@ export class HeroSectionSpaceComponent {
   readonly sceneGraph = HeroSpaceSceneComponent;
 
   // Camera configuration for 3D scene
-  // Camera at z=12 looking toward origin (where planet is at z=0)
+  // Camera at z=60 looking toward origin (where planet is at z=0)
   readonly cameraConfig = {
-    position: [0, 0, 12] as [number, number, number],
+    position: [0, 0, 45] as [number, number, number],
     fov: 75,
     near: 0.1,
     far: 1000,

@@ -64,6 +64,7 @@ import {
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
+import { Colors3D } from '../../config/colors.config';
 
 /**
  * BackgroundCube Component
@@ -123,10 +124,10 @@ export class BackgroundCubeComponent implements OnInit {
   readonly depthSegments = input<number>(1);
 
   // Material properties - Lambert for simple lighting
-  readonly color = input<number>(0x4a90e2);
+  readonly color = input<number>(Colors3D.accent.blue.hex);
   readonly transparent = input<boolean>(false);
   readonly opacity = input<number>(1.0);
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0);
 
   // Shadow configuration

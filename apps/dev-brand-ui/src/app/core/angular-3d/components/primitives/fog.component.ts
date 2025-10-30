@@ -30,6 +30,7 @@
  */
 
 import { Component, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
+import { Colors3D } from '../../config/colors.config';
 
 @Component({
   selector: 'app-fog',
@@ -50,7 +51,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, input } from '@angular/core';
 export class FogComponent {
   // Fog configuration inputs (signal-based)
   readonly fogType = input<'linear' | 'exponential'>('exponential');
-  readonly color = input<number>(0xcccccc);
+  readonly color = input<number>(Colors3D.material.lightGray.hex);
 
   // Linear fog parameters (THREE.Fog)
   readonly near = input<number>(10);

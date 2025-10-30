@@ -23,19 +23,21 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
 
 // Import space primitives
-import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
-import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
-import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
-import { FogComponent } from '../../../../core/angular-3d/components/primitives/fog.component';
 import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
 import { OrbitControlsComponent } from '../../../../core/angular-3d/components/orbit-controls.component';
+import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
+import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
+import { SmokeText3DComponent } from '../../../../core/angular-3d/components/primitives/smoke-text-3d.component';
+import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
+import { Text3DVolumetricComponent } from '../../../../core/angular-3d/components/primitives/text-3d-volumetric.component';
 
 // Import theme store and types
+import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
 import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
 
-import { Float3dDirective } from '../../../../core/angular-3d';
-import { Glow3dDirective } from '../../../../core/angular-3d/directives/glow-3d.directive';
+import { GLTFModelComponent } from 'apps/dev-brand-ui/src/app/core/angular-3d/components/primitives/gltf-model.component';
+import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 
 @Component({
@@ -45,10 +47,12 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     PlanetComponent,
     StarFieldEnhancedComponent,
     NebulaVolumetricComponent,
-    FogComponent,
     BloomEffectComponent,
     OrbitControlsComponent,
     NebulaComponent,
+    GLTFModelComponent,
+    SmokeText3DComponent,
+    Text3DVolumetricComponent,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
@@ -62,7 +66,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     <!-- ================================ -->
     <!-- Click and drag to orbit around planet, scroll to zoom -->
     <app-orbit-controls
-      [target]="darkPlanetPosition"
+      [target]="[0, 0, 6.5]"
       [enableDamping]="true"
       [dampingFactor]="0.05"
       [enableZoom]="false"
@@ -93,25 +97,48 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
     />
     <!-- Point light removed for realistic space lighting (directional only) -->
 
-    <!-- ================================ -->
-    <!-- ATMOSPHERIC FOG (Theme-based) -->
-    <!-- ================================ -->
-    @if (fogEnabled) {
-    <app-fog
-      attach="fog"
-      [fogType]="fogType"
-      [color]="fogColor"
-      [density]="fogDensity"
+    <!-- Mini Robot #1 - Flying through space (Default path) - ORANGE THEME -->
+    <app-gltf-model
+      [modelPath]="'/assets/3d/mini_robot.glb'"
+      [position]="[7, 15, -20]"
+      [scale]="0.03"
+      [rotation]="[0, 0, 0]"
+      [useDraco]="false"
+      [colorOverride]="'#ff6b35'"
+      [emissiveColor]="'#ff4500'"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.8"
+      [roughness]="0.2"
+      [spaceFlightPath]="robot1FlightPath"
+      [spaceFlightRotations]="4"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
     />
-    }
+
+    <!-- Robo Head - Flying through space (Custom path) - CYAN THEME -->
+    <app-gltf-model
+      [modelPath]="'/assets/3d/robo_head/scene.gltf'"
+      [position]="[10, 1, 5]"
+      [scale]="0.5"
+      [rotation]="[0, 0, 0]"
+      [useDraco]="false"
+      [colorOverride]="'#00d4ff'"
+      [emissiveColor]="'#0088ff'"
+      [emissiveIntensity]="0.5"
+      [metalness]="0.9"
+      [roughness]="0.1"
+      [spaceFlightPath]="robot2FlightPath"
+      [spaceFlightRotations]="2"
+      [spaceFlightAutoStart]="true"
+      [spaceFlightLoop]="true"
+    />
 
     <!-- ================================ -->
-    <!-- REALISTIC EARTH PLANET (Background - behind text, Daylight Texture) -->
+    <!-- REALISTIC EARTH PLANET (COMMENTED OUT - Replaced with 3D Text) -->
     <!-- ================================ -->
-    <!-- Photorealistic Earth with subtle atmospheric glow and hover zoom -->
-    <!-- Mouse Interactions: Rotation following mouse + hover zoom effect -->
+    <!--
     <app-planet
-      [position]="darkPlanetPosition"
+      [position]="[0, 0, 8.5]"
       [radius]="darkPlanetRadius"
       [segments]="150"
       [textureUrl]="'assets/earth.jpg'"
@@ -121,8 +148,81 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [glowColor]="darkPlanetGlowColor"
       [glowIntensity]="darkPlanetGlowIntensity"
       [glowDistance]="20"
-      [rotationSpeed]="0.5"
+      [rotationSpeed]="0.7"
       [rotationAxis]="'y'"
+    />
+    -->
+
+    <!-- ================================ -->
+    <!-- 3D TEXT ELEMENTS (Replacing HTML Text) -->
+    <!-- ================================ -->
+
+    <!-- Top Pill Text: "Build Production Grade AI Applications" (3D Volumetric Glow) -->
+    <app-text-3d-volumetric
+      text="Build Production"
+      [position]="[-2, 2.5, 6.5]"
+      [size]="0.3"
+      [depth]="0.1"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+      [glowColor]="colors.neon.indigo.hex"
+      [glowIntensity]="3.5"
+      [pulseSpeed]="1.5"
+      [pulseAmount]="0.2"
+    />
+
+    <app-text-3d-volumetric
+      text="Grade AI Apps"
+      [position]="[-1.8, 2.1, 6.5]"
+      [size]="0.3"
+      [depth]="0.1"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+      [glowColor]="colors.neon.purple.hex"
+      [glowIntensity]="3.5"
+      [pulseSpeed]="1.8"
+      [pulseAmount]="0.2"
+    />
+
+    <!-- Center Smoke Text: "With TypeScript Patterns" (Particle Smoke) -->
+    <app-smoke-text-3d
+      text="With TypeScript"
+      [position]="[0, 0.3, 8]"
+      [fontSize]="80"
+      [particleCount]="15000"
+      [particleSize]="0.3"
+      [smokeColor]="colors.material.white.hex"
+      [baseOpacity]="1.0"
+      [turbulenceSpeed]="0.1"
+      [turbulenceScale]="0.2"
+      [particleLifespan]="10"
+    />
+
+    <app-smoke-text-3d
+      text="Patterns"
+      [position]="[0, -0.5, 8]"
+      [fontSize]="80"
+      [particleCount]="12000"
+      [particleSize]="0.3"
+      [smokeColor]="colors.material.lightGray.hex"
+      [baseOpacity]="1.0"
+      [turbulenceSpeed]="0.12"
+      [turbulenceScale]="0.22"
+      [particleLifespan]="10"
+    />
+
+    <!-- Bottom Pill Text: "You Already Know" (3D Volumetric Glow) -->
+    <app-text-3d-volumetric
+      text="You Already Know"
+      [position]="[-1.5, -2, 6.5]"
+      [size]="0.3"
+      [depth]="0.1"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.02"
+      [glowColor]="colors.neon.cyan.hex"
+      [glowIntensity]="3.5"
+      [pulseSpeed]="2.0"
+      [pulseAmount]="0.2"
     />
 
     <!-- ================================ -->
@@ -176,7 +276,7 @@ import { NebulaComponent } from '../../../../core/angular-3d/components/primitiv
       [maxSize]="80"
       [opacity]="0.2"
       [flow]="false"
-      [position]="[-180, 0, -230]"
+      [position]="[-180, 0, -250]"
     />
 
     <app-nebula-volumetric
@@ -214,10 +314,55 @@ export class HeroSpaceSceneComponent {
   // ✅ Inject theme store for reactive theme support
   private readonly themeStore = inject(SpaceThemeStore);
 
+  // ✅ Color configuration for 3D elements
+  readonly colors = Colors3D;
+
   // ✅ Computed getter for current theme
   get theme(): SpaceTheme {
     return this.themeStore.currentTheme();
   }
+
+  // ================================
+  // ROBOT FLIGHT PATHS
+  // ================================
+
+  /**
+   * Robot 1 (Mini Robot - Orange) - HIGH ALTITUDE PATH
+   * Flies in upper regions with dramatic height changes
+   * Stays mostly above the earth, diving and climbing
+   */
+  readonly robot1FlightPath: SpaceFlightWaypoint[] = [
+    // Phase 1: High approach from far upper left
+    { position: [-12, 8, -8], duration: 10, ease: 'easeInOut' },
+    // Phase 2: Soar across the top, very high
+    { position: [10, 12, -5], duration: 8, ease: 'easeInOut' },
+    // Phase 3: Dramatic dive toward viewer
+    { position: [-6, 4, 10], duration: 9, ease: 'easeIn' },
+    // Phase 4: Climb back up and away
+    { position: [8, 10, -12], duration: 11, ease: 'easeOut' },
+    // Phase 5: High arc return to start
+    { position: [-12, 8, -8], duration: 8, ease: 'easeInOut' },
+  ];
+
+  /**
+   * Robot 2 (Robo Head - Cyan) - LOW DEPTH PATH
+   * Flies in lower regions with deep forward/backward movement
+   * Stays mostly below earth level, exploring depth
+   */
+  readonly robot2FlightPath: SpaceFlightWaypoint[] = [
+    // Phase 1: Start deep behind and low
+    { position: [4, -3, -20], duration: 9, ease: 'easeOut' },
+    // Phase 2: Emerge from behind, moving left and forward
+    { position: [-8, -5, 8], duration: 10, ease: 'easeInOut' },
+    // Phase 3: Cross low to the right side
+    { position: [12, -4, 6], duration: 8, ease: 'easeInOut' },
+    // Phase 4: Dive deep and right
+    { position: [10, -6, -15], duration: 11, ease: 'easeIn' },
+    // Phase 5: Low sweep back to center-left
+    { position: [-6, -5, -10], duration: 9, ease: 'easeInOut' },
+    // Phase 6: Return to deep starting position
+    { position: [4, -3, -20], duration: 8, ease: 'easeInOut' },
+  ];
 
   // ================================
   // LIGHTING (Theme-based getters)
@@ -243,7 +388,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get pointLightColor(): number {
-    return this.theme.lights.point[0]?.color || 0xffffff;
+    return this.theme.lights.point[0]?.color || Colors3D.material.white.hex;
   }
 
   get pointLightPosition(): [number, number, number] {
@@ -262,7 +407,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get fogColor(): number {
-    return this.theme.fog?.color ?? 0x000508;
+    return this.theme.fog?.color ?? Colors3D.space.deepVoid.hex;
   }
 
   get fogDensity(): number {
@@ -295,18 +440,14 @@ export class HeroSpaceSceneComponent {
   // Math: At FOV=65° and distance=65, visible height ≈ 76.5 units
   // For 65% coverage: diameter ≈ 50 units, so radius ≈ 25 units
 
-  // DARK PLANET - Using Three.js human scale (camera at z=12)
-  // At distance 12, FOV 75°: visible height ≈ 18.4 units
-  // For 55% coverage: diameter ≈ 10.1 units, radius ≈ 5.0 units
-  readonly darkPlanetPosition: [number, number, number] = [0, 0, 9.5];
   readonly darkPlanetRadius = 5.0; // Human-scale units for 55% viewport coverage
 
   get darkPlanetBaseColor(): number {
-    return 0xffffff; // White base to let texture colors show naturally
+    return Colors3D.material.white.hex; // White base to let texture colors show naturally
   }
 
   get darkPlanetEmissiveColor(): number {
-    return 0x4488ff; // Subtle blue atmospheric glow
+    return Colors3D.planet.atmosphereBlue.hex; // Subtle blue atmospheric glow
   }
 
   get darkPlanetEmissiveIntensity(): number {
@@ -314,7 +455,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get darkPlanetGlowColor(): number {
-    return 0x6699ff; // Cyan/blue atmospheric glow (like Earth's atmosphere)
+    return Colors3D.planet.atmosphereCyan.hex; // Cyan/blue atmospheric glow (like Earth's atmosphere)
   }
 
   get darkPlanetGlowIntensity(): number {

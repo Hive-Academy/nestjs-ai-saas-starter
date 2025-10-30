@@ -4,6 +4,7 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   input,
 } from '@angular/core';
+import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
 
 /**
  * Value Propositions 3D Scene - Scroll-Driven Geometry Showcase
@@ -289,19 +290,19 @@ export class ValuePropositions3DSceneComponent {
    */
   showWireframe = input<boolean>(true);
 
-  // Color constants for template bindings (hex literals not allowed in templates)
-  readonly indigoColor = 0x6366f1; // Indigo 500 - ChromaDB
-  readonly purpleColor = 0x8b5cf6; // Purple 500 - Neo4j
-  readonly cyanColor = 0x06b6d4; // Cyan 500 - Memory
-  readonly greenColor = 0x10b981; // Green 500 - Checkpoint
-  readonly amberColor = 0xf59e0b; // Amber 500 - Functional
-  readonly pinkColor = 0xec4899; // Pink 500 - Multi-Agent
-  readonly blueColor = 0x3b82f6; // Blue 500 - Platform
-  readonly violetColor = 0xa855f7; // Violet 500 - Time-Travel
-  readonly tealColor = 0x14b8a6; // Teal 500 - Monitoring
-  readonly redColor = 0xef4444; // Red 500 - HITL
-  readonly cyanBrightColor = 0x00d9ff; // Cyan bright - Streaming
-  readonly whiteColor = 0xffffff; // White - Wireframe
+  // Color constants using Colors3D configuration
+  readonly indigoColor = Colors3D.neon.indigo.hex; // ChromaDB
+  readonly purpleColor = Colors3D.neon.purple.hex; // Neo4j
+  readonly cyanColor = Colors3D.neon.cyan.hex; // Memory
+  readonly greenColor = Colors3D.accent.emerald.hex; // Checkpoint
+  readonly amberColor = Colors3D.accent.amber.hex; // Functional
+  readonly pinkColor = Colors3D.accent.pink.hex; // Multi-Agent
+  readonly blueColor = Colors3D.accent.blue.hex; // Platform
+  readonly violetColor = Colors3D.accent.violet.hex; // Time-Travel
+  readonly tealColor = Colors3D.accent.teal.hex; // Monitoring
+  readonly redColor = Colors3D.neon.red.hex; // HITL
+  readonly cyanBrightColor = Colors3D.accent.brightCyan.hex; // Streaming
+  readonly whiteColor = Colors3D.material.white.hex; // Wireframe
 
   /**
    * Get rotation based on scroll progress

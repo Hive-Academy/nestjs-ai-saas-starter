@@ -17,3 +17,4 @@
 | TASK_2025_027 | Upgrade Hero Space Scene - Match Reference Screenshot   | 🔄 Active (Architecture Revision 2 - Ready for User Validation) | Refactoring   | P1-High     | H      | 2025-10-24 | 2025-10-24 21:00:00 |            | feature/027 |
 | TASK_2025_028 | Website Sections Re-styling                             | ✅ Complete                                                     | Feature       | P1-High     | XL     | 2025-10-27 | 2025-10-27          |            | feature/028 |
 | TASK_2025_029 | LangGraph Memory Integration Refactoring (5 Priorities) | 🔄 Active (Architecture Complete - Ready for Decomposition)     | Refactoring   | P0-Critical | XL     | 2025-10-29 | 2025-10-29          |            | feature/029 |
+| TASK_2025_030 | Angular 3D Color System - Centralized Configuration     | 📋 Planned (Ready for Implementation)                           | Refactoring   | P2-Medium   | M      | 2025-10-29 | 2025-10-29          |            | feature/030 |
