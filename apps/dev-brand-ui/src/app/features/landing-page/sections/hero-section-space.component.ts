@@ -216,9 +216,10 @@ export class HeroSectionSpaceComponent {
   readonly sceneGraph = HeroSpaceSceneComponent;
 
   // Camera configuration for 3D scene
-  // Camera at z=60 looking toward origin (where planet is at z=0)
+  // Camera at z=20 looking toward viewport plane at z=0
+  // This matches the ViewportPositioner setup for predictable positioning
   readonly cameraConfig = {
-    position: [0, 0, 45] as [number, number, number],
+    position: [0, 0, 20] as [number, number, number],
     fov: 75,
     near: 0.1,
     far: 1000,

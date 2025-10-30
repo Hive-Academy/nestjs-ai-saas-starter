@@ -42,6 +42,7 @@ import { GLTFModelComponent } from '../../../../core/angular-3d/components/primi
 import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
 import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
 import { SVGIconComponent } from '../../../../core/angular-3d/components/primitives/svg-icon.component';
+import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3d-positioning';
 
 @Component({
   selector: 'app-hero-space-scene',
@@ -59,7 +60,6 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     SVGIconComponent,
     SceneLightingComponent,
   ],
-  schemas: [],
   template: `
     <!-- ================================ -->
     <!-- SCENE BACKGROUND COLOR -->
@@ -69,15 +69,15 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- ================================ -->
     <!-- CAMERA CONTROLS (OrbitControls) -->
     <!-- ================================ -->
-    <!-- Click and drag to orbit around planet, scroll to zoom -->
+    <!-- Click and drag to orbit around viewport center, scroll to zoom -->
     <app-orbit-controls
-      [target]="[0, 0, 6.5]"
+      [target]="[0, 0, 0]"
       [enableDamping]="true"
       [dampingFactor]="0.05"
       [enableZoom]="true"
-      [minDistance]="0"
-      [maxDistance]="45"
-      [rotateSpeed]="0.8"
+      [minDistance]="5"
+      [maxDistance]="50"
+      [rotateSpeed]="0.5"
       [enablePan]="false"
     />
 
@@ -86,11 +86,11 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- ================================ -->
     <app-scene-lighting [config]="spaceLighting" />
 
-    <!-- Mini Robot #1 - Flying through space (Default path) - ORANGE THEME -->
+    <!-- Mini Robot #1 - Flying through space (Smaller scale for new viewport) -->
     <app-gltf-model
       [modelPath]="'/assets/3d/mini_robot.glb'"
-      [position]="[7, 15, -20]"
-      [scale]="0.03"
+      [position]="[3, 6, -8]"
+      [scale]="0.015"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
       [emissiveIntensity]="0.3"
@@ -102,11 +102,11 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [spaceFlightLoop]="true"
     />
 
-    <!-- Robo Head - Flying through space (Custom path) - CYAN THEME -->
+    <!-- Robo Head - Flying through space (Smaller scale for new viewport) -->
     <app-gltf-model
       [modelPath]="'/assets/3d/robo_head/scene.gltf'"
-      [position]="[10, 1, 5]"
-      [scale]="0.5"
+      [position]="[4, 0, -6]"
+      [scale]="0.25"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
       [emissiveIntensity]="0.5"
@@ -142,10 +142,10 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- 3D TEXT ELEMENTS (Replacing HTML Text) -->
     <!-- ================================ -->
 
-    <!-- Top Pill Text: "Build Production Grade AI Applications" (Glow Particle Text) -->
+    <!-- Top Pill Text: "Build Production" (Glow Particle Text) -->
     <app-glow-particle-text
       text="Build Production"
-      [position]="[-2, 2.5, 6.5]"
+      [position]="topTextPosition"
       [fontSize]="30"
       [particleDensity]="70"
       [glowColor]="colors.neon.indigo.hex"
@@ -154,9 +154,10 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [pulseAmount]="0.2"
     />
 
+    <!-- Large Text: "Grade AI Apps" (Glow Particle Text) -->
     <app-glow-particle-text
       text="Grade AI Apps"
-      [position]="[-1.8, 2.1, 6.5]"
+      [position]="largeTextPosition"
       [fontSize]="90"
       [particleDensity]="70"
       [glowColor]="colors.neon.purple.hex"
@@ -165,10 +166,10 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [pulseAmount]="0.2"
     />
 
-    <!-- Center Smoke Text: "With TypeScript Patterns" (Smoke Particle Text) -->
+    <!-- Center Smoke Text: "With TypeScript" (Smoke Particle Text) -->
     <app-smoke-particle-text
       text="With TypeScript"
-      [position]="[0, 0.3, 8]"
+      [position]="centerTextPosition"
       [fontSize]="90"
       [particleDensity]="50"
       [particleSize]="0.03"
@@ -178,9 +179,10 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [driftAmount]="0.05"
     />
 
+    <!-- Second Smoke Text: "Patterns" (Smoke Particle Text) -->
     <app-smoke-particle-text
       text="Patterns"
-      [position]="[0, -0.5, 8]"
+      [position]="patternsTextPosition"
       [fontSize]="90"
       [particleDensity]="50"
       [particleSize]="0.03"
@@ -193,7 +195,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
     <!-- Bottom Pill Text: "You Already Know" (Glow Particle Text) -->
     <app-glow-particle-text
       text="You Already Know"
-      [position]="[-1.5, -2, 6.5]"
+      [position]="bottomTextPosition"
       [fontSize]="30"
       [particleDensity]="70"
       [glowColor]="colors.neon.cyan.hex"
@@ -213,6 +215,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [position]="logoPositions.nestjs"
       [scale]="0.015"
       [extrudeDepth]="0.5"
+      [colorOverride]="true"
       [color]="colors.brand.nestjs.hex"
       [emissive]="colors.brand.nestjs.hex"
       [emissiveIntensity]="0.3"
@@ -220,10 +223,6 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
-      [spaceFlightPath]="logoFlightPaths.nestjs"
-      [spaceFlightRotations]="0"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
     />
 
     <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) -->
@@ -232,6 +231,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [position]="logoPositions.langchain"
       [scale]="0.015"
       [extrudeDepth]="0.5"
+      [colorOverride]="true"
       [color]="colors.brand.langchain.hex"
       [emissive]="colors.accent.emerald.hex"
       [emissiveIntensity]="0.4"
@@ -239,10 +239,6 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
-      [spaceFlightPath]="logoFlightPaths.langchain"
-      [spaceFlightRotations]="0"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
     />
 
     <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) -->
@@ -251,17 +247,11 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [position]="logoPositions.chroma"
       [scale]="0.015"
       [extrudeDepth]="0.5"
-      [color]="colors.brand.chromadb.hex"
-      [emissive]="colors.brand.chromadbEmissive.hex"
       [emissiveIntensity]="0.5"
       [metalness]="0.1"
       [roughness]="0.7"
       [castShadow]="true"
       [receiveShadow]="true"
-      [spaceFlightPath]="logoFlightPaths.chroma"
-      [spaceFlightRotations]="0"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
     />
 
     <!-- Neo4j Logo - Bottom Right (Official Blue) -->
@@ -270,6 +260,7 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [position]="logoPositions.neo4j"
       [scale]="0.015"
       [extrudeDepth]="0.5"
+      [colorOverride]="true"
       [color]="colors.brand.neo4j.hex"
       [emissive]="colors.brand.neo4j.hex"
       [emissiveIntensity]="0.3"
@@ -277,10 +268,6 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [roughness]="0.6"
       [castShadow]="true"
       [receiveShadow]="true"
-      [spaceFlightPath]="logoFlightPaths.neo4j"
-      [spaceFlightRotations]="0"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
     />
 
     <!-- ================================ -->
@@ -307,41 +294,23 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [enableTwinkle]="true"
     />
 
-    <!-- ================================ -->
-    <!-- VOLUMETRIC SMOKE/CLOUD NEBULA (Continuous shader, not circles) -->
-    <!-- Large plane with organic smoke patterns -->
-    <!-- Planet at z=9.5, Camera at z=12, Nebula at z=-60 (far behind) -->
-    <!--
-    TWEAKABLE PARAMETERS:
-    - [width]/[height]: Size of nebula (increase for larger coverage)
-    - [noiseScale]: 0.005-0.02 (smaller = larger features, bigger = more detail)
-    - [density]: 0.5-2.0 (cloud thickness)
-    - [edgeSoftness]: 0.1-0.5 (0.1 = hard edges, 0.5 = very soft/invisible)
-    - [contrast]: 0.5-2.0 (difference between bright and dim areas)
-    - [glowIntensity]: 1.0-5.0 (brightness of glowing areas)
-    - [colorIntensity]: 0.5-3.0 (overall color brightness)
-    - [opacity]: 0.3-1.0 (overall transparency)
-    - [flowSpeed]: 0.1-2.0 (animation speed, higher = faster)
-    -->
-    <!-- ================================ -->
-
-    <!-- MAIN NEBULA - Continuous smoke/cloud effect (FIXED position by default) -->
+    <!-- MAIN NEBULA - Far background layer (much further back) -->
     <app-nebula
       [particleCount]="120"
-      [radius]="80"
+      [radius]="40"
       [colorPalette]="['#ffffff', '#cccccc']"
-      [minSize]="40"
-      [maxSize]="80"
-      [maxOpacity]="0.3"
+      [minSize]="20"
+      [maxSize]="40"
+      [maxOpacity]="0.2"
       [flow]="false"
-      [position]="[-180, 0, -250]"
+      [position]="[-60, 0, -100]"
     />
 
     <app-nebula-volumetric
-      [width]="240"
-      [height]="100"
+      [width]="120"
+      [height]="60"
       [layers]="6"
-      [opacity]="0.65"
+      [opacity]="0.5"
       [primaryColor]="'#0088ff'"
       [secondaryColor]="'#00d4ff'"
       [tertiaryColor]="'#ff6bd4'"
@@ -351,9 +320,9 @@ import { SVGIconComponent } from '../../../../core/angular-3d/components/primiti
       [density]="1.1"
       [edgeSoftness]="0.5"
       [contrast]="1.0"
-      [glowIntensity]="30"
-      [colorIntensity]="3"
-      [position]="[-90, 0, -90]"
+      [glowIntensity]="20"
+      [colorIntensity]="2"
+      [position]="[-30, 0, -80]"
     />
 
     <!-- ================================ -->
@@ -374,6 +343,14 @@ export class HeroSpaceSceneComponent {
 
   // ✅ Color configuration for 3D elements
   readonly colors = Colors3D;
+
+  // ✅ Viewport positioner for CSS-like positioning in 3D
+  // Camera is at Z=20, elements positioned at Z=0 plane (viewport plane)
+  private readonly positioner = new ViewportPositioner({
+    fov: 75,
+    cameraZ: 20,
+    viewportZ: 0,
+  });
 
   // ✅ Computed getter for current theme
   get theme(): SpaceTheme {
@@ -400,18 +377,58 @@ export class HeroSpaceSceneComponent {
   }
 
   // ================================
-  // LOGO POSITIONS & FLIGHT PATHS
+  // TEXT POSITIONS (Viewport-mapped)
+  // ================================
+
+  /** Top text: "Build Production" - positioned at 15% from top */
+  readonly topTextPosition = this.positioner.getPosition({
+    x: '50%',
+    y: '15%',
+  });
+
+  /** Large text: "Grade AI Apps" - positioned slightly below top text */
+  readonly largeTextPosition = this.positioner.getPosition({
+    x: '50%',
+    y: '25%',
+  });
+
+  /** Center smoke text: "With TypeScript" - positioned at center */
+  readonly centerTextPosition = this.positioner.getPosition('center');
+
+  /** Second smoke text: "Patterns" - positioned slightly below center */
+  readonly patternsTextPosition = this.positioner.getPosition({
+    x: '50%',
+    y: '55%',
+  });
+
+  /** Bottom text: "You Already Know" - positioned at 85% from top */
+  readonly bottomTextPosition = this.positioner.getPosition({
+    x: '50%',
+    y: '85%',
+  });
+
+  // ================================
+  // LOGO POSITIONS (Viewport-mapped)
   // ================================
 
   /**
-   * Initial positions for tech stack logos
-   * Positioned in a circular pattern around the center text
+   * Logo positions using viewport percentages
+   * Positioned in corners of the viewport for clear visibility
    */
   readonly logoPositions = {
-    nestjs: [6, 4, 5] as const, // Top right
-    langchain: [-6, 4, 5] as const, // Top left
-    chroma: [-6, -4, 5] as const, // Bottom left
-    neo4j: [6, -4, 5] as const, // Bottom right
+    nestjs: this.positioner.getPosition(
+      { x: '85%', y: '20%' },
+      { offsetZ: -2 }
+    ), // Top right
+    langchain: this.positioner.getPosition(
+      { x: '15%', y: '20%' },
+      { offsetZ: -2 }
+    ), // Top left
+    chroma: this.positioner.getPosition(
+      { x: '15%', y: '80%' },
+      { offsetZ: -2 }
+    ), // Bottom left
+    neo4j: this.positioner.getPosition({ x: '85%', y: '80%' }, { offsetZ: -2 }), // Bottom right
   };
 
   /**
