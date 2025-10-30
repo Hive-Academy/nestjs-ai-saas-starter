@@ -167,8 +167,10 @@ export class Text3DVolumetricComponent {
       this.textMesh.fontSize = this.fontSize();
 
       // Update material emissive properties
+      // Note: After sync(), troika replaces material with derived material
+      // We need to check if emissive property exists before updating
       const mat = this.textMesh.material as MeshStandardMaterial;
-      if (mat) {
+      if (mat && mat.emissive) {
         mat.emissive.set(this.glowColor());
         mat.emissiveIntensity = this.glowIntensity();
       }
