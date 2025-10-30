@@ -146,7 +146,7 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <app-glow-particle-text
       text="Build Production Grade AI Apps"
       [position]="topTextPosition"
-      [fontSize]="60"
+      [fontSize]="100"
       [particleDensity]="70"
       [glowColor]="colors.neon.indigo.hex"
       [glowIntensity]="4.0"
@@ -158,9 +158,9 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <app-smoke-particle-text
       text="With TypeScript Patterns"
       [position]="centerTextPosition"
-      [fontSize]="120"
+      [fontSize]="180"
       [particleDensity]="60"
-      [particleSize]="0.04"
+      [particleSize]="0.05"
       [smokeColor]="colors.material.white.hex"
       [opacity]="0.9"
       [driftSpeed]="0.015"
@@ -171,7 +171,7 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <app-glow-particle-text
       text="You Already Know"
       [position]="bottomTextPosition"
-      [fontSize]="60"
+      [fontSize]="100"
       [particleDensity]="70"
       [glowColor]="colors.neon.indigo.hex"
       [glowIntensity]="4.0"
@@ -184,11 +184,11 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
     <!-- ================================ -->
     <!-- Circular orbit pattern around the center -->
 
-    <!-- NestJS Logo - Top Right (Official Red) - Bigger and rotated -->
+    <!-- NestJS Logo - Top Right (Official Red) - Much bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/nestjs.svg'"
       [position]="logoPositions.nestjs"
-      [scale]="0.03"
+      [scale]="0.05"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
@@ -201,11 +201,11 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) - Bigger and rotated -->
+    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) - Extra large and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/langchain.svg'"
       [position]="logoPositions.langchain"
-      [scale]="0.03"
+      [scale]="0.06"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
@@ -218,11 +218,11 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) - Bigger and rotated -->
+    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) - Much bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
-      [scale]="0.03"
+      [scale]="0.05"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [emissiveIntensity]="0.5"
@@ -232,11 +232,11 @@ import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3
       [receiveShadow]="true"
     />
 
-    <!-- Neo4j Logo - Bottom Right (Official Blue) - Bigger and rotated -->
+    <!-- Neo4j Logo - Bottom Right (Official Blue) - Much bigger and rotated -->
     <app-svg-icon
       [svgPath]="'/assets/images/logos/neo4j.svg'"
       [position]="logoPositions.neo4j"
-      [scale]="0.03"
+      [scale]="0.05"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [colorOverride]="true"
@@ -360,22 +360,22 @@ export class HeroSpaceSceneComponent {
 
   // ================================
   // TEXT POSITIONS (Viewport-mapped)
-  // Hero section centered layout with 3 lines
+  // Hero section centered layout with 3 lines - closer together
   // ================================
 
-  /** Top text: "Build Production Grade AI Apps" - positioned at 35% from top */
+  /** Top text: "Build Production Grade AI Apps" - positioned at 38% from top */
   readonly topTextPosition = this.positioner.getPosition({
     x: '50%',
-    y: '35%',
+    y: '38%',
   });
 
   /** Center text: "With TypeScript Patterns" - positioned at center (50%) */
   readonly centerTextPosition = this.positioner.getPosition('center');
 
-  /** Bottom text: "You Already Know" - positioned at 65% from top */
+  /** Bottom text: "You Already Know" - positioned at 62% from top */
   readonly bottomTextPosition = this.positioner.getPosition({
     x: '50%',
-    y: '65%',
+    y: '62%',
   });
 
   // ================================
