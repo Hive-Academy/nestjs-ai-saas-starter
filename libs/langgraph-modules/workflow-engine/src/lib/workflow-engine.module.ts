@@ -22,13 +22,11 @@ import {
   IStreamingService,
   ICheckpointAdapter,
   IMemoryAdapter,
+  IAgentProvider,
+  IToolProvider,
+  IWorkflowProvider,
 } from '@hive-academy/langgraph-core';
-import type {
-  AgentProvider,
-  ToolProvider,
-  WorkflowProvider,
-} from '@hive-academy/langgraph-multi-agent';
-// Removed WorkflowClass import - not available after cleanup
+// Removed multi-agent imports - now using core interfaces
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -49,9 +47,9 @@ export interface WorkflowEngineModuleOptions {
   };
 
   // CENTRALIZED REGISTRATION: Only WorkflowEngineModule accepts these
-  agents?: AgentProvider[];
-  tools?: ToolProvider[];
-  workflows?: WorkflowProvider[];
+  agents?: IAgentProvider[];
+  tools?: IToolProvider[];
+  workflows?: IWorkflowProvider[];
 
   // Optional adapters for external services
   streamingAdapter?: IStreamingService;
