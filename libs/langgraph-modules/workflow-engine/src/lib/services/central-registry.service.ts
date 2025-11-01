@@ -149,38 +149,23 @@ export class CentralRegistryService {
   /**
    * Register a tool provider
    *
-   * For tool classes (decorated with @Tool), extracts individual tool methods
-   * and registers each by its tool name (from @Tool decorator or method name).
+   * Registers tools at the class level for maximum decoupling from multi-agent module.
+   * Tools are stored by their provider ID and can be retrieved for agent execution.
    *
-   * NOTE: getClassTools is a multi-agent specific utility. For maximum decoupling,
-   * we could move this to a plugin pattern in the future. For now, we'll handle
-   * tools without the multi-agent decorator extraction.
+   * ARCHITECTURE NOTE: This method intentionally does NOT extract individual @Tool
+   * decorated methods to avoid importing multi-agent utilities (getClassTools).
+   * Individual method extraction happens in multi-agent's ToolRegistrationService.
+   *
+   * Future Enhancement: Plugin pattern could enable optional metadata extraction
+   * without creating circular dependencies.
    */
   registerTool(tool: IToolProvider): void {
-    // Extract tool class from provider
-    let toolClass: any;
-    if (typeof tool === 'function') {
-      toolClass = tool;
-    } else if (typeof tool === 'object' && tool !== null) {
-      const providerObj = tool as any;
-      toolClass = providerObj.useClass || providerObj;
-    } else {
-      // String provider - register as-is
-      const toolId = this.getToolId(tool);
-      if (this.tools.has(toolId)) {
-        this.logger.warn(`Tool ${toolId} already registered, overriding`);
-      }
-      this.tools.set(toolId, tool);
-      this.logger.log(`Tool registered: ${toolId}`);
-      return;
-    }
-
-    // For now, register at class level without multi-agent decorator extraction
-    // TODO: Consider plugin pattern for decorator extraction to avoid any multi-agent imports
     const toolId = this.getToolId(tool);
+
     if (this.tools.has(toolId)) {
       this.logger.warn(`Tool ${toolId} already registered, overriding`);
     }
+
     this.tools.set(toolId, tool);
     this.logger.log(`Tool registered: ${toolId}`);
   }
@@ -311,9 +296,11 @@ export class CentralRegistryService {
     if (typeof agent === 'string') {
       return agent;
     }
+
     if (typeof agent === 'function') {
-      return agent.name || 'unknown-agent';
+      return (agent as IAgentProvider).name || 'unknown-agent';
     }
+
     // Handle NestJS provider objects
     if (typeof agent === 'object' && agent !== null) {
       const providerObj = agent as any;
@@ -339,7 +326,7 @@ export class CentralRegistryService {
       return tool;
     }
     if (typeof tool === 'function') {
-      return tool.name || 'unknown-tool';
+      return (tool as IToolProvider).name || 'unknown-tool';
     }
     // Handle NestJS provider objects
     if (typeof tool === 'object' && tool !== null) {

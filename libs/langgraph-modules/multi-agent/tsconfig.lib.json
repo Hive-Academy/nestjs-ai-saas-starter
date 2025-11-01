@@ -17,6 +17,9 @@
       "path": "../checkpoint/tsconfig.lib.json"
     },
     {
+      "path": "../workflow-engine/tsconfig.lib.json"
+    },
+    {
       "path": "../core/tsconfig.lib.json"
     }
   ]

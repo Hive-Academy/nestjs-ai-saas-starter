@@ -8,13 +8,16 @@
       "path": "../memory"
     },
     {
+      "path": "../checkpoint"
+    },
+    {
+      "path": "../workflow-engine"
+    },
+    {
       "path": "../core"
     },
     {
       "path": "./tsconfig.lib.json"
-    },
-    {
-      "path": "../checkpoint"
     }
   ]
 }

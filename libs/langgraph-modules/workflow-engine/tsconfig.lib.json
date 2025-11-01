@@ -14,9 +14,6 @@
       "path": "../memory/tsconfig.lib.json"
     },
     {
-      "path": "../multi-agent/tsconfig.lib.json"
-    },
-    {
       "path": "../functional-api/tsconfig.lib.json"
     },
     {

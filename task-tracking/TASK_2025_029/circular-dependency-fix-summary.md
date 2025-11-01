@@ -427,6 +427,7 @@ workflow-engine ──(imports)──> multi-agent
 ### NX Task Graph Circular Dependency
 
 **Issue**: NX's `typecheck:affected` task detects a circular dependency:
+
 ```
 dev-brand-api:typecheck --> @hive-academy/langgraph-multi-agent:typecheck
 --> @hive-academy/langgraph-workflow-engine:typecheck
@@ -436,6 +437,7 @@ dev-brand-api:typecheck --> @hive-academy/langgraph-multi-agent:typecheck
 **Root Cause**: Multi-agent now lists workflow-engine as a peer dependency, creating a bidirectional relationship in NX's task dependency graph.
 
 **Actual Impact**:
+
 - ✅ **No runtime circular dependency** - All libraries build successfully
 - ✅ **No import circular dependency** - ESLint passes, no circular import errors
 - ❌ **NX task graph issue** - Typecheck tasks have circular dependency
