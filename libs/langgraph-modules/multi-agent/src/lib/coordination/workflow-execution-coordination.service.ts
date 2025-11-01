@@ -228,27 +228,30 @@ export class WorkflowExecutionCoordinationService {
       }
     }
 
-    // Automagical: Store conversation turn in memory if available
+    // TASK_2025_029 Phase 1: Async background memory writes (non-blocking)
+    // Changed from blocking await to fire-and-forget background queue
     if (this.memoryAdapter && result) {
-      try {
-        await this.memoryCoordination.storeConversationInMemory(
+      this.memoryCoordination
+        .storeConversationInMemory(
           enhancedInput,
           result,
           threadId,
           executionId,
           networkId,
           this.networkManager.getNetworkConfig(networkId)?.agents?.length || 0
-        );
-        this.logger.debug(
-          `Stored conversation turn in memory for execution ${executionId}`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to store conversation in memory: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
+        )
+        .then(() => {
+          this.logger.debug(
+            `Stored conversation turn in memory for execution ${executionId}`
+          );
+        })
+        .catch((error) => {
+          this.logger.warn(
+            `Failed to store conversation in memory: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        });
     }
 
     // Background coordination learning (fire-and-forget)

@@ -256,6 +256,12 @@ export const getChromaDBConfig = (
       ),
     },
 
+    // TASK_2025_029: Semaphore limit for concurrent operations
+    maxConcurrentOperations: parseInt(
+      configService.get('CHROMADB_MAX_CONCURRENT_OPERATIONS', '5'),
+      10
+    ),
+
     validation: {
       maxTextLength: parseInt(configService.get('TEXT_MAX_LENGTH', '8000'), 10),
       maxBatchSize: parseInt(

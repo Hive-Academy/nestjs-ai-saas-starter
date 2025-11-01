@@ -40,6 +40,7 @@ import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 import { WorkflowStreamingService } from './workflow/workflow-streaming.service';
+import { BackgroundMemoryService } from './services/background-memory.service';
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -74,6 +75,7 @@ export class MultiAgentModule {
       WorkflowExecutionCoordinationService,
       StreamCoordinationService,
       MemoryCoordinationService,
+      BackgroundMemoryService, // TASK_2025_029: Background memory queueing/batching
 
       // ============================================
       // AGENT MANAGEMENT (Internal)
@@ -178,6 +180,7 @@ export class MultiAgentModule {
       WorkflowExecutionCoordinationService,
       StreamCoordinationService,
       MemoryCoordinationService,
+      BackgroundMemoryService, // TASK_2025_029: Background memory queueing/batching
 
       // ============================================
       // AGENT MANAGEMENT (Internal)
@@ -288,6 +291,7 @@ export class MultiAgentModule {
       // Preserve adapters if provided
       checkpointAdapter: options.checkpointAdapter,
       streamingAdapter: options.streamingAdapter,
+      memoryAdapter: options.memoryAdapter,
     };
   }
 }

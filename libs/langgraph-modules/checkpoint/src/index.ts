@@ -19,6 +19,8 @@ export type * from './lib/interfaces/checkpoint-saver-registry.interface';
 export type * from './lib/interfaces/checkpoint.interface';
 export * from './lib/interfaces/checkpoint-services.interface';
 export type * from './lib/interfaces/state-management.interface';
+export type * from './lib/interfaces/langgraph-checkpoint.interface';
+export * from './lib/interfaces/langgraph-checkpoint.interface';
 
 // Checkpoint adapter implementation
 export { CheckpointManagerAdapter } from './lib/adapters/checkpoint-manager.adapter';

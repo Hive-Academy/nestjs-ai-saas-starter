@@ -186,6 +186,34 @@ import {
       [pulseSpeed]="0.005"
     />
 
+    <app-instanced-particle-text
+      text="With Typescript Patterns"
+      [position]="textCenterPosition"
+      [fontSize]="25"
+      [particleColor]="colors.neon.indigo.hex"
+      [opacity]="0.35"
+      [maxParticleScale]="0.04"
+      [particlesPerPixel]="3"
+      [blendMode]="'normal'"
+      [skipInitialGrowth]="true"
+      [particleGrowSpeed]="0.02"
+      [pulseSpeed]="0.005"
+    />
+
+    <app-instanced-particle-text
+      text="You Already Know"
+      [position]="bottomTextPosition"
+      [fontSize]="25"
+      [particleColor]="colors.material.gray.hex"
+      [opacity]="0.35"
+      [maxParticleScale]="0.04"
+      [particlesPerPixel]="3"
+      [blendMode]="'normal'"
+      [skipInitialGrowth]="true"
+      [particleGrowSpeed]="0.02"
+      [pulseSpeed]="0.005"
+    />
+
     <!-- colors.accent.blueViolet.hex -->
 
     <!-- Center Text: "With TypeScript Patterns" (White Smoke)-->
@@ -258,7 +286,7 @@ import {
     <app-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
-      [scale]="0.02"
+      [scale]="1"
       [rotation]="[Math.PI, 0, 0]"
       [extrudeDepth]="0.5"
       [emissiveIntensity]="0.5"
@@ -426,6 +454,11 @@ export class HeroSpaceSceneComponent {
   readonly topTextPosition = this.positioner.getPosition({
     x: '50%',
     y: '38%',
+  });
+
+  readonly textCenterPosition = this.positioner.getPosition({
+    x: '50%',
+    y: '50%',
   });
 
   /** Bottom text: "You Already Know" - positioned at 62% from top */

@@ -217,7 +217,7 @@ Use for:
 ```typescript
 // Fast-paced landing page: Quick transition
 [scrollThreshold] = // Immersive exploration: Let users zoom fully
-'0.2'[scrollThreshold] = '0.8';
+  '0.2'[scrollThreshold] = '0.8';
 ```
 
 ### 3. Match Scroll Sensitivity to Content
@@ -225,7 +225,7 @@ Use for:
 ```typescript
 // Dense content below: Slower scroll
 [scrollSensitivity] = // Spacious layout: Normal scroll
-'0.6'[scrollSensitivity] = '1.0';
+  '0.6'[scrollSensitivity] = '1.0';
 ```
 
 ### 4. Provide Visual Feedback
@@ -282,7 +282,7 @@ Wheel event handling uses `{ passive: false }` for `preventDefault()` support, w
 
 ```typescript
 [enableEasing] = // Or
-'false'[easingFactor] = '0.3';
+  'false'[easingFactor] = '0.3';
 ```
 
 ### Zoom doesn't transition to scroll

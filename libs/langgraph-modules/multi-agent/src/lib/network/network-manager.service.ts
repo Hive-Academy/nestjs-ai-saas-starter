@@ -1,23 +1,29 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CompiledStateGraph } from '@langchain/langgraph';
+import {
+  ILangGraphCheckpointSaver,
+  isLangGraphCheckpointSaver,
+} from '@hive-academy/langgraph-checkpoint';
+import {
+  generateExecutionId,
+  ICheckpointAdapter,
+} from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import { CompiledStateGraph } from '@langchain/langgraph';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AgentRegistryService } from '../agent/agent-registry.service';
+import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
+import { getAgentConfig } from '../decorators/agent.decorator';
+import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
 import {
   AgentNetwork,
+  AgentNetworkSchema,
+  AgentNotFoundError,
   AgentState,
   MultiAgentResult,
   NetworkConfigurationError,
-  AgentNotFoundError,
-  AgentNetworkSchema,
 } from '../interfaces/multi-agent.interface';
-import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
-import { AgentRegistryService } from '../agent/agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
-import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
-import { generateExecutionId } from '@hive-academy/langgraph-core';
-import { getAgentConfig } from '../decorators/agent.decorator';
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -563,7 +569,7 @@ export class NetworkManagerService {
    */
   private async createCheckpointerForNetwork(
     networkId: string
-  ): Promise<ICheckpointAdapter | null> {
+  ): Promise<ILangGraphCheckpointSaver | null> {
     // Graceful degradation when checkpoint adapter not available
     if (!this.checkpointAdapter) {
       this.logger.debug(
@@ -587,13 +593,37 @@ export class NetworkManagerService {
         return null;
       }
 
-      // Return the adapter directly as the checkpointer
-      // LangGraph will use the adapter's methods for checkpoint operations
+      // TASK_2025_029: Get the actual LangGraph saver, not the ICheckpointAdapter
+      // LangGraph's compile() expects a BaseCheckpointSaver with put/get/list methods
+      // Type-safe access to getLangGraphSaver() method
+      const adapter = this.checkpointAdapter as ICheckpointAdapter & {
+        getLangGraphSaver?: (
+          saverName?: string
+        ) => ILangGraphCheckpointSaver | null;
+      };
+
+      const langGraphSaver = adapter.getLangGraphSaver?.();
+
+      if (!langGraphSaver) {
+        this.logger.warn(
+          `No LangGraph saver available - checkpointing disabled for network ${networkId}`
+        );
+        return null;
+      }
+
+      // Validate that the saver implements the required interface
+      if (!isLangGraphCheckpointSaver(langGraphSaver)) {
+        this.logger.error(
+          `Invalid checkpoint saver - missing required methods (get, getTuple, list, put, putWrites, deleteThread)`
+        );
+        return null;
+      }
+
       this.logger.debug(
-        `Checkpoint adapter configured for network ${networkId}`
+        `LangGraph checkpointer configured for network ${networkId}`
       );
 
-      return this.checkpointAdapter;
+      return langGraphSaver;
     } catch (error) {
       this.logger.error(
         `Failed to configure checkpointer for network ${networkId}:`,

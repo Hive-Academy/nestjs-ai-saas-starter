@@ -13,6 +13,7 @@ import type {
   ListCheckpointsOptions,
   CheckpointCleanupOptions as EnhancedCheckpointCleanupOptions,
 } from '../interfaces/checkpoint.interface';
+import type { ILangGraphCheckpointSaver } from '../interfaces/langgraph-checkpoint.interface';
 
 /**
  * Adapter implementation that wraps CheckpointManagerService
@@ -126,6 +127,21 @@ export class CheckpointManagerAdapter extends ICheckpointAdapter {
       console.error('Health check failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Get the actual LangGraph saver for use with CompiledStateGraph
+   * TASK_2025_029: Multi-agent needs the actual BaseCheckpointSaver, not ICheckpointAdapter
+   *
+   * This method provides access to the underlying LangGraph checkpoint saver
+   * (SqliteSaver, MemorySaver, etc.) that can be passed directly to
+   * graph.compile({ checkpointer })
+   *
+   * @param saverName - Optional specific saver name, defaults to default saver
+   * @returns ILangGraphCheckpointSaver | null - Properly typed LangGraph checkpoint saver
+   */
+  getLangGraphSaver(saverName?: string): ILangGraphCheckpointSaver | null {
+    return this.checkpointManager.getLangGraphSaver(saverName);
   }
 
   /**

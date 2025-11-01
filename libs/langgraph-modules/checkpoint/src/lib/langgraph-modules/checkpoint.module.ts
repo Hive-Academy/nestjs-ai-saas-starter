@@ -58,7 +58,14 @@ export class LanggraphModulesCheckpointModule {
       CheckpointManagerService,
 
       // Checkpoint adapter - bridges checkpoint module to core interface
-      CheckpointManagerAdapter,
+      // TASK_2025_029: Fix DI - use factory to properly inject CheckpointManagerService
+      {
+        provide: CheckpointManagerAdapter,
+        useFactory: (checkpointManager: CheckpointManagerService) => {
+          return new CheckpointManagerAdapter(checkpointManager);
+        },
+        inject: [CheckpointManagerService],
+      },
       {
         provide: 'ICheckpointAdapter',
         useExisting: CheckpointManagerAdapter,

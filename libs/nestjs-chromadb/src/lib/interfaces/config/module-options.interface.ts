@@ -34,6 +34,8 @@ export interface ChromaDBModuleOptions
     retryDelay?: number;
     retryBackoffFactor?: number;
   };
+
+  maxConcurrentOperations?: number;
 }
 
 /**

@@ -14,6 +14,9 @@
       "path": "../memory/tsconfig.lib.json"
     },
     {
+      "path": "../checkpoint/tsconfig.lib.json"
+    },
+    {
       "path": "../core/tsconfig.lib.json"
     }
   ]

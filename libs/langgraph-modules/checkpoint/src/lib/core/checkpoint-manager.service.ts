@@ -23,6 +23,7 @@ import type {
   ICheckpointHealthService,
 } from '../interfaces/checkpoint-services.interface';
 import type { ICheckpointSaverRegistry } from '../interfaces/checkpoint-saver-registry.interface';
+import type { ILangGraphCheckpointSaver } from '../interfaces/langgraph-checkpoint.interface';
 
 /**
  * Facade service for managing checkpoint persistence across multiple storage backends
@@ -696,6 +697,42 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
       warnings,
       summary,
     };
+  }
+
+  // ========================================
+  // LangGraph Saver Access (for multi-agent module)
+  // ========================================
+
+  /**
+   * Get the actual LangGraph saver for use with CompiledStateGraph
+   * TASK_2025_029: Multi-agent needs the actual BaseCheckpointSaver, not ICheckpointAdapter
+   *
+   * Returns the underlying LangGraph checkpoint saver (SqliteSaver, MemorySaver, etc.)
+   * that can be passed directly to graph.compile({ checkpointer })
+   *
+   * @param saverName - Optional specific saver name, defaults to default saver
+   * @returns ILangGraphCheckpointSaver | null - Properly typed LangGraph checkpoint saver
+   */
+  getLangGraphSaver(saverName?: string): ILangGraphCheckpointSaver | null {
+    if (!this.saverRegistry) {
+      this.logger.warn(
+        'Saver registry not available - cannot get LangGraph saver'
+      );
+      return null;
+    }
+
+    const saver = saverName
+      ? this.saverRegistry.getSaver(saverName)
+      : this.saverRegistry.getDefaultSaver();
+
+    if (!saver) {
+      this.logger.warn(`LangGraph saver ${saverName || 'default'} not found`);
+      return null;
+    }
+
+    // Type assertion: registry stores BaseCheckpointSaver instances from @langchain/langgraph-checkpoint
+    // which implement ILangGraphCheckpointSaver interface
+    return saver as ILangGraphCheckpointSaver;
   }
 
   // ========================================
