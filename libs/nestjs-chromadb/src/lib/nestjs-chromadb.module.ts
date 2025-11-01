@@ -1,5 +1,5 @@
 import { DynamicModule, Global, Module, Provider, Type } from '@nestjs/common';
-import type { ChromaClient } from 'chromadb';
+import { ChromaClient } from 'chromadb';
 import {
   CHROMADB_CLIENT,
   CHROMADB_OPTIONS,
@@ -10,17 +10,16 @@ import {
   DEFAULT_RETRY_DELAY,
 } from './constants';
 import {
+  getCollectionName,
+  getRepositoryToken,
+} from './decorators/inject-repository.decorator';
+import {
   ChromaDBModuleAsyncOptions,
   ChromaDBModuleOptions,
   ChromaDBOptionsFactory,
   CollectionConfig,
 } from './interfaces/config';
-import type { BaseDocument } from './types/core.interface';
 import { ChromaDBRepository } from './repositories/chromadb-repository';
-import {
-  getRepositoryToken,
-  getCollectionName,
-} from './decorators/inject-repository.decorator';
 import { CacheCleanupService } from './services/caching/cache-cleanup.service';
 import { CacheOperationsService } from './services/caching/cache-operations.service';
 import { CacheStatisticsService } from './services/caching/cache-statistics.service';
@@ -41,15 +40,16 @@ import { ChromaDBDocumentService } from './services/core/chromadb-document.servi
 import { ChromaDBOperationsService } from './services/core/chromadb-operations.service';
 import { ChromaDBRepositoryService } from './services/core/chromadb-repository.service';
 import { ChromaDBValidationService } from './services/core/chromadb-validation.service';
+import { ChromaDBHealthIndicator } from './services/core/health.service';
 import { DocumentSanitizerService } from './services/core/validation/document-sanitizer.service';
 import { DocumentValidatorService } from './services/core/validation/document-validator.service';
 import { OptionsValidatorService } from './services/core/validation/options-validator.service';
-import { ChromaDBHealthIndicator } from './services/core/health.service';
 import { EmbeddingService } from './services/embedding.service';
 import { ChromaDBEmbeddingProcessorService } from './services/facade/chromadb-embedding-processor.service';
 import { ChromaDBPerformanceService } from './services/facade/chromadb-performance.service';
 import { MetadataExtractorService } from './services/metadata-extractor.service';
 import { TextSplitterService } from './services/text-splitter.service';
+import type { BaseDocument } from './types/core.interface';
 import { setChromaDBConfig } from './utils/config/chromadb-config.accessor';
 import { TypeConversionUtils } from './utils/data/type-conversion.utils';
 import { validateChromaDBOptions } from './validation/validate-chromadb-options';
@@ -78,7 +78,6 @@ export class ChromaDBModule {
       {
         provide: CHROMADB_CLIENT,
         useFactory: async (opts: ChromaDBModuleOptions) => {
-          const { ChromaClient } = await import('chromadb');
           return new ChromaClient({
             host: opts.connection.host,
             port: opts.connection.port,

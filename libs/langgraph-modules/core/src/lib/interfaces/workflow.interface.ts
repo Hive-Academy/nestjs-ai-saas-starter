@@ -704,3 +704,19 @@ export interface WorkflowMetadata {
    */
   modified?: Date;
 }
+
+/**
+ * Core workflow provider interface
+ * All workflow implementations must conform to this interface
+ *
+ * This interface enables the central registry to manage workflows
+ * without depending on specific workflow implementations.
+ */
+export interface IWorkflowProvider {
+  id: string;
+  name: string;
+  description?: string;
+  execute: (input: any, config?: any) => Promise<any>;
+  executeWithStreaming?: (input: any, config?: any) => AsyncGenerator<any>;
+  metadata?: Record<string, any>;
+}

@@ -362,6 +362,48 @@ export class NetworkManagerService {
         }
 
         finalResult = chunk;
+
+        // 🚀 STREAMING INTEGRATION: Emit events via WorkflowStreamService (workflow-engine)
+        // This ensures streaming events reach WebSocketBridge → Frontend
+        const executionId = initialState.metadata?.executionId || 'unknown';
+
+        if (this.workflowStreamService) {
+          // Path 1: Use WorkflowStreamService (preferred - handles decorator metadata automatically)
+          try {
+            // WorkflowStreamService emits to EventEmitter2 internally
+            // Events will be picked up by WebSocketBridgeService
+            this.eventEmitter.emit(`workflow.stream.${executionId}`, {
+              type: 'agent_update',
+              executionId,
+              data: chunk,
+              timestamp: new Date(),
+              metadata: {
+                networkId,
+                agentId: chunk.current,
+                streamMode: streamOptions.streamMode,
+              },
+            });
+          } catch (streamError) {
+            this.logger.warn(
+              `Failed to emit stream event via WorkflowStreamService for ${executionId}`,
+              streamError
+            );
+          }
+        } else {
+          // Path 2: Direct EventEmitter2 (fallback if WorkflowStreamService not available)
+          this.eventEmitter.emit(`workflow.stream.${executionId}`, {
+            type: 'agent_update',
+            executionId,
+            data: chunk,
+            timestamp: new Date(),
+            metadata: {
+              networkId,
+              agentId: chunk.current,
+              streamMode: streamOptions.streamMode,
+            },
+          });
+        }
+
         yield chunk;
       }
 

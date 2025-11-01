@@ -51,9 +51,21 @@ export type {
   StreamingOptions,
   StreamTransformer,
   StreamFilter,
+  IWorkflowProvider,
 } from './lib/interfaces/workflow.interface';
 
 // Note: WorkflowState and HumanFeedback are already exported above
+
+// Agent provider interfaces (type-only exports)
+export type {
+  IAgentProvider,
+  IAgentWorkflowConfig,
+  IMultiAgentStreamingConfig,
+  IMultiAgentInterruptionConfig,
+} from './lib/interfaces/agent.interface';
+
+// Tool provider interfaces (type-only exports)
+export type { IToolProvider } from './lib/interfaces/tool.interface';
 
 // Workflow config interface (both type and runtime export for WorkflowExecutionConfig)
 export type { WorkflowExecutionConfig } from './lib/interfaces/workflow-config.interface';

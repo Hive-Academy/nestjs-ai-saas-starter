@@ -1,26 +1,29 @@
 import { Injectable, Inject, Optional, Logger } from '@nestjs/common';
 import type {
-  AgentProvider,
-  ToolProvider,
-  WorkflowProvider,
-} from '@hive-academy/langgraph-multi-agent';
-import { getClassTools } from '@hive-academy/langgraph-multi-agent';
+  IAgentProvider,
+  IToolProvider,
+  IWorkflowProvider,
+} from '@hive-academy/langgraph-core';
 import type { WorkflowClass } from '@hive-academy/langgraph-functional-api';
 
 /**
  * Centralized registry for all agents, tools, and workflows in the workflow engine.
  * This is the SINGLE source of truth for registration across all modules.
+ *
+ * ARCHITECTURE NOTE: Uses core interfaces (IAgentProvider, IToolProvider, IWorkflowProvider)
+ * to avoid circular dependency with multi-agent module. This follows the Dependency
+ * Inversion Principle - high-level orchestration depends on abstractions, not implementations.
  */
 @Injectable()
 export class CentralRegistryService {
   private readonly logger = new Logger(CentralRegistryService.name);
 
-  // Internal registries
-  private readonly agents = new Map<string, AgentProvider>();
-  private readonly tools = new Map<string, ToolProvider>();
+  // Internal registries - using core interfaces
+  private readonly agents = new Map<string, IAgentProvider>();
+  private readonly tools = new Map<string, IToolProvider>();
   private readonly workflows = new Map<
     string,
-    WorkflowProvider | WorkflowClass
+    IWorkflowProvider | WorkflowClass
   >();
 
   // Execution service references (injected from other modules)
@@ -30,14 +33,14 @@ export class CentralRegistryService {
   constructor(
     @Optional()
     @Inject('WORKFLOW_ENGINE_AGENTS')
-    private readonly configuredAgents: AgentProvider[] = [],
+    private readonly configuredAgents: IAgentProvider[] = [],
     @Optional()
     @Inject('WORKFLOW_ENGINE_TOOLS')
-    private readonly configuredTools: ToolProvider[] = [],
+    private readonly configuredTools: IToolProvider[] = [],
     @Optional()
     @Inject('WORKFLOW_ENGINE_WORKFLOWS')
     private readonly configuredWorkflows: (
-      | WorkflowProvider
+      | IWorkflowProvider
       | WorkflowClass
     )[] = []
   ) {
@@ -86,7 +89,7 @@ export class CentralRegistryService {
    * 🆕 VALIDATION: Validates that all tools requested by an agent are registered
    * @throws Error if any requested tools are missing
    */
-  private validateAgentTools(agent: AgentProvider): void {
+  private validateAgentTools(agent: IAgentProvider): void {
     // Extract agent class from provider
     let agentClass: any;
     if (typeof agent === 'function') {
@@ -131,7 +134,7 @@ export class CentralRegistryService {
   /**
    * Register an agent provider
    */
-  registerAgent(agent: AgentProvider): void {
+  registerAgent(agent: IAgentProvider): void {
     // 🆕 VALIDATION: Check that all requested tools exist
     this.validateAgentTools(agent);
 
@@ -148,8 +151,12 @@ export class CentralRegistryService {
    *
    * For tool classes (decorated with @Tool), extracts individual tool methods
    * and registers each by its tool name (from @Tool decorator or method name).
+   *
+   * NOTE: getClassTools is a multi-agent specific utility. For maximum decoupling,
+   * we could move this to a plugin pattern in the future. For now, we'll handle
+   * tools without the multi-agent decorator extraction.
    */
-  registerTool(tool: ToolProvider): void {
+  registerTool(tool: IToolProvider): void {
     // Extract tool class from provider
     let toolClass: any;
     if (typeof tool === 'function') {
@@ -168,55 +175,20 @@ export class CentralRegistryService {
       return;
     }
 
-    // Try to extract individual @Tool decorated methods
-    try {
-      const toolMetadataArray = getClassTools(toolClass);
-
-      if (toolMetadataArray && toolMetadataArray.length > 0) {
-        // Register each individual tool method by its name
-        toolMetadataArray.forEach((toolMetadata) => {
-          const toolName = toolMetadata.name;
-
-          if (this.tools.has(toolName)) {
-            this.logger.warn(`Tool ${toolName} already registered, overriding`);
-          }
-
-          // Store the tool metadata (includes handler, schema, etc.)
-          this.tools.set(toolName, {
-            name: toolName,
-            class: toolClass,
-            metadata: toolMetadata,
-          } as any);
-
-          this.logger.log(`Tool registered: ${toolName}`);
-        });
-      } else {
-        // No @Tool decorators found - fallback to class-level registration
-        const toolId = this.getToolId(tool);
-        if (this.tools.has(toolId)) {
-          this.logger.warn(`Tool ${toolId} already registered, overriding`);
-        }
-        this.tools.set(toolId, tool);
-        this.logger.log(`Tool registered: ${toolId}`);
-      }
-    } catch (error) {
-      // If extraction fails, fall back to class-level registration
-      this.logger.warn(
-        `Failed to extract tool metadata from ${toolClass.name}, registering class: ${error}`
-      );
-      const toolId = this.getToolId(tool);
-      if (this.tools.has(toolId)) {
-        this.logger.warn(`Tool ${toolId} already registered, overriding`);
-      }
-      this.tools.set(toolId, tool);
-      this.logger.log(`Tool registered: ${toolId}`);
+    // For now, register at class level without multi-agent decorator extraction
+    // TODO: Consider plugin pattern for decorator extraction to avoid any multi-agent imports
+    const toolId = this.getToolId(tool);
+    if (this.tools.has(toolId)) {
+      this.logger.warn(`Tool ${toolId} already registered, overriding`);
     }
+    this.tools.set(toolId, tool);
+    this.logger.log(`Tool registered: ${toolId}`);
   }
 
   /**
    * Register a workflow provider or class
    */
-  registerWorkflow(workflow: WorkflowProvider | WorkflowClass): void {
+  registerWorkflow(workflow: IWorkflowProvider | WorkflowClass): void {
     const workflowId = this.getWorkflowId(workflow);
     if (this.workflows.has(workflowId)) {
       this.logger.warn(`Workflow ${workflowId} already registered, overriding`);
@@ -228,42 +200,42 @@ export class CentralRegistryService {
   /**
    * Get all registered agents
    */
-  getAgents(): Map<string, AgentProvider> {
+  getAgents(): Map<string, IAgentProvider> {
     return new Map(this.agents);
   }
 
   /**
    * Get all registered tools
    */
-  getTools(): Map<string, ToolProvider> {
+  getTools(): Map<string, IToolProvider> {
     return new Map(this.tools);
   }
 
   /**
    * Get all registered workflows
    */
-  getWorkflows(): Map<string, WorkflowProvider | WorkflowClass> {
+  getWorkflows(): Map<string, IWorkflowProvider | WorkflowClass> {
     return new Map(this.workflows);
   }
 
   /**
    * Get a specific agent by ID
    */
-  getAgent(id: string): AgentProvider | undefined {
+  getAgent(id: string): IAgentProvider | undefined {
     return this.agents.get(id);
   }
 
   /**
    * Get a specific tool by ID
    */
-  getTool(id: string): ToolProvider | undefined {
+  getTool(id: string): IToolProvider | undefined {
     return this.tools.get(id);
   }
 
   /**
    * Get a specific workflow by ID
    */
-  getWorkflow(id: string): WorkflowProvider | WorkflowClass | undefined {
+  getWorkflow(id: string): IWorkflowProvider | WorkflowClass | undefined {
     return this.workflows.get(id);
   }
 
@@ -335,7 +307,7 @@ export class CentralRegistryService {
   /**
    * Extract agent ID from agent provider
    */
-  private getAgentId(agent: AgentProvider): string {
+  private getAgentId(agent: IAgentProvider): string {
     if (typeof agent === 'string') {
       return agent;
     }
@@ -351,6 +323,10 @@ export class CentralRegistryService {
       if (providerObj.useClass) {
         return providerObj.useClass.name || 'unknown-agent';
       }
+      // Handle IAgentProvider interface with id property
+      if (providerObj.id) {
+        return providerObj.id;
+      }
     }
     return 'unknown-agent';
   }
@@ -358,7 +334,7 @@ export class CentralRegistryService {
   /**
    * Extract tool ID from tool provider
    */
-  private getToolId(tool: ToolProvider): string {
+  private getToolId(tool: IToolProvider): string {
     if (typeof tool === 'string') {
       return tool;
     }
@@ -374,6 +350,10 @@ export class CentralRegistryService {
       if (providerObj.useClass) {
         return providerObj.useClass.name || 'unknown-tool';
       }
+      // Handle IToolProvider interface with name property
+      if (providerObj.name) {
+        return providerObj.name;
+      }
     }
     return 'unknown-tool';
   }
@@ -381,7 +361,7 @@ export class CentralRegistryService {
   /**
    * Extract workflow ID from workflow provider or class
    */
-  private getWorkflowId(workflow: WorkflowProvider | WorkflowClass): string {
+  private getWorkflowId(workflow: IWorkflowProvider | WorkflowClass): string {
     if (typeof workflow === 'string') {
       return workflow;
     }
@@ -395,6 +375,10 @@ export class CentralRegistryService {
       }
       if (provider.useClass) {
         return provider.useClass.name || 'unknown-workflow';
+      }
+      // Handle IWorkflowProvider interface with id property
+      if (provider.id) {
+        return provider.id;
       }
     }
     return 'unknown-workflow';
