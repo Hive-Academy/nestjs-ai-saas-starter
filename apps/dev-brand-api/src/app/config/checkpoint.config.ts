@@ -21,8 +21,7 @@ export async function getCheckpointConfig(): Promise<CheckpointModuleOptions> {
     fs.mkdirSync(dbDir, { recursive: true });
   }
 
-  // CRITICAL FIX: await the async SqliteSaver initialization
-  const saver = await SqliteSaver.fromConnString(dbPath);
+  const saver = SqliteSaver.fromConnString(dbPath);
 
   return {
     // Pass the configured saver to the checkpoint library

@@ -4,7 +4,6 @@ import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agen
 import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
 import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
 import { BrandStrategistTools } from '../business-workflows/core/tools/brand-strategist.tools';
-import { ContentCreatorTools } from '../business-workflows/core/tools/content-creator.tools';
 import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { ContentCreatorAgent } from '../business-workflows/agents/content-creator/content-creator.agent';
 import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
@@ -73,12 +72,7 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
     // AGENT AND TOOL REGISTRATION
     // ============================================
     // Tools used by agents
-    tools: [
-      WebResearchTools,
-      GitHubIntegrationTools,
-      BrandStrategistTools,
-      ContentCreatorTools,
-    ],
+    tools: [WebResearchTools, GitHubIntegrationTools, BrandStrategistTools],
 
     // Agents managed by multi-agent module
     agents: [

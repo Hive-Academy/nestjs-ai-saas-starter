@@ -363,18 +363,24 @@ export class ChromaDBConnectionService
 
   /**
    * Add timeout to promise
+   * Uses config.timeout (default 30000ms) instead of hardcoded 10000ms
    */
   private async withTimeout<T>(
     promise: Promise<T>,
-    timeoutMs = 10000
+    timeoutMs?: number
   ): Promise<T> {
+    // Use provided timeout, fallback to config timeout, then default to 30000ms
+    const effectiveTimeout = timeoutMs ?? this.config.timeout ?? 30000;
+
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
         () =>
           reject(
-            new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)
+            new ChromaDBTimeoutError(
+              `Operation timed out after ${effectiveTimeout}ms`
+            )
           ),
-        timeoutMs
+        effectiveTimeout
       );
     });
 

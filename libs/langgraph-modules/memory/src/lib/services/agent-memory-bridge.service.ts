@@ -266,14 +266,92 @@ export class AgentMemoryBridgeService
    * Delegates to AgentMemoryContextService
    *
    * Pattern source: implementation-plan.md:1417-1432
+   *
+   * FIXED: Improved fallback handling with warnings when state is incomplete
    */
   async getAgentContext(state: AgentState): Promise<AgentMemoryContext> {
+    // Extract agent ID with intelligent fallback
+    const agentId = this.extractAgentId(state);
+    const threadId = this.extractThreadId(state);
+
+    // Warn if using fallback values (indicates upstream initialization issue)
+    if (!state.current || !state.threadId) {
+      this.logger.warn(
+        'AgentState missing required properties for memory operations',
+        {
+          hasCurrent: !!state.current,
+          hasThreadId: !!state.threadId,
+          fallbackAgentId: agentId,
+          fallbackThreadId: threadId,
+          metadata: state.metadata,
+        }
+      );
+    }
+
     return this.getAgentMemoryContext(
-      state.current || 'unknown',
-      state.threadId || 'unknown',
+      agentId,
+      threadId,
       state.messages?.[state.messages.length - 1]?.content,
       state.userId
     );
+  }
+
+  /**
+   * Extract agent ID from state with intelligent fallback
+   * Priority: state.current > metadata.networkId > 'default-agent'
+   */
+  private extractAgentId(state: AgentState): string {
+    if (state.current) {
+      return state.current;
+    }
+
+    // Try to extract from metadata
+    const networkId = state.metadata?.networkId as string | undefined;
+    if (networkId) {
+      this.logger.debug(`Using networkId as fallback agentId: ${networkId}`);
+      return networkId;
+    }
+
+    // Final fallback
+    this.logger.warn('No agent ID found in state, using default-agent');
+    return 'default-agent';
+  }
+
+  /**
+   * Extract thread ID from state with intelligent fallback
+   * Priority: state.threadId > generated from metadata > timestamp-based
+   */
+  private extractThreadId(state: AgentState): string {
+    if (state.threadId) {
+      return state.threadId;
+    }
+
+    // Try to generate from metadata
+    const executionId = state.metadata?.executionId as string | undefined;
+    const networkId = state.metadata?.networkId as string | undefined;
+
+    if (executionId) {
+      const fallbackThreadId = `thread-${executionId}`;
+      this.logger.debug(
+        `Generated fallback threadId from executionId: ${fallbackThreadId}`
+      );
+      return fallbackThreadId;
+    }
+
+    if (networkId) {
+      const fallbackThreadId = `thread-${networkId}-${Date.now()}`;
+      this.logger.debug(
+        `Generated fallback threadId from networkId: ${fallbackThreadId}`
+      );
+      return fallbackThreadId;
+    }
+
+    // Final fallback with timestamp
+    const fallbackThreadId = `thread-${Date.now()}`;
+    this.logger.warn(
+      `No thread identifier found in state, using timestamp-based fallback: ${fallbackThreadId}`
+    );
+    return fallbackThreadId;
   }
 
   /**

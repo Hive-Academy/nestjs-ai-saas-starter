@@ -5,6 +5,7 @@ import {
 import {
   generateExecutionId,
   ICheckpointAdapter,
+  NodeIdBuilder,
 } from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
@@ -147,6 +148,37 @@ export class NetworkManagerService {
   }
 
   /**
+   * Generate canonical thread ID using NODE_ID_STANDARD pattern
+   * Pattern: multi-agent|execution:<networkId>:<timestamp>
+   *
+   * @param networkId - The network identifier
+   * @param timestamp - Execution start timestamp
+   * @returns Canonical thread ID following NODE_ID_STANDARD
+   */
+  private generateThreadId(networkId: string, timestamp: number): string {
+    return NodeIdBuilder.create()
+      .domain('multi-agent')
+      .phase('execution')
+      .activity(networkId)
+      .detail(timestamp.toString())
+      .build();
+  }
+
+  /**
+   * Determine initial agent for workflow execution
+   *
+   * @param networkConfig - Network configuration
+   * @returns Initial agent ID (supervisor or first worker)
+   */
+  private getInitialAgent(networkConfig: AgentNetwork): string {
+    if (networkConfig.type === 'supervisor' && networkConfig.config) {
+      return 'supervisor';
+    }
+    // For other network types, return first agent or default
+    return networkConfig.agents[0]?.id || 'coordinator';
+  }
+
+  /**
    * Execute multi-agent workflow
    */
   async executeWorkflow(
@@ -171,20 +203,28 @@ export class NetworkManagerService {
         typeof msg === 'string' ? new HumanMessage(msg) : msg
       );
 
+      const executionId = generateExecutionId();
+      const threadId = this.generateThreadId(networkId, startTime);
+      const currentAgent = this.getInitialAgent(networkConfig);
+
       const initialState: AgentState = {
         messages,
+        threadId, // ✅ FIXED: Canonical thread ID for memory operations
+        current: currentAgent, // ✅ FIXED: Initial agent for memory context
         metadata: {
           networkId,
           networkType: networkConfig.type,
           startTime,
-          executionId: generateExecutionId(),
+          executionId,
         },
       };
 
       this.logger.debug(`Executing workflow on network ${networkId}`, {
         type: networkConfig.type,
         messageCount: messages.length,
-        executionId: initialState.metadata?.executionId,
+        threadId,
+        currentAgent,
+        executionId,
       });
 
       this.eventEmitter.emit('workflow.started', {
@@ -280,15 +320,29 @@ export class NetworkManagerService {
       typeof msg === 'string' ? new HumanMessage(msg) : msg
     );
 
+    const executionId = generateExecutionId();
+    const threadId = this.generateThreadId(networkId, startTime);
+    const currentAgent = this.getInitialAgent(networkConfig);
+
     const initialState: AgentState = {
       messages,
+      threadId, // ✅ FIXED: Canonical thread ID for memory operations
+      current: currentAgent, // ✅ FIXED: Initial agent for memory context
       metadata: {
         networkId,
         networkType: networkConfig.type,
         startTime,
-        executionId: generateExecutionId(),
+        executionId,
       },
     };
+
+    this.logger.debug(`Executing workflow on network ${networkId}`, {
+      type: networkConfig.type,
+      messageCount: messages.length,
+      threadId,
+      currentAgent,
+      executionId,
+    });
 
     try {
       // 🆕 PHASE 2: Read streaming configuration from agent metadata

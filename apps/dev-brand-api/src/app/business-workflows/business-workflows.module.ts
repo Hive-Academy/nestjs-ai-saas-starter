@@ -14,6 +14,7 @@ import { PersonalBrandMemoryService } from './core/memory/personal-brand-memory.
 import { RepositoryModule } from '../repositories/repository.module';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
+import { BrandStrategistTools } from './core/tools/brand-strategist.tools';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 
 /**
@@ -52,6 +53,7 @@ import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
     // MVP Tools - Kept per user request
     WebResearchTools, // Social media profile searching
     GitHubIntegrationTools, // GitHub API integration
+    BrandStrategistTools, // Brand strategy and optimization tools
 
     // DevBrand Configuration
     {
@@ -113,6 +115,7 @@ import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
     PersonalBrandMemoryService,
     WebResearchTools,
     GitHubIntegrationTools,
+    BrandStrategistTools,
   ],
 })
 export class BusinessWorkflowsModule {

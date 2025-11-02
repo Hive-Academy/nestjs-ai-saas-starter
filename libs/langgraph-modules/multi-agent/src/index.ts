@@ -128,3 +128,13 @@ export type {
 
 // Configuration utilities
 export * from './lib/utils/multi-agent-config.accessor';
+
+// Validation utilities
+export {
+  validateAgentState,
+  assertValidAgentState,
+  validateAndWarnAgentState,
+  createDefaultAgentState,
+  AgentStateValidationError,
+  type StateValidationResult,
+} from './lib/utils/agent-state-validator';
