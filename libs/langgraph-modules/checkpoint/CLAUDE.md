@@ -12,7 +12,7 @@
 
 ```typescript
 // ACTUAL MODULE IMPORT NAME (from source inspection)
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 
 // REAL FACADE PATTERN: CheckpointManagerService orchestrates 8 services
 CheckpointManagerService (Main Facade)
@@ -50,12 +50,12 @@ npm install @hive-academy/langgraph-checkpoint
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 
 @Module({
   imports: [
     // Auto-fallback to MemorySaver when no saver provided
-    LanggraphModulesCheckpointModule.forRoot(),
+    CheckpointModule.forRoot(),
   ],
 })
 export class AppModule {}
@@ -64,15 +64,12 @@ export class AppModule {}
 ### **Production Setup (Verified Pattern)**
 
 ```typescript
-import {
-  LanggraphModulesCheckpointModule,
-  CheckpointModuleOptions,
-} from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule, CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 
 @Module({
   imports: [
-    LanggraphModulesCheckpointModule.forRoot({
+    CheckpointModule.forRoot({
       // User provides any LangGraph checkpoint saver
       saver: SqliteSaver.fromConnString('./checkpoints.db'),
 
@@ -102,7 +99,7 @@ export class ProductionModule {}
 
 ```typescript
 // Main NestJS Module (VERIFIED)
-export { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+export { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 export type { CheckpointModuleOptions } from '@hive-academy/langgraph-checkpoint';
 
 // Main Facade Service (VERIFIED)
@@ -310,7 +307,7 @@ FunctionalApiModule.forRoot({
 @Module({
   imports: [
     // 1. Checkpoint module provides CheckpointManagerAdapter as ICheckpointAdapter
-    LanggraphModulesCheckpointModule.forRootAsync({
+    CheckpointModule.forRootAsync({
       useFactory: async () => ({
         saver: SqliteSaver.fromConnString('./data/checkpoints.db'),
         cleanup: { enabled: true },
@@ -360,7 +357,7 @@ Each module wraps the base `ICheckpointAdapter` with domain-specific operations:
 
 ### **7. Key Architectural Insights (Source-Based)**
 
-1. **Checkpoint Module as Primary Provider**: `LanggraphModulesCheckpointModule` provides `CheckpointManagerAdapter` as `'ICheckpointAdapter'` DI token
+1. **Checkpoint Module as Primary Provider**: `CheckpointModule` provides `CheckpointManagerAdapter` as `'ICheckpointAdapter'` DI token
 2. **Graceful Degradation**: All modules handle missing checkpoint adapter gracefully - Multi-Agent, Workflow-Engine use `@Optional()`
 3. **Fail-Fast for Critical Modules**: HITL requires checkpoint adapter and fails fast if not provided (human approvals must be persisted)
 4. **Namespace Isolation**: Each module uses different checkpoint namespaces to avoid conflicts
@@ -507,7 +504,7 @@ export class CheckpointIntegrationExample {
 
 ```typescript
 // From actual app configuration analysis
-LanggraphModulesCheckpointModule.forRootAsync({
+CheckpointModule.forRootAsync({
   imports: [ConfigModule],
   useFactory: async (configService: ConfigService) => ({
     // User provides external saver
@@ -546,7 +543,7 @@ import { RedisSaver } from '@langchain/langgraph-checkpoint-redis';
 import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres';
 
 // All auto-detected by module
-LanggraphModulesCheckpointModule.forRoot({
+CheckpointModule.forRoot({
   saver: new SqliteSaver('db.sqlite'), // ✅ Auto-detected as 'sqlite'
   // saver: new RedisSaver(redisConfig),  // ✅ Auto-detected as 'redis'
   // saver: new PostgresSaver(pgConfig),  // ✅ Auto-detected as 'postgres'
@@ -558,10 +555,7 @@ LanggraphModulesCheckpointModule.forRoot({
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import {
-  LanggraphModulesCheckpointModule,
-  CheckpointManagerService,
-} from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule, CheckpointManagerService } from '@hive-academy/langgraph-checkpoint';
 
 describe('Real Checkpoint Integration', () => {
   let checkpointManager: CheckpointManagerService;
@@ -569,7 +563,7 @@ describe('Real Checkpoint Integration', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [
-        LanggraphModulesCheckpointModule.forRoot(), // Auto-fallback to memory
+        CheckpointModule.forRoot(), // Auto-fallback to memory
       ],
     }).compile();
 
@@ -596,7 +590,7 @@ describe('Real Checkpoint Integration', () => {
 
 ## 🎯 KEY ARCHITECTURAL FACTS
 
-1. **Module Name**: `LanggraphModulesCheckpointModule` (not `CheckpointModule`)
+1. **Module Name**: `CheckpointModule` (not `CheckpointModule`)
 2. **Facade Pattern**: `CheckpointManagerService` orchestrates 8 specialized services
 3. **Auto-Fallback**: Automatically uses `MemorySaver` when no external saver provided
 4. **DI Integration**: Provides `'ICheckpointAdapter'` token for other modules
@@ -606,8 +600,8 @@ describe('Real Checkpoint Integration', () => {
 
 ## 🔧 BEST PRACTICES (Evidence-Based)
 
-1. **Development**: Use `LanggraphModulesCheckpointModule.forRoot()` for auto-fallback
-2. **Production**: Provide real saver with `LanggraphModulesCheckpointModule.forRootAsync()`
+1. **Development**: Use `CheckpointModule.forRoot()` for auto-fallback
+2. **Production**: Provide real saver with `CheckpointModule.forRootAsync()`
 3. **Service Injection**: Inject `CheckpointManagerService` for main operations
 4. **Capability Checking**: Use `isCoreServicesAvailable()` before operations
 5. **Multi-Agent**: Let dependency injection handle adapter integration automatically

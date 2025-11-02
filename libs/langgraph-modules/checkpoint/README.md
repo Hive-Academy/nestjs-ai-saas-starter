@@ -98,11 +98,11 @@ npm install @langchain/langgraph-checkpoint-postgres
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 
 @Module({
   imports: [
-    LanggraphModulesCheckpointModule.forRoot(), // 🎯 That's it! Auto-fallback to memory
+    CheckpointModule.forRoot(), // 🎯 That's it! Auto-fallback to memory
   ],
 })
 export class AppModule {}
@@ -114,12 +114,12 @@ export class AppModule {}
 ### **Production-Ready Setup**
 
 ```typescript
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
 
 @Module({
   imports: [
-    LanggraphModulesCheckpointModule.forRoot({
+    CheckpointModule.forRoot({
       // 🎯 Just provide any LangGraph saver
       saver: SqliteSaver.fromConnString('production.db'),
 
@@ -350,7 +350,7 @@ import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agen
 // ✅ Verified integration from actual source code analysis
 @Module({
   imports: [
-    LanggraphModulesCheckpointModule.forRootAsync({
+    CheckpointModule.forRootAsync({
       useFactory: async () => ({
         saver: SqliteSaver.fromConnString('./data/checkpoints.db'),
         cleanup: { enabled: true },
@@ -515,13 +515,13 @@ await checkpoints.saveCheckpoint(threadId, state, metadata, 'primary');
 ### **Development (Zero Config)**
 
 ```typescript
-LanggraphModulesCheckpointModule.forRoot(); // Just works!
+CheckpointModule.forRoot(); // Just works!
 ```
 
 ### **Production (Full Config)**
 
 ```typescript
-LanggraphModulesCheckpointModule.forRoot({
+CheckpointModule.forRoot({
   saver: SqliteSaver.fromConnString(connectionString),
 
   cleanup: {
@@ -576,15 +576,15 @@ LanggraphModulesCheckpointModule.forRoot({
 
 ```typescript
 // 1. Start with zero config
-LanggraphModulesCheckpointModule.forRoot();
+CheckpointModule.forRoot();
 
 // 2. Add real storage
-LanggraphModulesCheckpointModule.forRoot({
+CheckpointModule.forRoot({
   saver: SqliteSaver.fromConnString('dev.db'),
 });
 
 // 3. Enable production features
-LanggraphModulesCheckpointModule.forRoot({
+CheckpointModule.forRoot({
   saver: SqliteSaver.fromConnString(prodDB),
   cleanup: { enabled: true },
   health: { enabled: true },
@@ -592,7 +592,7 @@ LanggraphModulesCheckpointModule.forRoot({
 });
 
 // 4. Scale with multi-storage
-LanggraphModulesCheckpointModule.forRoot({
+CheckpointModule.forRoot({
   saver: SqliteSaver.fromConnString(primaryDB),
   // + Register backup savers via CheckpointSaverRegistry
 });
@@ -618,12 +618,12 @@ LanggraphModulesCheckpointModule.forRoot({
 
 ```typescript
 import { Test } from '@nestjs/testing';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 
 describe('Checkpoint Integration', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [LanggraphModulesCheckpointModule.forRoot()], // Auto-memory for tests
+      imports: [CheckpointModule.forRoot()], // Auto-memory for tests
     }).compile();
   });
 

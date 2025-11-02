@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { LanggraphModulesCheckpointModule } from '../langgraph-modules/checkpoint.module';
+import { CheckpointModule } from '../langgraph-modules/checkpoint.module';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 
 describe('Checkpoint Module Independence Tests', () => {
@@ -17,7 +17,7 @@ describe('Checkpoint Module Independence Tests', () => {
       // Test that the module can be imported and initialized without any core services
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -28,13 +28,13 @@ describe('Checkpoint Module Independence Tests', () => {
       }).compile();
 
       expect(module).toBeDefined();
-      expect(module.get(LanggraphModulesCheckpointModule)).toBeDefined();
+      expect(module.get(CheckpointModule)).toBeDefined();
     });
 
     it('should initialize CheckpointManagerService with optional dependencies', async () => {
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -51,7 +51,7 @@ describe('Checkpoint Module Independence Tests', () => {
     it('should handle graceful degradation when ConfigService is not available', async () => {
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -76,7 +76,7 @@ describe('Checkpoint Module Independence Tests', () => {
     beforeEach(async () => {
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -146,7 +146,7 @@ describe('Checkpoint Module Independence Tests', () => {
     beforeEach(async () => {
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -188,7 +188,7 @@ describe('Checkpoint Module Independence Tests', () => {
     it('should accept minimal configuration', async () => {
       const module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -206,7 +206,7 @@ describe('Checkpoint Module Independence Tests', () => {
 
     it('should work with empty configuration', async () => {
       const module = await Test.createTestingModule({
-        imports: [LanggraphModulesCheckpointModule.forRoot({})],
+        imports: [CheckpointModule.forRoot({})],
       }).compile();
 
       const checkpointManager = module.get(CheckpointManagerService);
@@ -217,7 +217,7 @@ describe('Checkpoint Module Independence Tests', () => {
 
     it('should provide reasonable defaults when no config is provided', async () => {
       const module = await Test.createTestingModule({
-        imports: [LanggraphModulesCheckpointModule.forRoot({})],
+        imports: [CheckpointModule.forRoot({})],
       }).compile();
 
       const checkpointManager = module.get(CheckpointManagerService);
@@ -244,7 +244,7 @@ describe('Checkpoint Module Independence Tests', () => {
 
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,
@@ -266,7 +266,7 @@ describe('Checkpoint Module Independence Tests', () => {
 
       module = await Test.createTestingModule({
         imports: [
-          LanggraphModulesCheckpointModule.forRoot({
+          CheckpointModule.forRoot({
             cleanup: {
               interval: 60000,
               maxAge: 3600000,

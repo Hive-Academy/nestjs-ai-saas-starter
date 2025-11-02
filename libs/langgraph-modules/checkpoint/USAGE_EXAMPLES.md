@@ -121,12 +121,12 @@ export async function createCheckpointSavers(
 ```typescript
 // app.module.ts
 import { Module } from '@nestjs/common';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { createCheckpointSavers } from './checkpoint-config';
 
 @Module({
   imports: [
-    LanggraphModulesCheckpointModule.forRootAsync({
+    CheckpointModule.forRootAsync({
       useFactory: async () => {
         const savers = await createCheckpointSavers();
 

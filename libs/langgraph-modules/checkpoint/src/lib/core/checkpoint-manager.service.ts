@@ -3,7 +3,6 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
-  Inject,
   Optional,
 } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
@@ -37,19 +36,13 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CheckpointManagerService.name);
 
   constructor(
-    @Optional() private readonly configService?: ConfigService,
-    @Inject('ICheckpointSaverRegistry')
-    private readonly saverRegistry?: ICheckpointSaverRegistry,
-    @Inject('ICheckpointRegistryService')
-    private readonly registryService?: ICheckpointRegistryService,
-    @Inject('ICheckpointPersistenceService')
-    private readonly persistenceService?: ICheckpointPersistenceService,
-    @Inject('ICheckpointMetricsService')
-    private readonly metricsService?: ICheckpointMetricsService,
-    @Inject('ICheckpointCleanupService')
-    private readonly cleanupService?: ICheckpointCleanupService,
-    @Inject('ICheckpointHealthService')
-    private readonly healthService?: ICheckpointHealthService
+    private readonly saverRegistry: ICheckpointSaverRegistry,
+    private readonly registryService: ICheckpointRegistryService,
+    private readonly persistenceService: ICheckpointPersistenceService,
+    private readonly metricsService: ICheckpointMetricsService,
+    private readonly cleanupService: ICheckpointCleanupService,
+    private readonly healthService: ICheckpointHealthService,
+    @Optional() private readonly configService?: ConfigService
   ) {}
 
   // ========================================
@@ -65,27 +58,26 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Check if all core services are available
+   * Always returns true since services are required dependencies
    */
   public isCoreServicesAvailable(): boolean {
-    return !!(
-      this.saverRegistry &&
-      this.registryService &&
-      this.persistenceService
-    );
+    return true;
   }
 
   /**
    * Check if monitoring services are available
+   * Always returns true since services are required dependencies
    */
   public isMonitoringAvailable(): boolean {
-    return !!(this.metricsService && this.healthService);
+    return true;
   }
 
   /**
    * Check if cleanup services are available
+   * Always returns true since service is a required dependency
    */
   public isCleanupAvailable(): boolean {
-    return !!this.cleanupService;
+    return true;
   }
 
   /**

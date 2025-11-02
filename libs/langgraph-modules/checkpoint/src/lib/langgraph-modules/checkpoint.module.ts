@@ -10,11 +10,12 @@ import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
 import { CheckpointHealthService } from '../core/checkpoint-health.service';
 import { CheckpointModuleConfig } from '../interfaces/checkpoint-saver-registry.interface';
 import { CheckpointManagerAdapter } from '../adapters/checkpoint-manager.adapter';
+import { MemorySaver } from '@langchain/langgraph-checkpoint';
 
 export type CheckpointModuleOptions = CheckpointModuleConfig;
 
 @Module({})
-export class LanggraphModulesCheckpointModule {
+export class CheckpointModule {
   /**
    * Get shared providers configuration
    */
@@ -28,37 +29,10 @@ export class LanggraphModulesCheckpointModule {
       CheckpointHealthService,
       CheckpointPersistenceService,
 
-      // Interface tokens for dependency injection
-      {
-        provide: 'ICheckpointSaverRegistry',
-        useExisting: CheckpointSaverRegistry,
-      },
-      {
-        provide: 'ICheckpointRegistryService',
-        useExisting: CheckpointRegistryService,
-      },
-      {
-        provide: 'ICheckpointPersistenceService',
-        useExisting: CheckpointPersistenceService,
-      },
-      {
-        provide: 'ICheckpointMetricsService',
-        useExisting: CheckpointMetricsService,
-      },
-      {
-        provide: 'ICheckpointCleanupService',
-        useExisting: CheckpointCleanupService,
-      },
-      {
-        provide: 'ICheckpointHealthService',
-        useExisting: CheckpointHealthService,
-      },
-
       // Facade service
       CheckpointManagerService,
 
       // Checkpoint adapter - bridges checkpoint module to core interface
-      // TASK_2025_029: Fix DI - use factory to properly inject CheckpointManagerService
       {
         provide: CheckpointManagerAdapter,
         useFactory: (checkpointManager: CheckpointManagerService) => {
@@ -90,14 +64,7 @@ export class LanggraphModulesCheckpointModule {
       CheckpointMetricsService,
       CheckpointCleanupService,
       CheckpointHealthService,
-      // Export interface tokens
-      'ICheckpointSaverRegistry',
-      'ICheckpointRegistryService',
-      'ICheckpointPersistenceService',
-      'ICheckpointMetricsService',
-      'ICheckpointCleanupService',
-      'ICheckpointHealthService',
-      // Export checkpoint adapter
+      // Export checkpoint adapter token (required for other modules)
       'ICheckpointAdapter',
     ];
   }
@@ -107,7 +74,7 @@ export class LanggraphModulesCheckpointModule {
    */
   public static forRoot(options: CheckpointModuleOptions = {}): DynamicModule {
     return {
-      module: LanggraphModulesCheckpointModule,
+      module: CheckpointModule,
       imports: [ConfigModule],
       providers: [
         {
@@ -119,7 +86,7 @@ export class LanggraphModulesCheckpointModule {
         {
           provide: 'CHECKPOINT_SAVERS_INIT',
           useFactory: (registry: CheckpointSaverRegistry) => {
-            return LanggraphModulesCheckpointModule.initializeCheckpointSaver(
+            return CheckpointModule.initializeCheckpointSaver(
               registry,
               options
             );
@@ -142,7 +109,7 @@ export class LanggraphModulesCheckpointModule {
     inject?: InjectionToken[];
   }): DynamicModule {
     return {
-      module: LanggraphModulesCheckpointModule,
+      module: CheckpointModule,
       imports: [ConfigModule],
       providers: [
         {
@@ -158,7 +125,7 @@ export class LanggraphModulesCheckpointModule {
             moduleOptions: CheckpointModuleOptions,
             registry: CheckpointSaverRegistry
           ) => {
-            return LanggraphModulesCheckpointModule.initializeCheckpointSaver(
+            return CheckpointModule.initializeCheckpointSaver(
               registry,
               moduleOptions
             );
@@ -180,9 +147,7 @@ export class LanggraphModulesCheckpointModule {
   ): CheckpointSaverRegistry {
     if (options.saver) {
       // User provided a saver - register it
-      const saverType = LanggraphModulesCheckpointModule.detectSaverType(
-        options.saver
-      );
+      const saverType = CheckpointModule.detectSaverType(options.saver);
 
       registry.registerSaver({
         name: 'primary',
@@ -200,24 +165,21 @@ export class LanggraphModulesCheckpointModule {
         `✅ Checkpoint saver registered: ${saverType} (provided by user)`
       );
     } else {
-      // No saver provided - fallback to in-memory
-      import('@langchain/langgraph-checkpoint').then(({ MemorySaver }) => {
-        registry.registerSaver({
-          name: 'fallback',
-          saver: new MemorySaver(),
-          default: true,
-          metadata: {
-            type: 'memory',
-            description: 'In-memory checkpoint storage (fallback)',
-            persistent: false,
-            supportsStreaming: true,
-          },
-        });
-
-        console.log(
-          '⚠️  No checkpoint saver provided - falling back to in-memory storage'
-        );
+      registry.registerSaver({
+        name: 'fallback',
+        saver: new MemorySaver(),
+        default: true,
+        metadata: {
+          type: 'memory',
+          description: 'In-memory checkpoint storage (fallback)',
+          persistent: false,
+          supportsStreaming: true,
+        },
       });
+
+      console.log(
+        '⚠️  No checkpoint saver provided - falling back to in-memory storage'
+      );
     }
 
     return registry;

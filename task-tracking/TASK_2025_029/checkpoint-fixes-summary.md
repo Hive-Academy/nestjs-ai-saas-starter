@@ -180,7 +180,7 @@ SqliteSaver.fromConnString('./data/checkpoints.db')
   ↓
 CheckpointModuleOptions { saver: SqliteSaver }
   ↓
-LanggraphModulesCheckpointModule.forRootAsync()
+CheckpointModule.forRootAsync()
   ↓
 CheckpointSaverRegistry.registerSaver({ saver: SqliteSaver, default: true })
   ↓

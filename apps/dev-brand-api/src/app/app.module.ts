@@ -18,7 +18,7 @@ import { AdaptersModule } from './adapters';
 // Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import {
   HitlModule,
@@ -146,7 +146,7 @@ import {
     }),
 
     // Checkpoint module with new adapter pattern
-    LanggraphModulesCheckpointModule.forRootAsync({
+    CheckpointModule.forRootAsync({
       useFactory: async () => {
         const config = await getCheckpointConfig();
         return config;
