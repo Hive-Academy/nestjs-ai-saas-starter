@@ -11,7 +11,6 @@
  * - State management with metadata
  */
 
-import type { BaseMessage } from '@langchain/core/messages';
 import type { CompiledStateGraph } from '@langchain/langgraph';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import type { AgentState } from '@hive-academy/langgraph-core';
@@ -44,10 +43,13 @@ export interface LLMWithTools {
 
 /**
  * AI Message with optional tool calls
+ * Note: Simplified interface for internal use, not strict BaseMessage compliance
  */
-export interface AIMessageWithToolCalls extends BaseMessage {
+export interface AIMessageWithToolCalls {
   tool_calls?: ToolCall[];
   _getType?(): string;
+  content: string | Record<string, any>;
+  [key: string]: any;
 }
 
 /**
@@ -80,8 +82,17 @@ export interface WeightedObject {
 
 /**
  * Agent state with additional metadata fields
+ * Note: Extends AgentState with optional command processing fields
  */
-export interface StateWithMetadata extends AgentState {
+export interface StateWithMetadata {
+  messages?: any[];
+  next?: string;
+  current?: string;
+  scratchpad?: string;
+  task?: string;
+  threadId?: string;
+  userId?: string;
+  metadata?: Record<string, unknown>;
   humanFeedback?: {
     approved: boolean;
     comments?: string;
@@ -89,11 +100,6 @@ export interface StateWithMetadata extends AgentState {
   priority?: number;
   confidence?: number;
   commandMetadata?: Record<string, unknown>;
-  metadata?: {
-    error?: {
-      message?: string;
-    };
-  } & Record<string, unknown>;
 }
 
 /**
@@ -107,18 +113,19 @@ export interface ToolNodeExecutor {
  * Workflow execution result with metadata
  */
 export interface WorkflowResult {
-  finalState: AgentState;
+  finalState: Partial<AgentState>;
   executionTime: number;
   tokenUsage?: TokenUsage;
 }
 
 /**
  * Token usage statistics
+ * Matches MultiAgentResult.tokenUsage interface
  */
 export interface TokenUsage {
-  promptTokens?: number;
-  completionTokens?: number;
-  totalTokens?: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 /**
@@ -136,7 +143,13 @@ export type CommandType = 'goto' | 'update' | 'parallel' | 'sequence';
 /**
  * Task types for background processing
  */
-export type TaskType = 'store' | 'retrieve' | 'update';
+export type TaskType =
+  | 'store'
+  | 'retrieve'
+  | 'update'
+  | 'conversation'
+  | 'coordination_event'
+  | 'performance';
 
 /**
  * Background task structure
@@ -157,11 +170,14 @@ export interface ToolSchema {
 
 /**
  * Type guard to check if a message is an AI message with tool calls
+ * Uses runtime check with any cast for compatibility
  */
 export function isAIMessageWithToolCalls(
-  message: BaseMessage
+  message: any
 ): message is AIMessageWithToolCalls {
   return (
+    message &&
+    typeof message === 'object' &&
     '_getType' in message &&
     typeof message._getType === 'function' &&
     message._getType() === 'ai'

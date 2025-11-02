@@ -18,8 +18,6 @@ import { ToolNodeService } from '../tools/tool-node.service';
 import { CommandProcessorService } from '../routing/command-processor.service';
 import type { Command as InternalCommand } from '../routing/command-processor.service';
 import {
-  LLMWithTools,
-  AIMessageWithToolCalls,
   isAIMessageWithToolCalls,
   ToolNodeServiceWithWeightedMerge,
 } from '../types/internal-types';
@@ -86,7 +84,7 @@ export class NodeFactoryService {
       };
 
       // Process command through CommandProcessorService
-      return await this.commandProcessor.processCommand(
+      return (await this.commandProcessor.processCommand(
         internalCommand,
         state,
         {
@@ -94,7 +92,7 @@ export class NodeFactoryService {
           validateCommand: true,
           applyMetadata: true,
         }
-      );
+      )) as any;
     }
 
     // Not a command - return as-is
@@ -215,7 +213,7 @@ export class NodeFactoryService {
 
         // Create routing tool
         const routingTool = this.createRoutingTool(config);
-        const llmWithTools = (llm as LLMWithTools).bindTools([routingTool]);
+        const llmWithTools = (llm as any).bindTools([routingTool]);
 
         const messages = [
           { role: 'system', content: systemPrompt },
@@ -225,7 +223,7 @@ export class NodeFactoryService {
           })),
         ];
 
-        const response = await llmWithTools.invoke(messages);
+        const response: any = await llmWithTools.invoke(messages);
 
         if (response.tool_calls && response.tool_calls.length > 0) {
           const toolCall = response.tool_calls[0];
@@ -237,7 +235,7 @@ export class NodeFactoryService {
           });
 
           return {
-            messages: config.enableForwardMessage ? [] : [response],
+            messages: config.enableForwardMessage ? [] : [response as any],
             next: routingDecision.next,
             task: routingDecision.task,
             metadata: {
@@ -253,7 +251,7 @@ export class NodeFactoryService {
           'Supervisor failed to make routing decision, ending workflow'
         );
         return {
-          messages: [response],
+          messages: [response as any],
           next: MULTI_AGENT_CONSTANTS.END,
         };
       } catch (error) {
@@ -703,21 +701,21 @@ export class NodeFactoryService {
         );
 
         // Execute parallel tools with weighted coordination
-        // Tool executors expect AgentState - create compatible state
-        const stateForTools: AgentState = {
+        // Tool executors expect WorkflowState - create compatible state
+        const stateForTools = {
           ...state,
           ...agentResult,
-        };
-        const toolResults = await parallelToolExecutor(stateForTools);
+        } as any;
+        const toolResults = await parallelToolExecutor(stateForTools as any);
 
         // Execute high-priority tools with retry logic if needed
         let enhancedResults = { ...agentResult, ...toolResults };
         for (const retryTool of retryableTools) {
           try {
-            const stateForRetry: AgentState = {
+            const stateForRetry = {
               ...state,
               ...enhancedResults,
-            };
+            } as any;
             const retryResult = await retryTool(stateForRetry);
             enhancedResults = { ...enhancedResults, ...retryResult };
           } catch (error) {
@@ -821,7 +819,7 @@ export class NodeFactoryService {
 
     // Use ToolNodeService for weighted parallel execution
     const parallelExecutor =
-      this.toolNodeService.createParallelToolExecutor(toolConfigs);
+      this.toolNodeService.createParallelToolExecutor<AgentState>(toolConfigs);
     const results = await parallelExecutor(state);
 
     return {

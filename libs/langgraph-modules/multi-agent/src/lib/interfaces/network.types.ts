@@ -114,7 +114,7 @@ export interface MultiAgentResult {
   /**
    * Final state of the workflow
    */
-  finalState: AgentState;
+  finalState: Partial<AgentState>;
 
   /**
    * Execution path taken

@@ -249,7 +249,7 @@ export class NetworkManagerService {
       const threadId = this.generateThreadId(networkId, startTime);
       const currentAgent = this.getInitialAgent(networkConfig);
 
-      const initialState: AgentState = {
+      const initialState: Partial<AgentState> = {
         messages,
         threadId, // ✅ FIXED: Canonical thread ID for memory operations
         current: currentAgent, // ✅ FIXED: Initial agent for memory context
@@ -278,7 +278,7 @@ export class NetworkManagerService {
 
       // Execute the workflow
       const typedGraph = graph as MultiAgentGraph;
-      const result = await typedGraph.invoke(initialState, {
+      const result: any = await typedGraph.invoke(initialState as any, {
         ...input.config,
         configurable: {
           ...input.config?.configurable,
@@ -288,7 +288,7 @@ export class NetworkManagerService {
       });
 
       const executionTime = Date.now() - startTime;
-      const executionPath = this.extractExecutionPath(result);
+      const executionPath = this.extractExecutionPath(result as AgentState);
 
       this.eventEmitter.emit('workflow.completed', {
         networkId,
@@ -300,11 +300,12 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      const workflowResult: WorkflowResult = {
-        finalState: result,
+      const resultState = result as Partial<AgentState>;
+      const workflowResult = {
+        finalState: resultState,
         executionTime,
-        tokenUsage: this.extractTokenUsage(result),
-      };
+        tokenUsage: this.extractTokenUsage(resultState),
+      } as WorkflowResult;
 
       return {
         ...workflowResult,
@@ -371,7 +372,7 @@ export class NetworkManagerService {
     const threadId = this.generateThreadId(networkId, startTime);
     const currentAgent = this.getInitialAgent(networkConfig);
 
-    const initialState: AgentState = {
+    const initialState: Partial<AgentState> = {
       messages,
       threadId, // ✅ FIXED: Canonical thread ID for memory operations
       current: currentAgent, // ✅ FIXED: Initial agent for memory context
@@ -453,17 +454,18 @@ export class NetworkManagerService {
       let finalResult: AgentState | undefined;
       const executionPath: string[] = [];
 
-      const typedGraph = graph as MultiAgentGraph;
+      const typedGraph = graph as any;
       for await (const chunk of typedGraph.stream(
-        initialState,
+        initialState as any,
         streamOptions
-      )) {
+      ) as AsyncIterable<any>) {
         // Track execution path
-        if (chunk.current) {
-          executionPath.push(chunk.current);
+        const chunkState = chunk as any;
+        if (chunkState.current) {
+          executionPath.push(chunkState.current);
         }
 
-        finalResult = chunk;
+        finalResult = chunkState as AgentState;
 
         // 🚀 STREAMING INTEGRATION: Emit events via EventEmitter2
         // This ensures streaming events reach WebSocketBridge → Frontend
@@ -473,16 +475,16 @@ export class NetworkManagerService {
         this.eventEmitter.emit(`workflow.stream.${executionId}`, {
           type: 'agent_update',
           executionId,
-          data: chunk,
+          data: chunkState,
           timestamp: new Date(),
           metadata: {
             networkId,
-            agentId: chunk.current,
+            agentId: chunkState.current,
             streamMode: streamOptions.streamMode,
           },
         });
 
-        yield chunk;
+        yield chunkState;
       }
 
       const executionTime = Date.now() - startTime;
@@ -495,11 +497,12 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      const workflowResult: WorkflowResult = {
-        finalState: finalResult || initialState,
+      const resultState = (finalResult || initialState) as AgentState;
+      const workflowResult = {
+        finalState: resultState,
         executionTime,
-        tokenUsage: this.extractTokenUsage(finalResult),
-      };
+        tokenUsage: this.extractTokenUsage(resultState),
+      } as WorkflowResult;
 
       return {
         ...workflowResult,
@@ -673,7 +676,7 @@ export class NetworkManagerService {
    * Extract token usage from result
    */
   private extractTokenUsage(
-    result?: AgentState
+    result?: Partial<AgentState>
   ): MultiAgentResult['tokenUsage'] {
     if (!result?.metadata?.tokenUsage) {
       return undefined;

@@ -153,11 +153,28 @@ export function validateAndWarnAgentState(
 export function createDefaultAgentState(
   partial: Partial<AgentState> = {}
 ): AgentState {
+  const now = new Date();
+  const timestamp = Date.now();
   return {
+    // Multi-agent specific fields
     messages: [],
-    threadId: `fallback-thread-${Date.now()}`,
+    threadId: `fallback-thread-${timestamp}`,
     current: 'default-agent',
     metadata: {},
+    // Required WorkflowState fields
+    id: `agent-state-${timestamp}`,
+    executionId: `exec_${timestamp}`,
+    status: 'pending' as const,
+    completedNodes: [],
+    confidence: 1.0,
+    retryCount: 0,
+    timestamps: {
+      started: now,
+    },
+    startedAt: now,
+    createdAt: now,
+    updatedAt: now,
+    // Merge partial overrides
     ...partial,
-  };
+  } as AgentState;
 }

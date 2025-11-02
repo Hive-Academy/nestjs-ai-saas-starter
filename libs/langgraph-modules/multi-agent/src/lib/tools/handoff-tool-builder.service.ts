@@ -388,8 +388,9 @@ export class HandoffToolBuilderService {
     // Check tool calls using type guard
     if (result.messages) {
       for (const message of result.messages) {
-        if (isAIMessageWithToolCalls(message)) {
-          const toolCalls = message.tool_calls || [];
+        const msgAny = message as any;
+        if (isAIMessageWithToolCalls(msgAny)) {
+          const toolCalls = msgAny.tool_calls || [];
           for (const toolCall of toolCalls) {
             const matchingTool = handoffTools.find(
               (tool: HandoffTool) =>
@@ -399,7 +400,9 @@ export class HandoffToolBuilderService {
             if (matchingTool) {
               return {
                 targetAgent: matchingTool.targetAgent,
-                task: toolCall.args?.task_description || result.task,
+                task:
+                  (toolCall.args?.task_description as string | undefined) ||
+                  result.task,
                 reason: `Handoff tool called: ${toolCall.name}`,
               };
             }

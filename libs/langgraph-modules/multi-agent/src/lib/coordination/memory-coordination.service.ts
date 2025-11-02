@@ -319,7 +319,7 @@ export class MemoryCoordinationService {
     }
 
     try {
-      const mockState: AgentState = {
+      const mockState = {
         messages: input.messages.map((msg) =>
           typeof msg === 'string' ? new HumanMessage(msg) : msg
         ),
@@ -330,7 +330,17 @@ export class MemoryCoordinationService {
           ...input.config?.metadata,
           networkId,
         },
-      };
+        // Required AgentState fields from WorkflowState
+        executionId: `exec_${Date.now()}`,
+        status: 'active' as const,
+        completedNodes: [],
+        confidence: 1.0,
+        retryCount: 0,
+        timestamps: {
+          started: new Date(),
+        },
+        startedAt: new Date(),
+      } as unknown as AgentState;
 
       const memoryContext = await this.memoryAdapter.getAgentContext(mockState);
 

@@ -4,11 +4,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import { ToolRegistryService } from './tool-registry.service';
-import type {
-  ToolNodeExecutor,
-  WeightedObject,
-  hasWeights,
-} from '../types/internal-types';
+import type { WeightedObject } from '../types/internal-types';
+import { hasWeights } from '../types/internal-types';
 
 /**
  * Enhanced service for creating and managing LangGraph ToolNodes
@@ -108,8 +105,8 @@ export class ToolNodeService {
     return async (state: TState): Promise<Partial<TState>> => {
       try {
         // Execute tools based on messages in state
-        const typedToolNode = toolNode as ToolNodeExecutor;
-        const result = await typedToolNode.invoke(state);
+        const typedToolNode = toolNode as any;
+        const result = await typedToolNode.invoke(state as any);
 
         // Return the result as a partial state update
         return result as Partial<TState>;
@@ -374,10 +371,14 @@ export class ToolNodeService {
 
       try {
         // Execute tools with timeout if specified
-        const typedToolNode = toolNode as ToolNodeExecutor;
+        const typedToolNode = toolNode as any;
         const result = options?.timeout
-          ? await this.executeWithTimeout(toolNode, state, options.timeout)
-          : await typedToolNode.invoke(state);
+          ? await this.executeWithTimeout(
+              toolNode,
+              state as any,
+              options.timeout
+            )
+          : await typedToolNode.invoke(state as any);
 
         // Track metrics
         this.updateExecutionMetrics(nodeId, Date.now() - startTime, true);
@@ -546,14 +547,14 @@ export class ToolNodeService {
         reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
-      const typedToolNode = toolNode as ToolNodeExecutor;
+      const typedToolNode = toolNode as any;
       typedToolNode
-        .invoke(state as WorkflowState)
-        .then((result) => {
+        .invoke(state as any)
+        .then((result: any) => {
           clearTimeout(timeout);
-          resolve(result);
+          resolve(result as any);
         })
-        .catch((error) => {
+        .catch((error: any) => {
           clearTimeout(timeout);
           reject(error);
         });

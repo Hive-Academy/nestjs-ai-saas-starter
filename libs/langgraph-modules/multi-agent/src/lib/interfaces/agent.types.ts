@@ -1,4 +1,5 @@
-import type { BaseMessage } from '@langchain/core/messages';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { AIMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
 
 /**
@@ -53,12 +54,12 @@ export interface AgentMetadata {
  * LangGraph-compatible agent state following 2025 best practices
  * Core state interface for all multi-agent workflows
  */
-export interface AgentState {
+export interface AgentState extends WorkflowState {
   /**
    * Message history - core component of LangGraph multi-agent systems
    * Maintains conversation context across agent handoffs
    */
-  messages: BaseMessage[];
+  messages: AIMessage[];
 
   /**
    * Next agent to execute (used by supervisor pattern)

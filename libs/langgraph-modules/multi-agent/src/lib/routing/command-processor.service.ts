@@ -54,20 +54,18 @@ export interface Command<TState extends AgentState = AgentState> {
 
 /**
  * Extended AgentState with command processing fields
+ *
+ * Note: AgentState extends WorkflowState which has required fields:
+ * - completedNodes: string[]
+ * - confidence: number
+ * - retryCount: number
+ * - humanFeedback: HumanFeedback (with 'approved' field)
+ * - error: WorkflowExecutionError
+ * - lastError: WorkflowError (inherited from WorkflowState)
  */
 export interface CommandProcessingState extends AgentState {
   /**
-   * Current executing node
-   */
-  currentNode?: string;
-
-  /**
-   * Completed nodes
-   */
-  completedNodes?: string[];
-
-  /**
-   * Next available nodes
+   * Next available nodes for routing
    */
   nextAvailableNodes?: string[];
 
@@ -75,11 +73,6 @@ export interface CommandProcessingState extends AgentState {
    * Workflow status
    */
   workflowStatus?: 'running' | 'completed' | 'failed';
-
-  /**
-   * Error message
-   */
-  error?: string;
 
   /**
    * Last command executed
@@ -92,44 +85,12 @@ export interface CommandProcessingState extends AgentState {
   };
 
   /**
-   * Last error
-   */
-  lastError?: {
-    id: string;
-    nodeId: string;
-    type: string;
-    message: string;
-    timestamp: Date;
-    isRecoverable: boolean;
-    suggestedRecovery: string;
-  };
-
-  /**
-   * Retry count
-   */
-  retryCount?: number;
-
-  /**
-   * Human feedback for approvals
-   */
-  humanFeedback?: {
-    status: 'pending' | 'approved' | 'rejected';
-    timestamp: Date;
-    metadata?: Record<string, unknown>;
-  };
-
-  /**
-   * Priority
+   * Priority for execution ordering
    */
   priority?: number;
 
   /**
-   * Confidence score
-   */
-  confidence?: number;
-
-  /**
-   * Command metadata
+   * Command metadata for tracking
    */
   commandMetadata?: Record<string, unknown>;
 }
@@ -435,7 +396,7 @@ export class CommandProcessorService {
 
     // Handle human approval requirement
     if (metadata.requiresApproval) {
-      typedUpdates.humanFeedback = {
+      (typedUpdates as any).humanFeedback = {
         status: 'pending',
         timestamp: new Date(),
         metadata: {
@@ -453,7 +414,7 @@ export class CommandProcessorService {
 
     // Handle confidence updates
     if (typeof metadata.confidence === 'number') {
-      typedUpdates.confidence = metadata.confidence;
+      (typedUpdates as any).confidence = metadata.confidence;
     }
 
     // Store metadata in context

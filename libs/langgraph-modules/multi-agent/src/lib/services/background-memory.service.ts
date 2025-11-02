@@ -27,11 +27,7 @@ import type { MultiAgentResult } from '../interfaces/multi-agent.interface';
  */
 
 interface MemoryWriteTask {
-  readonly type:
-    | 'conversation'
-    | 'execution'
-    | 'coordination_event'
-    | 'performance';
+  readonly type: 'conversation' | 'coordination_event' | 'performance';
   readonly priority: 'low' | 'medium' | 'high';
   readonly data: any;
   readonly timestamp: number;
