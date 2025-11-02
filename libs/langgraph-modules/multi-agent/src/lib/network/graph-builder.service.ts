@@ -3,6 +3,8 @@ import {
   StateGraph,
   CompiledStateGraph,
   Annotation,
+  START,
+  END,
 } from '@langchain/langgraph';
 import {
   AgentDefinition,
@@ -81,7 +83,7 @@ export class GraphBuilderService {
     }
 
     // Add edges
-    this.addSupervisorEdges(graph as any, config.workers);
+    this.addSupervisorEdges(graph, config.workers);
 
     // 🆕 PHASE 2: Read interruption configuration from agent metadata
     let interruptBefore: string[] | undefined;
@@ -141,7 +143,10 @@ export class GraphBuilderService {
 
     // Compile and return
     // LangGraph API Note: 'debug' property removed from compile options
-    // interruptBefore/interruptAfter require explicit type casting due to strict literal types
+    // Type casting required: LangGraph's strict generic type N[] doesn't match runtime string[]
+    // - checkpointer: unknown type from compilationOptions
+    // - interruptBefore/interruptAfter: string[] from agent metadata, not in graph's type union N
+    // These are safe casts as nodes are dynamically registered above
     return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
       ...(interruptBefore && { interruptBefore: interruptBefore as any }),
@@ -178,7 +183,7 @@ export class GraphBuilderService {
     }
 
     // Add edges for swarm pattern
-    this.addSwarmEdges(graph as any, agents);
+    this.addSwarmEdges(graph, agents);
 
     // LangGraph API Note: 'debug' property removed from compile options
     return graph.compile({
@@ -268,12 +273,15 @@ Route tasks based on complexity and specialization.`,
     // Add escalation logic
     graph.addNode('escalation_router', this.createEscalationRouter(config));
 
-    // Set entry point to top level (use addEdge from __start__)
-    // Type assertion needed due to LangGraph's strict literal types
-    graph.addEdge('__start__' as any, 'level_0_supervisor' as any);
+    // Set entry point to top level
+    // Type assertion: Dynamic node names not in StateGraph's type union N
+    // 'level_0_supervisor' is created dynamically above, safe to cast to any
+    // LangGraph's strict typing system doesn't support template literal node names
+    graph.addEdge(START as any, 'level_0_supervisor' as any);
 
     // Add conditional escalation edges
-    // Type assertions needed due to LangGraph's strict literal types for node names
+    // Type assertions: Dynamic template literal node names require any casting
+    // StateGraph's generic type N doesn't include runtime-generated node names
     for (
       let levelIndex = 0;
       levelIndex < config.levels.length - 1;
@@ -285,15 +293,15 @@ Route tasks based on complexity and specialization.`,
         {
           escalate: `level_${levelIndex + 1}_supervisor` as any,
           continue: 'escalation_router' as any,
-          finish: '__end__',
+          finish: END,
         }
       );
     }
 
     // Final level goes to completion
-    // Type assertion needed due to template literal type
+    // Type assertion: Dynamic node name requires any cast
     const finalLevel = config.levels.length - 1;
-    graph.addEdge(`level_${finalLevel}_supervisor` as any, '__end__');
+    graph.addEdge(`level_${finalLevel}_supervisor` as any, END);
 
     this.logger.log(`Built ${config.levels.length}-level hierarchical graph`);
 
@@ -485,10 +493,15 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
 
   /**
    * Add edges for supervisor pattern
+   * @param graph - StateGraph instance (typed as any due to complex generic signature)
+   * @param workers - Array of worker agent IDs
    */
-  private addSupervisorEdges(graph: any, workers: readonly string[]): void {
+  private addSupervisorEdges(
+    graph: StateGraph<any, any, any, any>,
+    workers: readonly string[]
+  ): void {
     // Entry point to supervisor
-    graph.addEdge('__start__', 'supervisor');
+    graph.addEdge(START, 'supervisor');
 
     // Workers return to supervisor
     for (const workerId of workers) {
@@ -505,10 +518,15 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
 
   /**
    * Add edges for swarm pattern
+   * @param graph - StateGraph instance (typed as any due to complex generic signature)
+   * @param agents - Array of agent definitions
    */
-  private addSwarmEdges(graph: any, agents: readonly AgentDefinition[]): void {
+  private addSwarmEdges(
+    graph: StateGraph<any, any, any, any>,
+    agents: readonly AgentDefinition[]
+  ): void {
     // Entry point to first agent
-    graph.addEdge('__start__', agents[0].id);
+    graph.addEdge(START, agents[0].id);
 
     // Each agent can route to any other agent or end
     for (const agent of agents) {
