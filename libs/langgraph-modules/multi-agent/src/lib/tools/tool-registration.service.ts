@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { getClassTools } from '../decorators/tool.decorator';
 import { ToolRegistryService } from '../tools/tool-registry.service';
@@ -9,15 +15,35 @@ import type { ToolProvider } from '../interfaces/multi-agent.interface';
  *
  * This service handles compile-time safe registration of tool providers
  * without runtime discovery overhead or module context issues.
+ *
+ * ARCHITECTURE: Tools are registered in multi-agent module (not workflow-engine)
+ * because tools are used BY agents, which are managed by multi-agent module.
  */
 @Injectable()
-export class ToolRegistrationService {
+export class ToolRegistrationService implements OnModuleInit {
   private readonly logger = new Logger(ToolRegistrationService.name);
 
   constructor(
     private readonly moduleRef: ModuleRef,
-    private readonly toolRegistry: ToolRegistryService
+    private readonly toolRegistry: ToolRegistryService,
+    @Optional()
+    @Inject('MULTI_AGENT_TOOLS')
+    private readonly configuredTools: ToolProvider[] = []
   ) {}
+
+  /**
+   * Initialize tool registration on module startup
+   */
+  async onModuleInit(): Promise<void> {
+    if (this.configuredTools.length > 0) {
+      this.logger.log(
+        `Auto-registering ${this.configuredTools.length} tool providers from module config`
+      );
+      await this.registerTools(this.configuredTools);
+    } else {
+      this.logger.debug('No tools configured for automatic registration');
+    }
+  }
 
   /**
    * Register tools from explicitly provided tool providers

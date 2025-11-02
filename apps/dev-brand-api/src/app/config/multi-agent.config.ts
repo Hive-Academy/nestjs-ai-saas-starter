@@ -1,8 +1,23 @@
 import type { MultiAgentModuleOptions } from '@hive-academy/langgraph-multi-agent';
 
+// Agent and tool imports - registered in multi-agent module
+import { WebResearchTools } from '../business-workflows/core/tools/web-research.tools';
+import { GitHubIntegrationTools } from '../business-workflows/core/tools/github-integration.tools';
+import { BrandStrategistTools } from '../business-workflows/core/tools/brand-strategist.tools';
+import { ContentCreatorTools } from '../business-workflows/core/tools/content-creator.tools';
+import { PersonalBrandStrategistAgent } from '../business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
+import { ContentCreatorAgent } from '../business-workflows/agents/content-creator/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from '../business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
+import { DevBrandChatWorkflow } from '../business-workflows/workflows/devbrand-chat.workflow';
+import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+
 /**
  * Multi-Agent Module Configuration for dev-brand-api
- * Simple and consistent LLM provider configuration
+ *
+ * ARCHITECTURE: Multi-agent module owns agent and tool registration
+ * - Tools are used BY agents → belong in multi-agent module
+ * - Agents are managed by multi-agent module → registered here
+ * - Multi-agent workflows (supervisor, swarm) → registered here
  */
 export function getMultiAgentConfig(): MultiAgentModuleOptions {
   // Simple provider selection - explicit from LLM_PROVIDER environment variable
@@ -54,6 +69,30 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
   };
 
   return {
+    // ============================================
+    // AGENT AND TOOL REGISTRATION
+    // ============================================
+    // Tools used by agents
+    tools: [
+      WebResearchTools,
+      GitHubIntegrationTools,
+      BrandStrategistTools,
+      ContentCreatorTools,
+    ],
+
+    // Agents managed by multi-agent module
+    agents: [
+      PersonalBrandStrategistAgent,
+      ContentCreatorAgent,
+      GitHubCodeAnalyzerAgent,
+    ],
+
+    // Multi-agent workflows (supervisor, swarm patterns)
+    workflows: [DevBrandSupervisorWorkflow, DevBrandChatWorkflow],
+
+    // ============================================
+    // LLM CONFIGURATION
+    // ============================================
     // Simple and consistent LLM configuration
     defaultLlm: {
       // Explicit provider selection - no detection logic

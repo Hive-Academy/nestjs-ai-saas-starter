@@ -11,25 +11,25 @@ import type {
 } from './workflow.types';
 
 /**
- * Multi-agent module configuration (2025 pattern - PURE CONFIGURATION ONLY)
- * NOTE: Registration is now handled by WorkflowEngineModule centrally
+ * Multi-agent module configuration (2025 pattern)
+ * ARCHITECTURE: Multi-agent module owns agent and tool registration
  */
 export interface MultiAgentModuleOptions {
   /**
-   * CENTRALIZED REGISTRATION: Agent providers registered by WorkflowEngineModule
-   * This array is populated by the workflow engine's agent registration system
+   * Agent providers to register
+   * Agents are registered in multi-agent module and used for execution
    */
   agents?: AgentProvider[];
 
   /**
-   * CENTRALIZED REGISTRATION: Tool providers registered by WorkflowEngineModule
-   * This array is populated by the workflow engine's tool registration system
+   * Tool providers to register
+   * Tools belong to multi-agent module as they are used BY agents
    */
   tools?: ToolProvider[];
 
   /**
-   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
-   * This array is populated by the workflow engine's workflow registration system
+   * Workflow providers to register
+   * Multi-agent workflows (supervisor, swarm, etc.) managed by this module
    */
   workflows?: WorkflowProvider[];
 

@@ -14,9 +14,6 @@ export * from './lib/core/graph-optimization.service';
 // Decorator Bridge Services (cleaned up)
 export * from './lib/services/decorator-translation.service';
 export * from './lib/services/multi-agent-translation.service';
-
-// CENTRALIZED REGISTRATION: The single source of truth for all agents, tools, workflows
-export * from './lib/services/central-registry.service';
 export * from './lib/interfaces/decorator-bridge.interface';
 export * from './lib/interfaces/multi-agent-bridge.interface';
 // Removed duplicate enhanced decorator interfaces - use canonical ones from source modules

@@ -66,6 +66,25 @@ export class MultiAgentModule {
       },
 
       // ============================================
+      // REGISTRATION PROVIDERS
+      // ============================================
+      // Provide tools array for ToolRegistrationService
+      {
+        provide: 'MULTI_AGENT_TOOLS',
+        useValue: mergedOptions.tools || [],
+      },
+      // Provide agents array for AgentRegistryService
+      {
+        provide: 'MULTI_AGENT_AGENTS',
+        useValue: mergedOptions.agents || [],
+      },
+      // Provide workflows array for WorkflowRegistryService
+      {
+        provide: 'MULTI_AGENT_WORKFLOWS',
+        useValue: mergedOptions.workflows || [],
+      },
+
+      // ============================================
       // CORE COORDINATION SERVICES
       // ============================================
       MultiAgentCoordinatorService,
@@ -166,6 +185,34 @@ export class MultiAgentModule {
           // Store config for decorator access
           setMultiAgentConfig(mergedOptions);
           return mergedOptions;
+        },
+        inject: options.inject || [],
+      },
+
+      // ============================================
+      // REGISTRATION PROVIDERS (from async config)
+      // ============================================
+      {
+        provide: 'MULTI_AGENT_TOOLS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.tools || [];
+        },
+        inject: options.inject || [],
+      },
+      {
+        provide: 'MULTI_AGENT_AGENTS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.agents || [];
+        },
+        inject: options.inject || [],
+      },
+      {
+        provide: 'MULTI_AGENT_WORKFLOWS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.workflows || [];
         },
         inject: options.inject || [],
       },
