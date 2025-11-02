@@ -49,9 +49,15 @@ export class GraphBuilderService {
       );
     }
 
-    const graph = new (StateGraph as any)({
+    // Create state annotation from channels (LangGraph 2025 API)
+    // Verification trail:
+    // - Pattern source: workflow-engine/workflow-graph-builder.service.ts:105
+    // - LangGraph expects state annotation object or channels directly
+    // - Previous usage: new (StateGraph as any)({ channels }) caused undefined channels error
+    // - Fix: Pass state annotation with channels property
+    const graph = new StateGraph({
       channels: this.createDefaultStateChannels(),
-    });
+    } as any);
 
     // Create and add supervisor node
     const supervisorNode = await this.nodeFactory.createSupervisorNode(
@@ -152,9 +158,10 @@ export class GraphBuilderService {
       agents.map((a) => a.id)
     );
 
-    const graph = new (StateGraph as any)({
+    // Create state annotation for swarm pattern (LangGraph 2025 API)
+    const graph = new StateGraph({
       channels: this.createSwarmStateChannels(config),
-    });
+    } as any);
 
     // Add all agent nodes with handoff capabilities
     for (const agent of agents) {
@@ -217,7 +224,8 @@ Route tasks based on complexity and specialization.`,
     config: HierarchicalConfig,
     compilationOptions?: AgentNetwork['compilationOptions']
   ): Promise<CompiledStateGraph<any, any>> {
-    const graph = new (StateGraph as any)({
+    // Create state annotation for hierarchical pattern (LangGraph 2025 API)
+    const graph = new StateGraph({
       channels: {
         ...this.createDefaultStateChannels(),
         currentLevel: {
@@ -229,7 +237,7 @@ Route tasks based on complexity and specialization.`,
           default: () => '',
         },
       },
-    });
+    } as any);
 
     // Create supervisor nodes for each level
     for (let levelIndex = 0; levelIndex < config.levels.length; levelIndex++) {
@@ -255,8 +263,8 @@ Route tasks based on complexity and specialization.`,
     // Add escalation logic
     graph.addNode('escalation_router', this.createEscalationRouter(config));
 
-    // Set entry point to top level
-    graph.addEntrypoint(`level_0_supervisor`);
+    // Set entry point to top level (use addEdge from __start__)
+    (graph as any).addEdge('__start__', 'level_0_supervisor');
 
     // Add conditional escalation edges
     for (
@@ -264,7 +272,7 @@ Route tasks based on complexity and specialization.`,
       levelIndex < config.levels.length - 1;
       levelIndex++
     ) {
-      graph.addConditionalEdges(
+      (graph as any).addConditionalEdges(
         `level_${levelIndex}_supervisor`,
         this.createEscalationCondition(config, levelIndex),
         {
@@ -277,7 +285,7 @@ Route tasks based on complexity and specialization.`,
 
     // Final level goes to completion
     const finalLevel = config.levels.length - 1;
-    graph.addEdge(`level_${finalLevel}_supervisor`, '__end__');
+    (graph as any).addEdge(`level_${finalLevel}_supervisor`, '__end__');
 
     this.logger.log(`Built ${config.levels.length}-level hierarchical graph`);
 
