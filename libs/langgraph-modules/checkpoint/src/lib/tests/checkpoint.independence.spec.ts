@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { CheckpointModule } from '../langgraph-modules/checkpoint.module';
+import { CheckpointModule } from '../checkpoint.module';
 import { CheckpointManagerService } from '../core/checkpoint-manager.service';
 
 describe('Checkpoint Module Independence Tests', () => {

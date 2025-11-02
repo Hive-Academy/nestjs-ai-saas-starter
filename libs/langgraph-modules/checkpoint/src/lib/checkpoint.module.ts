@@ -1,15 +1,14 @@
 import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CheckpointManagerService } from '../core/checkpoint-manager.service';
-import { StateTransformerService } from '../core/state-transformer.service';
-import { CheckpointSaverRegistry } from '../core/checkpoint-saver.registry';
-import { CheckpointRegistryService } from '../core/checkpoint-registry.service';
-import { CheckpointPersistenceService } from '../core/checkpoint-persistence.service';
-import { CheckpointMetricsService } from '../core/checkpoint-metrics.service';
-import { CheckpointCleanupService } from '../core/checkpoint-cleanup.service';
-import { CheckpointHealthService } from '../core/checkpoint-health.service';
-import { CheckpointModuleConfig } from '../interfaces/checkpoint-saver-registry.interface';
-import { CheckpointManagerAdapter } from '../adapters/checkpoint-manager.adapter';
+import { CheckpointManagerService } from './core/checkpoint-manager.service';
+import { StateTransformerService } from './core/state-transformer.service';
+import { CheckpointSaverRegistry } from './core/checkpoint-saver.registry';
+import { CheckpointPersistenceService } from './core/checkpoint-persistence.service';
+import { CheckpointMetricsService } from './core/checkpoint-metrics.service';
+import { CheckpointCleanupService } from './core/checkpoint-cleanup.service';
+import { CheckpointHealthService } from './core/checkpoint-health.service';
+import { CheckpointModuleConfig } from './interfaces/checkpoint-saver-registry.interface';
+import { CheckpointManagerAdapter } from './adapters/checkpoint-manager.adapter';
 import { MemorySaver } from '@langchain/langgraph-checkpoint';
 
 export type CheckpointModuleOptions = CheckpointModuleConfig;
@@ -23,7 +22,6 @@ export class CheckpointModule {
     return [
       // Core services following SOLID principles
       CheckpointSaverRegistry,
-      CheckpointRegistryService,
       CheckpointMetricsService,
       CheckpointCleanupService,
       CheckpointHealthService,
@@ -59,7 +57,6 @@ export class CheckpointModule {
       StateTransformerService,
       // Export focused services for advanced usage
       CheckpointSaverRegistry,
-      CheckpointRegistryService,
       CheckpointPersistenceService,
       CheckpointMetricsService,
       CheckpointCleanupService,

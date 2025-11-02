@@ -19,7 +19,6 @@ import { CheckpointHealthService } from './checkpoint-health.service';
 import { CheckpointCleanupService } from './checkpoint-cleanup.service';
 import { CheckpointMetricsService } from './checkpoint-metrics.service';
 import { CheckpointPersistenceService } from './checkpoint-persistence.service';
-import { CheckpointRegistryService } from './checkpoint-registry.service';
 import { CheckpointSaverRegistry } from './checkpoint-saver.registry';
 
 /**
@@ -35,7 +34,6 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly saverRegistry: CheckpointSaverRegistry,
-    private readonly registryService: CheckpointRegistryService,
     private readonly persistenceService: CheckpointPersistenceService,
     private readonly metricsService: CheckpointMetricsService,
     private readonly cleanupService: CheckpointCleanupService,
@@ -59,7 +57,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Always returns true since services are required dependencies
    */
   public isCoreServicesAvailable(): boolean {
-    return true;
+    return !!(this.saverRegistry && this.persistenceService);
   }
 
   /**
@@ -256,11 +254,11 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get default saver name
    * Returns null if registry service not available
    */
-  getDefaultSaverName(): string | null {
-    if (!this.registryService) {
-      return null;
+  getDefaultSaverName(): string | undefined {
+    if (!this.saverRegistry) {
+      return undefined;
     }
-    return this.registryService.getDefaultSaverName();
+    return this.saverRegistry.getDefaultSaverName();
   }
 
   /**
@@ -268,10 +266,20 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Returns null if registry service not available
    */
   getSaverInfo(saverName?: string) {
-    if (!this.registryService) {
+    if (!this.saverRegistry) {
       return null;
     }
-    return this.registryService.getSaverInfo(saverName);
+    const actualSaverName =
+      saverName ?? this.saverRegistry.getDefaultSaverName();
+    if (!actualSaverName) {
+      return null;
+    }
+    const metadata = this.saverRegistry.getSaverMetadata(actualSaverName);
+    return {
+      name: actualSaverName,
+      default: actualSaverName === this.saverRegistry.getDefaultSaverName(),
+      metadata,
+    };
   }
 
   /**
@@ -279,10 +287,10 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Returns empty array if registry service not available
    */
   getAllSaversInfo() {
-    if (!this.registryService) {
+    if (!this.saverRegistry) {
       return [];
     }
-    return this.registryService.getAllSaversInfo();
+    return this.saverRegistry.listSavers();
   }
 
   /**
@@ -290,10 +298,14 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Returns default stats if registry service not available
    */
   getRegistryStats() {
-    if (!this.registryService) {
-      return { totalSavers: 0, defaultSaver: null, healthySavers: 0 };
+    if (!this.saverRegistry) {
+      return { totalSavers: 0, defaultSaver: null, availableSavers: [] };
     }
-    return this.registryService.getRegistryStats();
+    return {
+      totalSavers: this.saverRegistry.getSaverCount(),
+      defaultSaver: this.saverRegistry.getDefaultSaverName(),
+      availableSavers: this.saverRegistry.getAvailableSavers(),
+    };
   }
 
   // ========================================
@@ -333,7 +345,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
     const actualSaverName =
-      saverName || this.registryService?.getDefaultSaverName() || 'default';
+      saverName || this.saverRegistry?.getDefaultSaverName() || 'default';
     return this.metricsService.getMetrics(actualSaverName);
   }
 
@@ -606,15 +618,23 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     const warnings: string[] = [];
 
     // Validate registry if available
-    let registryValidation: {
+    const registryValidation: {
       valid: boolean;
       issues: string[];
       warnings: string[];
     } = { valid: true, issues: [], warnings: [] };
-    if (this.registryService) {
-      registryValidation = this.registryService.validateSavers();
-      issues.push(...registryValidation.issues);
-      warnings.push(...registryValidation.warnings);
+    if (this.saverRegistry) {
+      const saverCount = this.saverRegistry.getSaverCount();
+      if (saverCount === 0) {
+        issues.push('No checkpoint savers registered');
+        registryValidation.valid = false;
+      }
+      if (!this.saverRegistry.getDefaultSaverName()) {
+        issues.push('No default checkpoint saver available');
+        registryValidation.valid = false;
+      }
+      registryValidation.issues = issues;
+      registryValidation.warnings = warnings;
     } else {
       warnings.push('Registry service not available - cannot validate savers');
     }
@@ -780,13 +800,16 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Validate that we now have at least one saver
-    if (this.registryService) {
-      const validation = this.registryService.validateSavers();
-      if (!validation.valid) {
+    if (this.saverRegistry) {
+      const saverCount = this.saverRegistry.getSaverCount();
+      if (saverCount === 0) {
         throw new Error(
-          `Checkpoint saver initialization failed: ${validation.issues.join(
-            ', '
-          )}`
+          'Checkpoint saver initialization failed: No savers registered'
+        );
+      }
+      if (!this.saverRegistry.getDefaultSaverName()) {
+        throw new Error(
+          'Checkpoint saver initialization failed: No default saver available'
         );
       }
     }

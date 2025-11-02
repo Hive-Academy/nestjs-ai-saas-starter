@@ -1,13 +1,11 @@
 import { generateThreadId } from '@hive-academy/langgraph-core';
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
-import type {
-  ICheckpointHealthService,
-  ICheckpointMetricsService,
-  ICheckpointRegistryService,
-} from '../interfaces/checkpoint-services.interface';
+import type { ICheckpointHealthService } from '../interfaces/checkpoint-services.interface';
 import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
 import type { CheckpointStats } from '../interfaces/checkpoint.interface';
-import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
+import type { CheckpointModuleOptions } from '../checkpoint.module';
+import { CheckpointMetricsService } from './checkpoint-metrics.service';
+import { CheckpointSaverRegistry } from './checkpoint-saver.registry';
 
 interface HealthConfig {
   checkInterval: number;
@@ -48,10 +46,8 @@ export class CheckpointHealthService
   private readonly maxHistorySize = 1000;
 
   constructor(
-    @Inject('ICheckpointRegistryService')
-    private readonly registryService: ICheckpointRegistryService,
-    @Inject('ICheckpointMetricsService')
-    private readonly metricsService: ICheckpointMetricsService,
+    private readonly registryService: CheckpointSaverRegistry,
+    private readonly metricsService: CheckpointMetricsService,
     @Inject('CHECKPOINT_MODULE_OPTIONS')
     private readonly moduleOptions: CheckpointModuleOptions = {}
   ) {
@@ -77,8 +73,16 @@ export class CheckpointHealthService
       const actualSaverName =
         saverName || this.registryService.getDefaultSaverName() || 'default';
 
-      if (saver.healthCheck) {
-        healthy = await saver.healthCheck();
+      if (!saver) {
+        throw new Error(`Checkpoint saver not found: ${actualSaverName}`);
+      }
+
+      // Type guard: check if saver has healthCheck method
+      if (
+        'healthCheck' in saver &&
+        typeof (saver as any).healthCheck === 'function'
+      ) {
+        healthy = await (saver as any).healthCheck();
       } else {
         // Fallback health check - try to perform a simple operation
         healthy = await this.performBasicHealthCheck(saver);
@@ -170,8 +174,13 @@ export class CheckpointHealthService
     for (const saverName of availableSavers) {
       try {
         const saver = this.registryService.getSaver(saverName);
-        if (saver.getStats) {
-          const saverStats = await saver.getStats();
+        // Type guard: check if saver has getStats method
+        if (
+          saver &&
+          'getStats' in saver &&
+          typeof (saver as any).getStats === 'function'
+        ) {
+          const saverStats = await (saver as any).getStats();
           stats.totalCheckpoints += saverStats.totalCheckpoints;
           stats.activeThreads += saverStats.activeThreads;
           stats.totalStorageUsed += saverStats.totalStorageUsed;
@@ -401,9 +410,14 @@ export class CheckpointHealthService
     const status = await this.getHealthStatus(actualSaverName);
 
     let storageInfo;
-    if (saver.getStorageInfo) {
+    // Type guard: check if saver has getStorageInfo method
+    if (
+      saver &&
+      'getStorageInfo' in saver &&
+      typeof (saver as any).getStorageInfo === 'function'
+    ) {
       try {
-        storageInfo = await saver.getStorageInfo();
+        storageInfo = await (saver as any).getStorageInfo();
       } catch (error) {
         this.logger.warn(
           `Failed to get storage info for ${actualSaverName}:`,

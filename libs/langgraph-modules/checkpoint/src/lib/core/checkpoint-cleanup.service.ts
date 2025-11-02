@@ -1,11 +1,9 @@
-import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
-import type { CheckpointCleanupOptions } from '../interfaces/checkpoint.interface';
-import type { CheckpointModuleOptions } from '../langgraph-modules/checkpoint.module';
-import type {
-  ICheckpointCleanupService,
-  ICheckpointRegistryService,
-} from '../interfaces/checkpoint-services.interface';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import type { ICheckpointCleanupService } from '../interfaces/checkpoint-services.interface';
 import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
+import type { CheckpointCleanupOptions } from '../interfaces/checkpoint.interface';
+import type { CheckpointModuleOptions } from '../checkpoint.module';
+import { CheckpointSaverRegistry } from './checkpoint-saver.registry';
 
 interface CleanupPolicies {
   maxAge: number;
@@ -39,8 +37,7 @@ export class CheckpointCleanupService
   private readonly maxHistorySize = 100;
 
   constructor(
-    @Inject('ICheckpointRegistryService')
-    private readonly registryService: ICheckpointRegistryService,
+    private readonly registryService: CheckpointSaverRegistry,
     @Inject('CHECKPOINT_MODULE_OPTIONS')
     private readonly moduleOptions: CheckpointModuleOptions = {}
   ) {
@@ -73,11 +70,19 @@ export class CheckpointCleanupService
       const actualSaverName =
         saverName ?? this.registryService.getDefaultSaverName() ?? 'default';
 
+      if (!saver) {
+        throw this.createError(
+          `Checkpoint saver not found: ${actualSaverName}`,
+          'SAVER_NOT_FOUND'
+        );
+      }
+
       // Merge options with policies
       const cleanupOptions = this.mergeCleanupOptions(options);
 
-      if (saver.cleanup) {
-        deletedCount = await saver.cleanup(cleanupOptions);
+      // Type guard: check if saver has cleanup method
+      if ('cleanup' in saver && typeof (saver as any).cleanup === 'function') {
+        deletedCount = await (saver as any).cleanup(cleanupOptions);
         this.logger.log(
           `Cleanup completed for ${actualSaverName}: ${deletedCount} checkpoints removed`
         );
