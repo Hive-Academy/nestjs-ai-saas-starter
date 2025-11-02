@@ -14,15 +14,13 @@ import type {
   CheckpointStats,
   CheckpointCleanupOptions,
 } from '../interfaces/checkpoint.interface';
-import type {
-  ICheckpointRegistryService,
-  ICheckpointPersistenceService,
-  ICheckpointMetricsService,
-  ICheckpointCleanupService,
-  ICheckpointHealthService,
-} from '../interfaces/checkpoint-services.interface';
-import type { ICheckpointSaverRegistry } from '../interfaces/checkpoint-saver-registry.interface';
 import type { ILangGraphCheckpointSaver } from '../interfaces/langgraph-checkpoint.interface';
+import { CheckpointHealthService } from './checkpoint-health.service';
+import { CheckpointCleanupService } from './checkpoint-cleanup.service';
+import { CheckpointMetricsService } from './checkpoint-metrics.service';
+import { CheckpointPersistenceService } from './checkpoint-persistence.service';
+import { CheckpointRegistryService } from './checkpoint-registry.service';
+import { CheckpointSaverRegistry } from './checkpoint-saver.registry';
 
 /**
  * Facade service for managing checkpoint persistence across multiple storage backends
@@ -36,12 +34,12 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CheckpointManagerService.name);
 
   constructor(
-    private readonly saverRegistry: ICheckpointSaverRegistry,
-    private readonly registryService: ICheckpointRegistryService,
-    private readonly persistenceService: ICheckpointPersistenceService,
-    private readonly metricsService: ICheckpointMetricsService,
-    private readonly cleanupService: ICheckpointCleanupService,
-    private readonly healthService: ICheckpointHealthService,
+    private readonly saverRegistry: CheckpointSaverRegistry,
+    private readonly registryService: CheckpointRegistryService,
+    private readonly persistenceService: CheckpointPersistenceService,
+    private readonly metricsService: CheckpointMetricsService,
+    private readonly cleanupService: CheckpointCleanupService,
+    private readonly healthService: CheckpointHealthService,
     @Optional() private readonly configService?: ConfigService
   ) {}
 
@@ -417,7 +415,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get cleanup statistics
    * Returns empty stats if cleanup service not available
    */
-  getCleanupStats() {
+  getCleanupStats(): any {
     if (!this.cleanupService) {
       return { totalCleanupRuns: 0, lastCleanup: null };
     }
@@ -428,7 +426,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get cleanup policies
    * Returns empty policies if cleanup service not available
    */
-  getCleanupPolicies() {
+  getCleanupPolicies(): any {
     if (!this.cleanupService) {
       return [];
     }
@@ -517,7 +515,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get health summary report
    * Returns basic summary if health service not available
    */
-  getHealthSummary() {
+  getHealthSummary(): any {
     if (!this.healthService) {
       return {
         overall: {
@@ -538,7 +536,7 @@ export class CheckpointManagerService implements OnModuleInit, OnModuleDestroy {
    * Get health history
    * Returns empty array if health service not available
    */
-  getHealthHistory(saverName?: string) {
+  getHealthHistory(saverName?: string): any {
     if (!this.healthService) {
       return [];
     }

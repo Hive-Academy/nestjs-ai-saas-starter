@@ -1,19 +1,17 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
+import type { ICheckpointPersistenceService } from '../interfaces/checkpoint-services.interface';
+import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
 import {
-  EnhancedCheckpointMetadata,
+  CheckpointLoadError,
+  CheckpointSaveError,
   EnhancedCheckpoint,
+  EnhancedCheckpointMetadata,
   EnhancedCheckpointTuple,
   ListCheckpointsOptions,
-  CheckpointSaveError,
-  CheckpointLoadError,
 } from '../interfaces/checkpoint.interface';
-import type {
-  ICheckpointPersistenceService,
-  ICheckpointRegistryService,
-  ICheckpointMetricsService,
-} from '../interfaces/checkpoint-services.interface';
-import { BaseCheckpointService } from '../interfaces/checkpoint-services.interface';
+import { CheckpointMetricsService } from './checkpoint-metrics.service';
+import { CheckpointSaverRegistry } from './checkpoint-saver.registry';
 
 /**
  * Core persistence service for checkpoint operations
@@ -25,10 +23,8 @@ export class CheckpointPersistenceService
   implements ICheckpointPersistenceService
 {
   constructor(
-    @Inject('ICheckpointRegistryService')
-    private readonly registryService: ICheckpointRegistryService,
-    @Inject('ICheckpointMetricsService')
-    private readonly metricsService: ICheckpointMetricsService
+    private readonly registryService: CheckpointSaverRegistry,
+    private readonly metricsService: CheckpointMetricsService
   ) {
     super(CheckpointPersistenceService.name);
   }
@@ -50,6 +46,13 @@ export class CheckpointPersistenceService
       this.validateSaveInput(threadId, checkpoint);
 
       const saver = this.registryService.getSaver(saverName);
+      if (!saver) {
+        throw this.createError(
+          'No checkpoint saver available',
+          'NO_DEFAULT_SAVER'
+        );
+      }
+
       const actualSaverName =
         saverName || this.registryService.getDefaultSaverName() || 'default';
 
@@ -117,6 +120,13 @@ export class CheckpointPersistenceService
       this.validateLoadInput(threadId);
 
       const saver = this.registryService.getSaver(saverName);
+      if (!saver) {
+        throw this.createError(
+          'No checkpoint saver available',
+          'NO_DEFAULT_SAVER'
+        );
+      }
+
       const actualSaverName =
         saverName || this.registryService.getDefaultSaverName() || 'default';
 
@@ -179,6 +189,12 @@ export class CheckpointPersistenceService
       this.validateListInput(threadId, options);
 
       const saver = this.registryService.getSaver(saverName);
+      if (!saver) {
+        throw this.createError(
+          'No checkpoint saver available',
+          'NO_DEFAULT_SAVER'
+        );
+      }
 
       const config = { configurable: { thread_id: threadId } };
       const checkpointGenerator = saver.list(config, options);
