@@ -80,6 +80,12 @@ export {
   WorkflowStateAnnotation,
   createCustomStateAnnotation,
 } from './lib/annotations/workflow-state.annotation';
+export {
+  AgentStateAnnotation,
+  createCustomAgentStateAnnotation,
+} from './lib/annotations/agent-state.annotation';
+// Note: AgentState type is NOT exported here to avoid conflict with memory-adapter AgentState
+// Import directly from './lib/annotations/agent-state.annotation' if needed
 
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';

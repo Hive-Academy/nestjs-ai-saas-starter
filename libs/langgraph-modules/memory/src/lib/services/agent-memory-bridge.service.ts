@@ -288,12 +288,15 @@ export class AgentMemoryBridgeService
       );
     }
 
-    return this.getAgentMemoryContext(
-      agentId,
-      threadId,
-      state.messages?.[state.messages.length - 1]?.content,
-      state.userId
-    );
+    // Extract query string from last message content
+    const lastMessage = state.messages?.[state.messages.length - 1];
+    const query = lastMessage
+      ? typeof lastMessage.content === 'string'
+        ? lastMessage.content
+        : undefined
+      : undefined;
+
+    return this.getAgentMemoryContext(agentId, threadId, query, state.userId);
   }
 
   /**
