@@ -430,9 +430,12 @@ export class CommandProcessorService {
     metadata: Record<string, unknown>,
     currentState: TState
   ): void {
+    // Type-safe casting to CommandProcessingState for metadata extensions
+    const typedUpdates = stateUpdates as Partial<CommandProcessingState>;
+
     // Handle human approval requirement
     if (metadata.requiresApproval) {
-      (stateUpdates as any).humanFeedback = {
+      typedUpdates.humanFeedback = {
         status: 'pending',
         timestamp: new Date(),
         metadata: {
@@ -445,16 +448,16 @@ export class CommandProcessorService {
 
     // Handle priority
     if (metadata.priority) {
-      (stateUpdates as any).priority = metadata.priority;
+      typedUpdates.priority = metadata.priority as number;
     }
 
     // Handle confidence updates
     if (typeof metadata.confidence === 'number') {
-      (stateUpdates as any).confidence = metadata.confidence;
+      typedUpdates.confidence = metadata.confidence;
     }
 
     // Store metadata in context
-    (stateUpdates as any).commandMetadata = metadata;
+    typedUpdates.commandMetadata = metadata;
   }
 
   /**
@@ -603,7 +606,7 @@ export class CommandBuilder<
   withType(
     type: 'goto' | 'retry' | 'skip' | 'stop' | 'update' | 'end' | 'error'
   ): this {
-    this.command.type = type as any;
+    this.command.type = type;
     return this;
   }
 

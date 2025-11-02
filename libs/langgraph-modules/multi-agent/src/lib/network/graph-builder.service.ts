@@ -146,7 +146,12 @@ export class GraphBuilderService {
     // Type casting required: LangGraph's strict generic type N[] doesn't match runtime string[]
     // - checkpointer: unknown type from compilationOptions
     // - interruptBefore/interruptAfter: string[] from agent metadata, not in graph's type union N
-    // These are safe casts as nodes are dynamically registered above
+    // TYPE CAST RATIONALE (supervisor pattern - 3 casts):
+    // 1. checkpointer: BaseCheckpointSaver | undefined → LangGraph expects exact type signature
+    //    Mitigation: Our ICheckpointAdapter provides runtime validation
+    // 2. interruptBefore/After: string[] → LangGraph expects N[] where N is literal union of node names
+    //    Problem: Node names are dynamic (worker IDs), cannot be statically typed as literals
+    //    Mitigation: Runtime validation ensures all worker names exist in graph
     return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
       ...(interruptBefore && { interruptBefore: interruptBefore as any }),
@@ -185,6 +190,8 @@ export class GraphBuilderService {
     // Add edges for swarm pattern
     this.addSwarmEdges(graph, agents);
 
+    // TYPE CAST RATIONALE (sequential pattern - 1 cast):
+    // checkpointer: Same type mismatch as supervisor pattern (see buildSupervisorGraph above)
     // LangGraph API Note: 'debug' property removed from compile options
     return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
@@ -275,8 +282,12 @@ Route tasks based on complexity and specialization.`,
 
     // Set entry point to top level
     // Type assertion: Dynamic node names not in StateGraph's type union N
-    // 'level_0_supervisor' is created dynamically above, safe to cast to any
-    // LangGraph's strict typing system doesn't support template literal node names
+    // TYPE CAST RATIONALE (hierarchical pattern - 5 casts total):
+    // Problem: LangGraph's addEdge<N>(from: N, to: N) expects N to be literal union of node names
+    // Dynamic nodes: level_0_supervisor, level_1_supervisor, etc. (created at runtime)
+    // TypeScript limitation: Template literal types `level_${number}_supervisor` not compatible with literal unions
+    // Mitigation: All nodes registered dynamically above via graph.addNode() before edges created
+    // Safety: Runtime error if node doesn't exist when edge is added
     graph.addEdge(START as any, 'level_0_supervisor' as any);
 
     // Add conditional escalation edges
@@ -287,6 +298,7 @@ Route tasks based on complexity and specialization.`,
       levelIndex < config.levels.length - 1;
       levelIndex++
     ) {
+      // TYPE CAST RATIONALE: Same as above (dynamic hierarchical node names)
       graph.addConditionalEdges(
         `level_${levelIndex}_supervisor` as any,
         this.createEscalationCondition(config, levelIndex),
@@ -299,12 +311,14 @@ Route tasks based on complexity and specialization.`,
     }
 
     // Final level goes to completion
-    // Type assertion: Dynamic node name requires any cast
+    // TYPE CAST RATIONALE: Same as above (dynamic hierarchical node names)
     const finalLevel = config.levels.length - 1;
     graph.addEdge(`level_${finalLevel}_supervisor` as any, END);
 
     this.logger.log(`Built ${config.levels.length}-level hierarchical graph`);
 
+    // TYPE CAST RATIONALE (hierarchical pattern - 1 cast):
+    // checkpointer: Same type mismatch as supervisor pattern (see buildSupervisorGraph above)
     // LangGraph API Note: 'debug' property removed from compile options
     return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,

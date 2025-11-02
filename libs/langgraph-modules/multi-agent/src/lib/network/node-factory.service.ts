@@ -17,6 +17,12 @@ import { LlmProviderService } from '../llm/llm-provider.service';
 import { ToolNodeService } from '../tools/tool-node.service';
 import { CommandProcessorService } from '../routing/command-processor.service';
 import type { Command as InternalCommand } from '../routing/command-processor.service';
+import {
+  LLMWithTools,
+  AIMessageWithToolCalls,
+  isAIMessageWithToolCalls,
+  ToolNodeServiceWithWeightedMerge,
+} from '../types/internal-types';
 
 /**
  * Service for creating LangGraph node functions
@@ -209,7 +215,7 @@ export class NodeFactoryService {
 
         // Create routing tool
         const routingTool = this.createRoutingTool(config);
-        const llmWithTools = (llm as any).bindTools([routingTool]);
+        const llmWithTools = (llm as LLMWithTools).bindTools([routingTool]);
 
         const messages = [
           { role: 'system', content: systemPrompt },
@@ -569,8 +575,8 @@ export class NodeFactoryService {
     // Check for tool calls in messages (simplified implementation)
     if (result.messages) {
       for (const message of result.messages) {
-        if (message._getType() === 'ai' && 'tool_calls' in message) {
-          const toolCalls = (message as any).tool_calls || [];
+        if (isAIMessageWithToolCalls(message)) {
+          const toolCalls = message.tool_calls || [];
           for (const toolCall of toolCalls) {
             const matchingTool = handoffTools.find(
               (tool) =>
@@ -697,13 +703,22 @@ export class NodeFactoryService {
         );
 
         // Execute parallel tools with weighted coordination
-        const toolResults = await parallelToolExecutor(agentResult as any);
+        // Tool executors expect AgentState - create compatible state
+        const stateForTools: AgentState = {
+          ...state,
+          ...agentResult,
+        };
+        const toolResults = await parallelToolExecutor(stateForTools);
 
         // Execute high-priority tools with retry logic if needed
         let enhancedResults = { ...agentResult, ...toolResults };
         for (const retryTool of retryableTools) {
           try {
-            const retryResult = await retryTool(enhancedResults as any);
+            const stateForRetry: AgentState = {
+              ...state,
+              ...enhancedResults,
+            };
+            const retryResult = await retryTool(stateForRetry);
             enhancedResults = { ...enhancedResults, ...retryResult };
           } catch (error) {
             this.logger.warn(
@@ -807,7 +822,7 @@ export class NodeFactoryService {
     // Use ToolNodeService for weighted parallel execution
     const parallelExecutor =
       this.toolNodeService.createParallelToolExecutor(toolConfigs);
-    const results = await parallelExecutor(state as any);
+    const results = await parallelExecutor(state);
 
     return {
       ...results,
@@ -870,11 +885,9 @@ export class NodeFactoryService {
         const weight = toolWeights[agent.id] || 1;
 
         // Use ToolNodeService's weighted merging logic internally
-        (this.toolNodeService as any).applyWeightedMerge(
-          mergedResult,
-          result.value,
-          weight
-        );
+        (
+          this.toolNodeService as unknown as ToolNodeServiceWithWeightedMerge
+        ).applyWeightedMerge(mergedResult, result.value, weight);
       }
     });
 
@@ -927,11 +940,9 @@ export class NodeFactoryService {
         // Use equal weights for fallback
         const averaged: Partial<AgentState> = {};
         successfulResults.forEach((result) => {
-          (this.toolNodeService as any).applyWeightedMerge(
-            averaged,
-            result,
-            1 / successfulResults.length
-          );
+          (
+            this.toolNodeService as unknown as ToolNodeServiceWithWeightedMerge
+          ).applyWeightedMerge(averaged, result, 1 / successfulResults.length);
         });
         return averaged;
       }

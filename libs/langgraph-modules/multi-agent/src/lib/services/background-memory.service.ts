@@ -301,8 +301,10 @@ export class BackgroundMemoryService implements OnModuleDestroy {
         );
         break;
 
-      default:
-        throw new Error(`Unknown task type: ${(task as any).type}`);
+      default: {
+        const exhaustiveCheck: never = task.type;
+        throw new Error(`Unknown task type: ${exhaustiveCheck}`);
+      }
     }
   }
 

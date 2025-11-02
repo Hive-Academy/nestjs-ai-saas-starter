@@ -23,8 +23,37 @@ import {
   AgentState,
   MultiAgentResult,
   NetworkConfigurationError,
+  SupervisorConfig,
+  SwarmConfig,
+  HierarchicalConfig,
 } from '../interfaces/multi-agent.interface';
 import { GraphBuilderService } from './graph-builder.service';
+import type { MultiAgentGraph, WorkflowResult } from '../types/internal-types';
+
+/**
+ * Type guards for network configurations
+ */
+function isSupervisorConfig(config: unknown): config is SupervisorConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    'workers' in config &&
+    Array.isArray((config as SupervisorConfig).workers)
+  );
+}
+
+function isSwarmConfig(config: unknown): config is SwarmConfig {
+  return typeof config === 'object' && config !== null;
+}
+
+function isHierarchicalConfig(config: unknown): config is HierarchicalConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    'levels' in config &&
+    Array.isArray((config as HierarchicalConfig).levels)
+  );
+}
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -86,25 +115,38 @@ export class NetworkManagerService {
 
       switch (networkConfig.type) {
         case 'supervisor':
+          if (!isSupervisorConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError(
+              'Invalid supervisor configuration'
+            );
+          }
           graph = await this.graphBuilder.buildSupervisorGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
 
         case 'swarm':
+          if (!isSwarmConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError('Invalid swarm configuration');
+          }
           graph = await this.graphBuilder.buildSwarmGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
 
         case 'hierarchical':
+          if (!isHierarchicalConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError(
+              'Invalid hierarchical configuration'
+            );
+          }
           graph = await this.graphBuilder.buildHierarchicalGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
@@ -235,7 +277,8 @@ export class NetworkManagerService {
       });
 
       // Execute the workflow
-      const result = await (graph as any).invoke(initialState as any, {
+      const typedGraph = graph as MultiAgentGraph;
+      const result = await typedGraph.invoke(initialState, {
         ...input.config,
         configurable: {
           ...input.config?.configurable,
@@ -257,12 +300,16 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      return {
-        finalState: result as any,
-        executionPath,
+      const workflowResult: WorkflowResult = {
+        finalState: result,
         executionTime,
+        tokenUsage: this.extractTokenUsage(result),
+      };
+
+      return {
+        ...workflowResult,
+        executionPath,
         success: true,
-        tokenUsage: this.extractTokenUsage(result as any),
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -406,8 +453,9 @@ export class NetworkManagerService {
       let finalResult: AgentState | undefined;
       const executionPath: string[] = [];
 
-      for await (const chunk of (graph as any).stream(
-        initialState as any,
+      const typedGraph = graph as MultiAgentGraph;
+      for await (const chunk of typedGraph.stream(
+        initialState,
         streamOptions
       )) {
         // Track execution path
@@ -447,12 +495,16 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      return {
-        finalState: (finalResult || initialState) as any,
-        executionPath,
+      const workflowResult: WorkflowResult = {
+        finalState: finalResult || initialState,
         executionTime,
+        tokenUsage: this.extractTokenUsage(finalResult),
+      };
+
+      return {
+        ...workflowResult,
+        executionPath,
         success: true,
-        tokenUsage: this.extractTokenUsage(finalResult as any),
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
