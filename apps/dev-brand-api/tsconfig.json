@@ -5,7 +5,13 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../../libs/langgraph-modules/core"
+      "path": "../../libs/langgraph-modules/adapters"
+    },
+    {
+      "path": "../../libs/nestjs-neo4j"
+    },
+    {
+      "path": "../../libs/nestjs-chromadb"
     },
     {
       "path": "../../libs/langgraph-modules/workflow-engine"
@@ -14,34 +20,31 @@
       "path": "../../libs/langgraph-modules/time-travel"
     },
     {
-      "path": "../../libs/langgraph-modules/platform"
+      "path": "../../libs/langgraph-modules/streaming"
     },
     {
-      "path": "../../libs/langgraph-modules/monitoring"
+      "path": "../../libs/langgraph-modules/platform"
     },
     {
       "path": "../../libs/langgraph-modules/multi-agent"
     },
     {
-      "path": "../../libs/langgraph-modules/functional-api"
-    },
-    {
-      "path": "../../libs/langgraph-modules/hitl"
-    },
-    {
-      "path": "../../libs/langgraph-modules/streaming"
-    },
-    {
-      "path": "../../libs/langgraph-modules/checkpoint"
-    },
-    {
-      "path": "../../libs/nestjs-neo4j"
+      "path": "../../libs/langgraph-modules/monitoring"
     },
     {
       "path": "../../libs/langgraph-modules/memory"
     },
     {
-      "path": "../../libs/nestjs-chromadb"
+      "path": "../../libs/langgraph-modules/hitl"
+    },
+    {
+      "path": "../../libs/langgraph-modules/functional-api"
+    },
+    {
+      "path": "../../libs/langgraph-modules/core"
+    },
+    {
+      "path": "../../libs/langgraph-modules/checkpoint"
     },
     {
       "path": "./tsconfig.app.json"

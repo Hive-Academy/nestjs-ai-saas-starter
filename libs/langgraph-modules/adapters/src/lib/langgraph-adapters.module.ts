@@ -3,10 +3,7 @@ import {
   ChromaDBModule,
   getRepositoryToken as getChromaRepositoryToken,
 } from '@hive-academy/nestjs-chromadb';
-import {
-  getRepositoryToken,
-  Neo4jModule,
-} from '@hive-academy/nestjs-neo4j';
+import { getRepositoryToken, Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 // Entities
 import {
@@ -18,10 +15,7 @@ import {
   FeedbackEntry,
   InterruptionPoint,
 } from './entities/neo4j';
-import {
-  VectorMemoryEntity,
-  LangGraphStoreEntity,
-} from './entities/chromadb';
+import { VectorMemoryEntity, LangGraphStoreEntity } from './entities/chromadb';
 
 // Repositories
 import {
@@ -46,10 +40,7 @@ import {
 } from './repositories/services';
 
 // Adapters
-import {
-  Neo4jGraphAdapter,
-  ChromaVectorAdapter,
-} from './adapters/memory';
+import { Neo4jGraphAdapter, ChromaVectorAdapter } from './adapters/memory';
 import {
   Neo4jHitlStorageAdapter,
   Neo4jApprovalChainStorageAdapter,

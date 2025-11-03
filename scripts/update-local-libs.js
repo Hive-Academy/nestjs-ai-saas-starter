@@ -27,6 +27,7 @@ const NODE_MODULES_HIVE = path.join(
 const HIVE_LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
+  'langgraph-adapters',
   'langgraph-checkpoint',
   'langgraph-core',
   'langgraph-functional-api',

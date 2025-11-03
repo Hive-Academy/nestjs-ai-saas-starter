@@ -88,7 +88,9 @@ export class ProductionDocumentEntity extends BaseChromaEntity<ProductionDocumen
  */
 @Injectable()
 export class ProductionDocumentRepository extends ChromaDBRepository<ProductionDocumentEntity> {
-  private readonly productionLogger = new Logger(ProductionDocumentRepository.name);
+  private readonly productionLogger = new Logger(
+    ProductionDocumentRepository.name
+  );
   private readonly retryAttempts = 3;
   private readonly retryDelay = 1000;
   private circuitBreakerFailures = 0;
@@ -117,7 +119,9 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     // Check if circuit breaker is open
     if (this.isCircuitBreakerOpen()) {
       const error = new Error(`Circuit breaker is open for ${operationName}`);
-      this.productionLogger.warn(`Circuit breaker blocked operation: ${operationName}`);
+      this.productionLogger.warn(
+        `Circuit breaker blocked operation: ${operationName}`
+      );
       throw error;
     }
 
@@ -254,7 +258,10 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
-          this.productionLogger.warn('Failed to get total count estimate:', errorMessage);
+          this.productionLogger.warn(
+            'Failed to get total count estimate:',
+            errorMessage
+          );
         }
       }
 
@@ -353,7 +360,9 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     let imported = 0;
     let failed = 0;
 
-    this.productionLogger.log(`Starting bulk import of ${documents.length} documents`);
+    this.productionLogger.log(
+      `Starting bulk import of ${documents.length} documents`
+    );
 
     for (let i = 0; i < documents.length; i += batchSize) {
       const batch = documents.slice(i, i + batchSize);
@@ -679,7 +688,9 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.productionLogger.error(`Search failed for query "${query}": ${errorMessage}`);
+      this.productionLogger.error(
+        `Search failed for query "${query}": ${errorMessage}`
+      );
       throw error;
     }
   }
@@ -716,7 +727,10 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.productionLogger.error('Database health check failed:', errorMessage);
+      this.productionLogger.error(
+        'Database health check failed:',
+        errorMessage
+      );
     }
 
     // Check circuit breaker status
