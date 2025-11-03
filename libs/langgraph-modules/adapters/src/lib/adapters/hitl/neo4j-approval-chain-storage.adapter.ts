@@ -282,6 +282,21 @@ export class Neo4jApprovalChainStorageAdapter
   }
 
   /**
+   * Get active approval requests by execution ID (required by IApprovalChainStorageService)
+   */
+  async getActiveRequestsByExecution(
+    executionId: string
+  ): Promise<ApprovalRequest[]> {
+    if (!executionId?.trim()) {
+      throw new Error('Execution ID is required');
+    }
+    const allRequests = await this.getApprovalRequestsByExecution(executionId);
+    return allRequests.filter(
+      (req) => req.status === 'pending' || req.status === 'escalated'
+    );
+  }
+
+  /**
    * Get pending approvals for approver - delegates to repository
    */
   async getPendingApprovalsForApprover(

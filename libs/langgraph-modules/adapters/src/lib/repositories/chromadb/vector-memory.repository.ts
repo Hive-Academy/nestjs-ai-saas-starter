@@ -55,7 +55,7 @@ import {
  */
 @Injectable()
 export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntity> {
-  private readonly logger = new Logger(VectorMemoryRepository.name);
+  private readonly repositoryLogger = new Logger(VectorMemoryRepository.name);
 
   /**
    * Explicit constructor with proper DI and auto-initialization
@@ -232,10 +232,13 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
         } as any,
       });
 
-      this.logger.debug(`Stored memory ${id} for thread ${threadId}`);
+      this.repositoryLogger.debug(`Stored memory ${id} for thread ${threadId}`);
       return entry;
     } catch (error) {
-      this.logger.error(`Failed to store memory for thread ${threadId}`, error);
+      this.repositoryLogger.error(
+        `Failed to store memory for thread ${threadId}`,
+        error
+      );
       throw new VectorOperationError(
         `Failed to store memory for thread ${threadId}`,
         'storeMemory',
@@ -297,12 +300,12 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
 
       await this.createMany(vectorDocuments);
 
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `Batch stored ${entries.length} memories for thread ${threadId}`
       );
       return memoryEntries;
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to batch store memories for thread ${threadId}`,
         error
       );
@@ -353,12 +356,12 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
         accessCount: (entity.metadata.accessCount as number) || 0,
       }));
 
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `Retrieved ${memories.length} memories for thread ${threadId}`
       );
       return memories;
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to retrieve memories for thread ${threadId}`,
         error
       );
@@ -414,10 +417,12 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
         };
       });
 
-      this.logger.debug(`Found ${memories.length} similar memories for query`);
+      this.repositoryLogger.debug(
+        `Found ${memories.length} similar memories for query`
+      );
       return memories;
     } catch (error) {
-      this.logger.error(`Failed to search memories`, error);
+      this.repositoryLogger.error(`Failed to search memories`, error);
       throw new VectorOperationError(
         `Failed to search memories`,
         'searchMemoriesSimilar',
@@ -439,10 +444,10 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
     try {
       await this.deleteMany([...memoryIds]);
 
-      this.logger.debug(`Deleted ${memoryIds.length} memories`);
+      this.repositoryLogger.debug(`Deleted ${memoryIds.length} memories`);
       return memoryIds.length;
     } catch (error) {
-      this.logger.error(`Failed to delete memories`, error);
+      this.repositoryLogger.error(`Failed to delete memories`, error);
       throw new VectorOperationError(
         `Failed to delete memories`,
         'deleteMemories',
@@ -461,9 +466,11 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
     try {
       await this.deleteByFilter({ threadId } as any);
 
-      this.logger.debug(`Cleared all memories for thread ${threadId}`);
+      this.repositoryLogger.debug(
+        `Cleared all memories for thread ${threadId}`
+      );
     } catch (error) {
-      this.logger.error(`Failed to clear thread ${threadId}`, error);
+      this.repositoryLogger.error(`Failed to clear thread ${threadId}`, error);
       throw new VectorOperationError(
         `Failed to clear thread ${threadId}`,
         'clearThread',
@@ -484,7 +491,10 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
 
       return count;
     } catch (error) {
-      this.logger.error(`Failed to get count for thread ${threadId}`, error);
+      this.repositoryLogger.error(
+        `Failed to get count for thread ${threadId}`,
+        error
+      );
       return 0;
     }
   }
@@ -523,7 +533,7 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
           totalMemories * averageSize,
       };
     } catch (error) {
-      this.logger.error('Failed to get vector stats', error);
+      this.repositoryLogger.error('Failed to get vector stats', error);
       return {
         totalMemories: 0,
         averageSize: 0,
@@ -558,7 +568,7 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
         cacheHitRate,
       };
     } catch (error) {
-      this.logger.error('Failed to get operation metrics', error);
+      this.repositoryLogger.error('Failed to get operation metrics', error);
       return {
         searchCount: 0,
         averageSearchTime: 50,

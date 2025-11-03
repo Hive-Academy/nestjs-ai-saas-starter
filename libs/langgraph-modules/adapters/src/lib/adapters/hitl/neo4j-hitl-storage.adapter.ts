@@ -146,6 +146,17 @@ export class Neo4jHitlStorageAdapter extends IHitlStorageService {
   }
 
   /**
+   * Get pending approvals by execution ID (required by IHitlStorageService)
+   */
+  async getPendingByExecution(executionId: string): Promise<any[]> {
+    if (!executionId?.trim()) {
+      throw new InvalidApprovalDataError('Execution ID is required');
+    }
+    const allByExecution = await this.getApprovalsByExecution(executionId);
+    return allByExecution.filter((req) => req.status === 'pending') as any[];
+  }
+
+  /**
    * Update approval request (alias for updateApprovalStatus)
    */
   async update(request: any): Promise<void> {

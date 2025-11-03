@@ -51,7 +51,7 @@ import { LangGraphStoreEntity } from '../../entities/chromadb/langgraph-store.en
  */
 @Injectable()
 export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreEntity> {
-  private readonly logger = new Logger(LangGraphStoreRepository.name);
+  private readonly repositoryLogger = new Logger(LangGraphStoreRepository.name);
 
   /**
    * Explicit constructor with proper DI
@@ -70,7 +70,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
       chromaDB,
       collectionRegistry
     );
-    this.logger.debug(
+    this.repositoryLogger.debug(
       'LangGraphStoreRepository initialized with collection: langgraph-stores'
     );
   }
@@ -102,7 +102,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to find store item by key ${key} and namespace ${namespace.join(
           '/'
         )}`,
@@ -132,7 +132,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         limit,
       });
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to find items in namespace ${namespace.join('/')}`,
         error
       );
@@ -162,7 +162,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         limit,
       });
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to search in namespace ${namespace.join('/')}`,
         error
       );
@@ -183,13 +183,13 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
 
       const result = await this.deleteByFilter({ namespaceKey } as Where);
 
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `Deleted ${result.successCount} items from namespace ${namespaceKey}`
       );
 
       return result.successCount || 0;
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to delete items in namespace ${namespace.join('/')}`,
         error
       );
@@ -210,7 +210,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
 
       return await this.count({ namespaceKey } as Where);
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to count items in namespace ${namespace.join('/')}`,
         error
       );
@@ -238,7 +238,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
 
       return Array.from(uniqueNamespaces).slice(0, limit);
     } catch (error) {
-      this.logger.error('Failed to list unique namespaces', error);
+      this.repositoryLogger.error('Failed to list unique namespaces', error);
       return [];
     }
   }
@@ -284,9 +284,9 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         metadata,
       });
 
-      this.logger.debug(`Put store item: ${id}`);
+      this.repositoryLogger.debug(`Put store item: ${id}`);
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to put store item [${namespace.join('/')}/${key}]`,
         error
       );
@@ -315,7 +315,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
 
       return JSON.parse(entity.content);
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to get store item [${namespace.join('/')}/${key}]`,
         error
       );
@@ -363,7 +363,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         score: result.score,
       }));
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to search store items with prefix [${namespacePrefix.join(
           '/'
         )}]`,
@@ -405,7 +405,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         value: JSON.parse(entity.content || '{}'),
       }));
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to list store items with prefix [${namespacePrefix.join('/')}]`,
         error
       );
@@ -423,9 +423,9 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
     try {
       const id = this.generateStoreId(namespace, key);
       await this.delete(id);
-      this.logger.debug(`Deleted store item: ${id}`);
+      this.repositoryLogger.debug(`Deleted store item: ${id}`);
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to delete store item [${namespace.join('/')}/${key}]`,
         error
       );
@@ -441,9 +441,11 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
   async deleteNamespace(namespacePrefix: string[]): Promise<void> {
     try {
       await this.deleteByNamespace(namespacePrefix);
-      this.logger.debug(`Deleted namespace: ${namespacePrefix.join('/')}`);
+      this.repositoryLogger.debug(
+        `Deleted namespace: ${namespacePrefix.join('/')}`
+      );
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to delete namespace [${namespacePrefix.join('/')}]`,
         error
       );
@@ -480,7 +482,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         namespaces: Array.from(childNamespaces).map((ns) => ns.split('/')),
       };
     } catch (error) {
-      this.logger.error(
+      this.repositoryLogger.error(
         `Failed to get namespace stats for [${namespacePrefix.join('/')}]`,
         error
       );
