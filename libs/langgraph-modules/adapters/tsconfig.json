@@ -2,12 +2,22 @@
   "extends": "../../../tsconfig.base.json",
   "files": [],
   "include": [],
+  "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "./tsconfig.lib.json"
+      "path": "../../nestjs-neo4j"
     },
     {
-      "path": "./tsconfig.spec.json"
+      "path": "../../nestjs-chromadb"
+    },
+    {
+      "path": "../memory"
+    },
+    {
+      "path": "../hitl"
+    },
+    {
+      "path": "./tsconfig.lib.json"
     }
   ]
 }

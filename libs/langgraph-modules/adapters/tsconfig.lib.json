@@ -1,20 +1,26 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": false,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"],
-    "target": "es2021",
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "../../../dist/libs/langgraph-adapters"
   },
   "include": ["src/**/*.ts"],
-  "references": [],
-  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../nestjs-neo4j/tsconfig.lib.json"
+    },
+    {
+      "path": "../../nestjs-chromadb/tsconfig.lib.json"
+    },
+    {
+      "path": "../memory/tsconfig.lib.json"
+    },
+    {
+      "path": "../hitl/tsconfig.lib.json"
+    }
+  ]
 }

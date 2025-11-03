@@ -6,14 +6,41 @@
   "tags": ["domain:langgraph", "type:feature", "module:adapters"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/libs/langgraph-modules/adapters",
-        "tsConfig": "libs/langgraph-modules/adapters/tsconfig.lib.json",
-        "packageJson": "libs/langgraph-modules/adapters/package.json",
+        "outputPath": "dist/libs/langgraph-adapters",
         "main": "libs/langgraph-modules/adapters/src/index.ts",
-        "assets": ["libs/langgraph-modules/adapters/*.md"]
+        "tsConfig": "libs/langgraph-modules/adapters/tsconfig.lib.json",
+        "format": ["cjs", "esm"],
+        "external": "all",
+        "assets": [
+          {
+            "input": "./libs/langgraph-modules/adapters",
+            "glob": "*.md",
+            "output": "./"
+          },
+          {
+            "input": "./libs/langgraph-modules/adapters",
+            "glob": "package.json",
+            "output": "./"
+          }
+        ]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.lib.json --strict",
+        "cwd": "libs/langgraph-modules/adapters"
+      },
+      "dependsOn": ["^typecheck"],
+      "cache": false
+    },
+    "nx-release-publish": {
+      "executor": "@nx/js:release-publish",
+      "options": {
+        "packageRoot": "dist/libs/langgraph-adapters"
       }
     }
   }
