@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Retry,
 } from '@hive-academy/nestjs-chromadb';
@@ -38,8 +39,16 @@ export interface AudienceInsights {
  */
 @Injectable()
 export class AudienceRepository extends ChromaDBRepository<AudienceAnalysisEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(AudienceAnalysisEntity, 'audience-analysis', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      AudienceAnalysisEntity,
+      'audience-analysis',
+      chromaDB,
+      collectionRegistry
+    );
   }
 
   /**

@@ -37,77 +37,56 @@ export class FeedbackProcessorService implements OnModuleInit {
   }
 
   /**
-   * Module initialization with recovery and fail-fast patterns
+   * Module initialization: Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic recovery from onModuleInit()
+   * - Old behavior: Queried ChromaDB for ALL feedback + started processing pipeline at startup
+   * - New behavior: Feedback loaded lazily when workflows need it
+   * - Impact: Zero startup queries, instant application start
    */
   async onModuleInit(): Promise<void> {
     this.logger.log(
-      'Feedback Processor Service initializing with persistent storage'
+      '✅ FeedbackProcessorService initialized (lazy-loading enabled - feedback loads on-demand)'
     );
-    await this.recoverActiveFeedback();
-    await this.startFeedbackProcessingPipeline();
-    this.logger.log('✅ Feedback Processor Service initialized');
   }
 
   /**
-   * Recover all active feedback entries from persistent storage
+   * Load feedback for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic recovery
+   * Call this when workflows resume with pending feedback
+   *
+   * @param executionId - Workflow execution ID
+   * @returns Number of feedback entries loaded
    */
-  private async recoverActiveFeedback(): Promise<void> {
+  async loadFeedbackForExecution(executionId: string): Promise<number> {
     try {
-      // Recover all active feedback entries
-      const activeFeedback = await this.feedbackStorage.getAllActiveFeedback();
-      activeFeedback.forEach((feedback) => {
+      // Load only feedback for this specific execution
+      const executionFeedback =
+        await this.feedbackStorage.getFeedbackByExecution(executionId);
+
+      if (executionFeedback.length === 0) {
+        this.logger.debug(`No feedback found for execution ${executionId}`);
+        return 0;
+      }
+
+      // Rebuild cache for this execution only
+      executionFeedback.forEach((feedback) => {
         this.feedbackCache.set(feedback.id, feedback);
       });
-
-      // Rebuild execution feedback mapping
-      const executionFeedback =
-        await this.feedbackStorage.getAllExecutionFeedback();
-      Object.entries(executionFeedback).forEach(
-        ([executionId, feedbackList]) => {
-          this.executionCache.set(executionId, feedbackList);
-        }
-      );
+      this.executionCache.set(executionId, executionFeedback);
 
       this.logger.log(
-        `✅ Recovered ${activeFeedback.length} feedback entries across ${
-          Object.keys(executionFeedback).length
-        } executions`
-      );
-    } catch (error) {
-      this.logger.error(
-        '❌ CRITICAL: Failed to recover feedback data - service will fail fast',
-        error
-      );
-      throw new Error(
-        'Cannot initialize FeedbackProcessorService without persistent storage recovery'
-      );
-    }
-  }
-
-  /**
-   * Start processing pipeline for unprocessed feedback
-   */
-  private async startFeedbackProcessingPipeline(): Promise<void> {
-    try {
-      // Process any unprocessed feedback from recovery
-      const unprocessed = await this.feedbackStorage.getUnprocessedFeedback();
-      this.logger.log(
-        `🔄 Starting processing pipeline for ${unprocessed.length} unprocessed feedback entries`
+        `✅ Loaded ${executionFeedback.length} feedback entries for execution ${executionId}`
       );
 
-      for (const feedback of unprocessed) {
-        try {
-          await this.processFeedback(feedback.id, {} as any); // Will be fixed in next transform
-        } catch (error) {
-          this.logger.warn(
-            `Failed to process recovered feedback ${feedback.id}:`,
-            error
-          );
-        }
-      }
+      return executionFeedback.length;
     } catch (error) {
-      this.logger.error('Failed to start feedback processing pipeline:', error);
-      // Non-fatal - service can continue without processing pipeline
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to load feedback for execution ${executionId}: ${errorMsg}. Continuing without feedback.`
+      );
+      return 0;
     }
   }
 

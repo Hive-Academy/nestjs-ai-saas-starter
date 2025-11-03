@@ -155,6 +155,12 @@ export interface IConfidenceStorageService {
   getAllConfidenceHistory(): Promise<Record<string, ConfidenceFactor[]>>;
 
   /**
+   * Get historical confidence factors for analysis (Phase 1 lazy-loading)
+   * @deprecated Use getConfidenceHistory() instead
+   */
+  getHistoricalFactors?(executionId: string): Promise<ConfidenceFactor[]>;
+
+  /**
    * Update confidence factors for an execution
    */
   updateConfidenceFactors(

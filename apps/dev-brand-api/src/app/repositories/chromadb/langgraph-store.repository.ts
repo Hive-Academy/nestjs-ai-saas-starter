@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Where,
 } from '@hive-academy/nestjs-chromadb';
 import { LangGraphStoreEntity } from '../../entities/chromadb/langgraph-store.entity';
@@ -57,9 +58,18 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
    * Collection binding: 'langgraph-stores' (NOT 'vector-memories')
    *
    * @param chromaDB - ChromaDBService injected by NestJS
+   * @param collectionRegistry - CollectionRegistryService for auto-initialization
    */
-  constructor(chromaDB: ChromaDBService) {
-    super(LangGraphStoreEntity, 'langgraph-stores', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      LangGraphStoreEntity,
+      'langgraph-stores',
+      chromaDB,
+      collectionRegistry
+    );
     this.logger.debug(
       'LangGraphStoreRepository initialized with collection: langgraph-stores'
     );

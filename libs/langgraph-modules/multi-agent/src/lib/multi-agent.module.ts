@@ -22,6 +22,7 @@ import { MemoryCoordinationService } from './coordination/memory-coordination.se
 import { LlmProviderService } from './llm/llm-provider.service';
 // Tool services
 import { ToolRegistrationService } from './tools/tool-registration.service';
+import { MemoryAccessTools } from './tools/memory-access.tools';
 // Routing services
 import { CommandProcessorService } from './routing/command-processor.service';
 // Tool services
@@ -69,9 +70,13 @@ export class MultiAgentModule {
       // REGISTRATION PROVIDERS
       // ============================================
       // Provide tools array for ToolRegistrationService
+      // BUILT-IN TOOLS: MemoryAccessTools are automatically included for all agents
       {
         provide: 'MULTI_AGENT_TOOLS',
-        useValue: mergedOptions.tools || [],
+        useValue: [
+          MemoryAccessTools, // Built-in: Always available to all agents
+          ...(mergedOptions.tools || []), // User-defined tools
+        ],
       },
       // Provide agents array for AgentRegistryService
       {
@@ -137,6 +142,9 @@ export class MultiAgentModule {
         useExisting: ToolRegistryService,
       },
 
+      // TASK 3: Memory Access Tools (agent-driven memory)
+      MemoryAccessTools,
+
       // ============================================
       // ROUTING SERVICES
       // ============================================
@@ -158,6 +166,9 @@ export class MultiAgentModule {
         // Tool services (public API)
         ToolRegistrationService,
         ToolRegistryService,
+
+        // TASK 3: Memory tools export
+        MemoryAccessTools,
 
         // Tool service alias token
         TOOL_REGISTRY,
@@ -192,11 +203,15 @@ export class MultiAgentModule {
       // ============================================
       // REGISTRATION PROVIDERS (from async config)
       // ============================================
+      // BUILT-IN TOOLS: MemoryAccessTools are automatically included for all agents
       {
         provide: 'MULTI_AGENT_TOOLS',
         useFactory: async (...args: unknown[]) => {
           const moduleOptions = await options.useFactory!(...args);
-          return moduleOptions.tools || [];
+          return [
+            MemoryAccessTools, // Built-in: Always available to all agents
+            ...(moduleOptions.tools || []), // User-defined tools
+          ];
         },
         inject: options.inject || [],
       },
@@ -270,6 +285,9 @@ export class MultiAgentModule {
         useExisting: ToolRegistryService,
       },
 
+      // TASK 3: Memory Access Tools (agent-driven memory)
+      MemoryAccessTools,
+
       // ============================================
       // ROUTING SERVICES
       // ============================================
@@ -291,6 +309,9 @@ export class MultiAgentModule {
         // Tool services (public API)
         ToolRegistrationService,
         ToolRegistryService,
+
+        // TASK 3: Memory tools export
+        MemoryAccessTools,
 
         // Tool service alias token
         TOOL_REGISTRY,

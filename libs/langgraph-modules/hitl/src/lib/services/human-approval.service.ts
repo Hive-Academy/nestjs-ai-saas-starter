@@ -64,11 +64,18 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  /**
+   * Module initialization: Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic recovery from onModuleInit()
+   * - Old behavior: Called hitlRecoveryService.recoverPendingApprovals() causing ChromaDB queries at startup
+   * - New behavior: Recovery only happens when workflows explicitly resume
+   * - Impact: Zero startup queries, instant application start
+   */
   async onModuleInit(): Promise<void> {
     this.logger.log(
       'Human Approval Service initializing with specialized services'
     );
-    await this.hitlRecoveryService.recoverPendingApprovals();
     this.setupEventListeners();
     this.logger.log('✅ Human Approval Service initialized');
   }

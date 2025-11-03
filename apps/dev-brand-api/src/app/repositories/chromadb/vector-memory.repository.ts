@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
 } from '@hive-academy/nestjs-chromadb';
 import { VectorMemoryEntity } from '../../entities/chromadb/vector-memory.entity';
 import {
@@ -57,12 +58,17 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
   private readonly logger = new Logger(VectorMemoryRepository.name);
 
   /**
-   * Explicit constructor with proper DI
+   * Explicit constructor with proper DI and auto-initialization
    *
    * @param chromaDB - ChromaDBService injected by NestJS
+   * @param collectionRegistry - CollectionRegistryService for automatic collection initialization
    */
-  constructor(chromaDB: ChromaDBService) {
-    super(VectorMemoryEntity, 'vector-memories', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(VectorMemoryEntity, 'vector-memories', chromaDB, collectionRegistry);
+    // ✅ Collection 'vector-memories' will be automatically initialized in background
   }
 
   // ==================== CUSTOM BUSINESS METHODS ====================

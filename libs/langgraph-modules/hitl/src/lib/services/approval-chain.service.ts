@@ -256,45 +256,67 @@ export class ApprovalChainService implements OnModuleInit {
   }
 
   /**
-   * Module lifecycle - recover state from persistent storage
+   * Module lifecycle - Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic recovery from onModuleInit()
+   * - Old behavior: Queried ChromaDB for ALL approval chains at startup
+   * - New behavior: Chains loaded lazily when workflows need them
+   * - Impact: Zero startup queries, instant application start
    */
   async onModuleInit(): Promise<void> {
     this.logger.log(
-      'Approval Chain Service initializing with persistent storage'
+      '✅ ApprovalChainService initialized (lazy-loading enabled - chains load on-demand)'
     );
-    await this.recoverActiveRequests();
-    this.logger.log('✅ Approval Chain Service initialized');
   }
 
   /**
-   * Recover all active approval requests and chains from storage
+   * Resume approval chain for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic recovery
+   * Call this when workflows resume with pending approvals
+   *
+   * @param executionId - Workflow execution ID to resume
+   * @returns Chain ID if found, null otherwise
    */
-  private async recoverActiveRequests(): Promise<void> {
+  async resumeChainForExecution(executionId: string): Promise<string | null> {
     try {
-      // Recover all active approval requests
-      const activeRequests = await this.chainStorage.getAllActiveRequests();
-      activeRequests.forEach((request) => {
+      // Load only requests for this specific execution
+      const executionRequests =
+        await this.chainStorage.getActiveRequestsByExecution(executionId);
+
+      if (executionRequests.length === 0) {
+        this.logger.debug(
+          `No active approval requests found for execution ${executionId}`
+        );
+        return null;
+      }
+
+      // Rebuild cache for this execution's requests
+      executionRequests.forEach((request: ApprovalRequest) => {
         this.requestCache.set(request.id, request);
       });
 
-      // Recover all approval chains
-      const allChains = await this.chainStorage.getAllApprovalChains();
-      Object.entries(allChains).forEach(([chainId, levels]) => {
-        this.chainCache.set(chainId, levels);
-      });
+      // Load the chain for the first request (all requests in execution use same chain)
+      const chainId = executionRequests[0].chainId;
+      if (chainId && !this.chainCache.has(chainId)) {
+        const chainLevels = await this.chainStorage.getApprovalChain(chainId);
+        if (chainLevels) {
+          this.chainCache.set(chainId, chainLevels);
+        }
+      }
 
       this.logger.log(
-        `✅ Recovered ${activeRequests.length} requests and ${
-          Object.keys(allChains).length
-        } chains`
+        `✅ Resumed approval chain for execution ${executionId}: ${executionRequests.length} requests, chain ${chainId}`
       );
+
+      return chainId;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        '❌ CRITICAL: Failed to recover approval chains - service will fail fast',
-        error
+        `Failed to resume approval chain for execution ${executionId}: ${errorMsg}`
       );
       throw new Error(
-        'Cannot initialize ApprovalChainService without persistent storage recovery'
+        `Cannot resume approval chain for execution ${executionId}: ${errorMsg}`
       );
     }
   }

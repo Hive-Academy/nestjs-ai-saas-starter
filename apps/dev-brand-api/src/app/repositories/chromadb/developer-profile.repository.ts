@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Retry,
   Cached,
@@ -63,8 +64,16 @@ export interface CodingAnalysis {
  */
 @Injectable()
 export class DeveloperProfileRepository extends ChromaDBRepository<DeveloperProfileEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(DeveloperProfileEntity, 'developer-profiles', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      DeveloperProfileEntity,
+      'developer-profiles',
+      chromaDB,
+      collectionRegistry
+    );
   }
 
   /**

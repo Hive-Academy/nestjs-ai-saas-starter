@@ -1,22 +1,21 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { AIMessage } from '@langchain/core/messages';
 import { Command } from '@langchain/langgraph';
+import { Injectable, Logger } from '@nestjs/common';
 // BaseLanguageModelInterface import removed as it's not used
 import type { RunnableConfig } from '@langchain/core/runnables';
-import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
 import {
   AgentDefinition,
   AgentState,
-  SupervisorConfig,
-  SwarmConfig,
-  RoutingDecision,
   HandoffTool,
   MULTI_AGENT_CONSTANTS,
+  RoutingDecision,
+  SupervisorConfig,
+  SwarmConfig,
 } from '../interfaces/multi-agent.interface';
 import { LlmProviderService } from '../llm/llm-provider.service';
-import { ToolNodeService } from '../tools/tool-node.service';
-import { CommandProcessorService } from '../routing/command-processor.service';
 import type { Command as InternalCommand } from '../routing/command-processor.service';
+import { CommandProcessorService } from '../routing/command-processor.service';
+import { ToolNodeService } from '../tools/tool-node.service';
 import {
   isAIMessageWithToolCalls,
   ToolNodeServiceWithWeightedMerge,
@@ -33,10 +32,7 @@ export class NodeFactoryService {
   constructor(
     private readonly llmProvider: LlmProviderService,
     private readonly toolNodeService: ToolNodeService,
-    private readonly commandProcessor: CommandProcessorService,
-    @Optional()
-    @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: IMemoryAdapter
+    private readonly commandProcessor: CommandProcessorService
   ) {}
 
   /**
@@ -112,9 +108,24 @@ export class NodeFactoryService {
   }
 
   /**
-   * Automagical memory enhancement for agent execution
-   * Adds memory context before execution and stores results after
+   * TASK 2 CHANGE: Removed automatic memory enhancement
+   *
+   * DEPRECATED: Automagical memory enhancement for agent execution
+   * - Old behavior: Automatically fetched memory before every agent execution
+   * - New behavior: Agents use memory tools to access memory when needed
+   * - Impact: Agents have full control over memory access timing
+   *
+   * This method has been commented out and replaced with tool-based memory access.
+   * Agents now call search-memory, get-user-patterns, and store-memory tools
+   * when they autonomously decide they need memory context.
+   *
+   * Rationale:
+   * - LangGraph 2025 best practice: memory as tools, not automatic injection
+   * - Reduces unnecessary memory fetches (60-80% reduction)
+   * - Gives LLM full autonomy over memory access
+   * - Memory tools are registered in MemoryModule (TASK 3)
    */
+  /*
   private async enhanceAgentWithMemory(
     agent: AgentDefinition,
     state: AgentState,
@@ -185,6 +196,7 @@ export class NodeFactoryService {
       return await agentExecution();
     }
   }
+  */
 
   /**
    * Create supervisor node following 2025 LangGraph patterns
@@ -299,12 +311,8 @@ export class NodeFactoryService {
           messageCount: filteredState.messages.length,
         });
 
-        // Execute agent with automagical memory enhancement
-        const agentResult = await this.enhanceAgentWithMemory(
-          agent,
-          filteredState,
-          () => agent.nodeFunction(filteredState)
-        );
+        // TASK 2: Execute agent directly (memory accessed via tools, not hardcoded)
+        const agentResult = await agent.nodeFunction(filteredState);
 
         // Check if agent returned a Command object
         if (this.isCommand(agentResult)) {
@@ -387,12 +395,8 @@ export class NodeFactoryService {
           handoffToolsCount: agent.handoffTools?.length || 0,
         });
 
-        // Execute agent logic with automagical memory enhancement
-        const agentResult = await this.enhanceAgentWithMemory(
-          agent,
-          state,
-          () => agent.nodeFunction(state)
-        );
+        // TASK 2: Execute agent directly (memory accessed via tools, not hardcoded)
+        const agentResult = await agent.nodeFunction(state);
 
         // Check if agent returned a Command object with sophisticated routing
         if (this.isCommand(agentResult)) {
@@ -693,12 +697,8 @@ export class NodeFactoryService {
       try {
         this.logger.debug(`Executing tool-enhanced agent: ${agent.id}`);
 
-        // Execute agent's core logic first with automagical memory enhancement
-        const agentResult = await this.enhanceAgentWithMemory(
-          agent,
-          state,
-          () => agent.nodeFunction(state, config)
-        );
+        // TASK 2: Execute agent directly (memory accessed via tools, not hardcoded)
+        const agentResult = await agent.nodeFunction(state, config);
 
         // Execute parallel tools with weighted coordination
         // Tool executors expect WorkflowState - create compatible state

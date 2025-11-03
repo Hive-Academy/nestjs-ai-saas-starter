@@ -1,5 +1,4 @@
 import type { Provider } from '@nestjs/common';
-import { MemoryService } from '../services/memory.service';
 import { MemoryStorageService } from '../services/memory-storage.service';
 import { MemoryGraphService } from '../services/memory-graph.service';
 import { AgentMemoryBridgeService } from '../services/agent-memory-bridge.service';
@@ -43,7 +42,6 @@ export class MemoryProviderFactory {
       // Core memory services
       MemoryStorageService,
       MemoryGraphService,
-      MemoryService,
 
       // Specialized agent memory services (TASK_2025_006)
       AgentMemoryCoreService,
@@ -84,7 +82,6 @@ export class MemoryProviderFactory {
   static getExports(includeMemoryAdapter = false): any[] {
     const baseExports = [
       // Core services
-      MemoryService,
       MemoryStorageService,
       MemoryGraphService,
 

@@ -34,6 +34,7 @@ import { VectorCacheService } from './services/caching/vector-cache.service';
 import { ChromaAdminService } from './services/chroma-admin.service';
 import { ChromaMetricsService } from './services/chroma-metrics.service';
 import { ChromaDBService } from './services/chromadb.service';
+import { CollectionRegistryService } from './services/collection-registry.service';
 import { ChromaDBCollectionService } from './services/core/chromadb-collection.service';
 import { ChromaDBConnectionService } from './services/core/chromadb-connection.service';
 import { ChromaDBDocumentService } from './services/core/chromadb-document.service';
@@ -175,6 +176,8 @@ export class ChromaDBModule {
       },
       ChromaDBEmbeddingProcessorService,
       ChromaDBService,
+      // ✅ Collection Registry Service - singleton tracker for collection initialization
+      CollectionRegistryService,
     ];
 
     return {
@@ -189,6 +192,8 @@ export class ChromaDBModule {
         MetadataExtractorService,
         ChromaDBHealthIndicator,
         CHROMADB_CLIENT,
+        // ✅ Export CollectionRegistryService for repository auto-initialization
+        CollectionRegistryService,
       ],
       global: true,
     };
@@ -301,6 +306,8 @@ export class ChromaDBModule {
       },
       ChromaDBEmbeddingProcessorService,
       ChromaDBService,
+      // ✅ Collection Registry Service - singleton tracker for collection initialization
+      CollectionRegistryService,
     ];
 
     return {
@@ -316,6 +323,8 @@ export class ChromaDBModule {
         MetadataExtractorService,
         CHROMADB_CLIENT,
         ChromaDBHealthIndicator,
+        // ✅ Export CollectionRegistryService for repository auto-initialization
+        CollectionRegistryService,
       ],
       global: true,
     };
@@ -366,7 +375,7 @@ export class ChromaDBModule {
       typeof entitiesOrCollections[0] === 'function';
 
     if (isEntityBased) {
-      // NEW PATTERN: Entity-based auto-generated repositories
+      // NEW PATTERN: Entity-based auto-generated repositories with auto-initialization
       const entities = entitiesOrCollections as Type<unknown>[];
       const providers: Provider[] = entities.map((entity) => {
         const token = getRepositoryToken(entity);
@@ -374,15 +383,19 @@ export class ChromaDBModule {
 
         return {
           provide: token,
-          useFactory: (chromaDB: ChromaDBService) => {
-            // Auto-generate repository instance
+          useFactory: (
+            chromaDB: ChromaDBService,
+            collectionRegistry: CollectionRegistryService
+          ) => {
+            // ✅ Auto-generate repository instance with collection registry for auto-initialization
             return new ChromaDBRepository(
               entity as Type<BaseDocument>,
               collection,
-              chromaDB
+              chromaDB,
+              collectionRegistry // ✅ Enable automatic collection initialization
             );
           },
-          inject: [ChromaDBService],
+          inject: [ChromaDBService, CollectionRegistryService],
         };
       });
 

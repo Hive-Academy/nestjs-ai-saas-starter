@@ -14,6 +14,9 @@ export * from './lib/services/chroma-admin.service';
 export * from './lib/services/text-splitter.service';
 export * from './lib/services/metadata-extractor.service';
 
+// ✅ Collection Registry Service - automatic collection initialization
+export { CollectionRegistryService } from './lib/services/collection-registry.service';
+
 //  Services
 export type { AggregatedMetrics } from './lib/services/chroma-metrics.service';
 export { ChromaMetricsService } from './lib/services/chroma-metrics.service';

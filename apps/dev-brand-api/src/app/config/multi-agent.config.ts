@@ -71,7 +71,8 @@ export function getMultiAgentConfig(): MultiAgentModuleOptions {
     // ============================================
     // AGENT AND TOOL REGISTRATION
     // ============================================
-    // Tools used by agents
+    // Tools used by agents (available to ALL agents automatically)
+    // NOTE: MemoryAccessTools are built-in and always available - no need to register
     tools: [WebResearchTools, GitHubIntegrationTools, BrandStrategistTools],
 
     // Agents managed by multi-agent module
