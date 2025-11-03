@@ -182,7 +182,7 @@ export class ChromaDBRepository<T extends BaseDocument> {
    * Extract metadata from @ChromaEntity decorator
    * Used to populate collection metadata during initialization
    */
-  private getEntityMetadata(): Record<string, unknown> {
+  private getEntityMetadata(): Record<string, any> {
     try {
       // Access decorator metadata if available
       const entityMetadata = Reflect.getMetadata('chroma:entity', this.entity);

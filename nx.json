@@ -150,7 +150,8 @@
       "libs/langgraph-modules/monitoring",
       "libs/langgraph-modules/platform",
       "angular-3d",
-      "langgraph-angular"
+      "langgraph-angular",
+      "@hive-academy/langgraph-adapters"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",

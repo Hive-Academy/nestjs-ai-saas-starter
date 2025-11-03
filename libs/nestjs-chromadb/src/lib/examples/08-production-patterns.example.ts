@@ -88,7 +88,7 @@ export class ProductionDocumentEntity extends BaseChromaEntity<ProductionDocumen
  */
 @Injectable()
 export class ProductionDocumentRepository extends ChromaDBRepository<ProductionDocumentEntity> {
-  private readonly logger = new Logger(ProductionDocumentRepository.name);
+  private readonly productionLogger = new Logger(ProductionDocumentRepository.name);
   private readonly retryAttempts = 3;
   private readonly retryDelay = 1000;
   private circuitBreakerFailures = 0;
@@ -117,7 +117,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     // Check if circuit breaker is open
     if (this.isCircuitBreakerOpen()) {
       const error = new Error(`Circuit breaker is open for ${operationName}`);
-      this.logger.warn(`Circuit breaker blocked operation: ${operationName}`);
+      this.productionLogger.warn(`Circuit breaker blocked operation: ${operationName}`);
       throw error;
     }
 
@@ -146,7 +146,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
         const result = await operation();
         const duration = Date.now() - startTime;
 
-        this.logger.debug(
+        this.productionLogger.debug(
           `${operationName} completed in ${duration}ms (attempt ${attempt})`
         );
         return result;
@@ -154,14 +154,14 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
         lastError = error instanceof Error ? error : new Error(String(error));
 
         if (attempt === this.retryAttempts) {
-          this.logger.error(
+          this.productionLogger.error(
             `${operationName} failed after ${attempt} attempts: ${lastError.message}`
           );
           break;
         }
 
         const delay = this.calculateRetryDelay(attempt);
-        this.logger.warn(
+        this.productionLogger.warn(
           `${operationName} failed on attempt ${attempt}, retrying in ${delay}ms: ${lastError.message}`
         );
 
@@ -185,7 +185,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
 
     if (this.circuitBreakerFailures >= this.circuitBreakerThreshold) {
       this.circuitBreakerOpenUntil = Date.now() + 60000; // Open for 1 minute
-      this.logger.error(
+      this.productionLogger.error(
         `Circuit breaker opened for ${operationName} after ${this.circuitBreakerFailures} failures`
       );
     }
@@ -254,7 +254,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
-          this.logger.warn('Failed to get total count estimate:', errorMessage);
+          this.productionLogger.warn('Failed to get total count estimate:', errorMessage);
         }
       }
 
@@ -353,7 +353,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     let imported = 0;
     let failed = 0;
 
-    this.logger.log(`Starting bulk import of ${documents.length} documents`);
+    this.productionLogger.log(`Starting bulk import of ${documents.length} documents`);
 
     for (let i = 0; i < documents.length; i += batchSize) {
       const batch = documents.slice(i, i + batchSize);
@@ -440,7 +440,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
 
     const duration = Date.now() - startTime;
 
-    this.logger.log(
+    this.productionLogger.log(
       `Bulk import completed: ${imported} imported, ${failed} failed in ${duration}ms`
     );
 
@@ -476,7 +476,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     let batches = 0;
     let cursor: string | undefined;
 
-    this.logger.log('Starting bulk export');
+    this.productionLogger.log('Starting bulk export');
 
     do {
       const result = await this.findWithCursorPagination({
@@ -495,7 +495,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
         exported += result.documents.length;
         cursor = result.nextCursor;
 
-        this.logger.debug(
+        this.productionLogger.debug(
           `Exported batch ${batches}: ${result.documents.length} documents`
         );
       } else {
@@ -505,7 +505,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
 
     const duration = Date.now() - startTime;
 
-    this.logger.log(
+    this.productionLogger.log(
       `Bulk export completed: ${exported} documents in ${batches} batches, ${duration}ms`
     );
 
@@ -544,7 +544,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     let migrated = 0;
     let skipped = 0;
 
-    this.logger.log(
+    this.productionLogger.log(
       `Starting migration to version ${targetVersion} (dry run: ${options.dryRun})`
     );
 
@@ -604,12 +604,12 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
 
       cursor = result.nextCursor;
 
-      this.logger.debug(
+      this.productionLogger.debug(
         `Migration progress: ${processed} processed, ${migrated} migrated, ${skipped} skipped`
       );
     } while (cursor);
 
-    this.logger.log(
+    this.productionLogger.log(
       `Migration completed: ${processed} processed, ${migrated} migrated, ${skipped} skipped, ${errors.length} errors`
     );
 
@@ -663,7 +663,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
 
       // Log slow queries
       if (searchTime > 1000) {
-        this.logger.warn(
+        this.productionLogger.warn(
           `Slow query detected: ${searchTime}ms for query "${query}" (${results.length} results)`
         );
       }
@@ -679,7 +679,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(`Search failed for query "${query}": ${errorMessage}`);
+      this.productionLogger.error(`Search failed for query "${query}": ${errorMessage}`);
       throw error;
     }
   }
@@ -716,7 +716,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error('Database health check failed:', errorMessage);
+      this.productionLogger.error('Database health check failed:', errorMessage);
     }
 
     // Check circuit breaker status
@@ -810,7 +810,7 @@ export class ProductionDocumentRepository extends ChromaDBRepository<ProductionD
   ): Promise<void> {
     // In production, this would batch update performance metrics
     // For demo purposes, we'll just log it
-    this.logger.debug(
+    this.productionLogger.debug(
       `Updated query metrics for ${documentIds.length} documents (${queryTime}ms)`
     );
   }

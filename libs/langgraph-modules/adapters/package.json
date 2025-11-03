@@ -1,0 +1,30 @@
+{
+  "name": "@hive-academy/langgraph-adapters",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@hive-academy/nestjs-neo4j": "*",
+    "@hive-academy/nestjs-chromadb": "*",
+    "@hive-academy/langgraph-memory": "*",
+    "@hive-academy/langgraph-hitl": "*",
+    "@nestjs/common": "^10.0.0"
+  }
+}

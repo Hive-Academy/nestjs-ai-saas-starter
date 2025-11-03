@@ -174,7 +174,8 @@
   },
   "workspaces": [
     "apps/*",
-    "libs/*"
+    "libs/*",
+    "libs/langgraph-modules/adapters"
   ],
   "overrides": {
     "chalk": {

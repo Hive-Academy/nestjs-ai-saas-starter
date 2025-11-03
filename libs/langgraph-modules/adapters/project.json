@@ -1,0 +1,20 @@
+{
+  "name": "@hive-academy/langgraph-adapters",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langgraph-modules/adapters/src",
+  "projectType": "library",
+  "tags": ["domain:langgraph", "type:feature", "module:adapters"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langgraph-modules/adapters",
+        "tsConfig": "libs/langgraph-modules/adapters/tsconfig.lib.json",
+        "packageJson": "libs/langgraph-modules/adapters/package.json",
+        "main": "libs/langgraph-modules/adapters/src/index.ts",
+        "assets": ["libs/langgraph-modules/adapters/*.md"]
+      }
+    }
+  }
+}

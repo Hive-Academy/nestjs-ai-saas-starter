@@ -47,6 +47,9 @@
     },
     {
       "path": "./apps/dev-brand-ui-e2e"
+    },
+    {
+      "path": "./libs/langgraph-modules/adapters"
     }
   ]
 }
