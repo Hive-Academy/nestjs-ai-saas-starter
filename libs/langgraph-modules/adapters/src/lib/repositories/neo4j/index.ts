@@ -3,6 +3,7 @@
  */
 
 export * from './memory-graph.repository';
+export * from './store-graph.repository';
 export * from './approval-request.repository';
 export * from './approval-chain.repository';
 export * from './confidence-pattern.repository';

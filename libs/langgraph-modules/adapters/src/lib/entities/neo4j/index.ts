@@ -8,6 +8,9 @@
 // Memory entities
 export * from './memory.entity';
 
+// Store entities
+export * from './store-item.entity';
+
 // HITL entities
 export * from './approval-request.entity';
 export * from './approval-chain.entity';

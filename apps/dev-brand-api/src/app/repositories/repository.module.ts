@@ -13,9 +13,6 @@ import {
 } from '@hive-academy/nestjs-neo4j';
 import { Module } from '@nestjs/common';
 
-// Application-specific Neo4j Repository (Store)
-import { StoreGraphRepository } from './neo4j/store-graph.repository';
-
 // Application-specific ChromaDB Entities (Analytics)
 import { AudienceAnalysisEntity } from '../entities/chromadb/audience-analysis.entity';
 import { BrandMentionEntity } from '../entities/chromadb/brand-mention.entity';
@@ -43,7 +40,6 @@ import { DeveloperRepository } from './neo4j/developer.repository';
 // Application-specific Neo4j Entities (Business Domain)
 import { Achievement } from '../entities/neo4j/achievement.entity';
 import { Developer } from '../entities/neo4j/developer.entity';
-import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
 
 /**
  * Repository Module - Application-Specific Repositories
@@ -60,11 +56,7 @@ import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
     ChromaDBModule,
     Neo4jModule,
     // Application-specific Neo4j entities
-    Neo4jModule.forFeature([
-      StoreItemEntity,
-      Developer,
-      Achievement,
-    ]),
+    Neo4jModule.forFeature([Developer, Achievement]),
     // Application-specific ChromaDB entities (Analytics)
     ChromaDBModule.forFeature([
       CodeAchievementEntity,
@@ -113,10 +105,6 @@ import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
     },
 
     // Application-specific Neo4j Repositories (Business Domain)
-    {
-      provide: getRepositoryToken(StoreItemEntity),
-      useClass: StoreGraphRepository,
-    },
     {
       provide: getRepositoryToken(Developer),
       useClass: DeveloperRepository,
@@ -274,7 +262,6 @@ import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
     getChromaRepositoryToken(CompetitorAnalysisEntity),
 
     // Application-specific Neo4j Repositories (Business Domain)
-    getRepositoryToken(StoreItemEntity),
     getRepositoryToken(Developer),
     getRepositoryToken(Achievement),
 

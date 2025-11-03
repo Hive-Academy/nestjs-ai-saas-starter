@@ -9,6 +9,7 @@ import { getRepositoryToken, Neo4jModule } from '@hive-academy/nestjs-neo4j';
 // Entities
 import {
   Memory,
+  StoreItemEntity,
   ApprovalChain,
   ApprovalRequest,
   ApprovalResponse,
@@ -21,6 +22,7 @@ import { VectorMemoryEntity, LangGraphStoreEntity } from './entities/chromadb';
 // Repositories
 import {
   MemoryGraphRepository,
+  StoreGraphRepository,
   ApprovalRequestRepository,
   ApprovalChainRepository,
   ConfidencePatternRepository,
@@ -92,6 +94,7 @@ import {
     // Auto-generate Neo4j repositories for all generic entities
     Neo4jModule.forFeature([
       Memory,
+      StoreItemEntity,
       ApprovalChain,
       ApprovalRequest,
       ApprovalResponse,
@@ -113,6 +116,10 @@ import {
     {
       provide: getRepositoryToken(Memory),
       useClass: MemoryGraphRepository,
+    },
+    {
+      provide: getRepositoryToken(StoreItemEntity),
+      useClass: StoreGraphRepository,
     },
     {
       provide: getRepositoryToken(ApprovalRequest),
@@ -180,6 +187,7 @@ import {
   exports: [
     // Export Neo4j repositories for advanced usage
     getRepositoryToken(Memory),
+    getRepositoryToken(StoreItemEntity),
     getRepositoryToken(ApprovalRequest),
     getRepositoryToken(ApprovalChain),
     getRepositoryToken(InterruptionPoint),
