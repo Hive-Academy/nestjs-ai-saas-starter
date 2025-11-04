@@ -8,6 +8,7 @@ import {
   ValidateInput,
   AuditLog,
   getRepositoryToken,
+  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalChain } from '../../entities/neo4j/approval-chain.entity';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
@@ -89,9 +90,19 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
       const qb = this.neogma.createQueryBuilder();
       const bindParam = qb.getBindParam();
 
-      const chainIdParam = bindParam.add(chainId);
-      const levelCountParam = bindParam.add(levels.length);
-      const levelsParam = bindParam.add(
+      const chainIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'chainId',
+        chainId
+      );
+      const levelCountParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'levelCount',
+        levels.length
+      );
+      const levelsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'levels',
         levels.map((level) => ({
           id: level.id,
           name: level.name,
@@ -267,7 +278,11 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
       const qb = this.neogma.createQueryBuilder();
       const bindParam = qb.getBindParam();
 
-      const chainIdParam = bindParam.add(chainId);
+      const chainIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'chainId',
+        chainId
+      );
 
       qb.match('(chain:ApprovalChain)')
         .where(`chain.id = $${chainIdParam}`)
@@ -477,13 +492,16 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
       const qb = this.neogma.createQueryBuilder();
       const bindParam = qb.getBindParam();
 
-      const cutoffDateParam = bindParam.add(cutoffDate.toISOString());
-      const statusListParam = bindParam.add([
-        'approved',
-        'rejected',
-        'cancelled',
-        'timeout',
-      ]);
+      const cutoffDateParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'cutoffDate',
+        cutoffDate.toISOString()
+      );
+      const statusListParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'statusList',
+        ['approved', 'rejected', 'cancelled', 'timeout']
+      );
 
       qb.match('(req:ApprovalRequest)')
         .where(
