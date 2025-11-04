@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectNeogma, NeogmaService, Safe } from '@hive-academy/nestjs-neo4j';
+import {
+  InjectNeogma,
+  NeogmaService,
+  Safe,
+  ParameterBindingUtility,
+} from '@hive-academy/nestjs-neo4j';
 import type { AgentState, MemoryEntry } from '@hive-academy/langgraph-memory';
 import { Memory } from '../../entities/neo4j/memory.entity';
 import { GraphHelpersService } from './graph-helpers.service';
@@ -34,13 +39,41 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const threadIdParam = bindParam.add(memory.threadId);
-      const memoryIdParam = bindParam.add(memory.id);
-      const contentParam = bindParam.add(memory.content);
-      const typeParam = bindParam.add(memory.metadata.type);
-      const importanceParam = bindParam.add(memory.metadata.importance || 0.5);
-      const createdAtParam = bindParam.add(memory.createdAt.toISOString());
-      const accessCountParam = bindParam.add(memory.accessCount);
+      const threadIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'threadId',
+        memory.threadId
+      );
+      const memoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'memoryId',
+        memory.id
+      );
+      const contentParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'content',
+        memory.content
+      );
+      const typeParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'type',
+        memory.metadata.type
+      );
+      const importanceParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'importance',
+        memory.metadata.importance || 0.5
+      );
+      const createdAtParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'createdAt',
+        memory.createdAt.toISOString()
+      );
+      const accessCountParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'accessCount',
+        memory.accessCount
+      );
 
       // Build base query for Thread and Memory nodes
       queryBuilder.raw(
@@ -57,7 +90,11 @@ export class GraphAgentService {
 
       // Add user relationship if userId exists
       if (memory.metadata.userId) {
-        const userIdParam = bindParam.add(memory.metadata.userId);
+        const userIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'userId',
+          memory.metadata.userId
+        );
         queryBuilder.raw(
           `MERGE (u:User {id: $${userIdParam}})
            MERGE (u)-[:HAS_MEMORY]->(m)`
@@ -104,7 +141,11 @@ export class GraphAgentService {
         accessCount: memory.accessCount,
       }));
 
-      const memoriesParam = bindParam.add(memoryData);
+      const memoriesParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'memories',
+        memoryData
+      );
 
       queryBuilder.raw(
         `UNWIND $${memoriesParam} as memoryData
@@ -147,7 +188,11 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const memoryIdsParam = bindParam.add([...memoryIds]);
+      const memoryIdsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'memoryIds',
+        [...memoryIds]
+      );
 
       queryBuilder.raw(
         `MATCH (m:Memory)
@@ -195,12 +240,36 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const fromMemoryIdParam = bindParam.add(fromMemoryId);
-      const toMemoryIdParam = bindParam.add(toMemoryId);
-      const strengthParam = bindParam.add(relationshipStrength);
-      const agentIdParam = bindParam.add(agentState.current);
-      const threadIdParam = bindParam.add(agentState.threadId);
-      const userIdParam = bindParam.add(agentState.userId);
+      const fromMemoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'fromMemoryId',
+        fromMemoryId
+      );
+      const toMemoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'toMemoryId',
+        toMemoryId
+      );
+      const strengthParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'strength',
+        relationshipStrength
+      );
+      const agentIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'agentId',
+        agentState.current
+      );
+      const threadIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'threadId',
+        agentState.threadId
+      );
+      const userIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'userId',
+        agentState.userId
+      );
 
       queryBuilder
         .match(`(from:Memory {id: $${fromMemoryIdParam}})`)
@@ -253,11 +322,31 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const startMemoryIdParam = bindParam.add(startMemoryId);
-      const userIdParam = bindParam.add(agentState.userId);
-      const threadIdParam = bindParam.add(agentState.threadId);
-      const agentIdParam = bindParam.add(agentState.current);
-      const limitParam = bindParam.add(20);
+      const startMemoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'startMemoryId',
+        startMemoryId
+      );
+      const userIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'userId',
+        agentState.userId
+      );
+      const threadIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'threadId',
+        agentState.threadId
+      );
+      const agentIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'agentId',
+        agentState.current
+      );
+      const limitParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limit',
+        20
+      );
 
       queryBuilder
         .match(
@@ -316,10 +405,26 @@ export class GraphAgentService {
         const queryBuilder = this.neogma.createQueryBuilder();
         const bindParam = queryBuilder.getBindParam();
 
-        const fromIdParam = bindParam.add(conversationMemories[i]);
-        const toIdParam = bindParam.add(conversationMemories[i + 1]);
-        const threadIdParam = bindParam.add(threadId);
-        const sequenceParam = bindParam.add(i + 1);
+        const fromIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'fromId',
+          conversationMemories[i]
+        );
+        const toIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'toId',
+          conversationMemories[i + 1]
+        );
+        const threadIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'threadId',
+          threadId
+        );
+        const sequenceParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'sequence',
+          i + 1
+        );
 
         queryBuilder
           .match(`(from:Memory {id: $${fromIdParam}})`)
@@ -363,9 +468,21 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const userIdParam = bindParam.add(userId);
-      const limitDaysParam = bindParam.add(limitDays);
-      const limitParam = bindParam.add(10);
+      const userIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'userId',
+        userId
+      );
+      const limitDaysParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limitDays',
+        limitDays
+      );
+      const limitParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limit',
+        10
+      );
 
       queryBuilder
         .match('(m:Memory)-[r:FOLLOWS_IN_CONVERSATION]->(next:Memory)')
@@ -429,9 +546,21 @@ export class GraphAgentService {
             const queryBuilder = this.neogma.createQueryBuilder();
             const bindParam = queryBuilder.getBindParam();
 
-            const id1Param = bindParam.add(memoryIds[i]);
-            const id2Param = bindParam.add(memoryIds[j]);
-            const similarityParam = bindParam.add(similarity);
+            const id1Param = ParameterBindingUtility.addParam(
+              bindParam,
+              'id1',
+              memoryIds[i]
+            );
+            const id2Param = ParameterBindingUtility.addParam(
+              bindParam,
+              'id2',
+              memoryIds[j]
+            );
+            const similarityParam = ParameterBindingUtility.addParam(
+              bindParam,
+              'similarity',
+              similarity
+            );
 
             queryBuilder
               .match(`(m1:Memory {id: $${id1Param}})`)
@@ -489,8 +618,16 @@ export class GraphAgentService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const id1Param = bindParam.add(memoryId1);
-      const id2Param = bindParam.add(memoryId2);
+      const id1Param = ParameterBindingUtility.addParam(
+        bindParam,
+        'id1',
+        memoryId1
+      );
+      const id2Param = ParameterBindingUtility.addParam(
+        bindParam,
+        'id2',
+        memoryId2
+      );
 
       queryBuilder
         .match(`(m1:Memory {id: $${id1Param}})`)
