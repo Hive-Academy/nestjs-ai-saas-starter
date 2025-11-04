@@ -9,6 +9,7 @@ import {
   ValidateInput,
   AuditLog,
   RateLimit,
+  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
 import {
@@ -71,25 +72,71 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      // Add parameters using BindParam
-      const idParam = bindParam.add(request.id);
-      const executionIdParam = bindParam.add(request.executionId);
-      const nodeIdParam = bindParam.add(request.nodeId);
-      const messageParam = bindParam.add(request.message);
+      // Add parameters using standardized utility
+      const idParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'id',
+        request.id
+      );
+      const executionIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'executionId',
+        request.executionId
+      );
+      const nodeIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'nodeId',
+        request.nodeId
+      );
+      const messageParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'message',
+        request.message
+      );
       // Convert metadata string to object for storage in Neo4j
-      const metadataParam = bindParam.add(
+      const metadataParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'metadata',
         request.metadata ? JSON.parse(request.metadata) : null
       );
-      const statusParam = bindParam.add(request.status);
-      const requestedAtParam = bindParam.add(request.requestedAt.toISOString());
-      const expiresAtParam = bindParam.add(
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        request.status
+      );
+      const requestedAtParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'requestedAt',
+        request.requestedAt.toISOString()
+      );
+      const expiresAtParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'expiresAt',
         request.expiresAt ? request.expiresAt.toISOString() : null
       );
-      const confidenceParam = bindParam.add(request.confidence || null);
-      const riskLevelParam = bindParam.add(request.riskLevel || null);
-      const chainIdParam = bindParam.add(request.chainId || null);
-      const approversParam = bindParam.add(request.approvers || null);
-      const timeoutStrategyParam = bindParam.add(
+      const confidenceParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'confidence',
+        request.confidence || null
+      );
+      const riskLevelParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'riskLevel',
+        request.riskLevel || null
+      );
+      const chainIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'chainId',
+        request.chainId || null
+      );
+      const approversParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'approvers',
+        request.approvers || null
+      );
+      const timeoutStrategyParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'timeoutStrategy',
         request.timeoutStrategy || null
       );
 
@@ -244,13 +291,37 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
         const queryBuilder = this.neogma.createQueryBuilder();
         const bindParam = queryBuilder.getBindParam();
 
-        const idParam = bindParam.add(id);
-        const statusParam = bindParam.add(status);
-        const decisionParam = bindParam.add(response.decision);
-        const approvedByParam = bindParam.add(response.approvedBy);
-        const messageParam = bindParam.add(response.message || null);
-        const timestampParam = bindParam.add(response.timestamp.toISOString());
-        const metadataParam = bindParam.add(response.metadata || null);
+        const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
+        const statusParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'status',
+          status
+        );
+        const decisionParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'decision',
+          response.decision
+        );
+        const approvedByParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'approvedBy',
+          response.approvedBy
+        );
+        const messageParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'message',
+          response.message || null
+        );
+        const timestampParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'timestamp',
+          response.timestamp.toISOString()
+        );
+        const metadataParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'metadata',
+          response.metadata || null
+        );
 
         queryBuilder
           .match('(a:ApprovalRequest)')
@@ -278,8 +349,12 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
         const queryBuilder = this.neogma.createQueryBuilder();
         const bindParam = queryBuilder.getBindParam();
 
-        const idParam = bindParam.add(id);
-        const statusParam = bindParam.add(status);
+        const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
+        const statusParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'status',
+          status
+        );
 
         queryBuilder
           .match('(a:ApprovalRequest)')
@@ -322,8 +397,16 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const idParam = bindParam.add(requestId);
-      const statusParam = bindParam.add(status);
+      const idParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'id',
+        requestId
+      );
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        status
+      );
 
       queryBuilder
         .match('(a:ApprovalRequest)')
@@ -333,7 +416,11 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
 
       // If metadata is provided, update it
       if (metadata) {
-        const metadataParam = bindParam.add(metadata);
+        const metadataParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'metadata',
+          metadata
+        );
         queryBuilder.set(`a.metadata = $${metadataParam}`);
       }
 
@@ -502,8 +589,16 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const idsParam = bindParam.add(requestIds);
-      const statusParam = bindParam.add(status);
+      const idsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'requestIds',
+        requestIds
+      );
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        status
+      );
 
       queryBuilder
         .raw(`UNWIND $${idsParam} as requestId`)
@@ -514,7 +609,11 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
 
       // If metadata provided, update it as well
       if (metadata) {
-        const metadataParam = bindParam.add(metadata);
+        const metadataParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'metadata',
+          metadata
+        );
         queryBuilder.set(`a.metadata = $${metadataParam}`);
       }
 
