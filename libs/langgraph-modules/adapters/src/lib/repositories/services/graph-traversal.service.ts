@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectNeogma, NeogmaService, Safe } from '@hive-academy/nestjs-neo4j';
+import {
+  InjectNeogma,
+  NeogmaService,
+  Safe,
+  ParameterBindingUtility,
+} from '@hive-academy/nestjs-neo4j';
 import type {
   TraversalSpec,
   GraphTraversalResult,
@@ -54,8 +59,16 @@ export class GraphTraversalService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const startMemoryIdParam = bindParam.add(startMemoryId);
-      const limitParam = bindParam.add(spec.limit || 100);
+      const startMemoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'startMemoryId',
+        startMemoryId
+      );
+      const limitParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limit',
+        spec.limit || 100
+      );
 
       queryBuilder.match(
         `path = (start:Memory {id: $${startMemoryIdParam}})${direction.start}[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})`
@@ -135,8 +148,16 @@ export class GraphTraversalService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const memoryIdParam = bindParam.add(memoryId);
-      const limitParam = bindParam.add(limit);
+      const memoryIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'memoryId',
+        memoryId
+      );
+      const limitParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limit',
+        limit
+      );
 
       queryBuilder.match(
         `path = (start:Memory {id: $${memoryIdParam}})-[*1..${maxDepth}]-(related:Memory)`
