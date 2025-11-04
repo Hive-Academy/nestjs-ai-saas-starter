@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectNeogma, NeogmaService, Safe } from '@hive-academy/nestjs-neo4j';
+import {
+  InjectNeogma,
+  NeogmaService,
+  Safe,
+  ParameterBindingUtility,
+} from '@hive-academy/nestjs-neo4j';
 import type {
   GraphNodeData,
   GraphRelationshipData,
@@ -44,11 +49,19 @@ export class GraphCrudService {
       const bindParam = queryBuilder.getBindParam();
 
       const labelsStr = data.labels.join(':');
-      const propertiesParam = bindParam.add(data.properties || {});
+      const propertiesParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'properties',
+        data.properties || {}
+      );
 
       const createClause = `(n:${labelsStr})`;
       if (data.id) {
-        const idParam = bindParam.add(data.id);
+        const idParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'id',
+          data.id
+        );
         queryBuilder.create(`${createClause} {id: $${idParam}}`);
         queryBuilder.set(`n += $${propertiesParam}`);
       } else {
@@ -99,21 +112,23 @@ export class GraphCrudService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const fromIdParam = bindParam.add(fromNodeId);
-      const toIdParam = bindParam.add(toNodeId);
-      const propertiesParam = bindParam.add(data.properties || {});
+      const params = ParameterBindingUtility.addParams(bindParam, {
+        fromId: fromNodeId,
+        toId: toNodeId,
+        properties: data.properties || {},
+      });
 
       queryBuilder
         .match(
-          `(from) WHERE from.id = $${fromIdParam} OR id(from) = $${fromIdParam}`
+          `(from) WHERE from.id = ${params.fromId} OR id(from) = ${params.fromId}`
         )
-        .match(`(to) WHERE to.id = $${toIdParam} OR id(to) = $${toIdParam}`)
-        .create(`(from)-[r:${data.type} $${propertiesParam}]->(to)`)
+        .match(`(to) WHERE to.id = ${params.toId} OR id(to) = ${params.toId}`)
+        .create(`(from)-[r:${data.type} ${params.properties}]->(to)`)
         .return('id(r) as relationshipId');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const bindParams = bindParam.get();
+      const result = await this.neogma.run(cypher, bindParams);
 
       const relationshipId =
         result.records[0]?.get('relationshipId')?.toString() || '';
@@ -316,7 +331,11 @@ export class GraphCrudService {
       if (criteria.properties && Object.keys(criteria.properties).length > 0) {
         const whereConditions: string[] = [];
         Object.entries(criteria.properties).forEach(([key, value]) => {
-          const valueParam = bindParam.add(value);
+          const valueParam = ParameterBindingUtility.addParam(
+            bindParam,
+            key,
+            value
+          );
           whereConditions.push(`n.${key} = $${valueParam}`);
         });
         queryBuilder.where(whereConditions.join(' AND '));
@@ -334,12 +353,20 @@ export class GraphCrudService {
 
       // Add pagination
       if (criteria.skip) {
-        const skipParam = bindParam.add(criteria.skip);
+        const skipParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'skip',
+          criteria.skip
+        );
         queryBuilder.skip(`$${skipParam}`);
       }
 
       if (criteria.limit) {
-        const limitParam = bindParam.add(criteria.limit);
+        const limitParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'limit',
+          criteria.limit
+        );
         queryBuilder.limit(`$${limitParam}`);
       }
 
@@ -387,10 +414,14 @@ export class GraphCrudService {
         const queryBuilder = this.neogma.createQueryBuilder();
         const bindParam = queryBuilder.getBindParam();
 
-        const nodeIdParam = bindParam.add(nodeId);
+        const nodeIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'nodeId',
+          nodeId
+        );
 
         queryBuilder
-          .match(`(n) WHERE n.id = $${nodeIdParam} OR id(n) = $${nodeIdParam}`)
+          .match(`(n) WHERE n.id = ${nodeIdParam} OR id(n) = ${nodeIdParam}`)
           .raw('DETACH DELETE n');
 
         const cypher = queryBuilder.getStatement();
@@ -429,10 +460,14 @@ export class GraphCrudService {
         const queryBuilder = this.neogma.createQueryBuilder();
         const bindParam = queryBuilder.getBindParam();
 
-        const relIdParam = bindParam.add(relId);
+        const relIdParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'relId',
+          relId
+        );
 
         queryBuilder
-          .match(`()-[r]->() WHERE id(r) = $${relIdParam}`)
+          .match(`()-[r]->() WHERE id(r) = ${relIdParam}`)
           .raw('DELETE r');
 
         const cypher = queryBuilder.getStatement();
@@ -470,17 +505,19 @@ export class GraphCrudService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const nodeIdParam = bindParam.add(nodeId);
-      const propertiesParam = bindParam.add(properties);
+      const params = ParameterBindingUtility.addParams(bindParam, {
+        nodeId: nodeId,
+        properties: properties,
+      });
 
       queryBuilder
-        .match(`(n) WHERE n.id = $${nodeIdParam} OR id(n) = $${nodeIdParam}`)
-        .set(`n += $${propertiesParam}`)
+        .match(`(n) WHERE n.id = ${params.nodeId} OR id(n) = ${params.nodeId}`)
+        .set(`n += ${params.properties}`)
         .return('n');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const bindParams = bindParam.get();
+      const result = await this.neogma.run(cypher, bindParams);
 
       const updated = result.records.length > 0;
       if (updated) {
@@ -505,10 +542,14 @@ export class GraphCrudService {
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const nodeIdParam = bindParam.add(nodeId);
+      const nodeIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'nodeId',
+        nodeId
+      );
 
       queryBuilder
-        .match(`(n) WHERE n.id = $${nodeIdParam} OR id(n) = $${nodeIdParam}`)
+        .match(`(n) WHERE n.id = ${nodeIdParam} OR id(n) = ${nodeIdParam}`)
         .raw('DETACH DELETE n');
 
       const cypher = queryBuilder.getStatement();
