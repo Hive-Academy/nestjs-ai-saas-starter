@@ -94,7 +94,7 @@ export class NeogmaQueryBuilderService {
 
       Object.entries(properties).forEach(([key, value]) => {
         if (value !== undefined) {
-          const paramName = bindParam.add(value);
+          const paramName = bindParam.getUniqueNameAndAdd(key, value);
           setParts.push(`${key}: $${paramName}`);
         }
       });
@@ -148,7 +148,7 @@ export class NeogmaQueryBuilderService {
 
       Object.entries(relationshipProps).forEach(([key, value]) => {
         if (value !== undefined) {
-          const paramName = bindParam.add(value);
+          const paramName = bindParam.getUniqueNameAndAdd(key, value);
           propParts.push(`${key}: $${paramName}`);
         }
       });

@@ -79,6 +79,15 @@ export class ChromaDBModule {
       {
         provide: CHROMADB_CLIENT,
         useFactory: async (opts: ChromaDBModuleOptions) => {
+          // CRITICAL: Log ChromaClient configuration for debugging
+          console.log('🔍 ChromaDB Client Configuration:', {
+            host: opts.connection.host,
+            port: opts.connection.port,
+            ssl: opts.connection.ssl,
+            tenant: opts.connection.tenant,
+            database: opts.connection.database,
+          });
+
           return new ChromaClient({
             host: opts.connection.host,
             port: opts.connection.port,

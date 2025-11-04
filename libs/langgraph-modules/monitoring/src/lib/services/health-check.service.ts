@@ -366,14 +366,21 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
       const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
       const usagePercent = (heapUsedMB / heapTotalMB) * 100;
 
-      // Return object to allow for detailed state determination
+      // Determine state explicitly to avoid ambiguity
+      const isUnhealthy = usagePercent >= 90;
+      const isDegraded = usagePercent >= 80 && usagePercent < 90;
+      const isHealthy = usagePercent < 80;
+
+      // Return object with explicit state determination
+      // Ensure exactly one flag is true to avoid ambiguity
       return {
-        healthy: usagePercent < 80,
-        degraded: usagePercent >= 80 && usagePercent < 90,
-        unhealthy: usagePercent >= 90,
-        usagePercent,
+        healthy: isHealthy && !isDegraded && !isUnhealthy,
+        degraded: !isHealthy && isDegraded && !isUnhealthy,
+        unhealthy: !isHealthy && !isDegraded && isUnhealthy,
+        usagePercent: Math.round(usagePercent * 100) / 100,
         heapUsedMB: Math.round(heapUsedMB),
         heapTotalMB: Math.round(heapTotalMB),
+        rssUsedMB: Math.round(memUsage.rss / 1024 / 1024),
       };
     });
 

@@ -264,18 +264,35 @@ export class ChromaDBConnectionService
         const duration = Date.now() - attemptStartTime;
 
         // Detailed error logging with full context
+        // Extract original error from ChromaDB client's cause property
+        const originalError = (error as any)?.cause;
+        const errorCode = originalError?.code || (error as any)?.code;
+        const errorType =
+          error instanceof ChromaDBTimeoutError
+            ? 'TIMEOUT'
+            : error instanceof ChromaDBConnectionError
+            ? 'CONNECTION'
+            : 'UNKNOWN';
+
         this.logger.error(
           `[${operationId}] ❌ FAILED on attempt ${attempt}/${this.config.retryAttempts}`,
           {
             duration,
             totalTime: Date.now() - startTime,
-            errorType:
-              error instanceof ChromaDBTimeoutError
-                ? 'TIMEOUT'
-                : error instanceof ChromaDBConnectionError
-                ? 'CONNECTION'
-                : 'UNKNOWN',
+            errorType,
             errorMessage: lastError.message,
+            // CRITICAL: Log the original error details
+            originalError: originalError
+              ? {
+                  message: originalError.message,
+                  code: originalError.code,
+                  errno: originalError.errno,
+                  syscall: originalError.syscall,
+                  address: originalError.address,
+                  port: originalError.port,
+                }
+              : undefined,
+            errorCode, // Network error codes: ECONNREFUSED, ETIMEDOUT, etc.
             isConnectionError: this.isConnectionError(error),
             wasConnected: this.isConnected,
             willRetry: attempt < this.config.retryAttempts,
@@ -293,6 +310,7 @@ export class ChromaDBConnectionService
 
         // Don't retry on last attempt
         if (attempt === this.config.retryAttempts) {
+          const originalError = (lastError as any)?.cause;
           this.logger.error(
             `[${operationId}] 🔴 FINAL FAILURE after ${
               Date.now() - startTime
@@ -300,6 +318,15 @@ export class ChromaDBConnectionService
             {
               totalAttempts: attempt,
               finalError: lastError.message,
+              // Log original error in final failure too
+              originalErrorCode:
+                originalError?.code || (lastError as any)?.code,
+              originalErrorMessage: originalError?.message,
+              connectionConfig: {
+                host: this.config.host,
+                port: this.config.port,
+                ssl: this.config.ssl,
+              },
             }
           );
           break;
@@ -352,6 +379,23 @@ export class ChromaDBConnectionService
         this.config.timeout || 10000
       );
     } catch (error) {
+      // CRITICAL: Log the raw error BEFORE ChromaDB client swallows it
+      const rawError = error as any;
+      this.logger.error(
+        `🔴 RAW CONNECTION ERROR (before ChromaDB client processing):`,
+        {
+          errorName: rawError?.name,
+          errorMessage: rawError?.message,
+          errorCode: rawError?.code,
+          errno: rawError?.errno,
+          syscall: rawError?.syscall,
+          address: rawError?.address,
+          port: rawError?.port,
+          cause: rawError?.cause,
+          stack: rawError?.stack?.split('\n').slice(0, 3).join('\n'),
+        }
+      );
+
       throw new ChromaDBConnectionError(
         `Connection test failed: ${
           error instanceof Error ? error.message : error

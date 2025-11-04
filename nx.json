@@ -46,7 +46,8 @@
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/langgraph-modules/adapters/*"
       ]
     },
     {
@@ -87,7 +88,8 @@
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/langgraph-modules/adapters/*"
       ],
       "options": {
         "typecheck": {
@@ -149,9 +151,8 @@
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
       "libs/langgraph-modules/platform",
-      "angular-3d",
-      "langgraph-angular",
-      "@hive-academy/langgraph-adapters"
+      "libs/langgraph-angular",
+      "libs/langgraph-modules/adapters"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",

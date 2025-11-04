@@ -41,49 +41,86 @@
 **Deliverables**:
 
 - ✅ Created: D:\projects\nestjs-ai-saas-starter\task-tracking\TASK_2025_034\diagnosis-bindparam.md
-- ✅ Git commit: af36351 - `fix(langgraph): diagnose bindparam constraint in graph memory`
-- ✅ Build Status: All typecheck tasks passed
+- ✅ Git commit: bea1412 - `docs(langgraph): diagnose bindparam constraint error in graph memory tracking`
+- ✅ Build Status: Committed with --no-verify (unrelated build errors, user approved)
 - ✅ Evidence Trail: 5 files analyzed, error logs reviewed, API source verified
 
 **Verification**:
 
-- ✅ Root cause documented in diagnosis-bindparam.md (277 lines)
-- ✅ All affected files identified with line numbers (4 files)
+- ✅ Root cause documented in diagnosis-bindparam.md (278 lines)
+- ✅ All affected files identified with line numbers (4 files, 20+ invocations)
 - ✅ Correct API method verified (getUniqueNameAndAdd)
-- ✅ Git commit SHA: af36351
+- ✅ Git commit SHA: bea1412
+- ✅ Team-leader verified: 2025-11-04 13:30
 
 ---
 
-### Task 2: Fix BindParam Constraint Error ⏸️ PENDING
+### Task 2: Fix BindParam Usage in neogma-query-builder.service.ts 🔄 IN PROGRESS - Assigned to backend-developer
+
+**Priority**: P0-Critical (ROOT SOURCE FILE - other files copied this incorrect pattern)
 
 **Assigned To**: backend-developer
-**Files to Modify**:
+**File to Modify**:
 
-- D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\adapters\src\lib\repositories\services\graph-crud.service.ts (createNode, createRelationship methods)
-- D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\adapters\src\lib\repositories\services\graph-traversal.service.ts (traverse, findMemoryConnections methods)
-- D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\adapters\src\lib\repositories\services\graph-agent.service.ts (if BindParam usage exists)
+- D:\projects\nestjs-ai-saas-starter\libs\nestjs-neo4j\src\lib\query-builder\neogma-query-builder.service.ts
+
+**Affected Methods** (from diagnosis-bindparam.md:153-156):
+
+1. `createCreateQuery()` - line 97 (properties object iteration)
+2. `createRelationshipQuery()` - line 151 (relationship properties iteration)
+
+**Root Cause** (from diagnosis):
+
+```typescript
+// INCORRECT CURRENT IMPLEMENTATION (line 97):
+Object.entries(properties).forEach(([key, value]) => {
+  if (value !== undefined) {
+    const paramName = bindParam.add(value); // ❌ WRONG - returns BindParam, not string
+    setParts.push(`${key}: $${paramName}`); // ❌ Results in: "key: $[object Object]"
+  }
+});
+```
+
+**Correct Implementation Pattern**:
+
+```typescript
+// ✅ CORRECT: Use getUniqueNameAndAdd
+Object.entries(properties).forEach(([key, value]) => {
+  if (value !== undefined) {
+    const paramName = bindParam.getUniqueNameAndAdd(key, value); // ✅ Returns unique param name
+    setParts.push(`${key}: $${paramName}`); // ✅ Results in: "key: $key" or "key: $key__a"
+  }
+});
+```
+
+**Why This Fix is Critical**:
+
+- This file is the reference implementation used across the codebase
+- Fixing this file prevents future copy-paste errors
+- All 3 graph service files (graph-agent, graph-crud, graph-traversal) copied this incorrect pattern
 
 **Implementation Requirements**:
 
-- Ensure BindParam.add(value) result is used with $ prefix: `$${paramName}`
-- Verify all query builder method calls use correct parameter format
-- Check parameter type compatibility with Neo4j (strings, numbers, booleans)
-- Follow pattern from neogma-query-builder.service.ts:95-99 (reference implementation)
+1. Replace all `bindParam.add(value)` with `bindParam.getUniqueNameAndAdd(key, value)`
+2. Use property key name as the suffix parameter for descriptive param names
+3. Verify $ prefix is correctly used: `$${paramName}`
+4. Test with multiple properties to verify no key collision errors
 
-**Pattern to Follow** (neogma-query-builder.service.ts:95-99):
+**Expected Result**:
 
-```typescript
-const paramName = bindParam.add(value);
-setParts.push(`${key}: $${paramName}`); // Correct: $${paramName}
-```
+- Neo4j queries use unique parameter names: `$name`, `$name__a`, `$name__b`
+- No more "key 0 already in the bind param" errors
+- Proper parameter passing to Neo4j driver
 
-**Verification**:
+**Verification Requirements**:
 
-- ✅ All BindParam usages corrected in graph-crud.service.ts
-- ✅ All BindParam usages corrected in graph-traversal.service.ts
-- ✅ All BindParam usages corrected in graph-agent.service.ts
-- ✅ Build passes: `npx nx build @hive-academy/langgraph-adapters`
-- ✅ Git commit: `fix(langgraph): correct bindparam usage in graph services`
+- ✅ Line 97: `bindParam.getUniqueNameAndAdd(key, value)` replaces `bindParam.add(value)`
+- ✅ Line 151: Same replacement in createRelationshipQuery method
+- ✅ Build passes: `npx nx build @hive-academy/nestjs-neo4j`
+- ✅ No TypeScript errors
+- ✅ Git commit: `fix(neo4j): replace bindparam.add with getUniqueNameAndAdd in query builder`
+
+**Expected Commit Pattern**: `fix(neo4j): replace bindparam.add with getUniqueNameAndAdd in query builder`
 
 ---
 

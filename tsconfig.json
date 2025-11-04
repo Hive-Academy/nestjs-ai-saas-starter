@@ -46,10 +46,10 @@
       "path": "./libs/langgraph-modules/memory"
     },
     {
-      "path": "./apps/dev-brand-ui-e2e"
+      "path": "./libs/langgraph-modules/adapters"
     },
     {
-      "path": "./libs/langgraph-modules/adapters"
+      "path": "./apps/dev-brand-ui-e2e"
     }
   ]
 }

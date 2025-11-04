@@ -22,6 +22,7 @@
     "strictPropertyInitialization": false,
     "baseUrl": ".",
     "paths": {
+      "@hive-academy/langgraph-adapters": ["libs/langgraph-modules/adapters/src/index.ts"],
       "@hive-academy/langgraph-checkpoint": ["libs/langgraph-modules/checkpoint/src/index.ts"],
       "@hive-academy/langgraph-core": ["libs/langgraph-modules/core/src/index.ts"],
       "@hive-academy/langgraph-functional-api": ["libs/langgraph-modules/functional-api/src/index.ts"],

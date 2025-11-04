@@ -187,10 +187,14 @@ export class ChromaDBRepository<T extends BaseDocument> {
       // Access decorator metadata if available
       const entityMetadata = Reflect.getMetadata('chroma:entity', this.entity);
       if (entityMetadata) {
+        // Sanitize metadata: ChromaDB only supports string, number, boolean
+        // Arrays must be JSON-stringified
+        const sanitized = this.sanitizeMetadata(entityMetadata);
+
         return {
           source: 'entity-decorator',
           entityName: this.entity.name,
-          ...entityMetadata,
+          ...sanitized,
         };
       }
     } catch (error) {
@@ -201,6 +205,41 @@ export class ChromaDBRepository<T extends BaseDocument> {
       source: 'repository-initialization',
       entityName: this.entity.name,
     };
+  }
+
+  /**
+   * Sanitize metadata for ChromaDB compatibility
+   * ChromaDB only supports string, number, boolean in metadata
+   * Arrays and objects must be JSON-stringified
+   */
+  private sanitizeMetadata(metadata: Record<string, any>): Record<string, any> {
+    const sanitized: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(metadata)) {
+      if (value === null || value === undefined) {
+        continue; // Skip null/undefined values
+      }
+
+      if (Array.isArray(value)) {
+        // Convert arrays to JSON strings
+        sanitized[key] = JSON.stringify(value);
+      } else if (typeof value === 'object') {
+        // Convert objects to JSON strings
+        sanitized[key] = JSON.stringify(value);
+      } else if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
+        // Keep primitives as-is
+        sanitized[key] = value;
+      } else {
+        // Convert everything else to string
+        sanitized[key] = String(value);
+      }
+    }
+
+    return sanitized;
   }
 
   /**

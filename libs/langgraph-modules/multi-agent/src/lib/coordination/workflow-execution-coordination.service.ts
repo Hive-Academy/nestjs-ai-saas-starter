@@ -148,20 +148,8 @@ export class WorkflowExecutionCoordinationService {
       },
     };
 
-    // Save initial checkpoint if adapter is available
-    if (this.checkpointAdapter) {
-      try {
-        await this.saveWorkflowCheckpoint(threadId, {
-          networkId,
-          executionId,
-          phase: 'start',
-          messages: input.messages,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to save initial checkpoint: ${error}`);
-      }
-    }
+    // BUGFIX (TASK_2025_032): Removed manual checkpoint saves
+    // LangGraph's compile({ checkpointer }) handles all checkpointing internally
 
     // Stream workflow start event
     if (this.streamingService) {
@@ -209,24 +197,8 @@ export class WorkflowExecutionCoordinationService {
       }
     }
 
-    // Save completion checkpoint if adapter is available
-    if (this.checkpointAdapter && result) {
-      try {
-        await this.saveWorkflowCheckpoint(threadId, {
-          networkId,
-          executionId,
-          phase: 'complete',
-          result: {
-            success: result.success,
-            executionTime: result.executionTime,
-            executionPath: result.executionPath,
-          },
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to save completion checkpoint: ${error}`);
-      }
-    }
+    // BUGFIX (TASK_2025_032): Removed completion checkpoint save
+    // LangGraph handles all checkpointing automatically
 
     // TASK_2025_029 Phase 1: Async background memory writes (non-blocking)
     // Changed from blocking await to fire-and-forget background queue
@@ -335,46 +307,7 @@ export class WorkflowExecutionCoordinationService {
     return `exec_${networkId}_${Date.now()}`;
   }
 
-  /**
-   * Save workflow checkpoint with state and metadata
-   */
-  private async saveWorkflowCheckpoint(
-    threadId: string,
-    state: Record<string, unknown>
-  ): Promise<void> {
-    if (!this.checkpointAdapter) {
-      return;
-    }
-
-    try {
-      const checkpoint = {
-        id: `checkpoint_${threadId}_${Date.now()}`,
-        channel_values: state,
-      };
-
-      const metadata = {
-        threadId,
-        timestamp: new Date().toISOString(),
-        source: 'input' as const,
-        step: 0,
-        parents: {},
-        networkId: state.networkId as string,
-        executionId: state.executionId as string,
-        phase: state.phase as string,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
-        threadId,
-        checkpoint,
-        metadata
-      );
-
-      this.logger.debug(`Checkpoint saved for thread ${threadId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to save checkpoint for thread ${threadId}:`,
-        error
-      );
-    }
-  }
+  // BUGFIX (TASK_2025_032): Removed saveWorkflowCheckpoint() method entirely
+  // This method created malformed checkpoints missing channel_versions and versions_seen
+  // LangGraph's compile({ checkpointer }) handles all checkpointing correctly
 }
