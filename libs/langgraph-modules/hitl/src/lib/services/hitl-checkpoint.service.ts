@@ -45,15 +45,6 @@ export class HitlCheckpointService implements IHitlCheckpointService {
         request.nodeId
       );
 
-      const checkpointData = {
-        id: request.id,
-        channel_values: {
-          request,
-          additionalData,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
       const metadata: BaseCheckpointMetadata = {
         timestamp: new Date().toISOString(),
         source: source as 'input' | 'loop' | 'update' | 'fork',
@@ -70,7 +61,11 @@ export class HitlCheckpointService implements IHitlCheckpointService {
 
       await this.checkpointAdapter.saveCheckpoint(
         threadId,
-        checkpointData,
+        {
+          request,
+          additionalData,
+          timestamp: new Date().toISOString(),
+        },
         metadata,
         'hitl-approval'
       );
@@ -153,20 +148,6 @@ export class HitlCheckpointService implements IHitlCheckpointService {
         request.executionId
       );
 
-      const chainData = {
-        id: `${request.chainId}-${chainLevel}`,
-        channel_values: {
-          chainId: request.chainId,
-          level: chainLevel,
-          approvers,
-          status: chainStatus,
-          requestId: request.id,
-          executionId: request.executionId,
-          nodeId: request.nodeId,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
       const metadata: BaseCheckpointMetadata = {
         timestamp: new Date().toISOString(),
         source: 'update',
@@ -184,7 +165,16 @@ export class HitlCheckpointService implements IHitlCheckpointService {
 
       await this.checkpointAdapter.saveCheckpoint(
         threadId,
-        chainData,
+        {
+          chainId: request.chainId,
+          level: chainLevel,
+          approvers,
+          status: chainStatus,
+          requestId: request.id,
+          executionId: request.executionId,
+          nodeId: request.nodeId,
+          timestamp: new Date().toISOString(),
+        },
         metadata,
         'hitl-chain'
       );
