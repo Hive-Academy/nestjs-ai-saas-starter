@@ -8,22 +8,24 @@
  * import { ApprovalRequest, Developer, Achievement } from './entities';
  */
 
-// HITL Core Entities (Phase 2A)
-export { ApprovalRequest } from './approval-request.entity';
-export { ApprovalResponse } from './approval-response.entity';
+// HITL Core Entities (Phase 2A) - imported from shared adapters package
+export {
+  ApprovalRequest,
+  ApprovalResponse,
+  Memory,
+  ConfidencePattern,
+  FeedbackEntry,
+  InterruptionPoint,
+} from '@hive-academy/langgraph-adapters';
 
-// Personal Brand Core Entities (Phase 2B)
+// Personal Brand Core Entities (Phase 2B) - local entities
 export { Developer } from './developer.entity';
 export { Achievement } from './achievement.entity';
 export { Technology } from './technology.entity';
 export { BrandStrategy } from './brand-strategy.entity';
 
-// Supporting Entities (Phase 2C)
+// Supporting Entities (Phase 2C) - local entities
 export { Strength } from './strength.entity';
-export { Memory } from './memory.entity';
-export { ConfidencePattern } from './confidence-pattern.entity';
-export { FeedbackEntry } from './feedback-entry.entity';
-export { InterruptionPoint } from './interruption-point.entity';
 
 /**
  * Entity Summary:

@@ -135,8 +135,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     const { state } = context;
     console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
 
-    const lastMessage = state.messages[state.messages.length - 1];
-    const messageContent = lastMessage.content.toString();
+    const lastMessage = state.messages?.[state.messages.length - 1];
+    const messageContent = lastMessage?.content?.toString() || '';
 
     const githubUsername =
       extractGitHubUsername(messageContent) ||

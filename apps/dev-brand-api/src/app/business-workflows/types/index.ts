@@ -28,6 +28,7 @@ export interface WorkflowAgentState extends AgentState {
   timestamps: { started: Date; updated?: Date; completed?: Date };
   retryCount: number;
   startedAt: Date;
+  completedAt?: Date; // Required by WorkflowState from @hive-academy/langgraph-core
 }
 
 /**
@@ -69,13 +70,41 @@ export interface WorkflowAgentState extends AgentState {
  * }
  * ```
  */
-export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>>
-  extends Omit<WorkflowAgentState, 'metadata'> {
+export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> {
+  // Core workflow properties (from CoreWorkflowState)
+  readonly executionId: string;
+  readonly status:
+    | 'pending'
+    | 'active'
+    | 'paused'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
+  readonly confidence: number;
+  readonly retryCount: number;
+  readonly startedAt: Date;
+  readonly completedAt?: Date;
+  readonly timestamps: { started: Date; updated?: Date; completed?: Date };
+  readonly currentNode?: string;
+  readonly previousNode?: string;
+  readonly nextNode?: string;
+  readonly completedNodes: string[];
+  readonly requiresApproval?: boolean;
+  readonly approvalReceived?: boolean;
+  error?: any;
+  messages?: any[];
+
   /**
    * Type-safe metadata property
-   * Replaces WorkflowAgentState['metadata'] with strongly-typed TMetadata
+   * Overrides CoreWorkflowState['metadata'] with strongly-typed TMetadata
+   * Made required (non-optional) to avoid "possibly undefined" errors in agent code
    */
   metadata: TMetadata;
+
+  /**
+   * Human feedback - using any to avoid type conflicts between core and workflow-engine
+   */
+  humanFeedback?: any;
 
   /**
    * Index signature for compatibility with FunctionalWorkflowState
