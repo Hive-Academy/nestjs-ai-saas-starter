@@ -11,6 +11,7 @@ import {
   Neo4jCrudService,
   Neo4jRepositoryBase,
   NeogmaService,
+  ParameterBindingUtility,
   Safe,
   ValidateInput,
 } from '@hive-academy/nestjs-neo4j';
@@ -51,18 +52,54 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const idParam = bindParam.add(interruption.id);
-      const executionIdParam = bindParam.add(interruption.executionId);
-      const nodeIdParam = bindParam.add(interruption.nodeId);
-      const typeParam = bindParam.add(interruption.type);
-      const statusParam = bindParam.add(interruption.status);
-      const messageParam = bindParam.add(interruption.context.message);
-      const metadataParam = bindParam.add(
+      const idParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'id',
+        interruption.id
+      );
+      const executionIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'executionId',
+        interruption.executionId
+      );
+      const nodeIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'nodeId',
+        interruption.nodeId
+      );
+      const typeParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'type',
+        interruption.type
+      );
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        interruption.status
+      );
+      const messageParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'message',
+        interruption.context.message
+      );
+      const metadataParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'metadata',
         JSON.stringify(interruption.context.metadata || {})
       );
-      const timeoutDurationParam = bindParam.add(interruption.timeout.duration);
-      const timeoutStrategyParam = bindParam.add(interruption.timeout.strategy);
-      const createdAtParam = bindParam.add(
+      const timeoutDurationParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'timeoutDuration',
+        interruption.timeout.duration
+      );
+      const timeoutStrategyParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'timeoutStrategy',
+        interruption.timeout.strategy
+      );
+      const createdAtParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'createdAt',
         interruption.timestamps.created.toISOString()
       );
 
@@ -117,7 +154,7 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const idParam = bindParam.add(id);
+      const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
 
       queryBuilder
         .match('(i:UserInterruption)')
@@ -156,8 +193,16 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const executionIdParam = bindParam.add(executionId);
-      const statusParam = bindParam.add('pending');
+      const executionIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'executionId',
+        executionId
+      );
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        'pending'
+      );
 
       queryBuilder
         .match(
@@ -210,9 +255,17 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const idParam = bindParam.add(id);
-      const statusParam = bindParam.add(status);
-      const updatedAtParam = bindParam.add(new Date().toISOString());
+      const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
+      const statusParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'status',
+        status
+      );
+      const updatedAtParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'updatedAt',
+        new Date().toISOString()
+      );
 
       queryBuilder
         .match('(i:UserInterruption)')
@@ -221,10 +274,18 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
         .set(`i.updatedAt = datetime($${updatedAtParam})`);
 
       if (status === InterruptionStatus.RESPONDED) {
-        const respondedAtParam = bindParam.add(new Date().toISOString());
+        const respondedAtParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'respondedAt',
+          new Date().toISOString()
+        );
         queryBuilder.set(`i.respondedAt = datetime($${respondedAtParam})`);
       } else if (status === InterruptionStatus.TIMEOUT) {
-        const timeoutAtParam = bindParam.add(new Date().toISOString());
+        const timeoutAtParam = ParameterBindingUtility.addParam(
+          bindParam,
+          'timeoutAt',
+          new Date().toISOString()
+        );
         queryBuilder.set(`i.timeoutAt = datetime($${timeoutAtParam})`);
       }
 
@@ -263,8 +324,16 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const executionIdParam = bindParam.add(executionId);
-      const limitParam = bindParam.add(50);
+      const executionIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'executionId',
+        executionId
+      );
+      const limitParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'limit',
+        50
+      );
 
       queryBuilder
         .match(
@@ -354,8 +423,16 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const statusPendingParam = bindParam.add('pending');
-      const statusTimeoutParam = bindParam.add('timeout');
+      const statusPendingParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'statusPending',
+        'pending'
+      );
+      const statusTimeoutParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'statusTimeout',
+        'timeout'
+      );
 
       queryBuilder
         .match('(i:UserInterruption)')
@@ -399,15 +476,41 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
       .toString(36)
       .substr(2, 9)}`;
 
-    const interruptionIdParam = bindParam.add(interruptionId);
-    const responseIdParam = bindParam.add(responseId);
-    const responseParam = bindParam.add(response.response);
-    const continueExecutionParam = bindParam.add(response.continueExecution);
-    const userIdParam = bindParam.add(response.userId || 'anonymous');
-    const metadataParam = bindParam.add(
+    const interruptionIdParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'interruptionId',
+      interruptionId
+    );
+    const responseIdParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'responseId',
+      responseId
+    );
+    const responseParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'response',
+      response.response
+    );
+    const continueExecutionParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'continueExecution',
+      response.continueExecution
+    );
+    const userIdParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'userId',
+      response.userId || 'anonymous'
+    );
+    const metadataParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'metadata',
       JSON.stringify(response.metadata || {})
     );
-    const timestampParam = bindParam.add(response.timestamp.toISOString());
+    const timestampParam = ParameterBindingUtility.addParam(
+      bindParam,
+      'timestamp',
+      response.timestamp.toISOString()
+    );
 
     queryBuilder
       .match('(i:UserInterruption)')
