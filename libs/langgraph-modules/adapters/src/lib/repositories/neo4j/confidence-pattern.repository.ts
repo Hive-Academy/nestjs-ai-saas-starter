@@ -8,6 +8,7 @@ import {
   ValidateInput,
   AuditLog,
   GraphPatternService,
+  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 import type {
@@ -63,18 +64,46 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const nodeIdParam = bindParam.add(pattern.nodeId);
-      const approvalRateParam = bindParam.add(pattern.approvalRate);
-      const averageConfidenceParam = bindParam.add(pattern.averageConfidence);
-      const commonRejectionReasonsParam = bindParam.add(
+      const nodeIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'nodeId',
+        pattern.nodeId
+      );
+      const approvalRateParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'approvalRate',
+        pattern.approvalRate
+      );
+      const averageConfidenceParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'averageConfidence',
+        pattern.averageConfidence
+      );
+      const commonRejectionReasonsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'commonRejectionReasons',
         pattern.commonRejectionReasons
       );
-      const riskFactorsParam = bindParam.add(pattern.riskFactors);
-      const successfulExecutionsParam = bindParam.add(
+      const riskFactorsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'riskFactors',
+        pattern.riskFactors
+      );
+      const successfulExecutionsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'successfulExecutions',
         pattern.successfulExecutions
       );
-      const failedExecutionsParam = bindParam.add(pattern.failedExecutions);
-      const lastUpdatedParam = bindParam.add(pattern.lastUpdated.toISOString());
+      const failedExecutionsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'failedExecutions',
+        pattern.failedExecutions
+      );
+      const lastUpdatedParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'lastUpdated',
+        pattern.lastUpdated.toISOString()
+      );
 
       queryBuilder
         .merge(`(p:ApprovalPattern {nodeId: $${nodeIdParam}})`)
@@ -108,7 +137,11 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const patternIdParam = bindParam.add(patternId);
+      const patternIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'patternId',
+        patternId
+      );
 
       queryBuilder
         .match('(p:ApprovalPattern)')
@@ -243,7 +276,11 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const patternIdParam = bindParam.add(patternId);
+      const patternIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'patternId',
+        patternId
+      );
       const setClauses: string[] = [];
 
       Object.entries(updates).forEach(([key, value]) => {
@@ -252,7 +289,11 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
           if (key === 'lastUpdated' && value instanceof Date) {
             paramValue = value.toISOString();
           }
-          const paramKey = bindParam.add(paramValue);
+          const paramKey = ParameterBindingUtility.addParam(
+            bindParam,
+            key,
+            paramValue
+          );
           setClauses.push(`p.${key} = $${paramKey}`);
         }
       });
@@ -321,8 +362,14 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const executionIdParam = bindParam.add(executionId);
-      const factorsParam = bindParam.add(
+      const executionIdParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'executionId',
+        executionId
+      );
+      const factorsParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'factors',
         factors.map((factor) => ({
           nodeId: factor.name,
           type: factor.source,
@@ -758,7 +805,11 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const queryBuilder = this.neogma.createQueryBuilder();
       const bindParam = queryBuilder.getBindParam();
 
-      const cutoffDateParam = bindParam.add(cutoffDate.toISOString());
+      const cutoffDateParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'cutoffDate',
+        cutoffDate.toISOString()
+      );
 
       queryBuilder
         .match('(h:ConfidenceHistory)')
