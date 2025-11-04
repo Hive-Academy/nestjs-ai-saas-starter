@@ -104,6 +104,7 @@ export class NetworkManagerService {
         );
       }
 
+      // BUGFIX (TASK_2025_032): Re-enabled checkpointer after removing manual checkpoint interference
       // Prepare compilation options with checkpointer if enabled
       const compilationOptions = await this.prepareCompilationOptions(
         networkConfig.compilationOptions,
@@ -156,6 +157,33 @@ export class NetworkManagerService {
             `Unsupported network type: ${networkConfig.type}`
           );
       }
+
+      // 🔍 DIAGNOSTIC LOGGING: Verify graph was compiled with channels
+      const graphAny = graph as any;
+      this.logger.debug(
+        `[DIAGNOSTIC] Graph compiled successfully for ${networkConfig.id}:`,
+        {
+          graphType: typeof graph,
+          hasChannels: !!graphAny.channels,
+          channelKeys: graphAny.channels
+            ? Object.keys(graphAny.channels)
+            : 'UNDEFINED',
+          channelCount: graphAny.channels
+            ? Object.keys(graphAny.channels).length
+            : 0,
+          graphConstructorName: graph?.constructor?.name || 'UNKNOWN',
+          // 🔍 NEW: Check for __input__ specifically
+          hasInputChannel:
+            graphAny.channels && '__input__' in graphAny.channels,
+          // 🔍 NEW: Check other internal graph properties
+          hasBuilder: !!graphAny.builder,
+          hasNodes: !!graphAny.nodes,
+          nodeKeys: graphAny.nodes ? Object.keys(graphAny.nodes) : 'UNDEFINED',
+          // 🔍 NEW: Check if state schema/spec is present
+          hasStateSchema: !!graphAny.stateSchema,
+          hasSpec: !!graphAny.spec,
+        }
+      );
 
       // Store compiled graph and configuration
       this.networks.set(networkConfig.id, graph);
@@ -276,16 +304,55 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      // Execute the workflow
-      const typedGraph = graph as MultiAgentGraph;
-      const result: any = await typedGraph.invoke(initialState as any, {
+      // 🔍 DIAGNOSTIC LOGGING: Graph state before execution
+      this.logger.debug(`[DIAGNOSTIC] Graph details before invoke:`, {
+        networkId,
+        graphType: typeof graph,
+        hasChannels: !!(graph as any).channels,
+        channelKeys: (graph as any).channels
+          ? Object.keys((graph as any).channels)
+          : 'UNDEFINED',
+        graphCompiled: !!(graph as any).compiled,
+      });
+
+      // 🔍 DIAGNOSTIC LOGGING: Initial state structure
+      this.logger.debug(`[DIAGNOSTIC] Initial state being passed to invoke:`, {
+        stateKeys: Object.keys(initialState),
+        messagesCount: initialState.messages?.length,
+        hasThreadId: !!initialState.threadId,
+        hasCurrent: !!initialState.current,
+        hasMetadata: !!initialState.metadata,
+        metadataKeys: initialState.metadata
+          ? Object.keys(initialState.metadata)
+          : 'NONE',
+      });
+
+      // 🔍 DIAGNOSTIC LOGGING: Config being passed
+      const invokeConfig = {
         ...input.config,
         configurable: {
           ...input.config?.configurable,
           networkId,
           networkType: networkConfig.type,
         },
+      };
+      this.logger.debug(`[DIAGNOSTIC] Invoke config:`, {
+        hasConfig: !!input.config,
+        configKeys: input.config ? Object.keys(input.config) : 'NONE',
+        configurableKeys: invokeConfig.configurable
+          ? Object.keys(invokeConfig.configurable)
+          : 'NONE',
+        hasCheckpointer: !!this.checkpointAdapter,
       });
+
+      // Execute the workflow
+      this.logger.debug(`[DIAGNOSTIC] Calling graph.invoke()...`);
+      const typedGraph = graph as MultiAgentGraph;
+      const result: any = await typedGraph.invoke(
+        initialState as any,
+        invokeConfig
+      );
+      this.logger.debug(`[DIAGNOSTIC] graph.invoke() completed successfully`);
 
       const executionTime = Date.now() - startTime;
       const executionPath = this.extractExecutionPath(result as AgentState);
@@ -313,6 +380,13 @@ export class NetworkManagerService {
         success: true,
       };
     } catch (error) {
+      // 🔍 DIAGNOSTIC LOGGING: Capture error details
+      this.logger.error(`[DIAGNOSTIC] graph.invoke() FAILED with error:`, {
+        errorName:
+          error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : 'NO STACK',
+      });
       const executionTime = Date.now() - startTime;
 
       this.logger.error(
