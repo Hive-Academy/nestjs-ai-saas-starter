@@ -346,6 +346,20 @@ export class NetworkManagerService {
       });
 
       // Execute the workflow
+      // BUGFIX (TASK_2025_033): Use graph.stream() when streamMode is provided
+      if (input.streamMode) {
+        // Return async iterator from graph.stream() for streaming execution
+        this.logger.debug(
+          `[DIAGNOSTIC] Calling graph.stream() with mode: ${input.streamMode}...`
+        );
+        const typedGraph = graph as MultiAgentGraph;
+        return typedGraph.stream(initialState as any, {
+          ...invokeConfig,
+          streamMode: input.streamMode,
+        }) as any;
+      }
+
+      // Existing invoke() path for non-streaming execution
       this.logger.debug(`[DIAGNOSTIC] Calling graph.invoke()...`);
       const typedGraph = graph as MultiAgentGraph;
       const result: any = await typedGraph.invoke(
