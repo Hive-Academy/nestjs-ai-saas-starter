@@ -3,7 +3,7 @@
 **Task Type**: Backend
 **Developer Needed**: backend-developer
 **Total Tasks**: 3
-**Status**: 0/3 Complete (0%)
+**Status**: 1/3 Complete (33%)
 **Decomposed From**:
 
 - manual-checkpoint-locations.md
@@ -12,7 +12,9 @@
 
 ## Task Breakdown
 
-### Task 1: Remove manual checkpoint code from functional-workflow.service.ts 🔄 IN PROGRESS - Assigned to backend-developer
+### Task 1: Remove manual checkpoint code from functional-workflow.service.ts ✅ COMPLETE
+
+**Git Commit**: 3cacdd3dbb93df4ea2e7672bdbf7b8c0c34d9f4b
 
 **File(s)**: libs/langgraph-modules/functional-api/src/lib/services/functional-workflow.service.ts
 **Specification Reference**: manual-checkpoint-locations.md:38-62
