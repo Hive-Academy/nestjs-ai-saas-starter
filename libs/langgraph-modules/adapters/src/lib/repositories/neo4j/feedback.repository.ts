@@ -8,6 +8,7 @@ import {
   RateLimit,
   NeogmaService,
   Neo4jCrudService,
+  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import type {
   FeedbackAnalytics,
@@ -429,7 +430,11 @@ export class FeedbackRepository extends Neo4jRepositoryBase<FeedbackEntry> {
       const cutoffDate = new Date(Date.now() - maxAge);
       const qb = this.neogma.createQueryBuilder();
       const bindParam = qb.getBindParam();
-      const cutoffParam = bindParam.add(cutoffDate.toISOString());
+      const cutoffParam = ParameterBindingUtility.addParam(
+        bindParam,
+        'cutoffDate',
+        cutoffDate.toISOString()
+      );
 
       qb.match('(f:FeedbackEntry)')
         .where(`f.timestamp < datetime($${cutoffParam}) AND f.processed = true`)
