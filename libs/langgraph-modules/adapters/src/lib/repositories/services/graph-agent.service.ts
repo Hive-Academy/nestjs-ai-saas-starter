@@ -36,76 +36,38 @@ export class GraphAgentService {
   @Safe()
   async trackMemory(memory: MemoryEntry): Promise<void> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const threadIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'threadId',
-        memory.threadId
-      );
-      const memoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'memoryId',
-        memory.id
-      );
-      const contentParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'content',
-        memory.content
-      );
-      const typeParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'type',
-        memory.metadata.type
-      );
-      const importanceParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'importance',
-        memory.metadata.importance || 0.5
-      );
-      const createdAtParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'createdAt',
-        memory.createdAt.toISOString()
-      );
-      const accessCountParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'accessCount',
-        memory.accessCount
-      );
-
-      // Build base query for Thread and Memory nodes
-      queryBuilder.raw(
-        `MERGE (t:Thread {id: $${threadIdParam}})
-           SET t.lastActivity = datetime()
-           MERGE (m:Memory {id: $${memoryIdParam}})
-           SET m.content = $${contentParam},
-               m.type = $${typeParam},
-               m.importance = $${importanceParam},
-               m.createdAt = datetime($${createdAtParam}),
-               m.accessCount = $${accessCountParam}
-           MERGE (t)-[:CONTAINS]->(m)`
-      );
-
-      // Add user relationship if userId exists
-      if (memory.metadata.userId) {
-        const userIdParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'userId',
+      // Build base query with user relationship conditionally
+      const baseQuery = `
+        MERGE (t:Thread {id: $threadId})
+        SET t.lastActivity = datetime()
+        MERGE (m:Memory {id: $memoryId})
+        SET m.content = $content,
+            m.type = $type,
+            m.importance = $importance,
+            m.createdAt = datetime($createdAt),
+            m.accessCount = $accessCount
+        MERGE (t)-[:CONTAINS]->(m)
+        ${
           memory.metadata.userId
-        );
-        queryBuilder.raw(
-          `MERGE (u:User {id: $${userIdParam}})
-           MERGE (u)-[:HAS_MEMORY]->(m)`
-        );
-      }
+            ? 'MERGE (u:User {id: $userId}) MERGE (u)-[:HAS_MEMORY]->(m)'
+            : ''
+        }
+        RETURN m.id as memoryId
+      `;
 
-      queryBuilder.return('m.id as memoryId');
+      // Auto-bind all parameters
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        threadId: memory.threadId,
+        memoryId: memory.id,
+        content: memory.content,
+        type: memory.metadata.type,
+        importance: memory.metadata.importance || 0.5,
+        createdAt: memory.createdAt.toISOString(),
+        accessCount: memory.accessCount,
+        userId: memory.metadata.userId, // Auto-skipped if undefined
+      });
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
 
       this.logger.debug(`Tracked memory ${memory.id} in graph`);
     } catch (error) {
