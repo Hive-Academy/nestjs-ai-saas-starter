@@ -429,21 +429,19 @@ export class FeedbackRepository extends Neo4jRepositoryBase<FeedbackEntry> {
     try {
       const cutoffDate = new Date(Date.now() - maxAge);
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-      const cutoffParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'cutoffDate',
-        cutoffDate.toISOString()
-      );
 
       qb.match('(f:FeedbackEntry)')
-        .where(`f.timestamp < datetime($${cutoffParam}) AND f.processed = true`)
+        .where(`f.timestamp < datetime($cutoffDate) AND f.processed = true`)
         .with('count(f) as deletedCount, collect(f) as nodes')
         .unwind('nodes as node')
         .raw('DETACH DELETE node')
         .return('deletedCount');
 
-      const result = await this.neogma.run(qb.getStatement(), bindParam.get());
+      const baseQuery = qb.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        cutoffDate: cutoffDate.toISOString(),
+      });
+      const result = await this.neogma.run(query, params);
 
       return this.extractNumber(result.records[0]?.get('deletedCount'));
     } catch (error) {
