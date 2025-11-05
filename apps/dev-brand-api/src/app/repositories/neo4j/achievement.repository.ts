@@ -4,6 +4,7 @@ import {
   Neo4jCrudService,
   Neo4jRepositoryBase,
   NeogmaService,
+  ParameterBindingUtility,
   RateLimit,
   RelationshipBulkOperationsService,
   Safe,
@@ -85,50 +86,36 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
         createdAt: new Date(),
       };
 
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        CREATE (a:Achievement {
+          id: $id,
+          userId: $userId,
+          description: $description,
+          technologies: $technologies,
+          impact: $impact,
+          date: date($date),
+          repository: $repository,
+          metrics: $metrics,
+          analysis: $analysis,
+          createdAt: datetime($createdAt)
+        })
+        RETURN a
+      `;
 
-      // Add parameters using BindParam
-      const idParam = bindParam.add(achievementData.id);
-      const userIdParam = bindParam.add(achievementData.userId);
-      const descriptionParam = bindParam.add(achievementData.description);
-      const technologiesParam = bindParam.add(
-        JSON.stringify(achievementData.technologies || [])
-      );
-      const impactParam = bindParam.add(achievementData.impact);
-      const dateParam = bindParam.add(achievementData.date!.toISOString());
-      const repositoryParam = bindParam.add(achievementData.repository || '');
-      const metricsParam = bindParam.add(
-        JSON.stringify(achievementData.metrics || {})
-      );
-      const analysisParam = bindParam.add(
-        JSON.stringify(achievementData.analysis || {})
-      );
-      const createdAtParam = bindParam.add(
-        achievementData.createdAt!.toISOString()
-      );
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id: achievementData.id,
+        userId: achievementData.userId,
+        description: achievementData.description,
+        technologies: JSON.stringify(achievementData.technologies || []),
+        impact: achievementData.impact,
+        date: achievementData.date!.toISOString(),
+        repository: achievementData.repository || '',
+        metrics: JSON.stringify(achievementData.metrics || {}),
+        analysis: JSON.stringify(achievementData.analysis || {}),
+        createdAt: achievementData.createdAt!.toISOString(),
+      });
 
-      // Create achievement node
-      queryBuilder
-        .create(
-          `(a:Achievement {
-          id: $${idParam},
-          userId: $${userIdParam},
-          description: $${descriptionParam},
-          technologies: $${technologiesParam},
-          impact: $${impactParam},
-          date: date($${dateParam}),
-          repository: $${repositoryParam},
-          metrics: $${metricsParam},
-          analysis: $${analysisParam},
-          createdAt: datetime($${createdAtParam})
-        })`
-        )
-        .return('a');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
 
       // Create technology relationships
       await this.createTechnologyRelationships(achievementData as Achievement);
@@ -156,53 +143,43 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
     }
   ): Promise<Achievement[]> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const userIdParam = bindParam.add(userId);
-
-      queryBuilder.match('(a:Achievement)').where(`a.userId = $${userIdParam}`);
+      // Build WHERE conditions dynamically
+      const whereClauses = ['a.userId = $userId'];
+      const queryParams: Record<string, any> = { userId };
 
       // Add impact filter
       if (options?.minImpact) {
         const impactOrder = ['low', 'medium', 'high', 'critical'];
         const minIndex = impactOrder.indexOf(options.minImpact);
         const validImpacts = impactOrder.slice(minIndex);
-        const validImpactsParam = bindParam.add(validImpacts);
-        queryBuilder.where(
-          `a.userId = $${userIdParam} AND a.impact IN $${validImpactsParam}`
-        );
+        whereClauses.push('a.impact IN $validImpacts');
+        queryParams.validImpacts = validImpacts;
       }
 
       // Add date range filter
       if (options?.dateRange) {
-        const startDateParam = bindParam.add(
-          options.dateRange.start.toISOString()
-        );
-        const endDateParam = bindParam.add(options.dateRange.end.toISOString());
-        if (options?.minImpact) {
-          // If we already have impact filter, add to existing where
-          const impactOrder = ['low', 'medium', 'high', 'critical'];
-          const minIndex = impactOrder.indexOf(options.minImpact);
-          const validImpacts = impactOrder.slice(minIndex);
-          const validImpactsParam = bindParam.add(validImpacts);
-          queryBuilder.where(
-            `a.userId = $${userIdParam} AND a.impact IN $${validImpactsParam} AND a.date >= date($${startDateParam}) AND a.date <= date($${endDateParam})`
-          );
-        } else {
-          queryBuilder.where(
-            `a.userId = $${userIdParam} AND a.date >= date($${startDateParam}) AND a.date <= date($${endDateParam})`
-          );
-        }
+        whereClauses.push('a.date >= date($startDate)');
+        whereClauses.push('a.date <= date($endDate)');
+        queryParams.startDate = options.dateRange.start.toISOString();
+        queryParams.endDate = options.dateRange.end.toISOString();
       }
 
-      const limitParam = bindParam.add(options?.limit || 10);
+      queryParams.limit = options?.limit || 10;
 
-      queryBuilder.return('a').orderBy('a.date DESC').limit(`$${limitParam}`);
+      const baseQuery = `
+        MATCH (a:Achievement)
+        WHERE ${whereClauses.join(' AND ')}
+        RETURN a
+        ORDER BY a.date DESC
+        LIMIT $limit
+      `;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const { query, params } = ParameterBindingUtility.autoBind(
+        baseQuery,
+        queryParams
+      );
+
+      const result = await this.neogma.run(query, params);
 
       let achievements = result.records.map((record) =>
         this.mapNodeToAchievement(record.get('a').properties)
@@ -235,22 +212,20 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
     limit = 20
   ): Promise<Achievement[]> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)
+        WHERE toLower(t.name) CONTAINS toLower($technology)
+        RETURN a
+        ORDER BY a.date DESC
+        LIMIT $limit
+      `;
 
-      const technologyParam = bindParam.add(technology);
-      const limitParam = bindParam.add(limit);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        technology,
+        limit,
+      });
 
-      queryBuilder
-        .match('(a:Achievement)-[:USES_TECHNOLOGY]->(t:Technology)')
-        .where(`toLower(t.name) CONTAINS toLower($${technologyParam})`)
-        .return('a')
-        .orderBy('a.date DESC')
-        .limit(`$${limitParam}`);
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(query, params);
 
       return result.records.map((record) =>
         this.mapNodeToAchievement(record.get('a').properties)
@@ -453,55 +428,41 @@ export class AchievementRepository extends Neo4jRepositoryBase<Achievement> {
     }
   ): Promise<void> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MERGE (u:Developer {id: $userId})
+        CREATE (a:Achievement {
+          id: $achievementId,
+          description: $description,
+          impact: $impact,
+          innovationScore: $innovationScore,
+          collaborationLevel: $collaborationLevel,
+          technicalDepth: $technicalDepth,
+          date: $date,
+          repository: $repository
+        })
+        CREATE (u)-[:ACHIEVED]->(a)
+        WITH u, a
+        UNWIND $technologies as tech
+        MERGE (t:Technology {name: tech})
+        CREATE (a)-[:USES_TECHNOLOGY {proficiency: $technicalDepth}]->(t)
+        MERGE (u)-[:EXPERIENCED_WITH {level: $collaborationLevel}]->(t)
+        RETURN count(t) as technologiesLinked
+      `;
 
-      const userIdParam = bindParam.add(userId);
-      const achievementIdParam = bindParam.add(achievementData.id);
-      const descriptionParam = bindParam.add(achievementData.description);
-      const impactParam = bindParam.add(achievementData.impact);
-      const innovationScoreParam = bindParam.add(
-        achievementData.innovationScore || 0.7
-      );
-      const collaborationLevelParam = bindParam.add(
-        achievementData.collaborationLevel || 'individual'
-      );
-      const technicalDepthParam = bindParam.add(
-        achievementData.technicalDepth || 'intermediate'
-      );
-      const dateParam = bindParam.add(achievementData.date);
-      const repositoryParam = bindParam.add(achievementData.repository);
-      const technologiesParam = bindParam.add(achievementData.technologies);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        userId,
+        achievementId: achievementData.id,
+        description: achievementData.description,
+        impact: achievementData.impact,
+        innovationScore: achievementData.innovationScore || 0.7,
+        collaborationLevel: achievementData.collaborationLevel || 'individual',
+        technicalDepth: achievementData.technicalDepth || 'intermediate',
+        date: achievementData.date,
+        repository: achievementData.repository,
+        technologies: achievementData.technologies,
+      });
 
-      queryBuilder
-        .merge('(u:Developer {id: $' + userIdParam + '})')
-        .create(
-          `(a:Achievement {
-          id: $${achievementIdParam},
-          description: $${descriptionParam},
-          impact: $${impactParam},
-          innovationScore: $${innovationScoreParam},
-          collaborationLevel: $${collaborationLevelParam},
-          technicalDepth: $${technicalDepthParam},
-          date: $${dateParam},
-          repository: $${repositoryParam}
-        })`
-        )
-        .create('(u)-[:ACHIEVED]->(a)')
-        .with('u, a')
-        .unwind(`$${technologiesParam} as tech`)
-        .merge('(t:Technology {name: tech})')
-        .create(
-          `(a)-[:USES_TECHNOLOGY {proficiency: $${technicalDepthParam}}]->(t)`
-        )
-        .merge(
-          `(u)-[:EXPERIENCED_WITH {level: $${collaborationLevelParam}}]->(t)`
-        )
-        .return('count(t) as technologiesLinked');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
     } catch (error) {
       throw new Error(
         `Failed to create enhanced achievement with developer: ${error}`
