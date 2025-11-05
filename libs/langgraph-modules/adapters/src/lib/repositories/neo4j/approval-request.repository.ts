@@ -70,101 +70,46 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
 
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      // Add parameters using standardized utility
-      const idParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'id',
-        request.id
-      );
-      const executionIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'executionId',
-        request.executionId
-      );
-      const nodeIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'nodeId',
-        request.nodeId
-      );
-      const messageParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'message',
-        request.message
-      );
-      // Convert metadata string to object for storage in Neo4j
-      const metadataParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'metadata',
-        request.metadata ? JSON.parse(request.metadata) : null
-      );
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        request.status
-      );
-      const requestedAtParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'requestedAt',
-        request.requestedAt.toISOString()
-      );
-      const expiresAtParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'expiresAt',
-        request.expiresAt ? request.expiresAt.toISOString() : null
-      );
-      const confidenceParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'confidence',
-        request.confidence || null
-      );
-      const riskLevelParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'riskLevel',
-        request.riskLevel || null
-      );
-      const chainIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'chainId',
-        request.chainId || null
-      );
-      const approversParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'approvers',
-        request.approvers || null
-      );
-      const timeoutStrategyParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'timeoutStrategy',
-        request.timeoutStrategy || null
-      );
 
       queryBuilder
         .create(
           `(a:ApprovalRequest {
-          id: $${idParam},
-          executionId: $${executionIdParam},
-          nodeId: $${nodeIdParam},
-          message: $${messageParam},
-          metadata: $${metadataParam},
-          status: $${statusParam},
-          requestedAt: datetime($${requestedAtParam}),
-          expiresAt: $${expiresAtParam},
-          confidence: $${confidenceParam},
-          riskLevel: $${riskLevelParam},
-          chainId: $${chainIdParam},
-          approvers: $${approversParam},
-          timeoutStrategy: $${timeoutStrategyParam},
+          id: $id,
+          executionId: $executionId,
+          nodeId: $nodeId,
+          message: $message,
+          metadata: $metadata,
+          status: $status,
+          requestedAt: datetime($requestedAt),
+          expiresAt: $expiresAt,
+          confidence: $confidence,
+          riskLevel: $riskLevel,
+          chainId: $chainId,
+          approvers: $approvers,
+          timeoutStrategy: $timeoutStrategy,
           createdAt: datetime(),
           updatedAt: datetime()
         })`
         )
         .return('a.id as id');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id: request.id,
+        executionId: request.executionId,
+        nodeId: request.nodeId,
+        message: request.message,
+        metadata: request.metadata ? JSON.parse(request.metadata) : null,
+        status: request.status,
+        requestedAt: request.requestedAt.toISOString(),
+        expiresAt: request.expiresAt ? request.expiresAt.toISOString() : null,
+        confidence: request.confidence || null,
+        riskLevel: request.riskLevel || null,
+        chainId: request.chainId || null,
+        approvers: request.approvers || null,
+        timeoutStrategy: request.timeoutStrategy || null,
+      });
+      const result = await this.neogma.run(query, params);
 
       const firstRecord = result.records[0];
       if (!firstRecord) {
@@ -289,83 +234,53 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
       if (response) {
         // Update approval and create response node
         const queryBuilder = this.neogma.createQueryBuilder();
-        const bindParam = queryBuilder.getBindParam();
-
-        const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
-        const statusParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'status',
-          status
-        );
-        const decisionParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'decision',
-          response.decision
-        );
-        const approvedByParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'approvedBy',
-          response.approvedBy
-        );
-        const messageParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'message',
-          response.message || null
-        );
-        const timestampParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'timestamp',
-          response.timestamp.toISOString()
-        );
-        const metadataParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'metadata',
-          response.metadata || null
-        );
 
         queryBuilder
           .match('(a:ApprovalRequest)')
-          .where(`a.id = $${idParam}`)
-          .set(`a.status = $${statusParam}`)
+          .where(`a.id = $id`)
+          .set(`a.status = $status`)
           .set('a.updatedAt = datetime()')
           .create(
             `(r:ApprovalResponse {
-            decision: $${decisionParam},
-            approvedBy: $${approvedByParam},
-            message: $${messageParam},
-            timestamp: datetime($${timestampParam}),
-            metadata: $${metadataParam},
+            decision: $decision,
+            approvedBy: $approvedBy,
+            message: $message,
+            timestamp: datetime($timestamp),
+            metadata: $metadata,
             createdAt: datetime()
           })`
           )
           .create('(a)-[:HAS_RESPONSE]->(r)')
           .return('a.id as id');
 
-        const cypher = queryBuilder.getStatement();
-        const params = bindParam.get();
-        await this.neogma.run(cypher, params);
+        const baseQuery = queryBuilder.getStatement();
+        const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+          id,
+          status,
+          decision: response.decision,
+          approvedBy: response.approvedBy,
+          message: response.message || null,
+          timestamp: response.timestamp.toISOString(),
+          metadata: response.metadata || null,
+        });
+        await this.neogma.run(query, params);
       } else {
         // Update approval only
         const queryBuilder = this.neogma.createQueryBuilder();
-        const bindParam = queryBuilder.getBindParam();
-
-        const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
-        const statusParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'status',
-          status
-        );
 
         queryBuilder
           .match('(a:ApprovalRequest)')
-          .where(`a.id = $${idParam}`)
-          .set(`a.status = $${statusParam}`)
+          .where(`a.id = $id`)
+          .set(`a.status = $status`)
           .set('a.updatedAt = datetime()')
           .return('a.id as id');
 
-        const cypher = queryBuilder.getStatement();
-        const params = bindParam.get();
-        await this.neogma.run(cypher, params);
+        const baseQuery = queryBuilder.getStatement();
+        const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+          id,
+          status,
+        });
+        await this.neogma.run(query, params);
       }
     } catch (error) {
       throw new HitlStorageError(
@@ -395,40 +310,27 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
 
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const idParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'id',
-        requestId
-      );
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        status
-      );
 
       queryBuilder
         .match('(a:ApprovalRequest)')
-        .where(`a.id = $${idParam}`)
-        .set(`a.status = $${statusParam}`)
+        .where(`a.id = $id`)
+        .set(`a.status = $status`)
         .set('a.updatedAt = datetime()');
 
       // If metadata is provided, update it
       if (metadata) {
-        const metadataParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'metadata',
-          metadata
-        );
-        queryBuilder.set(`a.metadata = $${metadataParam}`);
+        queryBuilder.set(`a.metadata = $metadata`);
       }
 
       queryBuilder.return('a.id as id');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id: requestId,
+        status,
+        ...(metadata && { metadata }),
+      });
+      await this.neogma.run(query, params);
     } catch (error) {
       throw new HitlStorageError(
         'Failed to update approval request status',
@@ -587,42 +489,28 @@ export class ApprovalRequestRepository extends Neo4jRepositoryBase<ApprovalReque
 
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const idsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'requestIds',
-        requestIds
-      );
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        status
-      );
 
       queryBuilder
-        .raw(`UNWIND $${idsParam} as requestId`)
+        .raw(`UNWIND $requestIds as requestId`)
         .match('(a:ApprovalRequest)')
         .where(`a.id = requestId`)
-        .set(`a.status = $${statusParam}`)
+        .set(`a.status = $status`)
         .set('a.updatedAt = datetime()');
 
       // If metadata provided, update it as well
       if (metadata) {
-        const metadataParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'metadata',
-          metadata
-        );
-        queryBuilder.set(`a.metadata = $${metadataParam}`);
+        queryBuilder.set(`a.metadata = $metadata`);
       }
 
       queryBuilder.return('count(a) as updatedCount');
 
-      const result = await this.neogma.run(
-        queryBuilder.getStatement(),
-        bindParam.get()
-      );
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        requestIds,
+        status,
+        ...(metadata && { metadata }),
+      });
+      const result = await this.neogma.run(query, params);
 
       const updatedCount = Number(result.records[0]?.get('updatedCount')) || 0;
 
