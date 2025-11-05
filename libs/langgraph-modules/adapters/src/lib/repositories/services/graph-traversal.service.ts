@@ -57,21 +57,9 @@ export class GraphTraversalService {
       const propertyFilter = this.helpers.buildPropertyFilter(spec.filter);
 
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const startMemoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'startMemoryId',
-        startMemoryId
-      );
-      const limitParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limit',
-        spec.limit || 100
-      );
 
       queryBuilder.match(
-        `path = (start:Memory {id: $${startMemoryIdParam}})${direction.start}[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})`
+        `path = (start:Memory {id: $startMemoryId})${direction.start}[r${relationshipFilter}*1..${depth}]${direction.end}(end${nodeFilter})`
       );
 
       if (propertyFilter) {
@@ -86,11 +74,14 @@ export class GraphTraversalService {
           path
         `
         )
-        .limit(`$${limitParam}`);
+        .limit('$limit');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        startMemoryId,
+        limit: spec.limit || 100,
+      });
+      const result = await this.neogma.run(query, params);
 
       const nodes: GraphNode[] = [];
       const relationships: any[] = [];
@@ -146,21 +137,9 @@ export class GraphTraversalService {
   }> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const memoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'memoryId',
-        memoryId
-      );
-      const limitParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limit',
-        limit
-      );
 
       queryBuilder.match(
-        `path = (start:Memory {id: $${memoryIdParam}})-[*1..${maxDepth}]-(related:Memory)`
+        `path = (start:Memory {id: $memoryId})-[*1..${maxDepth}]-(related:Memory)`
       );
 
       if (relationshipTypes && relationshipTypes.length > 0) {
@@ -185,11 +164,14 @@ export class GraphTraversalService {
         )
         .return('related, path, relevanceScore')
         .orderBy('relevanceScore DESC, length(path) ASC')
-        .limit(`$${limitParam}`);
+        .limit('$limit');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        memoryId,
+        limit,
+      });
+      const result = await this.neogma.run(query, params);
 
       const relatedMemories: Memory[] = [];
       const relationshipPaths: GraphPath[] = [];
