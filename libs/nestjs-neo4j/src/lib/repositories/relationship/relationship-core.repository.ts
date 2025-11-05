@@ -15,6 +15,7 @@ import {
 import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
 import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
 import { NeogmaService } from '../../services/neogma.service';
+import { ParameterBindingUtility } from '../../utilities/parameter-binding.utility';
 
 /**
  * Core relationship repository for essential CRUD operations
@@ -75,25 +76,25 @@ export class RelationshipCoreRepository<
     // Build return clause based on options
     const returnVars = this.buildReturnVars(options);
 
-    // Use QueryBuilder for type-safe relationship creation
-    const builder = this.queryBuilder.createBuilder();
+    // Build query with inline Cypher
+    const cypher = `
+      MATCH (source:${sourceLabel} {id: $sourceId})
+      MATCH (target:${targetLabel} {id: $targetId})
+      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
+      RETURN ${returnVars.join(', ')}
+    `;
 
-    builder
-      .match(`(source:${sourceLabel} {id: $sourceId})`)
-      .match(`(target:${targetLabel} {id: $targetId})`)
-      .create(`(source)-[rel:${this.relationshipType} $properties]->(target)`)
-      .return(returnVars.join(', '));
-
-    // Add parameters using BindParam
-    const bindParam = builder.getBindParam();
-    bindParam.add(data.sourceId, 'sourceId');
-    bindParam.add(data.targetId, 'targetId');
-    bindParam.add(relationshipData, 'properties');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId: data.sourceId,
+        targetId: data.targetId,
+        properties: relationshipData,
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     if (!queryResult.records || queryResult.records.length === 0) {
       throw new Error(`Failed to create relationship ${this.relationshipType}`);
@@ -112,21 +113,31 @@ export class RelationshipCoreRepository<
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
     const returnVars = this.buildReturnVars(options);
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return(returnVars.join(', '));
+    cypher += ` RETURN ${returnVars.join(', ')}`;
 
-    // Add parameters
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+      }
+    );
 
-    return this.executeRelationshipQuery(builder, options);
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
+
+    return queryResult.records.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
   }
 
   /**
@@ -138,21 +149,31 @@ export class RelationshipCoreRepository<
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
     const returnVars = this.buildReturnVars(options);
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return(returnVars.join(', '));
+    cypher += ` RETURN ${returnVars.join(', ')}`;
 
-    // Add parameters
-    const bindParam = builder.getBindParam();
-    bindParam.add(targetId, 'targetId');
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        targetId,
+      }
+    );
 
-    return this.executeRelationshipQuery(builder, options);
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
+
+    return queryResult.records.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
   }
 
   /**
@@ -165,22 +186,34 @@ export class RelationshipCoreRepository<
   ): Promise<RelationshipResult<TRel, TSource, TTarget> | null> {
     const returnVars = this.buildReturnVars(options);
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return(returnVars.join(', ')).limit(1);
+    cypher += ` RETURN ${returnVars.join(', ')} LIMIT 1`;
 
-    // Add parameters
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-    bindParam.add(targetId, 'targetId');
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+        targetId,
+      }
+    );
 
-    return this.executeRelationshipQuerySingle(builder, options);
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
+
+    if (!queryResult.records || queryResult.records.length === 0) {
+      return null;
+    }
+
+    return this.buildRelationshipResult(queryResult.records[0], options);
   }
 
   /**
@@ -203,27 +236,35 @@ export class RelationshipCoreRepository<
       .map((key) => `rel.${key} = $${key}`)
       .join(', ');
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.raw(`SET ${setClause}`).return(returnVars.join(', '));
+    cypher += ` SET ${setClause} RETURN ${returnVars.join(', ')}`;
 
-    // Add parameters
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-    bindParam.add(targetId, 'targetId');
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+        targetId,
+        ...updateData,
+      }
+    );
 
-    // Add update parameters
-    Object.entries(updateData).forEach(([key, value]) => {
-      bindParam.add(value, key);
-    });
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
-    return this.executeRelationshipQuerySingle(builder, options);
+    if (!queryResult.records || queryResult.records.length === 0) {
+      return null;
+    }
+
+    return this.buildRelationshipResult(queryResult.records[0], options);
   }
 
   /**
@@ -249,24 +290,25 @@ export class RelationshipCoreRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<boolean> {
-    const builder = this.queryBuilder.createBuilder();
-    builder
-      .match(
-        `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-      )
-      .raw('WHERE rel.deletedAt IS NULL')
-      .raw('SET rel.deletedAt = $deletedAt')
-      .return('count(rel) > 0 as deleted');
+    // Build query with inline Cypher
+    const cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+      WHERE rel.deletedAt IS NULL
+      SET rel.deletedAt = $deletedAt
+      RETURN count(rel) > 0 as deleted
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-    bindParam.add(targetId, 'targetId');
-    bindParam.add(new Date().toISOString(), 'deletedAt');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+        targetId,
+        deletedAt: new Date().toISOString(),
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     return (queryResult.records?.[0]?.get('deleted') as boolean) || false;
   }
@@ -279,22 +321,23 @@ export class RelationshipCoreRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<boolean> {
-    const builder = this.queryBuilder.createBuilder();
-    builder
-      .match(
-        `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-      )
-      .raw('DELETE rel')
-      .return('count(rel) > 0 as deleted');
+    // Build query with inline Cypher
+    const cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+      DELETE rel
+      RETURN count(rel) > 0 as deleted
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-    bindParam.add(targetId, 'targetId');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+        targetId,
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     return (queryResult.records?.[0]?.get('deleted') as boolean) || false;
   }
@@ -306,23 +349,27 @@ export class RelationshipCoreRepository<
     sourceId: string,
     options?: RelationshipQueryOptions
   ): Promise<number> {
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->()`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->()
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return('count(rel) as count');
+    cypher += ' RETURN count(rel) as count';
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     return (queryResult.records?.[0]?.get('count')?.toInt() as number) || 0;
   }
@@ -334,23 +381,27 @@ export class RelationshipCoreRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<number> {
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `()-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH ()-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return('count(rel) as count');
+    cypher += ' RETURN count(rel) as count';
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(targetId, 'targetId');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        targetId,
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     return (queryResult.records?.[0]?.get('count')?.toInt() as number) || 0;
   }
@@ -363,24 +414,28 @@ export class RelationshipCoreRepository<
     targetId: string,
     options?: RelationshipQueryOptions
   ): Promise<boolean> {
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
+    // Build query with inline Cypher
+    let cypher = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+    `;
 
     // Apply soft delete filter
-    this.addSoftDeleteFilter(builder, options);
+    if (!options?.includeSoftDeleted) {
+      cypher += ' WHERE rel.deletedAt IS NULL';
+    }
 
-    builder.return('count(rel) > 0 as exists');
+    cypher += ' RETURN count(rel) > 0 as exists';
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-    bindParam.add(targetId, 'targetId');
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    // Use autoBind for parameter binding
+    const { query: finalQuery, params } = ParameterBindingUtility.autoBind(
+      cypher,
+      {
+        sourceId,
+        targetId,
+      }
     );
+
+    const queryResult = await this.queryRunner.executeRaw(finalQuery, params);
 
     return (queryResult.records?.[0]?.get('exists') as boolean) || false;
   }
