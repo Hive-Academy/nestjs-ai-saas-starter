@@ -89,9 +89,6 @@ export class GraphAgentService {
     if (memories.length === 0) return;
 
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
       // Prepare batch data with content length limits
       const memoryData = memories.map((memory) => ({
         threadId: memory.threadId,
@@ -103,29 +100,25 @@ export class GraphAgentService {
         accessCount: memory.accessCount,
       }));
 
-      const memoriesParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'memories',
-        memoryData
-      );
+      const baseQuery = `
+        UNWIND $memories as memoryData
+        MERGE (t:Thread {id: memoryData.threadId})
+        SET t.lastActivity = datetime()
+        MERGE (m:Memory {id: memoryData.memoryId})
+        SET m.content = memoryData.content,
+            m.type = memoryData.type,
+            m.importance = memoryData.importance,
+            m.createdAt = datetime(memoryData.createdAt),
+            m.accessCount = memoryData.accessCount
+        MERGE (t)-[:CONTAINS]->(m)
+        RETURN count(m) as created
+      `;
 
-      queryBuilder.raw(
-        `UNWIND $${memoriesParam} as memoryData
-           MERGE (t:Thread {id: memoryData.threadId})
-           SET t.lastActivity = datetime()
-           MERGE (m:Memory {id: memoryData.memoryId})
-           SET m.content = memoryData.content,
-               m.type = memoryData.type,
-               m.importance = memoryData.importance,
-               m.createdAt = datetime(memoryData.createdAt),
-               m.accessCount = memoryData.accessCount
-           MERGE (t)-[:CONTAINS]->(m)
-           RETURN count(m) as created`
-      );
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        memories: memoryData,
+      });
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
 
       this.logger.debug(`Batch tracked ${memories.length} memories in graph`);
     } catch (error) {
@@ -147,25 +140,18 @@ export class GraphAgentService {
     if (memoryIds.length === 0) return 0;
 
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (m:Memory)
+        WHERE m.id IN $memoryIds
+        DETACH DELETE m
+        RETURN count(m) as deleted
+      `;
 
-      const memoryIdsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'memoryIds',
-        [...memoryIds]
-      );
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        memoryIds: [...memoryIds],
+      });
 
-      queryBuilder.raw(
-        `MATCH (m:Memory)
-           WHERE m.id IN $${memoryIdsParam}
-           DETACH DELETE m
-           RETURN count(m) as deleted`
-      );
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(query, params);
 
       const deletedCount = Number(result.records[0]?.get('deleted')) || 0;
 
@@ -199,57 +185,29 @@ export class GraphAgentService {
         relationshipType
       );
 
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const fromMemoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'fromMemoryId',
-        fromMemoryId
-      );
-      const toMemoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'toMemoryId',
-        toMemoryId
-      );
-      const strengthParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'strength',
-        relationshipStrength
-      );
-      const agentIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'agentId',
-        agentState.current
-      );
-      const threadIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'threadId',
-        agentState.threadId
-      );
-      const userIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'userId',
-        agentState.userId
-      );
-
-      queryBuilder
-        .match(`(from:Memory {id: $${fromMemoryIdParam}})`)
-        .match(`(to:Memory {id: $${toMemoryIdParam}})`)
-        .create(
-          `(from)-[r:${relationshipType} {
-          strength: $${strengthParam},
-          agentId: $${agentIdParam},
-          threadId: $${threadIdParam},
-          userId: $${userIdParam},
+      const baseQuery = `
+        MATCH (from:Memory {id: $fromMemoryId})
+        MATCH (to:Memory {id: $toMemoryId})
+        CREATE (from)-[r:${relationshipType} {
+          strength: $strength,
+          agentId: $agentId,
+          threadId: $threadId,
+          userId: $userId,
           createdAt: datetime()
-        }]->(to)`
-        )
-        .return('id(r) as relationshipId');
+        }]->(to)
+        RETURN id(r) as relationshipId
+      `;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        fromMemoryId,
+        toMemoryId,
+        strength: relationshipStrength,
+        agentId: agentState.current,
+        threadId: agentState.threadId,
+        userId: agentState.userId,
+      });
+
+      const result = await this.neogma.run(query, params);
 
       const relationshipId =
         result.records[0]?.get('relationshipId')?.toString() || '';
@@ -281,59 +239,28 @@ export class GraphAgentService {
     totalFound: number;
   }> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const startMemoryIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'startMemoryId',
-        startMemoryId
-      );
-      const userIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'userId',
-        agentState.userId
-      );
-      const threadIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'threadId',
-        agentState.threadId
-      );
-      const agentIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'agentId',
-        agentState.current
-      );
-      const limitParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limit',
-        20
-      );
-
-      queryBuilder
-        .match(
-          `path = (start:Memory {id: $${startMemoryIdParam}})-[*1..${maxDepth}]-(related:Memory)`
+      const baseQuery = `
+        MATCH path = (start:Memory {id: $startMemoryId})-[*1..${maxDepth}]-(related:Memory)
+        WHERE ALL(r IN relationships(path) WHERE
+          r.userId = $userId AND (r.threadId = $threadId OR r.agentId = $agentId)
         )
-        .where(
-          `ALL(r IN relationships(path) WHERE
-          r.userId = $${userIdParam} AND (r.threadId = $${threadIdParam} OR r.agentId = $${agentIdParam})
-        )`
-        )
-        .return(
-          `
+        RETURN
           related,
           [r IN relationships(path) | r.strength] as strengths,
           length(path) as depth
-        `
-        )
-        .orderBy(
-          'length(path) ASC, reduce(sum = 0, s IN [r IN relationships(path) | r.strength] | sum + s) DESC'
-        )
-        .limit(`$${limitParam}`);
+        ORDER BY length(path) ASC, reduce(sum = 0, s IN [r IN relationships(path) | r.strength] | sum + s) DESC
+        LIMIT $limit
+      `;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        startMemoryId,
+        userId: agentState.userId,
+        threadId: agentState.threadId,
+        agentId: agentState.current,
+        limit: 20,
+      });
+
+      const result = await this.neogma.run(query, params);
 
       const relatedMemories = result.records.map((record) => ({
         memory: this.helpers.mapNodeToMemory(
@@ -364,45 +291,25 @@ export class GraphAgentService {
 
     try {
       for (let i = 0; i < conversationMemories.length - 1; i++) {
-        const queryBuilder = this.neogma.createQueryBuilder();
-        const bindParam = queryBuilder.getBindParam();
-
-        const fromIdParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'fromId',
-          conversationMemories[i]
-        );
-        const toIdParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'toId',
-          conversationMemories[i + 1]
-        );
-        const threadIdParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'threadId',
-          threadId
-        );
-        const sequenceParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'sequence',
-          i + 1
-        );
-
-        queryBuilder
-          .match(`(from:Memory {id: $${fromIdParam}})`)
-          .match(`(to:Memory {id: $${toIdParam}})`)
-          .create(
-            `(from)-[r:FOLLOWS_IN_CONVERSATION {
-            threadId: $${threadIdParam},
-            sequence: $${sequenceParam},
+        const baseQuery = `
+          MATCH (from:Memory {id: $fromId})
+          MATCH (to:Memory {id: $toId})
+          CREATE (from)-[r:FOLLOWS_IN_CONVERSATION {
+            threadId: $threadId,
+            sequence: $sequence,
             createdAt: datetime()
-          }]->(to)`
-          )
-          .return('id(r) as relationshipId');
+          }]->(to)
+          RETURN id(r) as relationshipId
+        `;
 
-        const cypher = queryBuilder.getStatement();
-        const params = bindParam.get();
-        await this.neogma.run(cypher, params);
+        const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+          fromId: conversationMemories[i],
+          toId: conversationMemories[i + 1],
+          threadId,
+          sequence: i + 1,
+        });
+
+        await this.neogma.run(query, params);
       }
 
       this.logger.debug(
@@ -427,45 +334,27 @@ export class GraphAgentService {
     recentThreads: string[];
   }> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const userIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'userId',
-        userId
-      );
-      const limitDaysParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limitDays',
-        limitDays
-      );
-      const limitParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limit',
-        10
-      );
-
-      queryBuilder
-        .match('(m:Memory)-[r:FOLLOWS_IN_CONVERSATION]->(next:Memory)')
-        .where(
-          `r.createdAt > datetime() - duration({days: $${limitDaysParam}}) AND (m.properties.userId = $${userIdParam} OR next.properties.userId = $${userIdParam})`
-        )
-        .with('r.threadId as threadId, count(*) as messageCount')
-        .return(
-          `
+      const baseQuery = `
+        MATCH (m:Memory)-[r:FOLLOWS_IN_CONVERSATION]->(next:Memory)
+        WHERE r.createdAt > datetime() - duration({days: $limitDays})
+          AND (m.properties.userId = $userId OR next.properties.userId = $userId)
+        WITH r.threadId as threadId, count(*) as messageCount
+        RETURN
           threadId,
           messageCount,
           avg(messageCount) as avgMessagesPerThread,
           collect(threadId)[0..5] as recentThreads
-        `
-        )
-        .orderBy('messageCount DESC')
-        .limit(`$${limitParam}`);
+        ORDER BY messageCount DESC
+        LIMIT $limit
+      `;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        userId,
+        limitDays,
+        limit: 10,
+      });
+
+      const result = await this.neogma.run(query, params);
 
       const conversationPatterns = result.records.map((record) => ({
         threadId: record.get('threadId') || '',
@@ -505,39 +394,26 @@ export class GraphAgentService {
           );
 
           if (similarity >= similarityThreshold) {
-            const queryBuilder = this.neogma.createQueryBuilder();
-            const bindParam = queryBuilder.getBindParam();
-
-            const id1Param = ParameterBindingUtility.addParam(
-              bindParam,
-              'id1',
-              memoryIds[i]
-            );
-            const id2Param = ParameterBindingUtility.addParam(
-              bindParam,
-              'id2',
-              memoryIds[j]
-            );
-            const similarityParam = ParameterBindingUtility.addParam(
-              bindParam,
-              'similarity',
-              similarity
-            );
-
-            queryBuilder
-              .match(`(m1:Memory {id: $${id1Param}})`)
-              .match(`(m2:Memory {id: $${id2Param}})`)
-              .create(
-                `(m1)-[r:SEMANTICALLY_SIMILAR {
-                similarity: $${similarityParam},
+            const baseQuery = `
+              MATCH (m1:Memory {id: $id1})
+              MATCH (m2:Memory {id: $id2})
+              CREATE (m1)-[r:SEMANTICALLY_SIMILAR {
+                similarity: $similarity,
                 createdAt: datetime()
-              }]->(m2)`
-              )
-              .return('id(r) as relationshipId');
+              }]->(m2)
+              RETURN id(r) as relationshipId
+            `;
 
-            const cypher = queryBuilder.getStatement();
-            const params = bindParam.get();
-            await this.neogma.run(cypher, params);
+            const { query, params } = ParameterBindingUtility.autoBind(
+              baseQuery,
+              {
+                id1: memoryIds[i],
+                id2: memoryIds[j],
+                similarity,
+              }
+            );
+
+            await this.neogma.run(query, params);
 
             relationshipsCreated++;
           }
@@ -577,30 +453,18 @@ export class GraphAgentService {
     memoryId2: string
   ): Promise<number> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (m1:Memory {id: $id1})
+        MATCH (m2:Memory {id: $id2})
+        RETURN m1.properties.content as content1, m2.properties.content as content2
+      `;
 
-      const id1Param = ParameterBindingUtility.addParam(
-        bindParam,
-        'id1',
-        memoryId1
-      );
-      const id2Param = ParameterBindingUtility.addParam(
-        bindParam,
-        'id2',
-        memoryId2
-      );
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id1: memoryId1,
+        id2: memoryId2,
+      });
 
-      queryBuilder
-        .match(`(m1:Memory {id: $${id1Param}})`)
-        .match(`(m2:Memory {id: $${id2Param}})`)
-        .return(
-          'm1.properties.content as content1, m2.properties.content as content2'
-        );
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(query, params);
 
       if (result.records.length === 0) return 0;
 
