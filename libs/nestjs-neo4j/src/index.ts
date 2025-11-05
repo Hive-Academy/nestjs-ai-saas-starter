@@ -187,7 +187,10 @@ export { RelationshipBulkOperationsService } from './lib/repositories/relationsh
 export * from './lib/utils/parameter-serializer';
 
 // Utilities
-export { ParameterBindingUtility } from './lib/utilities/parameter-binding.utility';
+export {
+  ParameterBindingUtility,
+  SmartQueryBuilder,
+} from './lib/utilities/parameter-binding.utility';
 
 // Query Builder types are now exported above in the main Neogma integration section
 
