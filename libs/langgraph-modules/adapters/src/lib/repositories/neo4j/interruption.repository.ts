@@ -50,77 +50,25 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   async storeInterruption(interruption: UserInterruption): Promise<string> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const idParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'id',
-        interruption.id
-      );
-      const executionIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'executionId',
-        interruption.executionId
-      );
-      const nodeIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'nodeId',
-        interruption.nodeId
-      );
-      const typeParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'type',
-        interruption.type
-      );
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        interruption.status
-      );
-      const messageParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'message',
-        interruption.context.message
-      );
-      const metadataParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'metadata',
-        JSON.stringify(interruption.context.metadata || {})
-      );
-      const timeoutDurationParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'timeoutDuration',
-        interruption.timeout.duration
-      );
-      const timeoutStrategyParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'timeoutStrategy',
-        interruption.timeout.strategy
-      );
-      const createdAtParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'createdAt',
-        interruption.timestamps.created.toISOString()
-      );
 
       queryBuilder
         .create(
           `(i:UserInterruption {
-          id: $${idParam},
-          executionId: $${executionIdParam},
-          nodeId: $${nodeIdParam},
-          type: $${typeParam},
-          status: $${statusParam},
-          message: $${messageParam},
-          metadata: $${metadataParam},
-          timeoutDuration: $${timeoutDurationParam},
-          timeoutStrategy: $${timeoutStrategyParam},
-          createdAt: datetime($${createdAtParam}),
-          updatedAt: datetime($${createdAtParam})
+          id: $id,
+          executionId: $executionId,
+          nodeId: $nodeId,
+          type: $type,
+          status: $status,
+          message: $message,
+          metadata: $metadata,
+          timeoutDuration: $timeoutDuration,
+          timeoutStrategy: $timeoutStrategy,
+          createdAt: datetime($createdAt),
+          updatedAt: datetime($createdAt)
         })`
         )
         .with('i')
-        .match(`(e:WorkflowExecution {id: $${executionIdParam}})`)
+        .match('(e:WorkflowExecution {id: $executionId})')
         .forEach(
           `execution IN CASE WHEN e IS NOT NULL THEN [e] ELSE [] END |
           CREATE (execution)-[:HAS_INTERRUPTION]->(i)
@@ -128,9 +76,20 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
         )
         .return('i.id as interruptionId');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id: interruption.id,
+        executionId: interruption.executionId,
+        nodeId: interruption.nodeId,
+        type: interruption.type,
+        status: interruption.status,
+        message: interruption.context.message,
+        metadata: JSON.stringify(interruption.context.metadata || {}),
+        timeoutDuration: interruption.timeout.duration,
+        timeoutStrategy: interruption.timeout.strategy,
+        createdAt: interruption.timestamps.created.toISOString(),
+      });
+      const result = await this.neogma.run(query, params);
 
       if (result.records.length === 0) {
         throw new Error('Failed to create interruption record');
@@ -152,19 +111,18 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   async getInterruption(id: string): Promise<UserInterruption | null> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
 
       queryBuilder
         .match('(i:UserInterruption)')
-        .where(`i.id = $${idParam}`)
+        .where('i.id = $id')
         .match('(i)-[:HAS_RESPONSE]->(r:InterruptionResponse)')
         .return('i, r');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id,
+      });
+      const result = await this.neogma.run(query, params);
 
       if (result.records.length === 0) {
         return null;
@@ -191,31 +149,22 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   ): Promise<readonly UserInterruption[]> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const executionIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'executionId',
-        executionId
-      );
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        'pending'
-      );
 
       queryBuilder
         .match(
           '(e:WorkflowExecution)-[:HAS_INTERRUPTION]->(i:UserInterruption)'
         )
-        .where(`e.id = $${executionIdParam} AND i.status = $${statusParam}`)
+        .where('e.id = $executionId AND i.status = $status')
         .match('(i)-[:HAS_RESPONSE]->(r:InterruptionResponse)')
         .return('i, r')
         .orderBy('i.createdAt ASC');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        executionId,
+        status: 'pending',
+      });
+      const result = await this.neogma.run(query, params);
 
       const interruptions: UserInterruption[] = [];
 
@@ -253,48 +202,36 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   ): Promise<boolean> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const idParam = ParameterBindingUtility.addParam(bindParam, 'id', id);
-      const statusParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'status',
-        status
-      );
-      const updatedAtParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'updatedAt',
-        new Date().toISOString()
-      );
+      const currentTimestamp = new Date().toISOString();
 
       queryBuilder
         .match('(i:UserInterruption)')
-        .where(`i.id = $${idParam}`)
-        .set(`i.status = $${statusParam}`)
-        .set(`i.updatedAt = datetime($${updatedAtParam})`);
+        .where('i.id = $id')
+        .set('i.status = $status')
+        .set('i.updatedAt = datetime($updatedAt)');
 
       if (status === InterruptionStatus.RESPONDED) {
-        const respondedAtParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'respondedAt',
-          new Date().toISOString()
-        );
-        queryBuilder.set(`i.respondedAt = datetime($${respondedAtParam})`);
+        queryBuilder.set('i.respondedAt = datetime($respondedAt)');
       } else if (status === InterruptionStatus.TIMEOUT) {
-        const timeoutAtParam = ParameterBindingUtility.addParam(
-          bindParam,
-          'timeoutAt',
-          new Date().toISOString()
-        );
-        queryBuilder.set(`i.timeoutAt = datetime($${timeoutAtParam})`);
+        queryBuilder.set('i.timeoutAt = datetime($timeoutAt)');
       }
 
       queryBuilder.return('i.id as interruptionId');
 
       // Update interruption status
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const updateResult = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id,
+        status,
+        updatedAt: currentTimestamp,
+        respondedAt:
+          status === InterruptionStatus.RESPONDED
+            ? currentTimestamp
+            : undefined,
+        timeoutAt:
+          status === InterruptionStatus.TIMEOUT ? currentTimestamp : undefined,
+      });
+      const updateResult = await this.neogma.run(query, params);
 
       if (updateResult.records.length === 0) {
         return false;
@@ -322,32 +259,23 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   ): Promise<readonly UserInterruption[]> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const executionIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'executionId',
-        executionId
-      );
-      const limitParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'limit',
-        50
-      );
 
       queryBuilder
         .match(
           '(e:WorkflowExecution)-[:HAS_INTERRUPTION]->(i:UserInterruption)'
         )
-        .where(`e.id = $${executionIdParam}`)
+        .where('e.id = $executionId')
         .match('(i)-[:HAS_RESPONSE]->(r:InterruptionResponse)')
         .return('i, r')
         .orderBy('i.createdAt DESC')
-        .limit(`$${limitParam}`);
+        .limit('$limit');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        executionId,
+        limit: 50,
+      });
+      const result = await this.neogma.run(query, params);
 
       const interruptions: UserInterruption[] = [];
 
@@ -421,32 +349,23 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
   async cleanupExpiredInterruptions(): Promise<number> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const statusPendingParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'statusPending',
-        'pending'
-      );
-      const statusTimeoutParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'statusTimeout',
-        'timeout'
-      );
 
       queryBuilder
         .match('(i:UserInterruption)')
         .where(
-          `i.status = $${statusPendingParam} AND datetime(i.createdAt) + duration({seconds: i.timeoutDuration / 1000}) < datetime()`
+          'i.status = $statusPending AND datetime(i.createdAt) + duration({seconds: i.timeoutDuration / 1000}) < datetime()'
         )
-        .set(`i.status = $${statusTimeoutParam}`)
+        .set('i.status = $statusTimeout')
         .set('i.timeoutAt = datetime()')
         .set('i.updatedAt = datetime()')
         .return('count(i) as expiredCount');
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const baseQuery = queryBuilder.getStatement();
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        statusPending: 'pending',
+        statusTimeout: 'timeout',
+      });
+      const result = await this.neogma.run(query, params);
 
       const expiredCount = Number(result.records[0]?.get('expiredCount')) || 0;
 
@@ -470,68 +389,39 @@ export class InterruptionRepository extends Neo4jRepositoryBase<InterruptionPoin
     response: UserInterruptionResponse
   ): Promise<void> {
     const queryBuilder = this.neogma.createQueryBuilder();
-    const bindParam = queryBuilder.getBindParam();
 
     const responseId = `response_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
 
-    const interruptionIdParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'interruptionId',
-      interruptionId
-    );
-    const responseIdParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'responseId',
-      responseId
-    );
-    const responseParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'response',
-      response.response
-    );
-    const continueExecutionParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'continueExecution',
-      response.continueExecution
-    );
-    const userIdParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'userId',
-      response.userId || 'anonymous'
-    );
-    const metadataParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'metadata',
-      JSON.stringify(response.metadata || {})
-    );
-    const timestampParam = ParameterBindingUtility.addParam(
-      bindParam,
-      'timestamp',
-      response.timestamp.toISOString()
-    );
-
     queryBuilder
       .match('(i:UserInterruption)')
-      .where(`i.id = $${interruptionIdParam}`)
+      .where('i.id = $interruptionId')
       .create(
         `(r:InterruptionResponse {
-        id: $${responseIdParam},
-        interruptionId: $${interruptionIdParam},
-        response: $${responseParam},
-        continueExecution: $${continueExecutionParam},
-        userId: $${userIdParam},
-        metadata: $${metadataParam},
-        timestamp: datetime($${timestampParam})
+        id: $responseId,
+        interruptionId: $interruptionId,
+        response: $response,
+        continueExecution: $continueExecution,
+        userId: $userId,
+        metadata: $metadata,
+        timestamp: datetime($timestamp)
       })`
       )
       .create('(i)-[:HAS_RESPONSE]->(r)')
       .return('r.id as responseId');
 
-    const cypher = queryBuilder.getStatement();
-    const params = bindParam.get();
-    await this.neogma.run(cypher, params);
+    const baseQuery = queryBuilder.getStatement();
+    const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+      interruptionId,
+      responseId,
+      response: response.response,
+      continueExecution: response.continueExecution,
+      userId: response.userId || 'anonymous',
+      metadata: JSON.stringify(response.metadata || {}),
+      timestamp: response.timestamp.toISOString(),
+    });
+    await this.neogma.run(query, params);
   }
 
   /**
