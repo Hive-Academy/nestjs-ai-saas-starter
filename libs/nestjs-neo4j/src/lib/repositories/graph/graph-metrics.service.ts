@@ -9,6 +9,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { BaseGraphService, GraphTraversalOptions } from './base-graph.service';
 import type { NeogmaEntity } from '../../types/neogma-types';
 import { NeogmaService } from '../../services/neogma.service';
+import { ParameterBindingUtility } from '../../utilities/parameter-binding.utility';
 
 /**
  * Centrality metric types
@@ -91,27 +92,30 @@ export class GraphMetricsService<
     try {
       this.logger.debug(`Calculating degree centrality for node ${nodeId}`);
 
-      const queryBuilder = this.createQueryBuilder();
       const relationshipClause = this.buildRelationshipClause(options);
 
-      queryBuilder
-        .raw(`MATCH (node:${this.entityLabel} {id: $nodeId})`)
-        .raw(`MATCH (node)${relationshipClause}(connected:${this.entityLabel})`)
-        .return('count(DISTINCT connected) as degree');
+      const baseQuery = `
+        MATCH (node:${this.entityLabel} {id: $nodeId})
+        MATCH (node)${relationshipClause}(connected:${this.entityLabel})
+        RETURN count(DISTINCT connected) as degree
+      `;
 
-      // Add nodeId parameter to QueryBuilder
-      queryBuilder.getBindParam().add('nodeId', nodeId);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        nodeId,
+      });
 
-      const results = await this.executeQueryBuilder<{
-        degree: { low: number; high: number } | number;
-      }>(queryBuilder, { retries: 2 });
+      const result = await this.neogmaService.run(query, params);
+      const record = result.records[0];
 
+      if (!record) {
+        return 0;
+      }
+
+      const degreeValue = record.get('degree');
       const degree =
-        results.length > 0
-          ? typeof results[0].degree === 'object'
-            ? results[0].degree.low || results[0].degree.high || 0
-            : results[0].degree
-          : 0;
+        typeof degreeValue === 'object'
+          ? degreeValue.low || degreeValue.high || 0
+          : degreeValue;
 
       this.logPerformance('calculateDegreeCentrality', startTime);
       return degree;
@@ -138,84 +142,84 @@ export class GraphMetricsService<
     try {
       this.logger.debug(`Calculating ${metric} centrality scores`);
 
-      const queryBuilder = this.createQueryBuilder();
       const relationshipClause = this.buildRelationshipClause(options);
+      let baseQuery = '';
 
       switch (metric) {
         case 'degree':
-          queryBuilder
-            .raw(`MATCH (n:${this.entityLabel})`)
-            .raw(
-              `OPTIONAL MATCH (n)${relationshipClause}(connected:${this.entityLabel})`
-            )
-            .return('n as node, count(DISTINCT connected) as score')
-            .raw('ORDER BY score DESC');
+          baseQuery = `
+            MATCH (n:${this.entityLabel})
+            OPTIONAL MATCH (n)${relationshipClause}(connected:${
+            this.entityLabel
+          })
+            RETURN n as node, count(DISTINCT connected) as score
+            ORDER BY score DESC
+            ${options?.limit ? `LIMIT ${options.limit}` : ''}
+          `;
           break;
 
         case 'betweenness':
           // Simplified betweenness centrality calculation
-          queryBuilder
-            .raw(`MATCH (n:${this.entityLabel})`)
-            .raw(
-              `MATCH (source:${this.entityLabel}), (target:${this.entityLabel})`
-            )
-            .raw('WHERE source <> target AND source <> n AND target <> n')
-            .raw(
-              `MATCH path = shortestPath((source)${relationshipClause.replace(
-                '-',
-                '*-'
-              )}(target))`
-            )
-            .raw('WHERE n IN nodes(path)')
-            .return('n as node, count(*) as score')
-            .raw('ORDER BY score DESC');
+          baseQuery = `
+            MATCH (n:${this.entityLabel})
+            MATCH (source:${this.entityLabel}), (target:${this.entityLabel})
+            WHERE source <> target AND source <> n AND target <> n
+            MATCH path = shortestPath((source)${relationshipClause.replace(
+              '-',
+              '*-'
+            )}(target))
+            WHERE n IN nodes(path)
+            RETURN n as node, count(*) as score
+            ORDER BY score DESC
+            ${options?.limit ? `LIMIT ${options.limit}` : ''}
+          `;
           break;
 
         case 'closeness':
           // Closeness centrality using average shortest path length
-          queryBuilder
-            .raw(`MATCH (n:${this.entityLabel})`)
-            .raw(`MATCH (other:${this.entityLabel})`)
-            .raw('WHERE n <> other')
-            .raw(
-              `MATCH path = shortestPath((n)${relationshipClause.replace(
-                '-',
-                '*-'
-              )}(other))`
-            )
-            .return('n as node, 1.0/avg(length(path)) as score')
-            .raw('ORDER BY score DESC');
+          baseQuery = `
+            MATCH (n:${this.entityLabel})
+            MATCH (other:${this.entityLabel})
+            WHERE n <> other
+            MATCH path = shortestPath((n)${relationshipClause.replace(
+              '-',
+              '*-'
+            )}(other))
+            RETURN n as node, 1.0/avg(length(path)) as score
+            ORDER BY score DESC
+            ${options?.limit ? `LIMIT ${options.limit}` : ''}
+          `;
           break;
 
         default:
           // For pagerank and eigenvector, we'd typically use Neo4j GDS
           // Fallback to degree centrality
-          queryBuilder
-            .raw(`MATCH (n:${this.entityLabel})`)
-            .raw(
-              `OPTIONAL MATCH (n)${relationshipClause}(connected:${this.entityLabel})`
-            )
-            .return('n as node, count(DISTINCT connected) as score')
-            .raw('ORDER BY score DESC');
+          baseQuery = `
+            MATCH (n:${this.entityLabel})
+            OPTIONAL MATCH (n)${relationshipClause}(connected:${
+            this.entityLabel
+          })
+            RETURN n as node, count(DISTINCT connected) as score
+            ORDER BY score DESC
+            ${options?.limit ? `LIMIT ${options.limit}` : ''}
+          `;
       }
 
-      if (options?.limit) {
-        queryBuilder.limit(options.limit);
-      }
+      const result = await this.neogmaService.run(baseQuery, {});
 
-      const results = await this.executeQueryBuilder<{
-        node: T;
-        score: { low: number; high: number } | number;
-      }>(queryBuilder, { retries: 2 });
-
-      const centralityResults = results.map((record, index) => ({
-        node: this.mapToEntity(record.node),
-        score:
-          typeof record.score === 'object'
-            ? record.score.low || record.score.high || 0
-            : record.score,
-        rank: index + 1,
-      }));
+      const centralityResults = result.records.map(
+        (record: any, index: number) => {
+          const scoreValue = record.get('score');
+          return {
+            node: this.mapToEntity(record.get('node').properties),
+            score:
+              typeof scoreValue === 'object'
+                ? scoreValue.low || scoreValue.high || 0
+                : scoreValue,
+            rank: index + 1,
+          };
+        }
+      );
 
       this.logPerformance(
         `calculate${metric}Centrality`,
@@ -236,7 +240,7 @@ export class GraphMetricsService<
   // ==================== COMMUNITY DETECTION ====================
 
   /**
-   * Find connected components in the graph using QueryBuilder
+   * Find connected components in the graph
    */
   async findConnectedComponents(
     options?: GraphTraversalOptions
@@ -247,49 +251,39 @@ export class GraphMetricsService<
     try {
       this.logger.debug('Finding connected components');
 
-      const queryBuilder = this.createQueryBuilder();
       const relationshipClause = this.buildRelationshipClause(options);
+      const whereClause = this.buildWhereClause(options?.nodeFilter, 'n');
 
       // Simplified connected components using node IDs as component identifiers
-      queryBuilder
-        .raw(`MATCH (n:${this.entityLabel})`)
-        .raw(`CALL {`)
-        .raw(`  WITH n`)
-        .raw(
-          `  MATCH path = (n)${relationshipClause.replace(
-            '-',
-            '*-'
-          )}(connected:${this.entityLabel})`
-        )
-        .raw(`  RETURN collect(DISTINCT connected) as component`)
-        .raw(`}`)
-        .return(
-          'n.id as componentId, component as nodes, size(component) as componentSize'
-        );
+      const baseQuery = `
+        MATCH (n:${this.entityLabel})
+        ${whereClause || ''}
+        CALL {
+          WITH n
+          MATCH path = (n)${relationshipClause.replace('-', '*-')}(connected:${
+        this.entityLabel
+      })
+          RETURN collect(DISTINCT connected) as component
+        }
+        RETURN n.id as componentId, component as nodes, size(component) as componentSize
+        ${options?.limit ? `LIMIT ${options.limit}` : ''}
+      `;
 
-      const whereClause = this.buildWhereClause(options?.nodeFilter, 'n');
-      if (whereClause) {
-        queryBuilder.raw(whereClause);
-      }
+      const result = await this.neogmaService.run(baseQuery, {});
 
-      if (options?.limit) {
-        queryBuilder.limit(options.limit);
-      }
-
-      const results = await this.executeQueryBuilder<{
-        componentId: string;
-        nodes: T[];
-        componentSize: { low: number; high: number } | number;
-      }>(queryBuilder, { retries: 2 });
-
-      const components = results.map((record) => ({
-        componentId: record.componentId,
-        nodes: record.nodes.map((node) => this.mapToEntity(node)),
-        size:
-          typeof record.componentSize === 'object'
-            ? record.componentSize.low || record.componentSize.high || 0
-            : record.componentSize,
-      }));
+      const components = result.records.map((record: any) => {
+        const sizeValue = record.get('componentSize');
+        return {
+          componentId: record.get('componentId'),
+          nodes: record
+            .get('nodes')
+            .map((node: any) => this.mapToEntity(node.properties || node)),
+          size:
+            typeof sizeValue === 'object'
+              ? sizeValue.low || sizeValue.high || 0
+              : sizeValue,
+        };
+      });
 
       this.logPerformance(
         'findConnectedComponents',
@@ -358,36 +352,43 @@ export class GraphMetricsService<
     try {
       this.logger.debug('Calculating graph statistics');
 
-      const queryBuilder = this.createQueryBuilder();
       const relationshipClause = this.buildRelationshipClause(options);
 
       // Get basic counts
-      queryBuilder
-        .raw(`MATCH (n:${this.entityLabel})`)
-        .raw(`OPTIONAL MATCH (n)${relationshipClause}(m:${this.entityLabel})`)
-        .return(`
+      const baseQuery = `
+        MATCH (n:${this.entityLabel})
+        OPTIONAL MATCH (n)${relationshipClause}(m:${this.entityLabel})
+        RETURN
           count(DISTINCT n) as nodeCount,
           count(DISTINCT m) as connectionCount,
           avg(size((n)${relationshipClause}())) as averageDegree
-        `);
+      `;
 
-      const [statsResult] = await this.executeQueryBuilder<{
-        nodeCount: { low: number; high: number } | number;
-        connectionCount: { low: number; high: number } | number;
-        averageDegree: number;
-      }>(queryBuilder, { retries: 2 });
+      const result = await this.neogmaService.run(baseQuery, {});
+      const statsRecord = result.records[0];
+
+      if (!statsRecord) {
+        return {
+          nodeCount: 0,
+          relationshipCount: 0,
+          density: 0,
+          averageDegree: 0,
+          components: 0,
+        };
+      }
+
+      const nodeCountValue = statsRecord.get('nodeCount');
+      const connectionCountValue = statsRecord.get('connectionCount');
 
       const nodeCount =
-        typeof statsResult.nodeCount === 'object'
-          ? statsResult.nodeCount.low || statsResult.nodeCount.high || 0
-          : statsResult.nodeCount;
+        typeof nodeCountValue === 'object'
+          ? nodeCountValue.low || nodeCountValue.high || 0
+          : nodeCountValue;
 
       const relationshipCount =
-        typeof statsResult.connectionCount === 'object'
-          ? statsResult.connectionCount.low ||
-            statsResult.connectionCount.high ||
-            0
-          : statsResult.connectionCount;
+        typeof connectionCountValue === 'object'
+          ? connectionCountValue.low || connectionCountValue.high || 0
+          : connectionCountValue;
 
       // Calculate density
       const maxPossibleEdges = (nodeCount * (nodeCount - 1)) / 2;
@@ -401,7 +402,7 @@ export class GraphMetricsService<
         nodeCount,
         relationshipCount,
         density,
-        averageDegree: statsResult.averageDegree || 0,
+        averageDegree: statsRecord.get('averageDegree') || 0,
         components: components.length,
       };
 
