@@ -1040,10 +1040,9 @@ interface UnifiedAgentState extends AgentState {
 }
 
 // Type-safe agent state with custom metadata
-type TypedAgentState<TMetadata extends Record<string, unknown>> =
-  UnifiedAgentState & {
-    metadata: UnifiedAgentState['metadata'] & TMetadata;
-  };
+type TypedAgentState<TMetadata extends Record<string, unknown>> = UnifiedAgentState & {
+  metadata: UnifiedAgentState['metadata'] & TMetadata;
+};
 ```
 
 ### Agent Migration Pattern
@@ -1053,9 +1052,7 @@ type TypedAgentState<TMetadata extends Record<string, unknown>> =
 ```typescript
 import { TypedWorkflowAgentState } from '../../types';
 
-export class MyAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<MyMetadata>
-> {
+export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyMetadata>> {
   async execute(context: TaskExecutionContext<TypedWorkflowAgentState<MyMetadata>>) {
     // metadata might be undefined ❌
     const value = state.metadata?.someField; // Optional chaining needed
@@ -1068,9 +1065,7 @@ export class MyAgent extends DeclarativeWorkflowBase<
 ```typescript
 import { TypedAgentState } from '../../types';
 
-export class MyAgent extends DeclarativeWorkflowBase<
-  TypedAgentState<MyMetadata>
-> {
+export class MyAgent extends DeclarativeWorkflowBase<TypedAgentState<MyMetadata>> {
   async execute(context: TaskExecutionContext<TypedAgentState<MyMetadata>>) {
     // metadata guaranteed initialized ✅
     const value = state.metadata.someField; // No optional chaining needed

@@ -17,6 +17,7 @@ export interface StreamingModuleOptions {
   websocket?: {
     enabled: boolean;
     port?: number;
+    namespace?: string;
   };
   defaultBufferSize?: number;
   /** WebSocket gateway configuration */

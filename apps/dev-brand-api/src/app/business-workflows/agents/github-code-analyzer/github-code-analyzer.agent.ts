@@ -126,12 +126,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @Entrypoint({ timeout: 15000 })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeGitHubAnalysis(
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
 
@@ -177,12 +173,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   })
   async analyzeGitHubActivity(
     @Required()
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
     const timeframe = state.metadata.timeframe;
@@ -236,12 +228,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @Task({ dependsOn: ['analyzeGitHubActivity'] })
   @StreamProgress({ enabled: true })
   async extractAchievements(
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubData = state.metadata.githubData;
 
@@ -289,12 +277,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @Task({ dependsOn: ['extractAchievements'] })
   @StreamProgress({ enabled: true })
   async generateDeveloperInsights(
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
     const githubData = state.metadata.githubData;
@@ -347,12 +331,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @StreamProgress({ enabled: true })
   @StreamToken({ enabled: true, format: 'structured' })
   async synthesizeWithAI(
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
     const githubData = state.metadata.githubData;
@@ -448,12 +428,8 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     }),
   })
   async finalizeAnalysis(
-    context: TaskExecutionContext<
-      TypedAgentState<GitHubAnalyzerMetadata>
-    >
-  ): Promise<
-    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
-  > {
+    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
     const timeframe = state.metadata.timeframe;

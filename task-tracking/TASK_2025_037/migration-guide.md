@@ -163,9 +163,7 @@ import type { TypedAgentState } from '../../types';
 ```typescript
 import { DeclarativeWorkflowBase } from '@hive-academy/langgraph-workflow-engine';
 
-export class MyAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<MyMetadata>
-> {
+export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyMetadata>> {
   // Agent implementation
 }
 ```
@@ -497,9 +495,7 @@ export interface MyAgentMetadata extends WorkflowAgentMetadata {
 And used in agent declaration:
 
 ```typescript
-export class MyAgent extends DeclarativeWorkflowBase<
-  TypedAgentState<MyAgentMetadata>
-> {
+export class MyAgent extends DeclarativeWorkflowBase<TypedAgentState<MyAgentMetadata>> {
   // ...
 }
 ```

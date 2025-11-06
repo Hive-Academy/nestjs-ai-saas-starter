@@ -465,9 +465,7 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    * Conditional edge: route to rebuild for weak brands
    */
   @Edge('assessBrandStrength', 'rebuildStrategy')
-  shouldRebuildBrand(
-    state: TypedAgentState<BrandStrategistMetadata>
-  ): boolean {
+  shouldRebuildBrand(state: TypedAgentState<BrandStrategistMetadata>): boolean {
     const brandScore = state.metadata.brandScore || 0.5;
     return brandScore <= 0.7;
   }

@@ -245,9 +245,10 @@ export interface UnifiedAgentState extends AgentState {
  * - BrandStrategistMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:219-289
  * - ContentCreatorMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:299-469
  */
-export type TypedAgentState<TMetadata extends Record<string, unknown>> = UnifiedAgentState & {
-  metadata: UnifiedAgentState['metadata'] & TMetadata;
-};
+export type TypedAgentState<TMetadata extends Record<string, unknown>> =
+  UnifiedAgentState & {
+    metadata: UnifiedAgentState['metadata'] & TMetadata;
+  };
 
 // Shared Business Types
 export interface BaseEntity {

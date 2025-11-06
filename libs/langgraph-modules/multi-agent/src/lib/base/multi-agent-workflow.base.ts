@@ -256,7 +256,8 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
               ...(state.metadata || {}),
               // Common metadata fields from state (backward compatibility)
               userId: state.metadata?.userId || (state as any).userId,
-              executionId: state.metadata?.executionId || (state as any).executionId,
+              executionId:
+                state.metadata?.executionId || (state as any).executionId,
               threadId: state.metadata?.threadId || (state as any).threadId,
               workflowType: state.metadata?.workflowType,
               // Agent coordination metadata
