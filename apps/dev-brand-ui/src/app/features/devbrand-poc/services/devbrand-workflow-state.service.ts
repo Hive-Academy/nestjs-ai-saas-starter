@@ -388,25 +388,50 @@ export class DevBrandWorkflowStateService {
    * - All subscriptions automatically managed by service lifecycle
    */
   private subscribeToWebSocketEvents(): void {
+    console.log(
+      '🎧 [DevBrandWorkflowStateService] Subscribing to WebSocket events...'
+    );
+
     // Stream updates: all workflow events
     this.wsService.streamUpdates$.subscribe((update) => {
+      console.log('📨 [DevBrandWorkflowStateService] Received streamUpdate');
+      console.log(
+        '📊 [DevBrandWorkflowStateService] Update type:',
+        update.type
+      );
+      console.log(
+        '🔢 [DevBrandWorkflowStateService] Sequence:',
+        update.metadata.sequenceNumber
+      );
+      console.log('📋 [DevBrandWorkflowStateService] Full update:', update);
       this.processStreamUpdate(update);
       this.addToEventHistory(update);
+      console.log(
+        '✅ [DevBrandWorkflowStateService] Stream update processed and added to history'
+      );
     });
 
     // Token updates: LLM token streaming
     this.wsService.tokenUpdates$.subscribe((token) => {
+      console.log(
+        '🔤 [DevBrandWorkflowStateService] Received tokenUpdate:',
+        token
+      );
       this.processTokenUpdate(token);
     });
 
     // Errors: WebSocket connection/validation errors
     this.wsService.errors$.subscribe((error) => {
+      console.error('❌ [DevBrandWorkflowStateService] Received error:', error);
       this._executionState.update((state) => ({
         ...state,
         status: 'error',
         error: error.message,
         endTime: new Date(),
       }));
+      console.error(
+        '🔄 [DevBrandWorkflowStateService] Execution state updated to error'
+      );
     });
   }
 

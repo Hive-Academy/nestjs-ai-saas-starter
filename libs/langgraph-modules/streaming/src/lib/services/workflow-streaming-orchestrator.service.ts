@@ -138,13 +138,19 @@ export class WorkflowStreamingOrchestrator {
     // Start workflow in background (non-blocking)
     this.consumeWorkflowStream(workflow, input, executionId);
 
+    // Build WebSocket URL from environment variables
+    const websocketPort = process.env.WEBSOCKET_PORT || '8080';
+    const websocketNamespace = process.env.WEBSOCKET_NAMESPACE || '/streaming';
+    const websocketHost = process.env.WEBSOCKET_HOST || 'localhost';
+    const websocketUrl = `ws://${websocketHost}:${websocketPort}${websocketNamespace}`;
+
     // Return connection info immediately
     return {
       executionId,
       status: 'started',
       message:
         'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
-      websocketUrl: 'ws://localhost:8080/streaming',
+      websocketUrl,
       subscriptionInfo: {
         event: 'subscribe_execution',
         payload: { executionId },

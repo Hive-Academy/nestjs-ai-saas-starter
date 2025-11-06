@@ -247,13 +247,21 @@ export class DevBrandWebSocketService {
    * @public
    */
   connect(websocketUrl: string): void {
+    console.log('🔌 [DevBrandWebSocketService] connect() called');
+    console.log('📍 [DevBrandWebSocketService] WebSocket URL:', websocketUrl);
+
     // Guard: Check if already connected
     if (this.socket?.connected) {
-      console.warn('[DevBrandWebSocketService] Already connected to WebSocket');
+      console.warn(
+        '⚠️ [DevBrandWebSocketService] Already connected to WebSocket'
+      );
       return;
     }
 
     // Update state: reconnecting (used for initial connection too)
+    console.log(
+      '🔄 [DevBrandWebSocketService] Updating connection state to: reconnecting'
+    );
     this._connectionState.update((state) => ({
       ...state,
       status: 'reconnecting',
@@ -262,6 +270,17 @@ export class DevBrandWebSocketService {
 
     // Create Socket.io client
     // Evidence: environment.ts:14-21 (reconnection config)
+    console.log(
+      '🚀 [DevBrandWebSocketService] Creating Socket.io client with config:',
+      {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 3000,
+        timeout: 30000,
+      }
+    );
+
     this.socket = io(websocketUrl, {
       transports: ['websocket', 'polling'], // WebSocket first, polling fallback
       reconnection: true, // Enable automatic reconnection
@@ -269,6 +288,10 @@ export class DevBrandWebSocketService {
       reconnectionDelay: 3000, // 3 second delay between attempts
       timeout: 30000, // 30 second connection timeout
     });
+
+    console.log(
+      '✅ [DevBrandWebSocketService] Socket.io client created, registering listeners...'
+    );
 
     // Register Socket.io event listeners
     this.registerSocketListeners();
@@ -320,18 +343,30 @@ export class DevBrandWebSocketService {
    * @public
    */
   subscribeToExecution(executionId: string): void {
+    console.log('📨 [DevBrandWebSocketService] subscribeToExecution() called');
+    console.log('🆔 [DevBrandWebSocketService] Execution ID:', executionId);
+
     // Guard: Check if socket connected
     if (!this.socket?.connected) {
+      console.error('❌ [DevBrandWebSocketService] WebSocket not connected!');
+      console.error('💡 [DevBrandWebSocketService] Socket state:', {
+        exists: !!this.socket,
+        connected: this.socket?.connected,
+        connectionState: this._connectionState(),
+      });
       throw new Error(
         '[DevBrandWebSocketService] WebSocket not connected. Call connect() first.'
       );
     }
 
     // Emit subscription request to backend
+    console.log(
+      '📤 [DevBrandWebSocketService] Emitting subscribe_execution event...'
+    );
     this.socket.emit('subscribe_execution', { executionId });
 
     console.log(
-      `[DevBrandWebSocketService] Subscribed to execution: ${executionId}`
+      `✅ [DevBrandWebSocketService] Subscribed to execution: ${executionId}`
     );
   }
 
@@ -438,7 +473,16 @@ export class DevBrandWebSocketService {
    * @private
    */
   private registerSocketListeners(): void {
-    if (!this.socket) return;
+    if (!this.socket) {
+      console.error(
+        '❌ [DevBrandWebSocketService] Cannot register listeners: socket is undefined'
+      );
+      return;
+    }
+
+    console.log(
+      '👂 [DevBrandWebSocketService] Registering Socket.io event listeners...'
+    );
 
     // 1. Connection status event (connection established)
     // Evidence: research-websocket.md:99-109
@@ -446,8 +490,16 @@ export class DevBrandWebSocketService {
       'connection_status',
       (data: { connectionId: string; status: string; serverTime: Date }) => {
         console.log(
-          '[DevBrandWebSocketService] Connection established:',
+          '✅ [DevBrandWebSocketService] EVENT: connection_status received'
+        );
+        console.log(
+          '🔑 [DevBrandWebSocketService] Connection ID:',
           data.connectionId
+        );
+        console.log('📊 [DevBrandWebSocketService] Status:', data.status);
+        console.log(
+          '🕐 [DevBrandWebSocketService] Server time:',
+          data.serverTime
         );
 
         this._connectionState.update((state) => ({
@@ -455,6 +507,10 @@ export class DevBrandWebSocketService {
           status: 'connected',
           reconnectAttempt: 0,
         }));
+
+        console.log(
+          '🎉 [DevBrandWebSocketService] Connection state updated to: connected'
+        );
       }
     );
 
@@ -462,9 +518,13 @@ export class DevBrandWebSocketService {
     // Evidence: research-websocket.md:145-160
     this.socket.on('subscription_confirmed', (data: SubscriptionConfirmed) => {
       console.log(
-        '[DevBrandWebSocketService] Subscription confirmed:',
+        '✅ [DevBrandWebSocketService] EVENT: subscription_confirmed received'
+      );
+      console.log(
+        '🆔 [DevBrandWebSocketService] Execution ID:',
         data.executionId
       );
+      console.log('📋 [DevBrandWebSocketService] Full data:', data);
     });
 
     // 3. Stream update event (main workflow events)
@@ -472,9 +532,29 @@ export class DevBrandWebSocketService {
     this.socket.on(
       'stream_update',
       (message: { data: { update: unknown } }) => {
+        console.log(
+          '📨 [DevBrandWebSocketService] EVENT: stream_update received'
+        );
+        console.log('📦 [DevBrandWebSocketService] Raw message:', message);
+
         const validated = this.validateStreamUpdate(message.data.update);
         if (validated) {
+          console.log(
+            '✅ [DevBrandWebSocketService] Stream update validated successfully'
+          );
+          console.log(
+            '📊 [DevBrandWebSocketService] Update type:',
+            validated.type
+          );
+          console.log(
+            '🔢 [DevBrandWebSocketService] Sequence:',
+            validated.metadata.sequenceNumber
+          );
           this._streamUpdates.next(validated);
+        } else {
+          console.warn(
+            '⚠️ [DevBrandWebSocketService] Stream update validation failed'
+          );
         }
       }
     );
@@ -482,13 +562,20 @@ export class DevBrandWebSocketService {
     // 4. Token update event (LLM token streaming)
     // Evidence: research-websocket.md:446-463
     this.socket.on('token_update', (message: { data: TokenUpdate }) => {
+      console.log('🔤 [DevBrandWebSocketService] EVENT: token_update received');
+      console.log('📝 [DevBrandWebSocketService] Token data:', message.data);
       this._tokenUpdates.next(message.data);
     });
 
     // 5. Error event (backend errors)
     // Evidence: research-websocket.md:529-537
     this.socket.on('error', (data: { message: string }) => {
-      console.error('[DevBrandWebSocketService] WebSocket error:', data);
+      console.error('❌ [DevBrandWebSocketService] EVENT: error received');
+      console.error(
+        '💥 [DevBrandWebSocketService] Error message:',
+        data.message
+      );
+      console.error('📋 [DevBrandWebSocketService] Full error data:', data);
 
       const error: WebSocketError = {
         type: 'websocket_error',
@@ -501,7 +588,8 @@ export class DevBrandWebSocketService {
 
     // 6. Disconnect event (connection lost)
     this.socket.on('disconnect', (reason: string) => {
-      console.warn('[DevBrandWebSocketService] Disconnected:', reason);
+      console.warn('🔌 [DevBrandWebSocketService] EVENT: disconnect received');
+      console.warn('📍 [DevBrandWebSocketService] Disconnect reason:', reason);
 
       const error: WebSocketError = {
         type: 'connection_error',
@@ -514,12 +602,17 @@ export class DevBrandWebSocketService {
         status: 'disconnected',
         lastError: error,
       }));
+
+      console.warn(
+        '🔄 [DevBrandWebSocketService] Connection state updated to: disconnected'
+      );
     });
 
     // 7. Reconnection attempt event (reconnection progress)
     this.socket.on('reconnect_attempt', (attemptNumber: number) => {
+      console.log('🔄 [DevBrandWebSocketService] EVENT: reconnect_attempt');
       console.log(
-        `[DevBrandWebSocketService] Reconnection attempt: ${attemptNumber}`
+        `📊 [DevBrandWebSocketService] Attempt number: ${attemptNumber}/10`
       );
 
       this._connectionState.update((state) => ({
@@ -528,6 +621,10 @@ export class DevBrandWebSocketService {
         reconnectAttempt: attemptNumber,
       }));
     });
+
+    console.log(
+      '✅ [DevBrandWebSocketService] All event listeners registered successfully'
+    );
   }
 
   /**

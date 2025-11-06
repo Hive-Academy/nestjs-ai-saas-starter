@@ -194,6 +194,24 @@ export class EventStreamComponent {
     initialValue: [],
   });
 
+  constructor() {
+    console.log('🎬 [EventStreamComponent] Component constructed');
+
+    // Log when events arrive
+    this.stateService.eventHistory$.subscribe((events) => {
+      console.log('📊 [EventStreamComponent] Event history updated');
+      console.log('📈 [EventStreamComponent] Total events:', events.length);
+      if (events.length > 0) {
+        const latest = events[events.length - 1];
+        console.log('🆕 [EventStreamComponent] Latest event:', {
+          type: latest.type,
+          sequence: latest.metadata.sequenceNumber,
+          nodeId: latest.metadata.nodeId,
+        });
+      }
+    });
+  }
+
   /**
    * Selected filter type
    * - 'all': Show all events

@@ -121,7 +121,32 @@ export class WorkflowExecutionCoordinationService {
     // Initialize empty coordination context and use input directly (instant start)
     const coordinationContext: any = {};
     const enhancedInput = input;
-    // Prepare checkpoint-enabled config
+
+    // Initialize state.metadata BEFORE workflow execution (TASK_2025_037)
+    // This ensures metadata exists from the very beginning of workflow execution
+    const initialState = {
+      messages: enhancedInput.messages || [],
+      metadata: {
+        // Common metadata fields (unified state architecture)
+        userId: enhancedInput.config?.metadata?.userId,
+        executionId,
+        threadId,
+        workflowType: networkId,
+        networkId,
+        // Agent coordination metadata (for multi-agent workflows)
+        active_agent: undefined,
+        lastAgent: undefined,
+        // Merge any existing metadata from input
+        ...enhancedInput.config?.metadata,
+        // Coordination intelligence (preserved for backward compatibility)
+        coordinationContext,
+        agentCompatibility: coordinationContext.agentCompatibility || [],
+        networkOptimizations: coordinationContext.networkOptimizations || [],
+        performancePatterns: coordinationContext.performancePatterns || [],
+      },
+    };
+
+    // Prepare checkpoint-enabled config (maintain backward compatibility)
     const checkpointConfig: RunnableConfig = {
       ...enhancedInput.config,
       configurable: {
@@ -172,7 +197,7 @@ export class WorkflowExecutionCoordinationService {
     const executionStartTime = Date.now();
 
     const result = await this.networkManager.executeWorkflow(networkId, {
-      ...enhancedInput,
+      ...initialState,
       config: checkpointConfig,
     });
 

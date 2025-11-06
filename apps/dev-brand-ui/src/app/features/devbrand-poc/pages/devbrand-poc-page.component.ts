@@ -150,15 +150,40 @@ export class DevbrandPocPageComponent implements OnDestroy {
   } | null = null;
 
   constructor() {
+    console.log('🎬 [DevBrandPocPageComponent] Component constructed');
+
     // Wait for WebSocket connection before subscribing
     effect(() => {
       const isConnected = this.webSocketService.isConnected();
+      console.log(
+        '🔄 [DevBrandPocPageComponent] Effect triggered - isConnected:',
+        isConnected,
+        'pending:',
+        !!this.pendingExecution
+      );
+
       if (isConnected && this.pendingExecution) {
+        console.log(
+          '🎯 [DevBrandPocPageComponent] WebSocket connected AND pending execution exists!'
+        );
+        console.log(
+          '🆔 [DevBrandPocPageComponent] Subscribing to execution:',
+          this.pendingExecution.executionId
+        );
+
         this.webSocketService.subscribeToExecution(
           this.pendingExecution.executionId
         );
+
+        console.log(
+          '🚀 [DevBrandPocPageComponent] Starting workflow state tracking...'
+        );
         this.workflowStateService.startExecution(
           this.pendingExecution.executionId
+        );
+
+        console.log(
+          '✅ [DevBrandPocPageComponent] Subscription complete, clearing pending execution'
         );
         this.pendingExecution = null;
       }
@@ -207,11 +232,25 @@ export class DevbrandPocPageComponent implements OnDestroy {
     executionId: string;
     websocketUrl: string;
   }): void {
+    console.log('🎯 [DevBrandPocPageComponent] onExecutionStarted() called');
+    console.log(
+      '🆔 [DevBrandPocPageComponent] Execution ID:',
+      response.executionId
+    );
+    console.log(
+      '🌐 [DevBrandPocPageComponent] WebSocket URL:',
+      response.websocketUrl
+    );
+
     // Store execution data for subscription once connected
     this.pendingExecution = response;
+    console.log(
+      '💾 [DevBrandPocPageComponent] Pending execution stored, waiting for connection...'
+    );
 
     // Connect WebSocket using URL from API response (includes /streaming namespace)
     // The effect above will call subscribeToExecution() once connected
+    console.log('🔌 [DevBrandPocPageComponent] Calling WebSocket connect()...');
     this.webSocketService.connect(response.websocketUrl);
   }
 

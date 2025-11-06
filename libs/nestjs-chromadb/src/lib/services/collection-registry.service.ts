@@ -74,7 +74,7 @@ export class CollectionRegistryService {
     private readonly connectionService: ChromaDBConnectionService,
     @Optional()
     @Inject(CHROMADB_OPTIONS)
-    private readonly options?: ChromaDBModuleOptions
+    readonly options?: ChromaDBModuleOptions
   ) {
     // Extract collection strategy from options with safe defaults
     this.strategy = {
