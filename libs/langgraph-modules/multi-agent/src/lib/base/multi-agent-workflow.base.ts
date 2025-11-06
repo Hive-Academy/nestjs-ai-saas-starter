@@ -247,16 +247,36 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
         nodeFunction: async (state: AgentState) => {
           this.logger.debug(`[${agentConfig.id}] Executing worker agent...`);
 
-          // Execute the agent's internal workflow
-          const result = await instance.execute(state);
+          // Initialize state.metadata BEFORE executing worker to prevent undefined errors
+          // This ensures worker agents always receive a defined metadata object
+          const enhancedState = {
+            ...state,
+            metadata: {
+              // Merge existing metadata (preserve if already present)
+              ...(state.metadata || {}),
+              // Common metadata fields from state (backward compatibility)
+              userId: state.metadata?.userId || (state as any).userId,
+              executionId: state.metadata?.executionId || (state as any).executionId,
+              threadId: state.metadata?.threadId || (state as any).threadId,
+              workflowType: state.metadata?.workflowType,
+              // Agent coordination metadata
+              lastAgent: agentConfig.id,
+            },
+          };
+
+          // Execute the agent's internal workflow with enhanced state
+          const result = await instance.execute(enhancedState);
 
           this.logger.debug(`[${agentConfig.id}] Worker agent completed`);
 
           return {
             messages: result.messages || state.messages,
             metadata: {
-              ...state.metadata,
+              // Start with initialized metadata
+              ...enhancedState.metadata,
+              // Merge worker results (worker metadata takes precedence)
               ...result.metadata,
+              // Track agent execution
               lastAgent: agentConfig.id,
               lastAgentResult: result,
             },
