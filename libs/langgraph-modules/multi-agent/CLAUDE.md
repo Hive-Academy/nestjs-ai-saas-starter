@@ -1005,6 +1005,158 @@ async agentNode(state: AgentState) {
 
 ---
 
+## Unified Agent State Architecture
+
+### Overview
+
+All multi-agent workflows use **UnifiedAgentState** for consistent metadata handling across supervisor and worker agents. This architecture ensures metadata is ALWAYS initialized in both infrastructure layers, preventing undefined metadata errors.
+
+### Problem Solved
+
+**Before**: Supervisor passed metadata via `config.metadata` but workers expected `state.metadata`, causing `Cannot read properties of undefined` errors.
+
+**After**: Both `WorkflowExecutionCoordinationService` and `MultiAgentWorkflowBase` initialize `state.metadata` before worker execution.
+
+### Type Definitions
+
+```typescript
+// Base state for all agents (in your business-workflows/types)
+interface UnifiedAgentState extends AgentState {
+  messages: BaseMessage[];
+  metadata: {
+    userId?: string;
+    executionId?: string;
+    threadId?: string;
+    workflowType?: string;
+    lastAgent?: string;
+    active_agent?: string;
+    [key: string]: unknown; // Agent-specific metadata
+  };
+  // Workflow execution properties
+  executionId: string;
+  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  confidence: number;
+  // ... other workflow properties
+}
+
+// Type-safe agent state with custom metadata
+type TypedAgentState<TMetadata extends Record<string, unknown>> =
+  UnifiedAgentState & {
+    metadata: UnifiedAgentState['metadata'] & TMetadata;
+  };
+```
+
+### Agent Migration Pattern
+
+**Before** (TypedWorkflowAgentState):
+
+```typescript
+import { TypedWorkflowAgentState } from '../../types';
+
+export class MyAgent extends DeclarativeWorkflowBase<
+  TypedWorkflowAgentState<MyMetadata>
+> {
+  async execute(context: TaskExecutionContext<TypedWorkflowAgentState<MyMetadata>>) {
+    // metadata might be undefined ❌
+    const value = state.metadata?.someField; // Optional chaining needed
+  }
+}
+```
+
+**After** (TypedAgentState):
+
+```typescript
+import { TypedAgentState } from '../../types';
+
+export class MyAgent extends DeclarativeWorkflowBase<
+  TypedAgentState<MyMetadata>
+> {
+  async execute(context: TaskExecutionContext<TypedAgentState<MyMetadata>>) {
+    // metadata guaranteed initialized ✅
+    const value = state.metadata.someField; // No optional chaining needed
+  }
+}
+```
+
+### Metadata Initialization Points
+
+**1. WorkflowExecutionCoordinationService** (workflow start):
+
+Initializes `state.metadata` at workflow execution start with common fields:
+
+```typescript
+// libs/langgraph-modules/multi-agent/src/lib/coordination/workflow-execution-coordination.service.ts:127-147
+
+const initialState = {
+  ...enhancedInput,
+  metadata: {
+    userId: enhancedInput.config?.metadata?.userId,
+    executionId,
+    threadId,
+    workflowType: networkId,
+    active_agent: undefined,
+    lastAgent: undefined,
+    // Merge existing metadata from input
+    ...enhancedInput.config?.metadata,
+  },
+};
+```
+
+**2. MultiAgentWorkflowBase** (before worker execution):
+
+Creates `enhancedState` with initialized metadata before passing to each worker:
+
+```typescript
+// libs/langgraph-modules/multi-agent/src/lib/base/multi-agent-workflow.base.ts:252-266
+
+const enhancedState = {
+  ...state,
+  metadata: {
+    // Merge existing metadata (preserve if already present)
+    ...(state.metadata || {}),
+    // Common metadata fields
+    userId: state.metadata?.userId || state.userId,
+    executionId: state.metadata?.executionId || state.executionId,
+    threadId: state.metadata?.threadId || state.threadId,
+    workflowType: state.metadata?.workflowType,
+    // Agent coordination metadata
+    lastAgent: agentConfig.id,
+  },
+};
+
+// Execute worker with initialized metadata
+const result = await instance.execute(enhancedState);
+```
+
+### Benefits
+
+1. **No Undefined Errors**: Metadata is ALWAYS defined, preventing runtime crashes
+2. **Type Safety**: TypedAgentState<TMetadata> provides compile-time type checking
+3. **Backward Compatible**: Existing config.metadata still works during migration
+4. **Consistent Flow**: Metadata flows predictably: supervisor → worker → supervisor
+5. **Agent Coordination**: lastAgent, active_agent fields enable intelligent routing
+
+### Migration Guide
+
+See [Unified State Migration Guide](../../../task-tracking/TASK_2025_037/migration-guide.md) for detailed step-by-step instructions.
+
+### Code References
+
+**Type Definitions**: apps/dev-brand-api/src/app/business-workflows/types/index.ts:113-220
+
+**Infrastructure Initialization**:
+
+- WorkflowExecutionCoordinationService: libs/langgraph-modules/multi-agent/src/lib/coordination/workflow-execution-coordination.service.ts:127-147
+- MultiAgentWorkflowBase: libs/langgraph-modules/multi-agent/src/lib/base/multi-agent-workflow.base.ts:252-266
+
+**Example Agents** (migrated to TypedAgentState):
+
+- GitHubCodeAnalyzerAgent: apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/
+- PersonalBrandStrategistAgent: apps/dev-brand-api/src/app/business-workflows/agents/personal-brand-strategist/
+- ContentCreatorAgent: apps/dev-brand-api/src/app/business-workflows/agents/content-creator/
+
+---
+
 ## Support
 
 For issues or questions:
