@@ -56,13 +56,54 @@ export class GraphAgentService {
       `;
 
       // Auto-bind all parameters
+      // ✅ FIX: Handle Date objects, number timestamps, strings, and undefined
+      const createdAtDate = (() => {
+        const value = memory.createdAt;
+
+        // Handle undefined/null
+        if (value === undefined || value === null) {
+          this.logger.warn(
+            `[trackMemory] memory.createdAt is ${value}, using current time`
+          );
+          return new Date();
+        }
+
+        // Handle Date object
+        if (value instanceof Date) {
+          return value;
+        }
+
+        // Handle number timestamp
+        if (typeof value === 'number') {
+          return new Date(value);
+        }
+
+        // Handle ISO string
+        if (typeof value === 'string') {
+          const date = new Date(value);
+          if (isNaN(date.getTime())) {
+            this.logger.error(
+              `[trackMemory] Invalid date string: ${value}, using current time`
+            );
+            return new Date();
+          }
+          return date;
+        }
+
+        // Unexpected type
+        this.logger.error(
+          `[trackMemory] Unexpected createdAt type: ${typeof value}, value: ${value}, using current time`
+        );
+        return new Date();
+      })();
+
       const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
         threadId: memory.threadId,
         memoryId: memory.id,
         content: memory.content,
         type: memory.metadata.type,
         importance: memory.metadata.importance || 0.5,
-        createdAt: memory.createdAt.toISOString(),
+        createdAt: createdAtDate.toISOString(),
         accessCount: memory.accessCount,
         userId: memory.metadata.userId, // Auto-skipped if undefined
       });
@@ -90,15 +131,58 @@ export class GraphAgentService {
 
     try {
       // Prepare batch data with content length limits
-      const memoryData = memories.map((memory) => ({
-        threadId: memory.threadId,
-        memoryId: memory.id,
-        content: memory.content.substring(0, 1000), // Limit content length
-        type: memory.metadata.type,
-        importance: memory.metadata.importance || 0.5,
-        createdAt: memory.createdAt.toISOString(),
-        accessCount: memory.accessCount,
-      }));
+      // ✅ FIX: Handle Date objects, number timestamps, strings, and undefined
+      const memoryData = memories.map((memory) => {
+        const createdAtDate = (() => {
+          const value = memory.createdAt;
+
+          // Handle undefined/null
+          if (value === undefined || value === null) {
+            this.logger.warn(
+              `[trackMemoriesBatch] memory.createdAt is ${value}, using current time`
+            );
+            return new Date();
+          }
+
+          // Handle Date object
+          if (value instanceof Date) {
+            return value;
+          }
+
+          // Handle number timestamp
+          if (typeof value === 'number') {
+            return new Date(value);
+          }
+
+          // Handle ISO string
+          if (typeof value === 'string') {
+            const date = new Date(value);
+            if (isNaN(date.getTime())) {
+              this.logger.error(
+                `[trackMemoriesBatch] Invalid date string: ${value}, using current time`
+              );
+              return new Date();
+            }
+            return date;
+          }
+
+          // Unexpected type
+          this.logger.error(
+            `[trackMemoriesBatch] Unexpected createdAt type: ${typeof value}, using current time`
+          );
+          return new Date();
+        })();
+
+        return {
+          threadId: memory.threadId,
+          memoryId: memory.id,
+          content: memory.content.substring(0, 1000), // Limit content length
+          type: memory.metadata.type,
+          importance: memory.metadata.importance || 0.5,
+          createdAt: createdAtDate.toISOString(),
+          accessCount: memory.accessCount,
+        };
+      });
 
       const baseQuery = `
         UNWIND $memories as memoryData

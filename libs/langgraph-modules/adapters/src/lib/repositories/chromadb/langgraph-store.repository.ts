@@ -4,6 +4,8 @@ import {
   ChromaDBService,
   CollectionRegistryService,
   Where,
+  toChromaWhere,
+  type AppFilter,
 } from '@hive-academy/nestjs-chromadb';
 import { LangGraphStoreEntity } from '../../entities/chromadb/langgraph-store.entity';
 
@@ -346,11 +348,52 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
     }>
   > {
     try {
+      // ✅ FIX: Validate query is not empty
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        this.logger.warn(
+          `[searchInNamespace] Empty or invalid query received: "${query}"`
+        );
+        throw new Error(
+          `Query text cannot be empty or whitespace. Received: "${query}" (type: ${typeof query})`
+        );
+      }
+
+      // 🔍 DEBUG: Log query details
+      this.logger.debug(
+        `[searchInNamespace] namespacePrefix: ${JSON.stringify(
+          namespacePrefix
+        )}`
+      );
+      this.logger.debug(
+        `[searchInNamespace] query: "${query}" (length: ${query.length})`
+      );
+      this.logger.debug(
+        `[searchInNamespace] filter: ${JSON.stringify(filter)}, limit: ${limit}`
+      );
+
+      // ✅ FIX: Transform filter to ChromaDB-compliant where clause
+      // Combine namespaceKey filter with optional additional filters
+      const combinedFilter: AppFilter = {
+        namespaceKey: namespacePrefix.join('/'),
+        ...(filter || {}),
+      };
+
+      this.logger.debug(
+        `[searchInNamespace] combinedFilter: ${JSON.stringify(combinedFilter)}`
+      );
+
+      // Transform to ChromaDB-compliant format (handles $and wrapping automatically)
+      const where = toChromaWhere(combinedFilter);
+
+      this.logger.debug(
+        `[searchInNamespace] where clause: ${JSON.stringify(where)}`
+      );
+      this.logger.debug(
+        `[searchInNamespace] about to call searchWithScores with query: "${query}"`
+      );
+
       const results = await this.searchWithScores(query, {
-        where: {
-          namespaceKey: namespacePrefix.join('/'),
-          ...filter,
-        } as Where,
+        where,
         limit,
       });
 

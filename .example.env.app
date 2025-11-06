@@ -45,7 +45,7 @@ OPENAI_MAX_INPUT_TOKENS=8191
 # HuggingFace Embedding Configuration (if using huggingface provider)
 HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2
-HUGGINGFACE_API_ENDPOINT=https://api-inference.huggingface.co/pipeline/feature-extraction
+HUGGINGFACE_API_ENDPOINT=https://router.huggingface.co/hf-inference/pipeline/feature-extraction
 HUGGINGFACE_DIMENSIONS=384
 HUGGINGFACE_BATCH_SIZE=50
 
@@ -77,7 +77,7 @@ LOG_EMBEDDING_OPERATIONS=false
 # OTHER APPLICATION SETTINGS
 # =============================================================================
 
-# Debug Configuration  
+# Debug Configuration
 DEBUG_ENABLED=true
 DEBUG_LOG_LEVEL=info
 LANGGRAPH_DEBUG=false
@@ -99,7 +99,7 @@ REDIS_URL=redis://localhost:6379
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# PostgreSQL configuration (if using postgres storage for checkpoints) 
+# PostgreSQL configuration (if using postgres storage for checkpoints)
 POSTGRES_CONNECTION_STRING=
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432

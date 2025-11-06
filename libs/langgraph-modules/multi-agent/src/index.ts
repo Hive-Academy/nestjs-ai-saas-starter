@@ -146,12 +146,21 @@ export type {
 // Configuration utilities
 export * from './lib/utils/multi-agent-config.accessor';
 
-// Validation utilities
+// ✅ State Validation Utilities - Prevent undefined state access errors (CRITICAL FIX)
 export {
   validateAgentState,
+  isValidAgentState,
+  ensureAgentState,
+  getStateMetadata,
+  getStateMessages,
+  createDefaultAgentState,
+  InvalidAgentStateError,
+} from './lib/utils/state-validator';
+
+// Legacy validation utilities (deprecated - use state-validator instead)
+export {
   assertValidAgentState,
   validateAndWarnAgentState,
-  createDefaultAgentState,
   AgentStateValidationError,
   type StateValidationResult,
 } from './lib/utils/agent-state-validator';

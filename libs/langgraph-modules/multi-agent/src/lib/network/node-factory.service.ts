@@ -214,6 +214,12 @@ export class NodeFactoryService {
 
     return async (state: AgentState): Promise<Partial<AgentState>> => {
       try {
+        // ✅ FIX: Validate state before accessing properties
+        // This prevents "Cannot read properties of undefined (reading 'messages')" errors
+        const { validateAgentState, getStateMessages, getStateMetadata } =
+          await import('../utils/state-validator');
+        validateAgentState(state, 'createSupervisorNode');
+
         const workerDescriptions = agents
           .filter((agent) => config.workers.includes(agent.id))
           .map((agent) => `${agent.name}: ${agent.description}`)
@@ -227,9 +233,11 @@ export class NodeFactoryService {
         const routingTool = this.createRoutingTool(config);
         const llmWithTools = (llm as any).bindTools([routingTool]);
 
+        // ✅ FIX: Use safe accessor for state.messages
+        const stateMessages = getStateMessages(state, []);
         const messages = [
           { role: 'system', content: systemPrompt },
-          ...state.messages.map((msg) => ({
+          ...stateMessages.map((msg) => ({
             role: msg._getType() === 'human' ? 'user' : 'assistant',
             content: msg.content as string,
           })),
@@ -246,12 +254,15 @@ export class NodeFactoryService {
             task: routingDecision.task,
           });
 
+          // ✅ FIX: Use safe accessor for state.metadata
+          const stateMetadata = getStateMetadata(state, {});
+
           return {
             messages: config.enableForwardMessage ? [] : [response as any],
             next: routingDecision.next,
             task: routingDecision.task,
             metadata: {
-              ...state.metadata,
+              ...stateMetadata,
               supervisorReasoning: routingDecision.reasoning,
               routingTimestamp: new Date().toISOString(),
             },
@@ -538,10 +549,14 @@ export class NodeFactoryService {
   /**
    * Filter handoff messages from state
    */
-  private filterHandoffMessages(state: AgentState): AgentState {
+  private async filterHandoffMessages(state: AgentState): Promise<AgentState> {
+    // ✅ FIX: Import and use safe accessors
+    const { getStateMessages } = await import('../utils/state-validator');
+    const stateMessages = getStateMessages(state, []);
+
     return {
       ...state,
-      messages: state.messages.filter((msg) => {
+      messages: stateMessages.filter((msg) => {
         const content = msg.content.toString().toLowerCase();
         return (
           !content.includes('route') &&

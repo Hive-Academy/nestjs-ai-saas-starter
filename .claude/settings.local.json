@@ -25,7 +25,9 @@
       "mcp__chrome-devtools__list_console_messages",
       "mcp__chrome-devtools__get_console_message",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:langchain-ai.github.io)"
+      "WebFetch(domain:langchain-ai.github.io)",
+      "Bash(node:*)",
+      "mcp__docs-langchain__SearchDocsByLangChain"
     ],
     "deny": [],
     "ask": [],

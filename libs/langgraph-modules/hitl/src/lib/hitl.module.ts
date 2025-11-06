@@ -21,6 +21,8 @@ import { ApproverIntelligenceService } from './services/approver-intelligence.se
 import { ApprovalOutcomeService } from './services/approval-outcome.service';
 // Phase 1b SOLID Refactoring - Historical search service
 import { ApprovalHistorySearchService } from './services/approval-history-search.service';
+// Decorator Support Service - Extracted from decorator (2025-01-11)
+import { ApprovalEvaluatorService } from './services/approval-evaluator.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -80,6 +82,8 @@ export class HitlModule {
         ApprovalOutcomeService, // Outcome tracking and memory learning
         // Phase 1b: Historical search service
         ApprovalHistorySearchService, // Historical approval pattern search
+        // Decorator Support Service - Extracted from decorator (2025-01-11)
+        ApprovalEvaluatorService, // Centralized approval decision logic for decorators
         // Processing & helper services
         ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,
@@ -112,6 +116,8 @@ export class HitlModule {
         ApprovalOutcomeService,
         // Phase 1b: Export historical search service
         ApprovalHistorySearchService,
+        // Decorator Support Service
+        ApprovalEvaluatorService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,
@@ -185,6 +191,8 @@ export class HitlModule {
         ApprovalOutcomeService,
         // Phase 1b: Export historical search service
         ApprovalHistorySearchService,
+        // Decorator Support Service
+        ApprovalEvaluatorService,
         ApprovalTimeoutService,
         ApprovalStreamingService,
         UserInterruptionService,

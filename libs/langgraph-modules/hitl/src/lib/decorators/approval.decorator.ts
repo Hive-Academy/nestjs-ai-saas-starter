@@ -174,7 +174,19 @@ export function RequiresApproval(
       state: WorkflowState
     ): Promise<any> {
       try {
-        // Get services from DI container (if available)
+        // ✅ NEW: Get ApprovalEvaluatorService from DI container
+        const evaluatorService = this.approvalEvaluatorService;
+
+        if (!evaluatorService) {
+          throw new Error(
+            `ApprovalEvaluatorService not injected into ${
+              target.constructor?.name || 'class'
+            }. ` +
+              `Classes using @RequiresApproval must inject ApprovalEvaluatorService.`
+          );
+        }
+
+        // Get other services from DI container (for advanced evaluation)
         const humanApprovalService = this
           .humanApprovalService as HumanApprovalService;
         const confidenceEvaluator = this
@@ -183,12 +195,16 @@ export function RequiresApproval(
           .approvalChainService as ApprovalChainService;
 
         // Run pre-approval hook if defined
-        if (options.handlers?.beforeApproval) {
-          await options.handlers.beforeApproval(state);
+        if (mergedOptions.handlers?.beforeApproval) {
+          await mergedOptions.handlers.beforeApproval(state);
         }
 
-        // Check skip conditions first
-        const shouldSkip = await this.evaluateSkipConditions(state, options);
+        // ✅ REFACTORED: Use service delegation instead of prototype methods
+        const shouldSkip = await evaluatorService.evaluateSkipConditions(
+          state,
+          mergedOptions
+        );
+
         if (shouldSkip) {
           if (this.logger) {
             this.logger.debug(
@@ -213,10 +229,10 @@ export function RequiresApproval(
           return originalMethod.call(this, state);
         }
 
-        // Evaluate if approval is needed
-        const needsApproval = await this.evaluateApprovalRequired(
+        // ✅ REFACTORED: Use service delegation for approval evaluation
+        const needsApproval = await evaluatorService.evaluateApprovalRequired(
           state,
-          options,
+          mergedOptions,
           {
             humanApprovalService,
             confidenceEvaluator,
@@ -225,9 +241,10 @@ export function RequiresApproval(
         );
 
         if (needsApproval) {
-          return await this.routeToApproval(
+          // ✅ REFACTORED: Use service delegation for routing
+          return await evaluatorService.routeToApproval(
             state,
-            options,
+            mergedOptions,
             String(propertyKey)
           );
         }
@@ -236,8 +253,8 @@ export function RequiresApproval(
         const result = await originalMethod.call(this, state);
 
         // Run post-approval hook if defined
-        if (options.handlers?.afterApproval) {
-          await options.handlers.afterApproval(state, true);
+        if (mergedOptions.handlers?.afterApproval) {
+          await mergedOptions.handlers.afterApproval(state, true);
         }
 
         return result;
@@ -250,9 +267,9 @@ export function RequiresApproval(
         }
 
         // Run post-approval hook with failure
-        if (options.handlers?.afterApproval) {
+        if (mergedOptions.handlers?.afterApproval) {
           try {
-            await options.handlers.afterApproval(state, false);
+            await mergedOptions.handlers.afterApproval(state, false);
           } catch (hookError) {
             if (this.logger) {
               this.logger.error('Error in afterApproval hook:', hookError);
@@ -264,165 +281,32 @@ export function RequiresApproval(
       }
     };
 
-    // Add helper methods to the decorated class
-    if (!target.evaluateSkipConditions) {
-      target.evaluateSkipConditions = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions
-      ): Promise<boolean> {
-        const skip = options.skipConditions;
-        if (!skip) {
-          return false;
-        }
-
-        // High confidence skip
-        if (
-          skip.highConfidence &&
-          (state.confidence || 0) >= skip.highConfidence
-        ) {
-          return true;
-        }
-
-        // User role skip
-        if (skip.userRole && state.metadata?.userRole) {
-          const userRole = state.metadata.userRole as string;
-          if (skip.userRole.includes(userRole)) {
-            return true;
-          }
-        }
-
-        // Safe mode skip
-        if (skip.safeMode && state.metadata?.safeMode === true) {
-          return true;
-        }
-
-        // Custom skip condition
-        if (skip.custom) {
-          return skip.custom(state);
-        }
-
-        return false;
-      };
-    }
-
-    if (!target.evaluateApprovalRequired) {
-      target.evaluateApprovalRequired = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions,
-        services: {
-          humanApprovalService?: HumanApprovalService;
-          confidenceEvaluator?: ConfidenceEvaluatorService;
-          approvalChainService?: ApprovalChainService;
-        }
-      ): Promise<boolean> {
-        // Custom condition check
-        if (options.when?.(state)) {
-          return true;
-        }
-
-        // Confidence threshold check
-        if (options.confidenceThreshold !== undefined) {
-          const confidence = services.confidenceEvaluator
-            ? await services.confidenceEvaluator.evaluateConfidence(state)
-            : state.confidence || 0;
-
-          if (confidence < options.confidenceThreshold) {
-            if (this.logger) {
-              this.logger.debug(
-                `Approval required: confidence ${confidence} < threshold ${options.confidenceThreshold}`
-              );
-            }
-            return true;
-          }
-        }
-
-        // Risk assessment check
-        if (options.riskAssessment?.enabled && services.confidenceEvaluator) {
-          const riskAssessment = await services.confidenceEvaluator.assessRisk(
-            state,
-            {
-              factors: options.riskAssessment.factors || [],
-              customEvaluator: options.riskAssessment.evaluator,
-            }
-          );
-
-          if (options.riskThreshold) {
-            const riskLevels = {
-              [ApprovalRiskLevel.LOW]: 1,
-              [ApprovalRiskLevel.MEDIUM]: 2,
-              [ApprovalRiskLevel.HIGH]: 3,
-              [ApprovalRiskLevel.CRITICAL]: 4,
-            };
-
-            const currentRiskLevel =
-              riskLevels[riskAssessment.level as ApprovalRiskLevel];
-            const thresholdLevel = riskLevels[options.riskThreshold];
-
-            if (currentRiskLevel >= thresholdLevel) {
-              if (this.logger) {
-                this.logger.debug(
-                  `Approval required: risk level ${riskAssessment.level} >= threshold ${options.riskThreshold}`
-                );
-              }
-              return true;
-            }
-          }
-        }
-
-        return false;
-      };
-    }
-
-    if (!target.routeToApproval) {
-      target.routeToApproval = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions,
-        nodeId: string
-      ): Promise<any> {
-        // Generate approval message
-        const message =
-          typeof options.message === 'function'
-            ? options.message(state)
-            : options.message || `Approval required for ${nodeId}`;
-
-        // Generate metadata
-        const metadata = options.metadata ? options.metadata(state) : {};
-
-        if (this.logger) {
-          this.logger.log(`Routing to approval: ${message}`);
-        }
-
-        return {
-          type: 'goto',
-          goto: 'human_approval',
-          update: {
-            waitingForApproval: true,
-            approvalRequest: {
-              nodeId,
-              message,
-              metadata: {
-                ...metadata,
-                confidenceThreshold: options.confidenceThreshold,
-                riskThreshold: options.riskThreshold,
-                chainId: options.chainId,
-                escalationStrategy: options.escalationStrategy,
-                timeoutMs: options.timeoutMs,
-                onTimeout: options.onTimeout || 'reject',
-              },
-              requestedAt: new Date(),
-            },
-          },
-          metadata: {
-            approvalOptions: options,
-            nodeId,
-            timestamp: new Date(),
-          },
-        };
-      };
-    }
+    // ✅ REMOVED: No longer adding prototype methods
+    // All logic now delegated to ApprovalEvaluatorService
+    // Classes using @RequiresApproval must inject ApprovalEvaluatorService
 
     return descriptor;
   };
+}
+
+/**
+ * DEPRECATED PROTOTYPE METHODS - Removed in favor of ApprovalEvaluatorService
+ *
+ * The following methods were previously added to the class prototype:
+ * - evaluateSkipConditions
+ * - evaluateApprovalRequired
+ * - routeToApproval
+ *
+ * They are now implemented in ApprovalEvaluatorService for proper DI support.
+ */
+
+// Remove old implementation - placeholder to mark where code was removed
+function _deprecatedPrototypeMethods_DO_NOT_USE() {
+  // This function exists only to document the refactoring
+  // Old prototype method implementations have been moved to ApprovalEvaluatorService
+  throw new Error(
+    'Deprecated: Use ApprovalEvaluatorService instead of prototype methods'
+  );
 }
 
 /**

@@ -175,6 +175,15 @@ export {
   type MetadataSchema,
 } from './lib/utils/data/metadata.utils';
 export {
+  toChromaWhere,
+  buildWhereClause,
+  isValidChromaWhere,
+  assertValidChromaWhere,
+  type ChromaWhere,
+  type AppFilter,
+  WhereClauseBuilder,
+} from './lib/utils/chroma-filter.utils';
+export {
   handleUnknownError,
   logUnknownError,
   getErrorMessage,

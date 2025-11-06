@@ -328,10 +328,13 @@ export class NetworkManagerService {
       });
 
       // 🔍 DIAGNOSTIC LOGGING: Config being passed
+      // BUGFIX (TASK_2025_032): Add checkpointer to runtime config
       const invokeConfig = {
         ...input.config,
+        checkpointer: networkConfig.compilationOptions?.checkpointer, // ✅ Runtime checkpointer
         configurable: {
           ...input.config?.configurable,
+          thread_id: threadId, // ✅ Thread ID for checkpoint operations
           networkId,
           networkType: networkConfig.type,
         },
@@ -342,7 +345,8 @@ export class NetworkManagerService {
         configurableKeys: invokeConfig.configurable
           ? Object.keys(invokeConfig.configurable)
           : 'NONE',
-        hasCheckpointer: !!this.checkpointAdapter,
+        hasCheckpointer: !!invokeConfig.checkpointer,
+        hasThreadId: !!invokeConfig.configurable?.thread_id,
       });
 
       // Execute the workflow
@@ -530,12 +534,21 @@ export class NetworkManagerService {
         }
       }
 
-      this.eventEmitter.emit('workflow.stream.started', {
-        networkId,
-        executionId: initialState.metadata?.executionId,
-        streamMode: streamOptions.streamMode,
-        subgraphs: streamOptions.subgraphs,
-        timestamp: new Date().toISOString(),
+      const startExecutionId = initialState.metadata?.executionId || 'unknown';
+
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_START
+      this.eventEmitter.emit(`workflow.stream.${startExecutionId}`, {
+        type: 'workflow:start', // StreamEventType.WORKFLOW_START
+        data: {
+          networkId,
+          streamMode: streamOptions.streamMode,
+          subgraphs: streamOptions.subgraphs,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: startExecutionId,
+          nodeId: 'workflow-start',
+        },
       });
 
       // Stream the workflow execution with enhanced streaming options
@@ -560,14 +573,20 @@ export class NetworkManagerService {
         // Note: We use EventEmitter2 directly to avoid circular dependency with workflow-engine
         const executionId = initialState.metadata?.executionId || 'unknown';
 
+        // BUGFIX: Emit proper StreamUpdate format with valid StreamEventType enum
+        // The WebSocketBridgeService expects StreamUpdate objects with type from StreamEventType enum
         this.eventEmitter.emit(`workflow.stream.${executionId}`, {
-          type: 'agent_update',
-          executionId,
-          data: chunkState,
+          type: 'values', // StreamEventType.VALUES - state snapshots from LangGraph stream mode
+          data: {
+            state: chunkState,
+            agentId: chunkState.current,
+            networkId,
+          },
           timestamp: new Date(),
           metadata: {
-            networkId,
-            agentId: chunkState.current,
+            executionId,
+            nodeId: chunkState.current || 'unknown-agent',
+            agentType: chunkState.current,
             streamMode: streamOptions.streamMode,
           },
         });
@@ -576,13 +595,23 @@ export class NetworkManagerService {
       }
 
       const executionTime = Date.now() - startTime;
+      const completedExecutionId =
+        initialState.metadata?.executionId || 'unknown';
 
-      this.eventEmitter.emit('workflow.stream.completed', {
-        networkId,
-        executionId: initialState.metadata?.executionId,
-        executionTime,
-        executionPath,
-        timestamp: new Date().toISOString(),
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_END
+      this.eventEmitter.emit(`workflow.stream.${completedExecutionId}`, {
+        type: 'workflow:end', // StreamEventType.WORKFLOW_END
+        data: {
+          networkId,
+          executionTime,
+          executionPath,
+          success: true,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: completedExecutionId,
+          nodeId: 'workflow-completed',
+        },
       });
 
       const resultState = (finalResult || initialState) as AgentState;
@@ -605,11 +634,22 @@ export class NetworkManagerService {
         error
       );
 
-      this.eventEmitter.emit('workflow.stream.failed', {
-        networkId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        executionTime,
-        timestamp: new Date().toISOString(),
+      const failedExecutionId = initialState.metadata?.executionId || 'unknown';
+
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_ERROR
+      this.eventEmitter.emit(`workflow.stream.${failedExecutionId}`, {
+        type: 'workflow:error', // StreamEventType.WORKFLOW_ERROR
+        data: {
+          networkId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
+          executionTime,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: failedExecutionId,
+          nodeId: 'workflow-error',
+        },
       });
 
       return {

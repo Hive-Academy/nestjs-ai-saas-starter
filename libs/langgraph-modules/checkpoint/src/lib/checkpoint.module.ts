@@ -1,12 +1,7 @@
 import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CheckpointManagerService } from './core/checkpoint-manager.service';
-import { StateTransformerService } from './core/state-transformer.service';
 import { CheckpointSaverRegistry } from './core/checkpoint-saver.registry';
-import { CheckpointPersistenceService } from './core/checkpoint-persistence.service';
-import { CheckpointMetricsService } from './core/checkpoint-metrics.service';
-import { CheckpointCleanupService } from './core/checkpoint-cleanup.service';
-import { CheckpointHealthService } from './core/checkpoint-health.service';
 import { CheckpointModuleConfig } from './interfaces/checkpoint-saver-registry.interface';
 import { CheckpointManagerAdapter } from './adapters/checkpoint-manager.adapter';
 import { MemorySaver } from '@langchain/langgraph-checkpoint';
@@ -20,14 +15,8 @@ export class CheckpointModule {
    */
   private static getProviders(): any[] {
     return [
-      // Core services following SOLID principles
+      // Core services (simplified)
       CheckpointSaverRegistry,
-      CheckpointMetricsService,
-      CheckpointCleanupService,
-      CheckpointHealthService,
-      CheckpointPersistenceService,
-
-      // Facade service
       CheckpointManagerService,
 
       // Checkpoint adapter - bridges checkpoint module to core interface
@@ -42,9 +31,6 @@ export class CheckpointModule {
         provide: 'ICheckpointAdapter',
         useExisting: CheckpointManagerAdapter,
       },
-
-      // State transformer service
-      StateTransformerService,
     ];
   }
 
@@ -54,13 +40,7 @@ export class CheckpointModule {
   private static getExports(): any[] {
     return [
       CheckpointManagerService,
-      StateTransformerService,
-      // Export focused services for advanced usage
       CheckpointSaverRegistry,
-      CheckpointPersistenceService,
-      CheckpointMetricsService,
-      CheckpointCleanupService,
-      CheckpointHealthService,
       // Export checkpoint adapter token (required for other modules)
       'ICheckpointAdapter',
     ];

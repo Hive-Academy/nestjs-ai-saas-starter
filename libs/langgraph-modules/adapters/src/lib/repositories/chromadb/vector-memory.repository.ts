@@ -3,6 +3,8 @@ import {
   ChromaDBRepository,
   ChromaDBService,
   CollectionRegistryService,
+  toChromaWhere,
+  type AppFilter,
 } from '@hive-academy/nestjs-chromadb';
 import { VectorMemoryEntity } from '../../entities/chromadb/vector-memory.entity';
 import {
@@ -378,6 +380,10 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
 
   /**
    * Search for similar memories using semantic search (business logic from ChromaVectorAdapter)
+   *
+   * CRITICAL FIX: Transform application filters to ChromaDB-compliant where clauses
+   * Problem: ChromaDB requires explicit $and/$or operators for multiple conditions
+   * Solution: Use toChromaWhere() utility to ensure compile-time + runtime safety
    */
   async searchMemoriesSimilar(
     query: string,
@@ -385,8 +391,13 @@ export class VectorMemoryRepository extends ChromaDBRepository<VectorMemoryEntit
     limit = 10
   ): Promise<MemoryEntry[]> {
     try {
+      // ✅ FIX: Transform filter to ChromaDB-compliant where clause
+      // Before: { threadId: "abc", userId: "xyz", type: ["a", "b"] } ❌ INVALID (3 operators)
+      // After:  { $and: [{ threadId: "abc" }, { userId: "xyz" }, { type: { $in: ["a", "b"] } }] } ✅ VALID
+      const where = toChromaWhere(filter as AppFilter);
+
       const results = await this.searchWithScores(query, {
-        where: filter as any,
+        where,
         limit,
       });
 

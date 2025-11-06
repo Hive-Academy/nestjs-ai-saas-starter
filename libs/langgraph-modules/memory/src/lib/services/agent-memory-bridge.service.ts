@@ -450,8 +450,28 @@ export class AgentMemoryBridgeService
     namespace?: string[];
     minRelevance?: number;
   }): Promise<any[]> {
+    // 🔍 DEBUG: Log incoming search request
+    this.logger.debug(`[AgentMemoryBridgeService.search] Incoming search:`);
+    this.logger.debug(
+      `  query: "${options.query}" (type: ${typeof options.query}, length: ${
+        options.query?.length
+      })`
+    );
+    this.logger.debug(`  namespace: ${JSON.stringify(options.namespace)}`);
+    this.logger.debug(
+      `  threadId: ${options.threadId}, userId: ${options.userId}, agentId: ${options.agentId}`
+    );
+    this.logger.debug(
+      `  limit: ${options.limit}, minRelevance: ${options.minRelevance}`
+    );
+
     if (options.namespace) {
       const store = this.getStore();
+      this.logger.debug(
+        `[AgentMemoryBridgeService.search] Calling store.search with namespace: ${JSON.stringify(
+          options.namespace
+        )}, query: "${options.query}"`
+      );
       return store.search(options.namespace, options.query);
     }
     const results = await this.searchAgentMemories(

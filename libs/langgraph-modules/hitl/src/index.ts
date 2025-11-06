@@ -10,6 +10,8 @@ export { ApprovalProcessingService } from './lib/services/approval-processing.se
 // Phase 1a SOLID Refactoring - New services (2025-01-11)
 export { ApproverIntelligenceService } from './lib/services/approver-intelligence.service';
 export { ApprovalOutcomeService } from './lib/services/approval-outcome.service';
+// Decorator Support Service - Extracted from decorator pattern (2025-01-11)
+export { ApprovalEvaluatorService } from './lib/services/approval-evaluator.service';
 // Phase 1b SOLID Refactoring - Historical search service (2025-01-11)
 export { ApprovalHistorySearchService } from './lib/services/approval-history-search.service';
 export type {
