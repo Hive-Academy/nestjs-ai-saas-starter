@@ -30,6 +30,11 @@ import type {
  */
 export interface WorkflowAgentMetadata {
   /**
+   * Index signature for compatibility with TypedAgentState
+   */
+  [key: string]: unknown;
+
+  /**
    * Current workflow step identifier
    */
   currentStep?: string;

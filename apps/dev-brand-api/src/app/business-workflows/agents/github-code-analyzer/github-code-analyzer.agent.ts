@@ -1,7 +1,7 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
-import type { TypedWorkflowAgentState } from '../../types';
+import type { TypedAgentState } from '../../types';
 import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import { Entrypoint, Task } from '@hive-academy/langgraph-functional-api';
@@ -93,7 +93,7 @@ import {
 })
 @Injectable()
 export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+  TypedAgentState<GitHubAnalyzerMetadata>
 > {
   constructor(
     private readonly llmProvider: LlmProviderService,
@@ -127,10 +127,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeGitHubAnalysis(
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
@@ -178,10 +178,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   async analyzeGitHubActivity(
     @Required()
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
@@ -237,10 +237,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @StreamProgress({ enabled: true })
   async extractAchievements(
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     const githubData = state.metadata.githubData;
@@ -290,10 +290,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @StreamProgress({ enabled: true })
   async generateDeveloperInsights(
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
@@ -348,10 +348,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   @StreamToken({ enabled: true, format: 'structured' })
   async synthesizeWithAI(
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
@@ -449,10 +449,10 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
   })
   async finalizeAnalysis(
     context: TaskExecutionContext<
-      TypedWorkflowAgentState<GitHubAnalyzerMetadata>
+      TypedAgentState<GitHubAnalyzerMetadata>
     >
   ): Promise<
-    TaskExecutionResult<TypedWorkflowAgentState<GitHubAnalyzerMetadata>>
+    TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>
   > {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;

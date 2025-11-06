@@ -173,8 +173,10 @@ export interface UnifiedAgentState extends AgentState {
   // completedNodes: string[];     // Execution history
   // requiresApproval?: boolean;   // HITL flag
   // approvalReceived?: boolean;   // HITL approval status
-  // humanFeedback?: any;          // HITL feedback data
   // error?: any;                  // Error information
+
+  // ✅ Override humanFeedback to be compatible with workflow-engine (use any for flexibility)
+  humanFeedback?: any;
 
   // ✅ CRITICAL: Unified metadata container (REQUIRED, not optional)
   metadata: {
@@ -243,10 +245,7 @@ export interface UnifiedAgentState extends AgentState {
  * - BrandStrategistMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:219-289
  * - ContentCreatorMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:299-469
  */
-export type TypedAgentState<TMetadata extends Record<string, unknown>> = Omit<
-  UnifiedAgentState,
-  'metadata'
-> & {
+export type TypedAgentState<TMetadata extends Record<string, unknown>> = UnifiedAgentState & {
   metadata: UnifiedAgentState['metadata'] & TMetadata;
 };
 
