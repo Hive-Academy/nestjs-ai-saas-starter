@@ -8,7 +8,6 @@ import {
   ValidateInput,
   AuditLog,
   GraphPatternService,
-  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { ConfidencePattern } from '../../entities/neo4j/confidence-pattern.entity';
 import type {
@@ -62,66 +61,32 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
   async storeApprovalPattern(pattern: ApprovalPattern): Promise<void> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const nodeIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'nodeId',
-        pattern.nodeId
-      );
-      const approvalRateParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'approvalRate',
-        pattern.approvalRate
-      );
-      const averageConfidenceParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'averageConfidence',
-        pattern.averageConfidence
-      );
-      const commonRejectionReasonsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'commonRejectionReasons',
-        pattern.commonRejectionReasons
-      );
-      const riskFactorsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'riskFactors',
-        pattern.riskFactors
-      );
-      const successfulExecutionsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'successfulExecutions',
-        pattern.successfulExecutions
-      );
-      const failedExecutionsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'failedExecutions',
-        pattern.failedExecutions
-      );
-      const lastUpdatedParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'lastUpdated',
-        pattern.lastUpdated.toISOString()
-      );
 
       queryBuilder
-        .merge(`(p:ApprovalPattern {nodeId: $${nodeIdParam}})`)
+        .merge('(p:ApprovalPattern {nodeId: $nodeId})')
         .set(
-          `p.approvalRate = $${approvalRateParam},
-              p.averageConfidence = $${averageConfidenceParam},
-              p.commonRejectionReasons = $${commonRejectionReasonsParam},
-              p.riskFactors = $${riskFactorsParam},
-              p.successfulExecutions = $${successfulExecutionsParam},
-              p.failedExecutions = $${failedExecutionsParam},
-              p.lastUpdated = datetime($${lastUpdatedParam}),
-              p.createdAt = COALESCE(p.createdAt, datetime($${lastUpdatedParam}))`
+          `p.approvalRate = $approvalRate,
+              p.averageConfidence = $averageConfidence,
+              p.commonRejectionReasons = $commonRejectionReasons,
+              p.riskFactors = $riskFactors,
+              p.successfulExecutions = $successfulExecutions,
+              p.failedExecutions = $failedExecutions,
+              p.lastUpdated = datetime($lastUpdated),
+              p.createdAt = COALESCE(p.createdAt, datetime($lastUpdated))`
         )
         .return('p');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(cypher, {
+        nodeId: pattern.nodeId,
+        approvalRate: pattern.approvalRate,
+        averageConfidence: pattern.averageConfidence,
+        commonRejectionReasons: pattern.commonRejectionReasons,
+        riskFactors: pattern.riskFactors,
+        successfulExecutions: pattern.successfulExecutions,
+        failedExecutions: pattern.failedExecutions,
+        lastUpdated: pattern.lastUpdated.toISOString(),
+      });
     } catch (error) {
       throw new Error(`Failed to store approval pattern: ${error}`);
     }
@@ -135,17 +100,9 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
   async getApprovalPattern(patternId: string): Promise<ApprovalPattern | null> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
 
-      const patternIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'patternId',
-        patternId
-      );
-
-      queryBuilder
-        .match('(p:ApprovalPattern)')
-        .where(`p.nodeId = $${patternIdParam}`).return(`p.nodeId as nodeId,
+      queryBuilder.match('(p:ApprovalPattern)').where('p.nodeId = $patternId')
+        .return(`p.nodeId as nodeId,
                  p.approvalRate as approvalRate,
                  p.averageConfidence as averageConfidence,
                  p.commonRejectionReasons as commonRejectionReasons,
@@ -155,8 +112,7 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
                  p.lastUpdated as lastUpdated`);
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { patternId });
 
       if (result.records.length === 0) {
         return null;
@@ -274,14 +230,9 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
   ): Promise<void> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
 
-      const patternIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'patternId',
-        patternId
-      );
       const setClauses: string[] = [];
+      const params: Record<string, any> = { patternId };
 
       Object.entries(updates).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -289,12 +240,8 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
           if (key === 'lastUpdated' && value instanceof Date) {
             paramValue = value.toISOString();
           }
-          const paramKey = ParameterBindingUtility.addParam(
-            bindParam,
-            key,
-            paramValue
-          );
-          setClauses.push(`p.${key} = $${paramKey}`);
+          params[key] = paramValue;
+          setClauses.push(`p.${key} = $${key}`);
         }
       });
 
@@ -306,12 +253,11 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
 
       queryBuilder
         .match('(p:ApprovalPattern)')
-        .where(`p.nodeId = $${patternIdParam}`)
+        .where('p.nodeId = $patternId')
         .set(setClauses.join(', '))
         .return('p.nodeId as nodeId');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
       await this.neogma.run(cypher, params);
     } catch (error) {
       throw new Error(`Failed to update approval pattern: ${error}`);
@@ -360,31 +306,12 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
   ): Promise<void> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const executionIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'executionId',
-        executionId
-      );
-      const factorsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'factors',
-        factors.map((factor) => ({
-          nodeId: factor.name,
-          type: factor.source,
-          weight: factor.weight,
-          value: factor.value,
-          description: factor.description,
-          timestamp: new Date().toISOString(),
-        }))
-      );
 
       queryBuilder
-        .unwind(`$${factorsParam} as factor`)
+        .unwind('$factors as factor')
         .create(
           `(h:ConfidenceHistory {
-          executionId: $${executionIdParam},
+          executionId: $executionId,
           nodeId: factor.nodeId,
           factorType: factor.type,
           weight: factor.weight,
@@ -397,8 +324,17 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
         .return('count(h) as createdCount');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(cypher, {
+        executionId,
+        factors: factors.map((factor) => ({
+          nodeId: factor.name,
+          type: factor.source,
+          weight: factor.weight,
+          value: factor.value,
+          description: factor.description,
+          timestamp: new Date().toISOString(),
+        })),
+      });
     } catch (error) {
       throw new Error(`Failed to store confidence history: ${error}`);
     }
@@ -803,23 +739,17 @@ export class ConfidencePatternRepository extends Neo4jRepositoryBase<ConfidenceP
       const cutoffDate = new Date(Date.now() - maxAge);
 
       const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const cutoffDateParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'cutoffDate',
-        cutoffDate.toISOString()
-      );
 
       queryBuilder
         .match('(h:ConfidenceHistory)')
-        .where(`h.timestamp < datetime($${cutoffDateParam})`)
+        .where('h.timestamp < datetime($cutoffDate)')
         .delete('h')
         .return('count(h) as deletedCount');
 
       const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        cutoffDate: cutoffDate.toISOString(),
+      });
       const deletedCount = Number(result.records[0]?.get('deletedCount')) || 0;
 
       return deletedCount;

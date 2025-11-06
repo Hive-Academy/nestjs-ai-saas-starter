@@ -1,5 +1,5 @@
 {
-  "name": "langgraph-angular",
+  "name": "@hive-academy/langgraph-angular",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/langgraph-angular/src",
   "prefix": "lib",

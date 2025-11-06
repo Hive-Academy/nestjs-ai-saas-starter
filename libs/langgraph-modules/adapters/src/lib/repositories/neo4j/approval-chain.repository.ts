@@ -8,7 +8,6 @@ import {
   ValidateInput,
   AuditLog,
   getRepositoryToken,
-  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { ApprovalChain } from '../../entities/neo4j/approval-chain.entity';
 import { ApprovalRequest } from '../../entities/neo4j/approval-request.entity';
@@ -88,45 +87,17 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
       await this.deleteApprovalChain(chainId);
 
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const chainIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'chainId',
-        chainId
-      );
-      const levelCountParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'levelCount',
-        levels.length
-      );
-      const levelsParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'levels',
-        levels.map((level) => ({
-          id: level.id,
-          name: level.name,
-          priority: level.priority,
-          policy: level.policy,
-          approvers: JSON.stringify(level.approvers),
-          conditions: level.conditions
-            ? JSON.stringify(level.conditions)
-            : null,
-          timeoutMs: level.timeoutMs || null,
-          autoApproveOnTimeout: level.autoApproveOnTimeout || false,
-        }))
-      );
 
       qb.create(
         `(chain:ApprovalChain {
-          id: $${chainIdParam},
-          levelCount: $${levelCountParam},
+          id: $chainId,
+          levelCount: $levelCount,
           createdAt: datetime(),
           updatedAt: datetime()
         })`
       )
         .with('chain')
-        .unwind(`$${levelsParam} as levelData`)
+        .unwind('$levels as levelData')
         .create(
           `(level:ApprovalLevel {
           id: levelData.id,
@@ -144,8 +115,22 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
         .return('chain.id as chainId, count(level) as levelCount');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(cypher, {
+        chainId,
+        levelCount: levels.length,
+        levels: levels.map((level) => ({
+          id: level.id,
+          name: level.name,
+          priority: level.priority,
+          policy: level.policy,
+          approvers: JSON.stringify(level.approvers),
+          conditions: level.conditions
+            ? JSON.stringify(level.conditions)
+            : null,
+          timeoutMs: level.timeoutMs || null,
+          autoApproveOnTimeout: level.autoApproveOnTimeout || false,
+        })),
+      });
     } catch (error) {
       throw new Error(
         `Failed to store approval chain: ${
@@ -276,16 +261,9 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
 
     try {
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const chainIdParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'chainId',
-        chainId
-      );
 
       qb.match('(chain:ApprovalChain)')
-        .where(`chain.id = $${chainIdParam}`)
+        .where('chain.id = $chainId')
         .match('(level:ApprovalLevel)')
         .where(
           '(chain)-[:HAS_LEVEL]->(level) OR NOT EXISTS((chain)-[:HAS_LEVEL]->())'
@@ -294,8 +272,7 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
         .return('count(chain) as deletedCount');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, { chainId });
       const firstRecord = result.records[0];
       const deletedCount = Number(firstRecord?.get('deletedCount')) || 0;
 
@@ -490,29 +467,19 @@ export class ApprovalChainRepository extends Neo4jRepositoryBase<ApprovalChain> 
       const cutoffDate = new Date(Date.now() - maxAge);
 
       const qb = this.neogma.createQueryBuilder();
-      const bindParam = qb.getBindParam();
-
-      const cutoffDateParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'cutoffDate',
-        cutoffDate.toISOString()
-      );
-      const statusListParam = ParameterBindingUtility.addParam(
-        bindParam,
-        'statusList',
-        ['approved', 'rejected', 'cancelled', 'timeout']
-      );
 
       qb.match('(req:ApprovalRequest)')
         .where(
-          `req.createdAt < datetime($${cutoffDateParam}) AND req.status IN $${statusListParam}`
+          'req.createdAt < datetime($cutoffDate) AND req.status IN $statusList'
         )
         .delete('req')
         .return('count(req) as deletedCount');
 
       const cypher = qb.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(cypher, {
+        cutoffDate: cutoffDate.toISOString(),
+        statusList: ['approved', 'rejected', 'cancelled', 'timeout'],
+      });
       const firstRecord = result.records[0];
       const deletedCount = Number(firstRecord?.get('deletedCount')) || 0;
 

@@ -1,14 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import { HumanApprovalRequest } from './approval-workflow.types';
 import { HITL_DEFAULTS } from '../constants';
 import {
-  ApprovalStateRepository,
+  IApprovalStateStorageService,
   ApprovalStateData,
-} from '../repositories/approval-state.repository';
+} from '../interfaces/approval-state-storage.interface';
 
 /**
- * Service for handling HITL approval state persistence - REFACTORED Phase 5
+ * Service for handling HITL approval state persistence - REFACTORED Phase 6
+ *
+ * **Phase 6 Migration** (Adapter Pattern):
+ * - Migrated from direct repository injection to adapter interface
+ * - Uses IApprovalStateStorageService for storage abstraction
+ * - Enables swapping storage backends without service changes
+ * - Follows same pattern as other HITL storage services
  *
  * **Phase 5 Migration** (TASK_2025_032):
  * - Migrated from checkpoint-based storage to Neo4j repository pattern
@@ -16,36 +22,51 @@ import {
  * - Neo4j provides queryable approval history with relationships
  * - LangGraph still handles workflow checkpoints automatically
  *
- * **Why Neo4j Instead of Checkpoints**:
- * - Checkpoints are for workflow recovery (managed by LangGraph)
- * - Approval state needs persistence, queries, and reporting
- * - Neo4j enables approval pattern analysis and relationships
- * - Zero coupling to LangGraph's internal checkpoint format
+ * **Why Adapter Pattern**:
+ * - Consistent with other HITL storage (IHitlStorageService, etc.)
+ * - Enables testing with mock adapters
+ * - Allows swapping Neo4j for PostgreSQL/MongoDB/etc.
+ * - Clean separation: Service → Adapter → Repository → Database
  *
- * **Integration**: Uses ApprovalStateRepository for Neo4j operations
+ * **Integration**: Uses IApprovalStateStorageService adapter interface
  *
  * Verification:
+ * - Pattern: libs/langgraph-modules/hitl/src/lib/services/*.service.ts
  * - Source: task-tracking/TASK_2025_032/checkpoint-package-assessment.md:729-770
- * - Pattern: Neo4j repository pattern (libs/nestjs-neo4j/CLAUDE.md)
  */
 @Injectable()
 export class HitlCheckpointService {
   private readonly logger = new Logger(HitlCheckpointService.name);
 
-  constructor(private readonly approvalStateRepo: ApprovalStateRepository) {
-    this.logger.log(
-      '💾 HITL Checkpoint Service initialized with Neo4j storage'
-    );
+  constructor(
+    @Optional()
+    @Inject('IApprovalStateStorageService')
+    private readonly approvalStateStorage?: IApprovalStateStorageService
+  ) {
+    if (!this.approvalStateStorage) {
+      this.logger.warn(
+        '⚠️ No approval state storage adapter configured. Approval state persistence will be disabled.'
+      );
+    } else {
+      this.logger.log(
+        '💾 HITL Checkpoint Service initialized with approval state storage'
+      );
+    }
   }
 
   /**
-   * Save approval workflow state to Neo4j
+   * Save approval workflow state to storage
    */
   async saveApprovalState(
     request: HumanApprovalRequest,
     source: string,
     additionalData?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug('No approval state storage configured - skipping save');
+      return;
+    }
+
     try {
       const threadId = this.generateApprovalThreadId(
         request.executionId,
@@ -68,7 +89,7 @@ export class HitlCheckpointService {
         requestedAt: request.timestamps.requested,
       };
 
-      await this.approvalStateRepo.saveApprovalState(approvalState);
+      await this.approvalStateStorage.saveApprovalState(approvalState);
 
       this.logger.debug(
         `Saved approval state for request ${request.id} at ${source}`
@@ -103,26 +124,31 @@ export class HitlCheckpointService {
   }
 
   /**
-   * Resume approval workflow from Neo4j state
+   * Resume approval workflow from storage state
    */
   async resumeApprovalWorkflow(
     executionId: string,
     nodeId: string,
     approvalId?: string
   ): Promise<HumanApprovalRequest | null> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug('No approval state storage configured - cannot resume');
+      return null;
+    }
+
     try {
       const threadId = this.generateApprovalThreadId(executionId, nodeId);
 
-      // Load approval state from Neo4j
+      // Load approval state from storage
       let approvalState: ApprovalStateData | null;
 
       if (approvalId) {
-        approvalState = await this.approvalStateRepo.loadApprovalState(
+        approvalState = await this.approvalStateStorage.loadApprovalState(
           approvalId
         );
       } else {
         // Load most recent approval for this thread
-        const approvals = await this.approvalStateRepo.listApprovalsByThread(
+        const approvals = await this.approvalStateStorage.listApprovalsByThread(
           threadId,
           {
             limit: 1,
@@ -155,7 +181,7 @@ export class HitlCheckpointService {
       };
 
       this.logger.log(
-        `Resumed approval workflow for request ${restoredRequest.id} from Neo4j`
+        `Resumed approval workflow for request ${restoredRequest.id} from storage`
       );
 
       return restoredRequest as HumanApprovalRequest;
@@ -169,7 +195,7 @@ export class HitlCheckpointService {
   }
 
   /**
-   * Save approval chain progression to Neo4j
+   * Save approval chain progression to storage
    */
   async saveChainProgress(
     request: HumanApprovalRequest,
@@ -177,12 +203,19 @@ export class HitlCheckpointService {
     approvers: string[],
     chainStatus: string
   ): Promise<void> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - skipping chain save'
+      );
+      return;
+    }
+
     if (!request.chainId) {
       return; // No chain ID - nothing to save
     }
 
     try {
-      await this.approvalStateRepo.saveApprovalChain({
+      await this.approvalStateStorage.saveApprovalChain({
         chainId: request.chainId,
         executionId: request.executionId,
         level: chainLevel,
@@ -206,7 +239,7 @@ export class HitlCheckpointService {
   }
 
   /**
-   * Resume approval chain from Neo4j state
+   * Resume approval chain from storage state
    */
   async resumeApprovalChain(
     chainId: string,
@@ -216,8 +249,15 @@ export class HitlCheckpointService {
     approvers: string[];
     status: string;
   } | null> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot resume chain'
+      );
+      return null;
+    }
+
     try {
-      const chainData = await this.approvalStateRepo.loadApprovalChain(
+      const chainData = await this.approvalStateStorage.loadApprovalChain(
         chainId,
         executionId
       );
@@ -272,16 +312,23 @@ export class HitlCheckpointService {
   }
 
   /**
-   * Get all approval states for execution from Neo4j
+   * Get all approval states for execution from storage
    */
   async getApprovalCheckpoints(
     executionId: string,
     nodeId: string,
     limit?: number
   ): Promise<ApprovalStateData[]> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot get checkpoints'
+      );
+      return [];
+    }
+
     try {
       const threadId = this.generateApprovalThreadId(executionId, nodeId);
-      return await this.approvalStateRepo.listApprovalsByThread(threadId, {
+      return await this.approvalStateStorage.listApprovalsByThread(threadId, {
         limit: limit || 10,
       });
     } catch (error) {
@@ -294,11 +341,18 @@ export class HitlCheckpointService {
   }
 
   /**
-   * Cleanup old approval states from Neo4j
+   * Cleanup old approval states from storage
    */
   async cleanupApprovalCheckpoints(maxAge?: number): Promise<number> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot cleanup'
+      );
+      return 0;
+    }
+
     try {
-      return await this.approvalStateRepo.cleanupOldApprovals(
+      return await this.approvalStateStorage.cleanupOldApprovals(
         maxAge || HITL_DEFAULTS.FEEDBACK_RETENTION_MS
       );
     } catch (error) {

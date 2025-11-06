@@ -18,6 +18,7 @@ import {
   ChromaDBModuleOptions,
   ChromaDBOptionsFactory,
   CollectionConfig,
+  DEFAULT_COLLECTION_STRATEGY,
 } from './interfaces/config';
 import { ChromaDBRepository } from './repositories/chromadb-repository';
 import { CacheCleanupService } from './services/caching/cache-cleanup.service';
@@ -517,6 +518,7 @@ export class ChromaDBModule {
         port: DEFAULT_CHROMA_PORT,
         ssl: DEFAULT_CHROMA_SSL,
       },
+      collectionStrategy: DEFAULT_COLLECTION_STRATEGY,
     };
 
     return {
@@ -525,6 +527,10 @@ export class ChromaDBModule {
       connection: {
         ...defaults.connection,
         ...options.connection,
+      },
+      collectionStrategy: {
+        ...defaults.collectionStrategy,
+        ...options.collectionStrategy,
       },
     };
   }

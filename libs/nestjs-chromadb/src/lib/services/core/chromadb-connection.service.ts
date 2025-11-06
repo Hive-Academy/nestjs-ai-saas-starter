@@ -45,6 +45,7 @@ export class ChromaDBConnectionService
   private isConnected = false;
   private connectionTime?: number;
   private lastHealthCheck?: Date;
+  private connectionReadyPromise?: Promise<void>;
 
   constructor(
     @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
@@ -63,7 +64,9 @@ export class ChromaDBConnectionService
    */
   async onModuleInit(): Promise<void> {
     try {
-      await this.connect();
+      // Store the connection promise for waitForConnection()
+      this.connectionReadyPromise = this.connect();
+      await this.connectionReadyPromise;
       // Automatic health checks removed - consumers should call isHealthy() when needed
       // This prevents unnecessary database load and initialization race conditions
       this.logger.log('ChromaDB connection initialized successfully');
@@ -166,6 +169,50 @@ export class ChromaDBConnectionService
       connectionTime: this.connectionTime,
       error: this.isConnected ? undefined : 'Not connected',
     };
+  }
+
+  /**
+   * Wait for ChromaDB connection to be established
+   *
+   * This method ensures that the connection is ready before proceeding with operations.
+   * It prevents race conditions where collection initialization attempts occur before
+   * the connection is fully established.
+   *
+   * **Use Cases**:
+   * - Collection initialization (prevents retry waste)
+   * - Application startup dependencies (ensure ChromaDB ready before serving requests)
+   * - Health check implementations
+   *
+   * **Performance Impact**:
+   * - First call: Waits for connection (0-50ms typically)
+   * - Subsequent calls: Returns immediately (connection already established)
+   *
+   * @returns Promise that resolves when connection is established
+   * @throws ChromaDBConnectionError if connection fails
+   *
+   * @example
+   * ```typescript
+   * // In collection initialization
+   * await this.connectionService.waitForConnection();
+   * const collection = await this.createCollection('my-collection');
+   * ```
+   */
+  async waitForConnection(): Promise<void> {
+    // If already connected, return immediately
+    if (this.isConnected) {
+      return;
+    }
+
+    // If connection is in progress, wait for it
+    if (this.connectionReadyPromise) {
+      await this.connectionReadyPromise;
+      return;
+    }
+
+    // If no connection attempt yet, establish connection now
+    this.logger.debug('Connection not established yet, connecting...');
+    this.connectionReadyPromise = this.connect();
+    await this.connectionReadyPromise;
   }
 
   /**

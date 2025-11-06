@@ -104,7 +104,7 @@ export class GraphAgentService {
         type: memory.metadata.type,
         importance: memory.metadata.importance || 0.5,
         createdAt: createdAtDate.toISOString(),
-        accessCount: memory.accessCount,
+        accessCount: Number(memory.accessCount) || 0, // ✅ FIX: Convert Neo4j Integer to primitive
         userId: memory.metadata.userId, // Auto-skipped if undefined
       });
 
@@ -180,7 +180,7 @@ export class GraphAgentService {
           type: memory.metadata.type,
           importance: memory.metadata.importance || 0.5,
           createdAt: createdAtDate.toISOString(),
-          accessCount: memory.accessCount,
+          accessCount: Number(memory.accessCount) || 0, // ✅ FIX: Convert Neo4j Integer to primitive
         };
       });
 

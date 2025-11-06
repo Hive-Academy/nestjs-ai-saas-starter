@@ -115,9 +115,10 @@ export type {
   ApproverRanking,
 } from './lib/interfaces/approver-intelligence.interface';
 
-// Phase 5: Neo4j Approval State Repository (TASK_2025_032)
-export { ApprovalStateRepository } from './lib/repositories/approval-state.repository';
+// Phase 6: Approval State Storage Interface (Adapter Pattern Refactoring)
+export { IApprovalStateStorageService } from './lib/interfaces/approval-state-storage.interface';
 export type {
   ApprovalStateData,
   ApprovalChainData,
-} from './lib/repositories/approval-state.repository';
+  ListApprovalOptions,
+} from './lib/interfaces/approval-state-storage.interface';

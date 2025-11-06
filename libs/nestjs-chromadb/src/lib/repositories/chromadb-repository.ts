@@ -107,7 +107,8 @@ export interface RepositoryFindOptions {
  */
 export class ChromaDBRepository<T extends BaseDocument> {
   private readonly logger = new Logger(ChromaDBRepository.name);
-  private readonly collectionInitialized: Promise<void>;
+  private collectionInitialized?: Promise<void>;
+  private initializationStarted = false;
 
   /**
    * Constructor for ChromaDBRepository with automatic collection initialization
@@ -136,23 +137,91 @@ export class ChromaDBRepository<T extends BaseDocument> {
     protected readonly chromaDB: ChromaDBService,
     protected readonly collectionRegistry?: CollectionRegistryService
   ) {
-    // ✅ AUTOMATIC COLLECTION INITIALIZATION
-    // Start initialization immediately in background (non-blocking)
-    if (collectionRegistry) {
-      this.collectionInitialized = this.initializeCollection();
-    } else {
-      // Fallback: resolve immediately if no registry provided
-      this.collectionInitialized = Promise.resolve();
+    // ✅ COLLECTION INITIALIZATION STRATEGY
+    // Behavior depends on collectionStrategy.mode configuration:
+    // - 'eager': Initialize immediately during constructor (default for backward compatibility)
+    // - 'lazy': Defer initialization until first operation (recommended for production)
+    // - 'manual': No automatic initialization (application-controlled)
+
+    if (!collectionRegistry) {
+      // No registry: lazy initialization on first write
       this.logger.warn(
         `CollectionRegistryService not provided for '${collection}' - ` +
           `collection will be created lazily on first write operation`
       );
+      return;
+    }
+
+    // Check collection strategy mode from registry (injected from module options)
+    const strategy = (collectionRegistry as any).strategy;
+
+    if (strategy?.mode === 'eager') {
+      // Eager mode: Start initialization immediately in background (non-blocking)
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    } else if (strategy?.mode === 'lazy') {
+      // Lazy mode: Defer initialization until first operation
+      // Do nothing here - ensureInitialized() will handle it on first call
+      if (strategy?.enableVerboseLogging) {
+        this.logger.debug(
+          `Collection '${collection}' using lazy initialization - ` +
+            `will initialize on first use`
+        );
+      }
+    } else if (strategy?.mode === 'manual') {
+      // Manual mode: No automatic initialization
+      if (strategy?.enableVerboseLogging) {
+        this.logger.debug(
+          `Collection '${collection}' using manual initialization - ` +
+            `application must call ensureInitialized() explicitly`
+        );
+      }
+    } else {
+      // Fallback to eager if strategy is undefined (backward compatibility)
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    }
+  }
+
+  /**
+   * Ensure collection is initialized before operations
+   *
+   * This method implements lazy initialization pattern:
+   * - First call: Triggers initialization and waits
+   * - Subsequent calls: Reuses cached promise (no duplicate initialization)
+   *
+   * **Performance**:
+   * - Lazy mode: First operation pays initialization cost (~12-50ms)
+   * - Eager mode: All operations return immediately (initialized in constructor)
+   * - Manual mode: Only initializes if explicitly called
+   *
+   * **Thread Safety**:
+   * - Multiple concurrent calls share same initialization promise
+   * - No race conditions or duplicate initializations
+   *
+   * @returns Promise that resolves when collection is ready
+   */
+  protected async ensureInitialized(): Promise<void> {
+    // If already initialized or initialization in progress, reuse promise
+    if (this.collectionInitialized) {
+      return this.collectionInitialized;
+    }
+
+    // If initialization not started yet, start it now (lazy mode)
+    if (!this.initializationStarted && this.collectionRegistry) {
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    }
+
+    // Wait for initialization to complete (or return immediately if no registry)
+    if (this.collectionInitialized) {
+      await this.collectionInitialized;
     }
   }
 
   /**
    * Initialize collection using singleton registry
-   * Called automatically in constructor - no manual invocation needed
+   * Called automatically in constructor (eager mode) or on first use (lazy mode)
    */
   private async initializeCollection(): Promise<void> {
     if (!this.collectionRegistry) {
@@ -295,7 +364,8 @@ export class ChromaDBRepository<T extends BaseDocument> {
     id: string,
     options?: RepositoryOperationOptions
   ): Promise<T | null> {
-    // ✅ Wait for collection to be ready
+    // ✅ Ensure collection is initialized (lazy initialization on first use)
+    await this.ensureInitialized();
     await this.ensureCollectionReady();
 
     try {
@@ -368,6 +438,7 @@ export class ChromaDBRepository<T extends BaseDocument> {
    */
   async findAll(options?: RepositoryFindOptions): Promise<T[]> {
     // ✅ Wait for collection to be ready
+    await this.ensureInitialized();
     await this.ensureCollectionReady();
 
     try {
@@ -415,8 +486,8 @@ export class ChromaDBRepository<T extends BaseDocument> {
     document: CreateDocumentInput<T>,
     options?: RepositoryOperationOptions
   ): Promise<T> {
-    // ✅ Wait for collection to be ready
-    // Collection will be created automatically on first write if it doesn't exist
+    // ✅ Ensure collection is initialized (lazy initialization on first use)
+    await this.ensureInitialized();
     await this.ensureCollectionReady();
 
     const entity = this.createEntity({
@@ -872,6 +943,7 @@ export class ChromaDBRepository<T extends BaseDocument> {
    */
   async count(where?: Where, whereDocument?: WhereDocument): Promise<number> {
     // ✅ Wait for collection to be ready
+    await this.ensureInitialized();
     await this.ensureCollectionReady();
 
     try {

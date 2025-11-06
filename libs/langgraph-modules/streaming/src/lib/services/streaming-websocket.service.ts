@@ -53,6 +53,7 @@ export class StreamingWebSocketService implements IInitializableService {
 
   // Manual Socket.io server management
   private server?: Server;
+  private namespace?: any; // Socket.io Namespace instance
   private httpServer?: ReturnType<typeof createServer>;
   public isStarted = false;
 
@@ -111,8 +112,14 @@ export class StreamingWebSocketService implements IInitializableService {
         path: '/socket.io/',
       });
 
-      // Setup all Socket.io event handlers
-      this.setupSocketIOHandlers();
+      // Setup namespace (defaults to '/streaming')
+      const namespacePath = this.config.websocket?.namespace || '/streaming';
+      this.namespace = this.server.of(namespacePath);
+
+      this.logger.log(`Setting up Socket.io namespace: ${namespacePath}`);
+
+      // Setup all Socket.io event handlers on the namespace
+      this.setupSocketIOHandlers(this.namespace);
 
       // Setup bridge service integration
       this.setupBridgeServiceIntegration();
@@ -161,10 +168,10 @@ export class StreamingWebSocketService implements IInitializableService {
   /**
    * Setup Socket.io event handlers manually
    */
-  private setupSocketIOHandlers(): void {
-    if (!this.server) return;
+  private setupSocketIOHandlers(namespace: any): void {
+    if (!namespace) return;
 
-    this.server.on('connection', (socket: Socket) => {
+    namespace.on('connection', (socket: Socket) => {
       this.handleConnection(socket);
 
       // Setup message handlers for this socket
@@ -466,9 +473,9 @@ export class StreamingWebSocketService implements IInitializableService {
       timestamp: new Date(),
     };
 
-    // Emit to all connected clients
-    if (this.server) {
-      this.server.emit('token_update', message);
+    // Emit to all connected clients via namespace
+    if (this.namespace) {
+      this.namespace.emit('token_update', message);
       this.stats.messagesSent += this.connections.size;
     }
 
@@ -523,6 +530,12 @@ export class StreamingWebSocketService implements IInitializableService {
     });
     this.connections.clear();
     this.socketToConnection.clear();
+
+    // Clear namespace reference
+    if (this.namespace) {
+      this.namespace.removeAllListeners();
+      this.namespace = undefined;
+    }
 
     // Close Socket.io server
     if (this.server) {

@@ -80,6 +80,16 @@ export type {
   CustomEmbeddingConfig,
   InputValidationConfig,
   EmbeddingProviderType,
+  CollectionStrategyOptions,
+  CollectionInitMode,
+} from './lib/interfaces/config';
+
+// Collection Strategy Presets
+export {
+  DEFAULT_COLLECTION_STRATEGY,
+  PRODUCTION_COLLECTION_STRATEGY,
+  DEVELOPMENT_COLLECTION_STRATEGY,
+  HIGHPERF_COLLECTION_STRATEGY,
 } from './lib/interfaces/config';
 
 // Consolidated Type System (SINGLE SOURCE OF TRUTH)

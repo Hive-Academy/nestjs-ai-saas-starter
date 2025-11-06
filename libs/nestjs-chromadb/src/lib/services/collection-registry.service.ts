@@ -15,9 +15,13 @@
  * @since 1.0.0 - Automatic collection initialization implementation
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import type { CollectionMetadata } from 'chromadb';
 import { ChromaDBCollectionService } from './core/chromadb-collection.service';
+import { ChromaDBConnectionService } from './core/chromadb-connection.service';
+import type { CollectionStrategyOptions } from '../interfaces/config/collection-strategy-options.interface';
+import { CHROMADB_OPTIONS } from '../constants';
+import type { ChromaDBModuleOptions } from '../interfaces/config';
 
 /**
  * Singleton service to track and manage collection initialization
@@ -60,7 +64,34 @@ export class CollectionRegistryService {
     failedInitializations: 0,
   };
 
-  constructor(private readonly collectionService: ChromaDBCollectionService) {}
+  /**
+   * Collection strategy configuration
+   */
+  private readonly strategy: Required<CollectionStrategyOptions>;
+
+  constructor(
+    private readonly collectionService: ChromaDBCollectionService,
+    private readonly connectionService: ChromaDBConnectionService,
+    @Optional()
+    @Inject(CHROMADB_OPTIONS)
+    private readonly options?: ChromaDBModuleOptions
+  ) {
+    // Extract collection strategy from options with safe defaults
+    this.strategy = {
+      mode: options?.collectionStrategy?.mode ?? 'eager',
+      enableBatching: options?.collectionStrategy?.enableBatching ?? false,
+      waitForConnection: options?.collectionStrategy?.waitForConnection ?? true,
+      maxParallelInit: options?.collectionStrategy?.maxParallelInit ?? 5,
+      enableVerboseLogging:
+        options?.collectionStrategy?.enableVerboseLogging ?? false,
+    };
+
+    if (this.strategy.enableVerboseLogging) {
+      this.logger.debug(
+        `Collection strategy initialized: ${JSON.stringify(this.strategy)}`
+      );
+    }
+  }
 
   /**
    * Ensure a collection exists (idempotent, singleton initialization)
@@ -120,11 +151,28 @@ export class CollectionRegistryService {
     metadata?: CollectionMetadata
   ): Promise<void> {
     try {
-      this.logger.debug(
-        `🔄 Initializing collection: ${collectionName}${
-          metadata ? ` (metadata: ${JSON.stringify(metadata)})` : ''
-        }`
-      );
+      // ✅ Wait for connection if strategy requires it (prevents retry waste)
+      if (this.strategy.waitForConnection) {
+        if (this.strategy.enableVerboseLogging) {
+          this.logger.debug(
+            `⏳ Waiting for ChromaDB connection before initializing '${collectionName}'...`
+          );
+        }
+        await this.connectionService.waitForConnection();
+        if (this.strategy.enableVerboseLogging) {
+          this.logger.debug(
+            `✅ Connection ready, proceeding with '${collectionName}' initialization`
+          );
+        }
+      }
+
+      if (this.strategy.enableVerboseLogging) {
+        this.logger.debug(
+          `🔄 Initializing collection: ${collectionName}${
+            metadata ? ` (metadata: ${JSON.stringify(metadata)})` : ''
+          }`
+        );
+      }
 
       // Use getOrCreate to make this idempotent (safe for server restarts)
       await this.collectionService.createCollection(
@@ -135,7 +183,10 @@ export class CollectionRegistryService {
       );
 
       this.stats.successfulInitializations++;
-      this.logger.log(`✅ Collection ready: ${collectionName}`);
+
+      if (this.strategy.enableVerboseLogging) {
+        this.logger.log(`✅ Collection ready: ${collectionName}`);
+      }
     } catch (error) {
       // Remove from cache on failure to allow retry on next operation
       this.initializationCache.delete(collectionName);
@@ -152,6 +203,74 @@ export class CollectionRegistryService {
 
       // Don't throw - graceful degradation
       // Collection will be created automatically on first write
+    }
+  }
+
+  /**
+   * Batch-initialize multiple collections in parallel
+   *
+   * Optimizes semaphore usage and reduces total initialization time by
+   * coordinating multiple collection creations in a single batch.
+   *
+   * **Benefits**:
+   * - Better semaphore utilization (controlled batch vs random arrival)
+   * - Cleaner logging (single log line instead of per-collection)
+   * - Easier monitoring (track batch performance)
+   *
+   * @param collections - Array of collections to initialize
+   * @returns Promise that resolves when all collections are initialized
+   *
+   * @example
+   * ```typescript
+   * await registry.ensureCollectionsExist([
+   *   { name: 'users', metadata: { source: 'entity' } },
+   *   { name: 'posts', metadata: { source: 'entity' } },
+   *   { name: 'comments', metadata: { source: 'entity' } }
+   * ]);
+   * ```
+   */
+  async ensureCollectionsExist(
+    collections: Array<{ name: string; metadata?: CollectionMetadata }>
+  ): Promise<void> {
+    // Filter out already initialized collections
+    const pending = collections.filter(
+      (c) => !this.initializationCache.has(c.name)
+    );
+
+    if (pending.length === 0) {
+      if (this.strategy.enableVerboseLogging) {
+        this.logger.debug('All collections already initialized or in progress');
+      }
+      return;
+    }
+
+    const batchStart = Date.now();
+
+    if (this.strategy.enableVerboseLogging) {
+      this.logger.debug(
+        `📦 Batch-initializing ${pending.length} collections: ${pending
+          .map((c) => c.name)
+          .join(', ')}`
+      );
+    }
+
+    // Initialize all at once (semaphore manages concurrency)
+    const promises = pending.map((c) =>
+      this.ensureCollectionExists(c.name, c.metadata)
+    );
+
+    await Promise.all(promises);
+
+    const batchTime = Date.now() - batchStart;
+
+    if (this.strategy.enableVerboseLogging) {
+      this.logger.log(
+        `✅ Batch-initialized ${
+          pending.length
+        } collections in ${batchTime}ms (avg: ${Math.round(
+          batchTime / pending.length
+        )}ms per collection)`
+      );
     }
   }
 

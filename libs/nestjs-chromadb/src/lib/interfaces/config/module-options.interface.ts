@@ -15,6 +15,7 @@ import type { ChromaDBConnectionOptions } from './connection-options.interface';
 import type { ChromaDBEmbeddingOptions } from './embedding-options.interface';
 import type { ChromaDBMultiTenantOptions } from './multi-tenant-options.interface';
 import type { ChromaDBPerformanceOptions } from './performance-options.interface';
+import type { CollectionStrategyOptions } from './collection-strategy-options.interface';
 
 /**
  * Complete ChromaDB module configuration options
@@ -36,6 +37,31 @@ export interface ChromaDBModuleOptions
   };
 
   maxConcurrentOperations?: number;
+
+  /**
+   * Collection initialization strategy configuration
+   *
+   * Controls when and how ChromaDB collections are initialized during application lifecycle.
+   * Allows fine-tuning of startup performance and resource allocation.
+   *
+   * @default { mode: 'eager', enableBatching: false, waitForConnection: true, maxParallelInit: 5 }
+   *
+   * @example
+   * ```typescript
+   * // Production-optimized (recommended)
+   * collectionStrategy: {
+   *   mode: 'lazy',              // Defer initialization (-150ms startup time)
+   *   enableBatching: true,       // Batch operations for efficiency
+   *   waitForConnection: true,    // Prevent retry waste
+   *   maxParallelInit: 3,         // Conservative concurrency
+   * }
+   * ```
+   *
+   * @see CollectionStrategyOptions for detailed configuration options
+   * @see PRODUCTION_COLLECTION_STRATEGY for production preset
+   * @see DEVELOPMENT_COLLECTION_STRATEGY for development preset
+   */
+  collectionStrategy?: CollectionStrategyOptions;
 }
 
 /**
@@ -91,3 +117,13 @@ export type {
   RetryConfig,
   TextProcessingConfig,
 } from './performance-options.interface';
+export type {
+  CollectionInitMode,
+  CollectionStrategyOptions,
+} from './collection-strategy-options.interface';
+export {
+  DEFAULT_COLLECTION_STRATEGY,
+  PRODUCTION_COLLECTION_STRATEGY,
+  DEVELOPMENT_COLLECTION_STRATEGY,
+  HIGHPERF_COLLECTION_STRATEGY,
+} from './collection-strategy-options.interface';

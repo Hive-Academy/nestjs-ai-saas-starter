@@ -112,6 +112,144 @@ export interface TypedWorkflowAgentState<TMetadata = Record<string, unknown>> {
   [key: string]: unknown;
 }
 
+/**
+ * Unified Agent State - Consistent state architecture for all multi-agent workflows
+ *
+ * Eliminates metadata flow inconsistencies by ensuring metadata is ALWAYS initialized
+ * in state, not just config. Provides type-safe access to agent-specific metadata.
+ *
+ * Design Principles:
+ * 1. Extends AgentState (multi-agent module) for LangGraph compatibility
+ * 2. Makes metadata REQUIRED (non-optional) to prevent undefined errors
+ * 3. Provides common workflow properties expected by DeclarativeWorkflowBase
+ * 4. Supports type-safe agent-specific metadata via TypedAgentState<TMetadata>
+ *
+ * @example Usage in DevBrandWorkflow
+ * ```typescript
+ * // Supervisor passes UnifiedAgentState to workers
+ * const state: UnifiedAgentState = {
+ *   messages: [{ role: 'user', content: 'Analyze demo-user' }],
+ *   executionId: 'exec-123',
+ *   status: 'active',
+ *   confidence: 1.0,
+ *   retryCount: 0,
+ *   startedAt: new Date(),
+ *   timestamps: { started: new Date() },
+ *   completedNodes: [],
+ *   metadata: {
+ *     userId: 'user-123',
+ *     executionId: 'exec-123',
+ *     threadId: 'thread-123',
+ *     workflowType: 'devbrand-supervisor',
+ *   },
+ * };
+ * ```
+ *
+ * Evidence:
+ * - AgentState: libs/langgraph-modules/multi-agent/src/lib/interfaces/agent.types.ts:57-105
+ * - WorkflowState: libs/langgraph-modules/core/src/lib/interfaces/workflow.interface.ts:5-129
+ * - TypedWorkflowAgentState: apps/dev-brand-api/src/app/business-workflows/types/index.ts:73-113
+ */
+export interface UnifiedAgentState extends AgentState {
+  // ✅ Core LangGraph fields (from AgentState - inherited automatically)
+  // messages: AIMessage[];        // Required by multi-agent coordination
+  // next?: string;                // Supervisor routing
+  // current?: string;             // Current agent tracker
+  // scratchpad?: string;          // Agent collaboration notes
+  // task?: string;                // Task description passed between agents
+  // threadId?: string;            // Memory context and checkpointing
+  // userId?: string;              // User context and personalization
+
+  // ✅ Workflow execution properties (from WorkflowState - inherited automatically)
+  // executionId: string;          // Unique execution identifier
+  // status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  // confidence: number;           // Execution confidence score
+  // retryCount: number;           // Error handling retry counter
+  // startedAt: Date;              // Workflow start timestamp
+  // completedAt?: Date;           // Workflow completion timestamp
+  // timestamps: { started: Date; updated?: Date; completed?: Date };
+  // currentNode?: string;         // Current workflow node
+  // previousNode?: string;        // Previous workflow node (routing)
+  // completedNodes: string[];     // Execution history
+  // requiresApproval?: boolean;   // HITL flag
+  // approvalReceived?: boolean;   // HITL approval status
+  // humanFeedback?: any;          // HITL feedback data
+  // error?: any;                  // Error information
+
+  // ✅ CRITICAL: Unified metadata container (REQUIRED, not optional)
+  metadata: {
+    // Common metadata (present for all agents)
+    userId?: string; // User identifier
+    executionId?: string; // Execution identifier
+    threadId?: string; // Thread identifier
+    workflowType?: string; // Workflow type identifier
+
+    // Agent coordination metadata
+    lastAgent?: string; // Last executed agent
+    active_agent?: string; // Currently active agent (swarm)
+    handoff_from?: string; // Handoff source agent (swarm)
+    handoff_task?: string; // Handoff task description (swarm)
+    handoff_round?: number; // Handoff round counter (swarm)
+    handoffReason?: string; // Handoff reasoning
+
+    // Agent-specific metadata (extensible per agent type)
+    [key: string]: unknown;
+  };
+
+  // ✅ Extension point for additional properties
+  [key: string]: unknown;
+}
+
+/**
+ * Type-safe agent-specific state
+ *
+ * Provides compile-time type safety for agent-specific metadata while maintaining
+ * consistency with UnifiedAgentState base structure.
+ *
+ * @template TMetadata - Agent-specific metadata type (extends Record<string, unknown>)
+ *
+ * @example GitHub Code Analyzer
+ * ```typescript
+ * import type { GitHubAnalyzerMetadata } from '../agents/shared/metadata.types';
+ *
+ * export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
+ *   TypedAgentState<GitHubAnalyzerMetadata>
+ * > {
+ *   async analyzeRepository(context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>) {
+ *     // ✅ Type-safe access - no 'as string' needed!
+ *     const username = context.state.metadata.githubUsername; // string
+ *     const timeframe = context.state.metadata.timeframe; // string
+ *   }
+ * }
+ * ```
+ *
+ * @example Personal Brand Strategist
+ * ```typescript
+ * import type { BrandStrategistMetadata } from '../agents/shared/metadata.types';
+ *
+ * export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
+ *   TypedAgentState<BrandStrategistMetadata>
+ * > {
+ *   async analyzeBrand(context: TaskExecutionContext<TypedAgentState<BrandStrategistMetadata>>) {
+ *     // ✅ Type-safe access - no type assertions!
+ *     const brandScore = context.state.metadata.brandScore; // number | undefined
+ *     const strategyType = context.state.metadata.strategyType; // 'optimization' | 'rebuild' | undefined
+ *   }
+ * }
+ * ```
+ *
+ * Evidence:
+ * - GitHubAnalyzerMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:71-209
+ * - BrandStrategistMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:219-289
+ * - ContentCreatorMetadata: apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts:299-469
+ */
+export type TypedAgentState<TMetadata extends Record<string, unknown>> = Omit<
+  UnifiedAgentState,
+  'metadata'
+> & {
+  metadata: UnifiedAgentState['metadata'] & TMetadata;
+};
+
 // Shared Business Types
 export interface BaseEntity {
   id: string;
