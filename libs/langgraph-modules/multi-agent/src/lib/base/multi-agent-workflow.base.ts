@@ -316,11 +316,17 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
       agents,
       'supervisor',
       {
+        // Topology-specific configuration
         systemPrompt: config.config.systemPrompt,
         workers: config.config.workers,
         enableForwardMessage: config.config.enableForwardMessage,
         removeHandoffMessages: config.config.removeHandoffMessages,
         llm: config.config.llm,
+
+        // Compilation options from @MultiAgent decorator
+        enableInterrupts: config.checkpointing ?? true, // HITL requires interrupts
+        debug: config.debug ?? false,
+        // Note: checkpointer left undefined for NetworkManagerService automatic injection
       }
     );
   }
@@ -338,9 +344,15 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
 
     // Swarm uses 'swarm' type in coordinator
     return this.coordinator.setupNetwork(config.networkId, agents, 'swarm', {
+      // Topology-specific configuration
       initialAgent: config.config.initialAgent,
       maxRounds: config.config.maxRounds,
       enablePeerCommunication: config.config.enablePeerCommunication,
+
+      // Compilation options from @MultiAgent decorator
+      enableInterrupts: config.checkpointing ?? true, // HITL requires interrupts
+      debug: config.debug ?? false,
+      // Note: checkpointer left undefined for NetworkManagerService automatic injection
     });
   }
 
@@ -360,8 +372,14 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
       agents,
       'hierarchical',
       {
+        // Topology-specific configuration
         hierarchy: config.config.hierarchy,
         enableEscalation: config.config.enableEscalation,
+
+        // Compilation options from @MultiAgent decorator
+        enableInterrupts: config.checkpointing ?? true, // HITL requires interrupts
+        debug: config.debug ?? false,
+        // Note: checkpointer left undefined for NetworkManagerService automatic injection
       }
     );
   }
@@ -383,6 +401,7 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
       agents,
       'supervisor',
       {
+        // Topology-specific configuration
         systemPrompt: `Execute agents in strict sequence: ${config.config.sequence.join(
           ' → '
         )}`,
@@ -390,6 +409,11 @@ export abstract class MultiAgentWorkflowBase implements OnModuleInit {
         enableForwardMessage: true,
         strictSequence: true,
         stopOnFailure: config.config.stopOnFailure,
+
+        // Compilation options from @MultiAgent decorator
+        enableInterrupts: config.checkpointing ?? true, // HITL requires interrupts
+        debug: config.debug ?? false,
+        // Note: checkpointer left undefined for NetworkManagerService automatic injection
       }
     );
   }
