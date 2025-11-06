@@ -20,6 +20,11 @@ import {
   isAIMessageWithToolCalls,
   ToolNodeServiceWithWeightedMerge,
 } from '../types/internal-types';
+import {
+  getStateMessages,
+  getStateMetadata,
+  validateAgentState,
+} from '../utils/state-validator';
 
 /**
  * Service for creating LangGraph node functions
@@ -216,8 +221,6 @@ export class NodeFactoryService {
       try {
         // ✅ FIX: Validate state before accessing properties
         // This prevents "Cannot read properties of undefined (reading 'messages')" errors
-        const { validateAgentState, getStateMessages, getStateMetadata } =
-          await import('../utils/state-validator');
         validateAgentState(state, 'createSupervisorNode');
 
         const workerDescriptions = agents
@@ -549,9 +552,7 @@ export class NodeFactoryService {
   /**
    * Filter handoff messages from state
    */
-  private async filterHandoffMessages(state: AgentState): Promise<AgentState> {
-    // ✅ FIX: Import and use safe accessors
-    const { getStateMessages } = await import('../utils/state-validator');
+  private filterHandoffMessages(state: AgentState): AgentState {
     const stateMessages = getStateMessages(state, []);
 
     return {

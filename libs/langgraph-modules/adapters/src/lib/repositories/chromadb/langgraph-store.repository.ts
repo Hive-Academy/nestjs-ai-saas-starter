@@ -350,7 +350,7 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
     try {
       // ✅ FIX: Validate query is not empty
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
-        this.logger.warn(
+        this.repositoryLogger.warn(
           `[searchInNamespace] Empty or invalid query received: "${query}"`
         );
         throw new Error(
@@ -359,15 +359,15 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
       }
 
       // 🔍 DEBUG: Log query details
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] namespacePrefix: ${JSON.stringify(
           namespacePrefix
         )}`
       );
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] query: "${query}" (length: ${query.length})`
       );
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] filter: ${JSON.stringify(filter)}, limit: ${limit}`
       );
 
@@ -378,17 +378,17 @@ export class LangGraphStoreRepository extends ChromaDBRepository<LangGraphStoreE
         ...(filter || {}),
       };
 
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] combinedFilter: ${JSON.stringify(combinedFilter)}`
       );
 
       // Transform to ChromaDB-compliant format (handles $and wrapping automatically)
       const where = toChromaWhere(combinedFilter);
 
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] where clause: ${JSON.stringify(where)}`
       );
-      this.logger.debug(
+      this.repositoryLogger.debug(
         `[searchInNamespace] about to call searchWithScores with query: "${query}"`
       );
 

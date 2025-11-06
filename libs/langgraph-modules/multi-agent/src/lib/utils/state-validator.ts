@@ -87,7 +87,7 @@ export function validateAgentState(
  */
 export function ensureAgentState(
   state: Partial<AgentState> | undefined | null
-): AgentState {
+): Partial<AgentState> {
   if (!state) {
     return {
       messages: [],
@@ -149,7 +149,7 @@ export function getStateMessages(
  */
 export function createDefaultAgentState(
   overrides: Partial<AgentState> = {}
-): AgentState {
+): Partial<AgentState> {
   return {
     messages: [],
     metadata: {},

@@ -287,13 +287,17 @@ export class ExecutionControlComponent {
   readonly isExecuting = this.workflowStateService.isExecuting;
 
   /**
-   * Output event: Execution started with execution ID
+   * Output event: Execution started with full API response
    * @public
    * @remarks
    * - Emitted when workflow execution starts successfully
-   * - Parent component can use this for coordination
+   * - Includes executionId and websocketUrl from API response
+   * - Parent component uses this for WebSocket connection setup
    */
-  readonly executionStarted = output<string>();
+  readonly executionStarted = output<{
+    executionId: string;
+    websocketUrl: string;
+  }>();
 
   /**
    * Execute workflow
@@ -364,10 +368,14 @@ export class ExecutionControlComponent {
           // Notify state service to start execution tracking
           this.workflowStateService.startExecution(response.executionId);
 
-          // Emit event for parent coordination
-          this.executionStarted.emit(response.executionId);
+          // Emit full response for parent coordination (includes websocketUrl)
+          this.executionStarted.emit({
+            executionId: response.executionId,
+            websocketUrl: response.websocketUrl,
+          });
 
           console.log('Workflow execution started:', response.executionId);
+          console.log('WebSocket URL:', response.websocketUrl);
         },
         error: (errorMessage: string) => {
           // Store error message (already user-friendly from ApiService)

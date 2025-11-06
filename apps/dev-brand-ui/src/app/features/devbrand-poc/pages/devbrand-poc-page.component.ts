@@ -142,18 +142,25 @@ export class DevbrandPocPageComponent implements OnDestroy {
   private readonly workflowStateService = inject(DevBrandWorkflowStateService);
 
   /**
-   * Pending execution ID waiting for WebSocket connection
+   * Pending execution data waiting for WebSocket connection
    */
-  private pendingExecutionId: string | null = null;
+  private pendingExecution: {
+    executionId: string;
+    websocketUrl: string;
+  } | null = null;
 
   constructor() {
     // Wait for WebSocket connection before subscribing
     effect(() => {
       const isConnected = this.webSocketService.isConnected();
-      if (isConnected && this.pendingExecutionId) {
-        this.webSocketService.subscribeToExecution(this.pendingExecutionId);
-        this.workflowStateService.startExecution(this.pendingExecutionId);
-        this.pendingExecutionId = null;
+      if (isConnected && this.pendingExecution) {
+        this.webSocketService.subscribeToExecution(
+          this.pendingExecution.executionId
+        );
+        this.workflowStateService.startExecution(
+          this.pendingExecution.executionId
+        );
+        this.pendingExecution = null;
       }
     });
   }
@@ -161,48 +168,51 @@ export class DevbrandPocPageComponent implements OnDestroy {
   /**
    * Event handler for workflow execution start.
    *
-   * **Triggered By**: ExecutionControlComponent emits executionStarted event
+   * **Triggered By**: ExecutionControlComponent emits executionStarted event with response data
    * **Responsibilities**:
-   * 1. Connect WebSocket with backend URL and execution ID
+   * 1. Connect WebSocket with backend URL from API response
    * 2. Subscribe workflow state service to execution ID
    *
    * **Flow**:
    * 1. User submits GitHub username via ExecutionControlComponent
    * 2. DevBrandApiService.executeWorkflow() returns executionId and websocketUrl
-   * 3. ExecutionControlComponent emits executionStarted(executionId)
+   * 3. ExecutionControlComponent emits executionStarted with full response
    * 4. This handler receives event and initializes real-time tracking:
-   *    - WebSocket connects to backend (Socket.io)
+   *    - WebSocket connects to backend using websocketUrl from API response
    *    - Workflow state service starts tracking execution
    *    - Child components (Progress, Events) automatically react to state updates
    *
-   * @param executionId - Unique execution ID from backend REST API response
+   * @param response - Complete API response including executionId and websocketUrl
    *
    * @example
    * ```typescript
    * // When user submits form:
    * // 1. ExecutionControl calls DevBrandApiService.executeWorkflow()
-   * // 2. Backend returns: { executionId: 'exec_123', websocketUrl: 'http://localhost:8080' }
-   * // 3. ExecutionControl emits: executionStarted.emit('exec_123')
+   * // 2. Backend returns: { executionId: 'exec_123', websocketUrl: 'ws://localhost:8080/streaming', ... }
+   * // 3. ExecutionControl emits: executionStarted.emit(response)
    * // 4. This handler:
-   * onExecutionStarted('exec_123') {
-   *   this.webSocketService.connect('http://localhost:8080');
-   *   this.webSocketService.subscribeToExecution('exec_123');
-   *   this.workflowStateService.startExecution('exec_123');
+   * onExecutionStarted(response) {
+   *   this.webSocketService.connect(response.websocketUrl);
+   *   this.webSocketService.subscribeToExecution(response.executionId);
+   *   this.workflowStateService.startExecution(response.executionId);
    * }
    * ```
    *
    * @remarks
-   * - WebSocket connection is established dynamically (not on component init)
+   * - WebSocket connection uses URL from API response (NOT hardcoded)
    * - Execution ID is used for subscription filtering on backend
    * - Workflow state service coordinates all child component state updates
    */
-  onExecutionStarted(executionId: string): void {
-    // Store execution ID for subscription once connected
-    this.pendingExecutionId = executionId;
+  onExecutionStarted(response: {
+    executionId: string;
+    websocketUrl: string;
+  }): void {
+    // Store execution data for subscription once connected
+    this.pendingExecution = response;
 
-    // Connect WebSocket (uses environment.websocketUrl from backend response)
+    // Connect WebSocket using URL from API response (includes /streaming namespace)
     // The effect above will call subscribeToExecution() once connected
-    this.webSocketService.connect('http://localhost:8080');
+    this.webSocketService.connect(response.websocketUrl);
   }
 
   /**
