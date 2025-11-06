@@ -300,14 +300,12 @@ export function RequiresApproval(
  * They are now implemented in ApprovalEvaluatorService for proper DI support.
  */
 
-// Remove old implementation - placeholder to mark where code was removed
-function _deprecatedPrototypeMethods_DO_NOT_USE() {
-  // This function exists only to document the refactoring
-  // Old prototype method implementations have been moved to ApprovalEvaluatorService
-  throw new Error(
-    'Deprecated: Use ApprovalEvaluatorService instead of prototype methods'
-  );
-}
+// Removed old prototype method implementations (moved to ApprovalEvaluatorService)
+// The following methods were previously added to the class prototype:
+// - evaluateSkipConditions
+// - evaluateApprovalRequired
+// - routeToApproval
+// They are now implemented in ApprovalEvaluatorService for proper DI support.
 
 /**
  * Get approval options from a method

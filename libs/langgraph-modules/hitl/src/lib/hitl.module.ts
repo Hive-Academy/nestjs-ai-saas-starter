@@ -23,6 +23,8 @@ import { ApprovalOutcomeService } from './services/approval-outcome.service';
 import { ApprovalHistorySearchService } from './services/approval-history-search.service';
 // Decorator Support Service - Extracted from decorator (2025-01-11)
 import { ApprovalEvaluatorService } from './services/approval-evaluator.service';
+// Phase 5: Neo4j approval state repository (TASK_2025_032)
+import { ApprovalStateRepository } from './repositories/approval-state.repository';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Import interfaces only - adapters moved to application layer
@@ -40,9 +42,16 @@ import { DEFAULT_HITL_CONFIG, HITL_CONFIG } from './constants';
 /**
  * Enhanced NestJS HITL Module with Adapter Pattern Support
  *
+ * **Phase 5 Migration** (TASK_2025_032):
+ * - Approval state now stored in Neo4j via ApprovalStateRepository
+ * - ICheckpointAdapter is NO LONGER REQUIRED for approval storage
+ * - LangGraph handles workflow checkpoints automatically
+ * - Zero breaking changes for existing configurations
+ *
  * Provides:
  * - Adapter-based storage integration for approval persistence
  * - Human approval orchestration services
+ * - Neo4j-based approval state persistence (Phase 5)
  * - 100% backward compatibility with existing configurations
  * - Extensibility through custom adapter injection
  */
@@ -76,6 +85,8 @@ export class HitlModule {
         },
         // Adapter providers (conditional)
         ...adapterProviders,
+        // Phase 5: Neo4j approval state repository (TASK_2025_032)
+        ApprovalStateRepository, // Neo4j-based approval state persistence
         // Core services (order: dependencies first, orchestrator last)
         // Phase 1a: New specialized services (SOLID refactoring)
         ApproverIntelligenceService, // Approver selection using memory patterns
@@ -96,7 +107,7 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService,
+        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,
@@ -160,6 +171,8 @@ export class HitlModule {
         ...this.createAsyncProviders(options),
         // Adapter providers (self-contained)
         ...adapterProviders,
+        // Phase 5: Neo4j approval state repository (TASK_2025_032)
+        ApprovalStateRepository, // Neo4j-based approval state persistence
         // Core services (dependencies first)
         // Phase 1a: New specialized services (SOLID refactoring)
         ApproverIntelligenceService,
@@ -177,7 +190,7 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService,
+        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,

@@ -114,3 +114,10 @@ export type {
   ApproverExpertise,
   ApproverRanking,
 } from './lib/interfaces/approver-intelligence.interface';
+
+// Phase 5: Neo4j Approval State Repository (TASK_2025_032)
+export { ApprovalStateRepository } from './lib/repositories/approval-state.repository';
+export type {
+  ApprovalStateData,
+  ApprovalChainData,
+} from './lib/repositories/approval-state.repository';
