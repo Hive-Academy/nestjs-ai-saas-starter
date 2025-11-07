@@ -21,10 +21,10 @@ export function setMultiAgentConfig(config: MultiAgentModuleOptions): void {
 }
 
 /**
- * Get stored multi-agent configuration for decorators
+ * Get stored multi-agent module configuration
  * Returns the config passed to MultiAgentModule.forRoot()
  */
-export function getMultiAgentConfig(): MultiAgentModuleOptions {
+export function getMultiAgentModuleConfig(): MultiAgentModuleOptions {
   return storedMultiAgentConfig;
 }
 
@@ -40,7 +40,7 @@ export function getMultiAgentConfigWithDefaults(): Omit<
   streamingAdapter?: IStreamingService;
   memoryAdapter?: IMemoryAdapter;
 } {
-  const config = getMultiAgentConfig();
+  const config = getMultiAgentModuleConfig();
 
   return {
     defaultLlm: {

@@ -68,14 +68,14 @@ export class HandoffError extends MultiAgentError {
 }
 
 /**
- * Workflow execution error
+ * Multi-agent workflow execution error
  * Thrown when multi-agent workflow execution fails
  */
-export class WorkflowExecutionError extends MultiAgentError {
+export class MultiAgentWorkflowExecutionError extends MultiAgentError {
   constructor(message: string, details?: unknown) {
     super(message, 'WORKFLOW_EXECUTION_ERROR', details);
-    this.name = 'WorkflowExecutionError';
-    Object.setPrototypeOf(this, WorkflowExecutionError.prototype);
+    this.name = 'MultiAgentWorkflowExecutionError';
+    Object.setPrototypeOf(this, MultiAgentWorkflowExecutionError.prototype);
   }
 }
 

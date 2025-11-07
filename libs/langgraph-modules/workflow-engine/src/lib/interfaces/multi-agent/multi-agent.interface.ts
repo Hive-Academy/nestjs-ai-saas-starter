@@ -24,7 +24,9 @@ export type * from './agent.types';
 export type * from './routing.types';
 
 // Topology Configuration Types
-export type * from './topology';
+// NOTE: Topology types (SupervisorConfig, SwarmConfig, HierarchicalConfig) are exported
+// from decorators/multi-agent/multi-agent.decorator.ts to avoid duplicates
+// export type * from './topology';
 
 // Network Types
 export type * from './network.types';

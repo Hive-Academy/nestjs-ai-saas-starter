@@ -46,20 +46,23 @@ export * from './lib/decorators/multi-agent/agent.decorator';
 export * from './lib/decorators/multi-agent/multi-agent.decorator';
 export * from './lib/decorators/multi-agent/tool.decorator';
 
+// Note: SupervisorConfig, SwarmConfig, HierarchicalConfig, and getMultiAgentConfig
+// are exported from multi-agent.decorator above, so we skip re-exporting from interfaces
+
 // Multi-Agent Services
 export * from './lib/services/llm/llm-provider.service';
 export * from './lib/services/command-processor.service';
 export * from './lib/services/background-memory.service';
 
 // Multi-Agent Tools
-export * from './lib/tools/tool-registration.service';
+// export * from './lib/tools/tool-registration.service'; // TODO: Add missing tool-registry.service dependency
 export * from './lib/tools/memory-access.tools';
 
 // Multi-Agent Coordination
-export * from './lib/coordination/multi-agent-coordinator.service';
+// export * from './lib/coordination/multi-agent-coordinator.service'; // TODO: Add missing service dependencies
 
 // Multi-Agent Base Classes
-export * from './lib/base/multi-agent-workflow.base';
+// export * from './lib/base/multi-agent-workflow.base'; // TODO: Add missing coordination service dependencies
 
 // Multi-Agent Interfaces
 export type * from './lib/interfaces/multi-agent/multi-agent.interface';
@@ -88,8 +91,8 @@ export * from './lib/utils/multi-agent/agent-state-validator';
 export * from './lib/core/metadata-processor.service';
 
 // Base Classes (DI containers)
-export * from './lib/base/unified-workflow.base';
-export * from './lib/base/declarative-workflow.base';
+// export * from './lib/base/unified-workflow.base'; // TODO: Add missing core service dependencies
+// export * from './lib/base/declarative-workflow.base'; // TODO: Add missing core service dependencies
 export * from './lib/base/agent-node.base';
 
 // Interfaces

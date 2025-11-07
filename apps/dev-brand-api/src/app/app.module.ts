@@ -41,11 +41,9 @@ import {
 
 import { getCheckpointConfig } from './config/checkpoint.config';
 import { getChromaDBConfig } from './config/chromadb.config';
-import { getFunctionalApiConfig } from './config/functional-api.config';
 import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
 import { getMonitoringConfig } from './config/monitoring.config';
-import { getMultiAgentConfig } from './config/multi-agent.config';
 import { getNeo4jConfig } from './config/neo4j.config';
 import { getStreamingConfig } from './config/streaming.config';
 import { getTimeTravelConfig } from './config/time-travel.config';

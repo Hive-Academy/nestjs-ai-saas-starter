@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import type { AgentState } from '../interfaces/multi-agent/multi-agent.interface';
+import type { AgentState } from '../../interfaces/multi-agent/multi-agent.interface';
 
 /**
  * Agent State Validation Utility
@@ -36,7 +36,7 @@ export interface StateValidationResult {
  * @param strict - If true, throw error on validation failure
  * @returns Validation result with diagnostic information
  */
-export function validateAgentState(
+export function validateAgentStateForMemory(
   state: AgentState,
   strict = false
 ): StateValidationResult {
@@ -100,21 +100,21 @@ function isValidThreadId(threadId: string): boolean {
 }
 
 /**
- * Assert AgentState is valid (throws on failure)
+ * Assert AgentState is valid for memory operations (throws on failure)
  * Use in critical paths where state MUST be valid
  *
  * @param state - AgentState to validate
  * @param context - Context for error message (e.g., 'workflow execution')
  */
-export function assertValidAgentState(
+export function assertValidAgentStateForMemory(
   state: AgentState,
   context = 'operation'
 ): void {
-  validateAgentState(state, true);
+  validateAgentStateForMemory(state, true);
 }
 
 /**
- * Validate and warn about AgentState issues
+ * Validate and warn about AgentState issues for memory operations
  * Logs warnings but doesn't throw errors
  *
  * @param state - AgentState to validate
@@ -122,12 +122,12 @@ export function assertValidAgentState(
  * @param context - Context for logging
  * @returns Validation result
  */
-export function validateAndWarnAgentState(
+export function validateAndWarnAgentStateForMemory(
   state: AgentState,
   logger: Logger,
   context = 'operation'
 ): StateValidationResult {
-  const result = validateAgentState(state, false);
+  const result = validateAgentStateForMemory(state, false);
 
   if (!result.valid) {
     logger.error(`AgentState validation failed for ${context}:`, result.errors);
@@ -144,13 +144,13 @@ export function validateAndWarnAgentState(
 }
 
 /**
- * Create a default AgentState with proper initialization
+ * Create a default AgentState with proper initialization for memory operations
  * Used as fallback when state is missing or invalid
  *
  * @param partial - Partial state to merge with defaults
  * @returns Valid AgentState with all required properties
  */
-export function createDefaultAgentState(
+export function createDefaultAgentStateForMemory(
   partial: Partial<AgentState> = {}
 ): AgentState {
   const now = new Date();

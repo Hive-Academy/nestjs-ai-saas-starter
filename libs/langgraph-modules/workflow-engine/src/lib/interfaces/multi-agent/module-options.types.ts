@@ -6,7 +6,7 @@ import type {
 import type { CheckpointingConfig } from './network.types';
 import type {
   ToolProvider,
-  WorkflowProvider,
+  MultiAgentWorkflowProvider,
   AgentProvider,
 } from './workflow.types';
 
@@ -31,7 +31,7 @@ export interface MultiAgentModuleOptions {
    * Workflow providers to register
    * Multi-agent workflows (supervisor, swarm, etc.) managed by this module
    */
-  workflows?: WorkflowProvider[];
+  workflows?: MultiAgentWorkflowProvider[];
 
   /**
    * Default LLM configuration with simple provider selection

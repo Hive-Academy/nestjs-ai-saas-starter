@@ -10,7 +10,7 @@
  * throws "Cannot read properties of undefined" errors.
  */
 
-import type { AgentState } from '../interfaces/multi-agent/agent.types';
+import type { AgentState } from '../../interfaces/multi-agent/agent.types';
 
 /**
  * Runtime error for invalid state

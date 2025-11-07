@@ -68,6 +68,7 @@ export interface SupervisorConfig {
     provider?: 'openai' | 'anthropic' | 'google';
     model?: string;
     temperature?: number;
+    maxTokens?: number;
   };
 }
 

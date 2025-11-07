@@ -3,6 +3,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
 import type { BaseLanguageModelInterface } from '@langchain/core/language_models/base';
 import * as multiAgentInterface from '../../interfaces/multi-agent/multi-agent.interface';
+import type { SupervisorConfig } from '../../decorators/multi-agent/multi-agent.decorator';
 import { MULTI_AGENT_MODULE_OPTIONS } from '../../constants/multi-agent/multi-agent.constants';
 
 /**
@@ -23,7 +24,7 @@ export class LlmProviderService {
    * Get or create LLM instance with caching
    */
   async getLLM(
-    config?: multiAgentInterface.SupervisorConfig['llm']
+    config?: SupervisorConfig['llm']
   ): Promise<BaseLanguageModelInterface> {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const cacheKey = this.createCacheKey(config);
@@ -44,7 +45,7 @@ export class LlmProviderService {
    * Create LLM instance based on configured provider - simple and explicit
    */
   private async createLLM(
-    config?: multiAgentInterface.SupervisorConfig['llm']
+    config?: SupervisorConfig['llm']
   ): Promise<BaseLanguageModelInterface> {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const temperature =
@@ -294,9 +295,7 @@ export class LlmProviderService {
   /**
    * Create cache key for LLM configuration
    */
-  private createCacheKey(
-    config?: multiAgentInterface.SupervisorConfig['llm']
-  ): string {
+  private createCacheKey(config?: SupervisorConfig['llm']): string {
     const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
     const temperature =
       config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
@@ -324,9 +323,7 @@ export class LlmProviderService {
   /**
    * Validate model configuration gracefully
    */
-  validateModelConfig(
-    config?: multiAgentInterface.SupervisorConfig['llm']
-  ): boolean {
+  validateModelConfig(config?: SupervisorConfig['llm']): boolean {
     const model = config?.model || this.options.defaultLlm?.model;
     const provider =
       this.options.defaultLlm?.provider ||
@@ -431,9 +428,7 @@ export class LlmProviderService {
   /**
    * Test LLM connectivity gracefully
    */
-  async testLLM(
-    config?: multiAgentInterface.SupervisorConfig['llm']
-  ): Promise<boolean> {
+  async testLLM(config?: SupervisorConfig['llm']): Promise<boolean> {
     try {
       const provider =
         this.options.defaultLlm?.provider ||

@@ -62,9 +62,9 @@ export interface CoordinationStrategyDefinition {
 }
 
 /**
- * Multi-agent streaming configuration
+ * Multi-agent streaming configuration (Bridge Interface)
  */
-export interface MultiAgentStreamingConfig {
+export interface BridgeMultiAgentStreamingConfig {
   readonly agentCommunication?: boolean;
   readonly networkEvents?: boolean;
   readonly coordinationUpdates?: boolean;

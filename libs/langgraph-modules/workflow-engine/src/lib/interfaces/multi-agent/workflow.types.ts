@@ -267,13 +267,13 @@ export interface WorkflowInstance {
 }
 
 /**
- * Workflow provider type for explicit registration
+ * Multi-agent workflow provider type for explicit registration
  *
  * NOTE: Multi-agent extends core IWorkflowProvider from @hive-academy/langgraph-core.
  * This follows the Dependency Inversion Principle - multi-agent (feature module)
  * depends on workflow-engine (orchestration) via core interfaces (abstractions).
  */
-export type WorkflowProvider = new (...args: any[]) => any;
+export type MultiAgentWorkflowProvider = new (...args: any[]) => any;
 
 /**
  * Agent provider type for explicit registration
