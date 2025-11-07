@@ -8,9 +8,6 @@
       "path": "../memory"
     },
     {
-      "path": "../multi-agent"
-    },
-    {
       "path": "../functional-api"
     },
     {

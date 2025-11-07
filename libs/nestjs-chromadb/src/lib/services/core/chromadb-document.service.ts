@@ -11,6 +11,7 @@ import {
 type Include = ('metadatas' | 'documents' | 'distances' | 'embeddings')[];
 import { ChromaDBConnectionService } from './chromadb-connection.service';
 import { ChromaDBCollectionService } from './chromadb-collection.service';
+import { DocumentSanitizerService } from './validation/document-sanitizer.service';
 import type {
   ChromaWireDocument,
   ChromaSearchResult,
@@ -31,7 +32,8 @@ export class ChromaDBDocumentService {
 
   constructor(
     private readonly connectionService: ChromaDBConnectionService,
-    private readonly collectionService: ChromaDBCollectionService
+    private readonly collectionService: ChromaDBCollectionService,
+    private readonly sanitizer: DocumentSanitizerService
   ) {}
 
   /**
@@ -52,14 +54,19 @@ export class ChromaDBDocumentService {
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map((doc) => doc.id);
-        const docs = batch
-          .map((doc) => doc.document)
+        // Sanitize all documents in batch to ensure ChromaDB compatibility
+        const sanitizedBatch = batch.map((doc) =>
+          this.sanitizer.sanitizeDocument(doc as any)
+        );
+
+        const ids = sanitizedBatch.map((doc) => doc.id);
+        const docs = sanitizedBatch
+          .map((doc) => doc.document || (doc as any).content)
           .filter(Boolean) as string[];
-        const metadatas = batch
+        const metadatas = sanitizedBatch
           .map((doc) => doc.metadata)
           .filter(Boolean) as Metadata[];
-        const embeddings = batch
+        const embeddings = sanitizedBatch
           .map((doc) => doc.embedding)
           .filter(Boolean) as number[][];
 
@@ -109,14 +116,19 @@ export class ChromaDBDocumentService {
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map((doc) => doc.id);
-        const docs = batch
-          .map((doc) => doc.document)
+        // Sanitize all documents in batch to ensure ChromaDB compatibility
+        const sanitizedBatch = batch.map((doc) =>
+          this.sanitizer.sanitizeDocument(doc as any)
+        );
+
+        const ids = sanitizedBatch.map((doc) => doc.id);
+        const docs = sanitizedBatch
+          .map((doc) => doc.document || (doc as any).content)
           .filter(Boolean) as string[];
-        const metadatas = batch
+        const metadatas = sanitizedBatch
           .map((doc) => doc.metadata)
           .filter(Boolean) as Metadata[];
-        const embeddings = batch
+        const embeddings = sanitizedBatch
           .map((doc) => doc.embedding)
           .filter(Boolean) as number[][];
 
@@ -166,14 +178,19 @@ export class ChromaDBDocumentService {
       for (let i = 0; i < documents.length; i += batchSize) {
         const batch = documents.slice(i, i + batchSize);
 
-        const ids = batch.map((doc) => doc.id);
-        const docs = batch
-          .map((doc) => doc.document)
+        // Sanitize all documents in batch to ensure ChromaDB compatibility
+        const sanitizedBatch = batch.map((doc) =>
+          this.sanitizer.sanitizeDocument(doc as any)
+        );
+
+        const ids = sanitizedBatch.map((doc) => doc.id);
+        const docs = sanitizedBatch
+          .map((doc) => doc.document || (doc as any).content)
           .filter(Boolean) as string[];
-        const metadatas = batch
+        const metadatas = sanitizedBatch
           .map((doc) => doc.metadata)
           .filter(Boolean) as Metadata[];
-        const embeddings = batch
+        const embeddings = sanitizedBatch
           .map((doc) => doc.embedding)
           .filter(Boolean) as number[][];
 

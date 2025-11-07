@@ -12,13 +12,16 @@ import {
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
-// Adapters Module - Provides memory and HITL adapters with token injection
-import { AdaptersModule } from './adapters';
+// Adapters Module - Generic adapters from shared package
+import { LangGraphAdaptersModule } from '@hive-academy/langgraph-adapters';
+
+// Application-specific repositories
+import { RepositoryModule } from './repositories/repository.module';
 
 // Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import {
   HitlModule,
@@ -126,12 +129,15 @@ import {
         getNeo4jConfig(configService),
     }),
 
-    // Adapters module (imports RepositoryModule, provides adapter tokens)
-    AdaptersModule,
+    // Generic adapters from shared package
+    LangGraphAdaptersModule.forRoot(),
 
-    // Memory module with adapters - injects tokens from AdaptersModule
+    // Application-specific repositories (analytics and business domain)
+    RepositoryModule,
+
+    // Memory module with adapters - injects tokens from LangGraphAdaptersModule
     MemoryModule.forRootAsync({
-      imports: [AdaptersModule], // Import to access exported adapter tokens
+      imports: [LangGraphAdaptersModule], // Import to access exported adapter tokens
       useFactory: async (
         vectorAdapter: IVectorService,
         graphAdapter: IGraphService
@@ -146,7 +152,7 @@ import {
     }),
 
     // Checkpoint module with new adapter pattern
-    LanggraphModulesCheckpointModule.forRootAsync({
+    CheckpointModule.forRootAsync({
       useFactory: async () => {
         const config = await getCheckpointConfig();
         return config;
@@ -171,7 +177,7 @@ import {
 
     // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
     HitlModule.forRootAsync({
-      imports: [AdaptersModule], // Import to access HITL adapter tokens
+      imports: [LangGraphAdaptersModule], // Import to access HITL adapter tokens
       useFactory: async (
         checkpointAdapter: ICheckpointAdapter,
         memoryAdapter: IMemoryAdapter,

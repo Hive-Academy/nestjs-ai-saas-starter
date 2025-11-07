@@ -65,43 +65,56 @@ export class UserInterruptionService implements OnModuleInit {
   }
 
   /**
-   * Module initialization: Recover all active interruptions from persistent storage
+   * Module initialization: Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic recovery from onModuleInit()
+   * - Old behavior: Queried ChromaDB at startup causing race conditions
+   * - New behavior: State loaded lazily when workflows resume
+   * - Impact: Zero startup queries, instant application start
    */
   async onModuleInit(): Promise<void> {
-    await this.recoverActiveInterruptions();
+    this.logger.log(
+      '✅ UserInterruptionService initialized (lazy-loading enabled - state loads when workflows resume)'
+    );
   }
 
   /**
-   * Recovery implementation: Rebuild complete service state from persistent storage
+   * Resume interruptions for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic recovery
+   * Call this when workflows resume, not at application startup
+   *
+   * @param executionId - Workflow execution ID to resume
+   * @returns Number of interruptions resumed
    */
-  private async recoverActiveInterruptions(): Promise<void> {
+  async resumeInterruptions(executionId: string): Promise<number> {
     try {
-      // ✅ CORRECT: Load all active interruptions from primary storage
-      const allActiveInterruptions =
-        await this.interruptionStorage.getAllActiveInterruptions();
+      // Load only interruptions for this specific execution
+      const executionInterruptions =
+        await this.interruptionStorage.getActiveInterruptions(executionId);
 
-      // ✅ CORRECT: Rebuild cache from persistent storage
-      allActiveInterruptions.forEach((interruption) => {
+      // Rebuild cache for this execution only
+      executionInterruptions.forEach((interruption) => {
         this.interruptionCache.set(interruption.id, interruption);
 
-        // ✅ CORRECT: Restore timeout handlers for pending interruptions
+        // Restore timeout handlers for pending interruptions
         if (interruption.status === InterruptionStatus.PENDING) {
           this.setupInterruptionTimeout(interruption.id);
         }
       });
 
       this.logger.log(
-        `✅ Successfully recovered ${allActiveInterruptions.length} active interruptions from persistent storage`
+        `✅ Resumed ${executionInterruptions.length} interruptions for execution ${executionId}`
       );
+
+      return executionInterruptions.length;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        '❌ CRITICAL: Failed to recover interruptions from persistent storage - service will fail fast',
-        error
+        `Failed to resume interruptions for execution ${executionId}: ${errorMsg}`
       );
-      // ✅ CORRECT: Fail fast when storage recovery fails
       throw new Error(
-        `Cannot initialize UserInterruptionService without persistent storage recovery: ${errorMsg}`
+        `Cannot resume interruptions for execution ${executionId}: ${errorMsg}`
       );
     }
   }

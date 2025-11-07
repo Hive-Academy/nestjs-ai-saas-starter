@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Retry,
   Cached,
@@ -95,8 +96,16 @@ export interface MarketLandscape {
  */
 @Injectable()
 export class CompetitorAnalysisRepository extends ChromaDBRepository<CompetitorAnalysisEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(CompetitorAnalysisEntity, 'competitor-analysis', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      CompetitorAnalysisEntity,
+      'competitor-analysis',
+      chromaDB,
+      collectionRegistry
+    );
   }
 
   /**

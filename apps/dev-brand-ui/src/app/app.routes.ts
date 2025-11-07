@@ -15,13 +15,14 @@ export const routes: Routes = [
     title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
-    path: 'library/:slug',
-    loadComponent: () =>
-      import('./features/library-details/library-detail-page.component').then(
-        (m) => m.LibraryDetailPageComponent
+    path: 'devbrand-poc',
+    loadChildren: () =>
+      import('./features/devbrand-poc/devbrand-poc.routes').then(
+        (m) => m.DEVBRAND_POC_ROUTES
       ),
-    title: 'Library Details',
+    title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
   },
+
   {
     path: '**',
     redirectTo: '/landing',

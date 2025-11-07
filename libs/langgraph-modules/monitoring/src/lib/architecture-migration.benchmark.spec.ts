@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { performance } from 'perf_hooks';
 
 // Import the new modular architecture components
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 
@@ -32,7 +32,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 envFilePath: '.env.test',
               }),
 
-              LanggraphModulesCheckpointModule.forRoot({
+              CheckpointModule.forRoot({
                 checkpoint: {
                   cleanupInterval: 60000,
                   maxAge: 3600000,
@@ -81,7 +81,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
           {
             name: 'CheckpointModule',
             factory: () =>
-              LanggraphModulesCheckpointModule.forRoot({
+              CheckpointModule.forRoot({
                 checkpoint: {
                   cleanupInterval: 60000,
                   maxAge: 3600000,
@@ -152,7 +152,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
               envFilePath: '.env.test',
             }),
 
-            LanggraphModulesCheckpointModule.forRoot({
+            CheckpointModule.forRoot({
               checkpoint: {
                 cleanupInterval: 60000,
                 maxAge: 3600000,
@@ -220,7 +220,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 envFilePath: '.env.test',
               }),
 
-              LanggraphModulesCheckpointModule.forRoot({
+              CheckpointModule.forRoot({
                 checkpoint: {
                   cleanupInterval: 60000,
                   maxAge: 3600000,
@@ -350,7 +350,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                   envFilePath: '.env.test',
                 }),
 
-                LanggraphModulesCheckpointModule.forRoot({
+                CheckpointModule.forRoot({
                   checkpoint: {
                     cleanupInterval: 60000,
                     maxAge: 3600000,
@@ -402,7 +402,7 @@ describe('Architecture Migration Performance Benchmarks', () => {
                 envFilePath: '.env.test',
               }),
 
-              LanggraphModulesCheckpointModule.forRoot({
+              CheckpointModule.forRoot({
                 checkpoint: {
                   cleanupInterval: 60000,
                   maxAge: 3600000,

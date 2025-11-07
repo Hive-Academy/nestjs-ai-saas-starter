@@ -1,0 +1,419 @@
+/**
+ * HeroSceneGraphComponent - Hero Section 3D Background Scene
+ *
+ * Renders the 3D background elements for the hero section:
+ * - Lighting setup (ambient + directional + point + spotlight)
+ * - Floating spheres with GSAP animations
+ * - Animated background cubes via BackgroundCubesComponent
+ * - Mini Robot GLTF model (center stage)
+ * - Particle system
+ *
+ * DOM content (text, badges, buttons) is rendered as HTML overlay, not 3D meshes.
+ */
+
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+
+import { PolyhedronComponent } from '../../../../core/angular-3d/components/primitives/polyhedron.component';
+import { CylinderComponent } from '../../../../core/angular-3d/components/primitives/cylinder.component';
+import { TorusComponent } from '../../../../core/angular-3d/components/primitives/torus.component';
+import { BoxComponent } from '../../../../core/angular-3d/components/primitives/box.component';
+import { Text3DComponent } from '../../../../core/angular-3d/components/primitives/text-3d.component';
+import { BackgroundCubesComponent } from '../../../../core/angular-3d/components/primitives/background-cubes.component';
+import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
+import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
+import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
+import type { SceneLighting } from '../../../../core/angular-3d/types/scene-lighting.types';
+
+@Component({
+  selector: 'app-hero-scene-graph',
+  standalone: true,
+  imports: [
+    PolyhedronComponent,
+    CylinderComponent,
+    TorusComponent,
+    BoxComponent,
+    Text3DComponent,
+    BackgroundCubesComponent,
+    GLTFModelComponent,
+    SceneLightingComponent,
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <!-- Scene Lighting Configuration -->
+    <app-scene-lighting [config]="heroLighting" />
+
+    <!-- Tech Shapes - Using dedicated primitive components + Text Labels + Glow Effects -->
+
+    <!-- AI Brain (Icosahedron) - TOP LEFT EDGE -->
+    <app-polyhedron
+      type="icosahedron"
+      [position]="[-12, 6, 1]"
+      [rotation]="[0.3, 0.5, 0]"
+      [radius]="0.7"
+      [color]="purpleColor"
+      [emissive]="purpleColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.7"
+      [roughness]="0.3"
+      [floatConfig]="{
+        height: 1.0,
+        speed: 3500,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Subtle glow light -->
+    <ngt-point-light
+      [position]="[-12, 6, 2]"
+      [intensity]="1.2"
+      [color]="purpleColor"
+      [distance]="4"
+      [decay]="2"
+    />
+
+    <!-- Network Node (Octahedron) - TOP RIGHT EDGE -->
+    <app-polyhedron
+      type="octahedron"
+      [position]="[12, 6, -1]"
+      [rotation]="[0.2, 0.8, 0.1]"
+      [radius]="0.7"
+      [color]="pinkColor"
+      [emissive]="pinkColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.7"
+      [roughness]="0.3"
+      [floatConfig]="{
+        height: 1.0,
+        speed: 3200,
+        delay: 400,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Subtle glow light -->
+    <ngt-point-light
+      [position]="[12, 6, 2]"
+      [intensity]="1.2"
+      [color]="pinkColor"
+      [distance]="4"
+      [decay]="2"
+    />
+
+    <!-- Database Stack (Cylinder) - BOTTOM LEFT EDGE -->
+    <app-cylinder
+      [position]="[-12, -6, 1]"
+      [radiusTop]="0.6"
+      [radiusBottom]="0.6"
+      [height]="1.2"
+      [color]="cyanColor"
+      [emissive]="cyanColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.7"
+      [roughness]="0.3"
+      [floatConfig]="{
+        height: 1.0,
+        speed: 3000,
+        delay: 800,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Subtle glow light -->
+    <ngt-point-light
+      [position]="[-12, -6, 2]"
+      [intensity]="1.2"
+      [color]="cyanColor"
+      [distance]="4"
+      [decay]="2"
+    />
+
+    <!-- Cloud/Connectivity (Torus) - BOTTOM RIGHT EDGE -->
+    <app-torus
+      [position]="[12, -6, 1]"
+      [rotation]="[0.5, 0.3, 0.2]"
+      [radius]="0.6"
+      [tube]="0.22"
+      [color]="greenColor"
+      [emissive]="greenColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.7"
+      [roughness]="0.3"
+      [floatConfig]="{
+        height: 1.0,
+        speed: 2800,
+        delay: 1200,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Subtle glow light -->
+    <ngt-point-light
+      [position]="[12, -6, 2]"
+      [intensity]="1.2"
+      [color]="greenColor"
+      [distance]="4"
+      [decay]="2"
+    />
+
+    <!-- Microchip (Box) - LEFT MID EDGE -->
+    <app-box
+      [position]="[-13, 0, 1]"
+      [rotation]="[0.4, 0.6, 0.1]"
+      [width]="1.2"
+      [height]="1.2"
+      [depth]="0.25"
+      [color]="goldColor"
+      [emissive]="goldColor"
+      [emissiveIntensity]="0.3"
+      [metalness]="0.7"
+      [roughness]="0.3"
+      [floatConfig]="{
+        height: 1.0,
+        speed: 3400,
+        delay: 1600,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Subtle glow light -->
+    <ngt-point-light
+      [position]="[-13, 0, 2]"
+      [intensity]="1.2"
+      [color]="goldColor"
+      [distance]="4"
+      [decay]="2"
+    />
+
+    <!-- Animated Background Cubes (avoiding large center area for clean focus) -->
+    <app-background-cubes
+      [count]="200"
+      [colorPalette]="cubeColors"
+      [exclusionZone]="{ x: 14, y: 10 }"
+      [sizeRange]="{ min: 0.5, max: 2.0 }"
+      [transparent]="true"
+      [opacity]="0.6"
+      [floatAnimation]="{
+        heightMin: 0.8,
+        heightMax: 2.0,
+        speedMin: 2500,
+        speedMax: 5000,
+        ease: 'sine.inOut'
+      }"
+    />
+
+    <!-- Mini Robot GLTF Model - CENTER STAGE -->
+    <app-gltf-model
+      [modelPath]="'/assets/3d/mini_robot.glb'"
+      [position]="[0, -1, -5]"
+      [scale]="0.005"
+      [rotation]="[0, 0, 0]"
+      [castShadow]="true"
+      [receiveShadow]="true"
+      [autoCenter]="false"
+      [floatConfig]="{
+        height: 0.2,
+        speed: 2000,
+        delay: 0,
+        ease: 'sine.inOut',
+        autoStart: true
+      }"
+    />
+    <!-- Spotlight for the robot -->
+    <ngt-spot-light
+      [position]="[0, 5, 0]"
+      [intensity]="1.5"
+      [color]="whiteColor"
+      [angle]="0.6"
+      [penumbra]="0.5"
+      [castShadow]="true"
+      [target-position]="[0, -1, -5]"
+    />
+
+    <!-- ================================ -->
+    <!-- FLOATING TECH KEYWORDS (Far Background Layer) -->
+    <!-- Positioned much further back (z: -15 to -20) and near edges for depth -->
+    <!-- ================================ -->
+
+    <!-- AI - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="AI"
+      [position]="[-12, 4, -7]"
+      [fontSize]="0.7"
+      [color]="purpleColor"
+      [emissive]="purpleColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.15"
+      [bevelEnabled]="true"
+      [bevelSize]="0.015"
+      [bevelThickness]="0.025"
+    />
+
+    <!-- LangChain - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="LangChain"
+      [position]="[15, 12, -20]"
+      [fontSize]="0.7"
+      [color]="pinkColor"
+      [emissive]="pinkColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.12"
+      [bevelEnabled]="true"
+      [bevelSize]="0.012"
+      [bevelThickness]="0.02"
+    />
+
+    <!-- Angular - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="Angular"
+      [position]="[-20, 0, -10]"
+      [fontSize]="0.7"
+      [color]="cyanColor"
+      [emissive]="cyanColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.13"
+      [bevelEnabled]="true"
+      [bevelSize]="0.013"
+      [bevelThickness]="0.022"
+    />
+
+    <!-- NestJS - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="NestJS"
+      [position]="[13, 4, -12]"
+      [fontSize]="0.7"
+      [color]="goldColor"
+      [emissive]="goldColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.12"
+      [bevelEnabled]="true"
+      [bevelSize]="0.012"
+      [bevelThickness]="0.02"
+    />
+
+    <!-- ChromaDB - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="ChromaDB"
+      [position]="[-12, -10, -15]"
+      [fontSize]="0.7"
+      [color]="purpleColor"
+      [emissive]="purpleColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.11"
+      [bevelEnabled]="true"
+      [bevelSize]="0.011"
+      [bevelThickness]="0.018"
+    />
+
+    <!-- Neo4j - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="Neo4j"
+      [position]="[12, -10, -15]"
+      [fontSize]="0.7"
+      [color]="greenColor"
+      [emissive]="greenColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.12"
+      [bevelEnabled]="true"
+      [bevelSize]="0.012"
+      [bevelThickness]="0.02"
+    />
+
+    <!-- WebSockets - Far edge, deep background (matching shape positions) -->
+    <app-text-3d
+      text="WebSockets"
+      [position]="[-22, 14, -20]"
+      [fontSize]="0.7"
+      [color]="pinkColor"
+      [emissive]="pinkColor"
+      [emissiveIntensity]="0.4"
+      [metalness]="0.3"
+      [roughness]="0.7"
+      [height]="0.1"
+      [bevelEnabled]="true"
+      [bevelSize]="0.01"
+      [bevelThickness]="0.015"
+    />
+  `,
+})
+export class HeroSceneGraphComponent {
+  // Color constants using Colors3D configuration
+  readonly ambientColor = Colors3D.space.ambientBlue.hex;
+  readonly purpleColor = Colors3D.neon.purple.hex;
+  readonly pinkColor = Colors3D.accent.hotPink.hex;
+  readonly cyanColor = Colors3D.accent.deepSkyBlue.hex;
+  readonly greenColor = Colors3D.accent.limeGreen.hex;
+  readonly goldColor = Colors3D.accent.gold.hex;
+  readonly whiteColor = Colors3D.material.white.hex;
+
+  // Scene lighting configuration
+  readonly heroLighting: SceneLighting = {
+    ambient: {
+      color: this.whiteColor,
+      intensity: 1.2,
+    },
+    directional: [
+      {
+        color: this.whiteColor,
+        intensity: 2.0,
+        position: [10, 10, 10],
+        castShadow: true,
+      },
+    ],
+    point: [
+      // Purple accent light from left
+      {
+        color: this.purpleColor,
+        intensity: 1.5,
+        position: [-10, 5, 5],
+        castShadow: true,
+      },
+      // Pink accent light from right
+      {
+        color: this.pinkColor,
+        intensity: 1.5,
+        position: [10, 5, 5],
+        castShadow: true,
+      },
+      // Cyan bottom light for depth
+      {
+        color: this.cyanColor,
+        intensity: 1.0,
+        position: [0, -5, 8],
+      },
+    ],
+  };
+
+  // Particle colors using Colors3D CSS values
+  readonly particleColors = [
+    Colors3D.neon.purple.css,
+    Colors3D.neon.indigo.css,
+    Colors3D.accent.blueViolet.css,
+    Colors3D.neon.cyan.css,
+    Colors3D.accent.deepPurple.css,
+  ];
+
+  // Cube colors using Colors3D hex values
+  readonly cubeColors = [
+    Colors3D.neon.purple.hex,
+    Colors3D.accent.hotPink.hex,
+    Colors3D.accent.deepSkyBlue.hex,
+    Colors3D.neon.indigo.hex,
+    Colors3D.accent.mediumOrchid.hex,
+    Colors3D.accent.mediumSlateBlue.hex,
+    Colors3D.accent.slateBlue.hex,
+    Colors3D.accent.royalBlue.hex,
+  ];
+}

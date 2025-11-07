@@ -36,12 +36,14 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Mesh } from 'three';
+import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 @Component({
   selector: 'app-cylinder',
   standalone: true,
+  imports: [NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -52,7 +54,7 @@ import { Mesh } from 'three';
       [receiveShadow]="receiveShadow()"
     >
       <ngt-cylinder-geometry
-        [args]="[
+        *args="[
           radiusTop(),
           radiusBottom(),
           height(),
@@ -96,7 +98,7 @@ export class CylinderComponent implements OnInit {
   readonly thetaLength = input<number>(Math.PI * 2);
 
   // Material properties
-  readonly color = input<number>(0x00ff00);
+  readonly color = input<number>(Colors3D.accent.limeGreen.hex);
   readonly metalness = input<number>(0.5);
   readonly roughness = input<number>(0.5);
   readonly transparent = input<boolean>(false);
@@ -116,7 +118,6 @@ export class CylinderComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

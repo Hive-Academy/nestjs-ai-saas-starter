@@ -22,6 +22,7 @@ import { MemoryCoordinationService } from './coordination/memory-coordination.se
 import { LlmProviderService } from './llm/llm-provider.service';
 // Tool services
 import { ToolRegistrationService } from './tools/tool-registration.service';
+import { MemoryAccessTools } from './tools/memory-access.tools';
 // Routing services
 import { CommandProcessorService } from './routing/command-processor.service';
 // Tool services
@@ -40,6 +41,7 @@ import { ToolNodeService } from './tools/tool-node.service';
 import { ToolRegistryService } from './tools/tool-registry.service';
 import { setMultiAgentConfig } from './utils/multi-agent-config.accessor';
 import { WorkflowStreamingService } from './workflow/workflow-streaming.service';
+import { BackgroundMemoryService } from './services/background-memory.service';
 
 /**
  * Multi-Agent module following 2025 LangGraph patterns
@@ -65,6 +67,29 @@ export class MultiAgentModule {
       },
 
       // ============================================
+      // REGISTRATION PROVIDERS
+      // ============================================
+      // Provide tools array for ToolRegistrationService
+      // BUILT-IN TOOLS: MemoryAccessTools are automatically included for all agents
+      {
+        provide: 'MULTI_AGENT_TOOLS',
+        useValue: [
+          MemoryAccessTools, // Built-in: Always available to all agents
+          ...(mergedOptions.tools || []), // User-defined tools
+        ],
+      },
+      // Provide agents array for AgentRegistryService
+      {
+        provide: 'MULTI_AGENT_AGENTS',
+        useValue: mergedOptions.agents || [],
+      },
+      // Provide workflows array for WorkflowRegistryService
+      {
+        provide: 'MULTI_AGENT_WORKFLOWS',
+        useValue: mergedOptions.workflows || [],
+      },
+
+      // ============================================
       // CORE COORDINATION SERVICES
       // ============================================
       MultiAgentCoordinatorService,
@@ -74,6 +99,7 @@ export class MultiAgentModule {
       WorkflowExecutionCoordinationService,
       StreamCoordinationService,
       MemoryCoordinationService,
+      BackgroundMemoryService, // TASK_2025_029: Background memory queueing/batching
 
       // ============================================
       // AGENT MANAGEMENT (Internal)
@@ -116,6 +142,9 @@ export class MultiAgentModule {
         useExisting: ToolRegistryService,
       },
 
+      // TASK 3: Memory Access Tools (agent-driven memory)
+      MemoryAccessTools,
+
       // ============================================
       // ROUTING SERVICES
       // ============================================
@@ -137,6 +166,9 @@ export class MultiAgentModule {
         // Tool services (public API)
         ToolRegistrationService,
         ToolRegistryService,
+
+        // TASK 3: Memory tools export
+        MemoryAccessTools,
 
         // Tool service alias token
         TOOL_REGISTRY,
@@ -169,6 +201,38 @@ export class MultiAgentModule {
       },
 
       // ============================================
+      // REGISTRATION PROVIDERS (from async config)
+      // ============================================
+      // BUILT-IN TOOLS: MemoryAccessTools are automatically included for all agents
+      {
+        provide: 'MULTI_AGENT_TOOLS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return [
+            MemoryAccessTools, // Built-in: Always available to all agents
+            ...(moduleOptions.tools || []), // User-defined tools
+          ];
+        },
+        inject: options.inject || [],
+      },
+      {
+        provide: 'MULTI_AGENT_AGENTS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.agents || [];
+        },
+        inject: options.inject || [],
+      },
+      {
+        provide: 'MULTI_AGENT_WORKFLOWS',
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await options.useFactory!(...args);
+          return moduleOptions.workflows || [];
+        },
+        inject: options.inject || [],
+      },
+
+      // ============================================
       // CORE COORDINATION SERVICES
       // ============================================
       MultiAgentCoordinatorService,
@@ -178,6 +242,7 @@ export class MultiAgentModule {
       WorkflowExecutionCoordinationService,
       StreamCoordinationService,
       MemoryCoordinationService,
+      BackgroundMemoryService, // TASK_2025_029: Background memory queueing/batching
 
       // ============================================
       // AGENT MANAGEMENT (Internal)
@@ -220,6 +285,9 @@ export class MultiAgentModule {
         useExisting: ToolRegistryService,
       },
 
+      // TASK 3: Memory Access Tools (agent-driven memory)
+      MemoryAccessTools,
+
       // ============================================
       // ROUTING SERVICES
       // ============================================
@@ -241,6 +309,9 @@ export class MultiAgentModule {
         // Tool services (public API)
         ToolRegistrationService,
         ToolRegistryService,
+
+        // TASK 3: Memory tools export
+        MemoryAccessTools,
 
         // Tool service alias token
         TOOL_REGISTRY,
@@ -288,6 +359,7 @@ export class MultiAgentModule {
       // Preserve adapters if provided
       checkpointAdapter: options.checkpointAdapter,
       streamingAdapter: options.streamingAdapter,
+      memoryAdapter: options.memoryAdapter,
     };
   }
 }

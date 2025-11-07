@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **IMPORTANT**: There's a file modification bug in Claude Code. The workaround is: always use complete absolute Windows paths
+> with drive letters and backslashes for ALL file operations. Apply this rule going forward.
+
 ## Project Overview
 
 NestJS AI SaaS Starter - A sophisticated Nx monorepo for building enterprise-grade AI-powered applications with:
@@ -134,10 +137,14 @@ npm run dev:reset                 # Reset data
    - Executes Phase 0 (git, task setup)
    - Analyzes task type, creates dynamic strategy
    - Provides turn-by-turn guidance
-4. **Specialist Agents**: project-manager, researcher, architect, developers, testers, reviewers
-5. **Validation Agent**: business-analyst (quality gates)
+4. **Team Leader Agent** (.claude/agents/team-leader.md): Task decomposition & assignment coordinator
+   - DECOMPOSITION mode: Breaks implementation plans into atomic tasks
+   - ASSIGNMENT mode: Assigns tasks to developers with git verification
+   - COMPLETION mode: Validates all tasks complete, triggers final review
+5. **Specialist Agents**: project-manager, researcher, architect, developers, testers, reviewers
+6. **Validation Agent**: business-analyst (quality gates)
 
-**Key Insight**: Agents return to main thread, NOT to other agents. Orchestrator = GPS, Main thread = driver.
+**Key Insight**: Agents return to main thread, NOT to other agents. Orchestrator = GPS, Team Leader = project manager, Main thread = driver.
 
 ### Execution Flow
 
@@ -164,16 +171,52 @@ You: Return to orchestrator
   ↓
 Orchestrator: "INVOKE software-architect"
   ↓
-... repeat until "WORKFLOW COMPLETE"
+You: Invoke software-architect
+  ↓
+Architect: Returns implementation-plan.md
+  ↓
+You: Return to orchestrator with results
+  ↓
+Orchestrator: "INVOKE team-leader"
+  ↓
+You: Invoke team-leader (DECOMPOSITION mode)
+  ↓
+Team Leader: Creates tasks.md with atomic tasks
+  ↓
+You: Return to orchestrator
+  ↓
+Orchestrator: "INVOKE team-leader (ASSIGNMENT)"
+  ↓
+You: Invoke team-leader (ASSIGNMENT mode)
+  ↓
+Team Leader: "ASSIGN TASK [N] to senior-developer"
+  ↓
+You: Invoke senior-developer with task
+  ↓
+Developer: Implements code
+  ↓
+You: Verify git commit exists
+  ↓
+You: Return to team-leader with results
+  ↓
+Team Leader: Updates tasks.md, assigns next task OR "COMPLETION"
+  ↓
+... repeat assignment loop until all tasks complete
+  ↓
+You: Return to orchestrator
+  ↓
+Orchestrator: "INVOKE senior-tester"
+  ↓
+... continue until "WORKFLOW COMPLETE"
 ```
 
 ### Dynamic Task-Type Strategies
 
-- **FEATURE**: PM → Research → Architect → Dev → Test → Review → Modernization
-- **BUGFIX**: Dev → Test → Review (skip planning)
-- **REFACTORING**: Architect → Dev → Test → Review
-- **DOCUMENTATION**: PM → Dev → Review
-- **RESEARCH**: Researcher → conditional implementation
+- **FEATURE**: PM → Research → Architect → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review → Modernization
+- **BUGFIX**: Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review
+- **REFACTORING**: Architect → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Test → Review
+- **DOCUMENTATION**: PM → Team Leader (Decomposition) → Team Leader (Assignment Loop) → Review
+- **RESEARCH**: Researcher → conditional implementation (Team Leader if code needed)
 
 ### Usage
 
@@ -191,7 +234,14 @@ Orchestrator: "INVOKE software-architect"
 3. You invoke recommended agent
 4. Agent returns results
 5. You return to orchestrator with results
-6. Repeat until "WORKFLOW COMPLETE"
+6. **Team Leader Iterative Loop** (when in ASSIGNMENT mode):
+   - Team Leader assigns task to developer
+   - You invoke developer with task details
+   - Developer implements and commits code
+   - You verify git commit exists before returning to Team Leader
+   - Team Leader updates tasks.md and assigns next task OR signals COMPLETION
+   - Repeat until all tasks complete
+7. Repeat orchestrator loop until "WORKFLOW COMPLETE"
 
 ---
 
@@ -208,14 +258,14 @@ Orchestrator: "INVOKE software-architect"
 
 ### Agent Selection Matrix
 
-| Request Type | Agent Path                        | Trigger             |
-| ------------ | --------------------------------- | ------------------- |
-| Implement X  | project-manager → architect → dev | New features        |
-| Fix bug      | dev → test → review               | Bug reports         |
-| Research X   | researcher-expert → architect     | Technical questions |
-| Review code  | code-reviewer                     | Quality checks      |
-| Test X       | senior-tester                     | Testing             |
-| Architecture | software-architect                | Design              |
+| Request Type | Agent Path                                      | Trigger             |
+| ------------ | ----------------------------------------------- | ------------------- |
+| Implement X  | project-manager → architect → team-leader → dev | New features        |
+| Fix bug      | team-leader → dev → test → review               | Bug reports         |
+| Research X   | researcher-expert → architect                   | Technical questions |
+| Review code  | code-reviewer                                   | Quality checks      |
+| Test X       | senior-tester                                   | Testing             |
+| Architecture | software-architect                              | Design              |
 
 **Default**: When uncertain, use `/orchestrate`
 
@@ -235,26 +285,159 @@ task-tracking/
     ├── context.md            # User intent, conversation summary
     ├── task-description.md   # Requirements
     ├── implementation-plan.md # Design
-    ├── progress.md           # Progress tracking
+    ├── tasks.md              # Atomic task breakdown & assignments (team-leader managed)
     ├── test-report.md        # Testing
     ├── code-review.md        # Review
     └── future-enhancements.md # Future work
 ```
 
-### Git Operations
+### Git Operations & Commit Standards
+
+**CRITICAL**: All commits MUST follow commitlint rules to pass pre-commit hooks.
+
+#### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+#### Allowed Types (REQUIRED)
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style (formatting, no logic change)
+- `refactor`: Code restructuring (no bug fix or feature)
+- `perf`: Performance improvements
+- `test`: Adding/updating tests
+- `build`: Build system/dependency changes
+- `ci`: CI configuration changes
+- `chore`: Maintenance tasks (no src/test changes)
+- `revert`: Revert previous commit
+
+#### Allowed Scopes (REQUIRED)
+
+- `chromadb`: ChromaDB library changes
+- `neo4j`: Neo4j library changes
+- `langgraph`: LangGraph modules changes
+- `deps`: Dependency updates
+- `release`: Release-related changes
+- `ci`: CI/CD changes
+- `docs`: Documentation changes
+- `hooks`: Git hooks changes
+- `scripts`: Script changes
+- `angular-3d`: Angular 3D UI changes
+
+#### Commit Rules (ENFORCED)
+
+- ✅ Type: lowercase, required, from allowed list
+- ✅ Scope: lowercase, required, from allowed list
+- ✅ Subject:
+  - lowercase only (NOT Sentence-case, Start-case, UPPER-CASE)
+  - 3-72 characters
+  - No period at end
+  - Imperative mood ("add" not "added")
+- ✅ Header: max 100 characters total
+- ✅ Body/Footer lines: max 100 characters each
+
+#### Valid Examples
+
+```bash
+feat(chromadb): add semantic search for documents
+fix(neo4j): resolve connection timeout issue
+docs(langgraph): update workflow examples
+refactor(hooks): simplify pre-commit validation
+chore(deps): update langchain to v0.3.30
+```
+
+#### Invalid Examples (WILL FAIL)
+
+```bash
+❌ "Feature: Add search" # Wrong type, wrong case
+❌ "feat: Add search"    # Missing scope
+❌ "feat(search): Add search" # Invalid scope, wrong case
+❌ "feat(chromadb): Add search." # Period at end
+❌ "feat(chromadb): Add Search" # Uppercase in subject
+```
+
+#### Branch & PR Operations
 
 ```bash
 # New task (orchestrator handles this)
-git checkout -b feature/XXX
-git push -u origin feature/XXX
+git checkout -b feature/TASK_2025_XXX
+git push -u origin feature/TASK_2025_XXX
 
 # Continue task
-git checkout feature/XXX
-git pull origin feature/XXX --rebase
+git checkout feature/TASK_2025_XXX
+git pull origin feature/TASK_2025_XXX --rebase
+
+# Commit changes
+git add .
+git commit -m "type(scope): description"
 
 # Complete task (orchestrator handles this)
-gh pr create --title "feat(TASK_XXX): description"
+gh pr create --title "type(scope): description"
 ```
+
+#### Pre-commit Checks
+
+All commits automatically run:
+
+1. **lint-staged** (no auto-stash): Format & lint staged files
+2. **typecheck:affected**: Type-check changed libraries
+3. **commitlint**: Validate commit message format
+
+#### Commit Hook Failure Protocol
+
+**CRITICAL**: When a commit hook fails, ALWAYS stop and ask the user to choose:
+
+```
+⚠️ Pre-commit hook failed: [specific error]
+
+Please choose how to proceed:
+
+1. **Fix Issue** - I'll fix the issue if it's related to current work
+   (Use for: lint errors, type errors, commit message format issues in current changes)
+
+2. **Bypass Hook** - Commit with --no-verify flag
+   (Use for: Unrelated errors in other files, blocking issues outside current scope)
+
+3. **Stop & Report** - Mark as blocker and escalate
+   (Use for: Critical infrastructure issues, complex errors requiring investigation)
+
+Which option would you like? (1/2/3)
+```
+
+**Agent Behavior**:
+
+- NEVER automatically bypass hooks with --no-verify
+- NEVER automatically fix issues without user consent
+- NEVER proceed with alternative approaches without user decision
+- ALWAYS present the 3 options and wait for user choice
+- Document the chosen option in task tracking if option 2 or 3 is selected
+
+**Example Scenarios**:
+
+```bash
+# Scenario 1: Lint error in current file
+User chooses: Option 1 (Fix Issue)
+Action: Run npm run lint:fix, verify, retry commit
+
+# Scenario 2: Type error in unrelated library
+User chooses: Option 2 (Bypass Hook)
+Action: git commit --no-verify -m "message"
+Document: Add note to tasks.md about bypassed hook
+
+# Scenario 3: Complex build failure
+User chooses: Option 3 (Stop & Report)
+Action: Mark current task as blocked, create detailed error report
+```
+
+**NEVER run destructive git commands** (reset, force push, rebase --hard, etc.) that cause data loss.
 
 ---
 
@@ -336,8 +519,9 @@ export class RAGPipelineService {
 3. **Type Safety**: Search before creating types
 4. **Direct Replacement**: No backward compatibility
 5. **Registry-First**: Track all work in task-tracking/
-6. **Agent Pattern**: All agents return to main thread
+6. **Agent Pattern**: All agents return to main thread (team-leader coordinates developers via main thread)
 7. **Dynamic Workflows**: Task-type determines agent sequence
+8. **Atomic Tasks**: Implementation plans decomposed into git-verifiable tasks via team-leader
 
 ---
 

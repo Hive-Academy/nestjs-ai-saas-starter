@@ -1,0 +1,29 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Workflow Engine: Gear/cog (orchestration machine) -->
+
+  <!-- Outer gear teeth (12 teeth) -->
+  <path d="M 128 48 L 138 58 L 138 68 L 118 68 L 118 58 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 168 60 L 174 72 L 166 80 L 152 70 L 156 60 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 196 88 L 204 96 L 200 108 L 184 102 L 186 90 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 208 128 L 218 128 L 218 138 L 198 138 L 198 118 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 196 168 L 204 160 L 200 148 L 184 154 L 186 166 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 168 196 L 174 184 L 166 176 L 152 186 L 156 196 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 128 208 L 138 198 L 138 188 L 118 188 L 118 198 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 88 196 L 82 184 L 90 176 L 104 186 L 100 196 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 60 168 L 52 160 L 56 148 L 72 154 L 70 166 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 48 128 L 38 128 L 38 118 L 58 118 L 58 138 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 60 88 L 52 96 L 56 108 L 72 102 L 70 90 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 88 60 L 82 72 L 90 80 L 104 70 L 100 60 Z" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Main gear circle -->
+  <circle cx="128" cy="128" r="50" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Inner hub -->
+  <circle cx="128" cy="128" r="20" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Spokes -->
+  <line x1="128" y1="108" x2="128" y2="78" stroke="#6366F1" stroke-width="2"/>
+  <line x1="148" y1="128" x2="178" y2="128" stroke="#6366F1" stroke-width="2"/>
+  <line x1="128" y1="148" x2="128" y2="178" stroke="#6366F1" stroke-width="2"/>
+  <line x1="108" y1="128" x2="78" y2="128" stroke="#6366F1" stroke-width="2"/>
+</svg>

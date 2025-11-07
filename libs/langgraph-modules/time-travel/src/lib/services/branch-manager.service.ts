@@ -74,6 +74,43 @@ export class BranchManagerService {
     }
 
     // Create branch checkpoint
+    // ⚠️ VERSION MISMATCH RISK: This checkpoint spread pattern is UNSAFE
+    //
+    // PROBLEM: The spread operator `...checkpoint` copies ALL fields including version tracking metadata:
+    // - `channel_versions`: Maps each channel to its version identifier
+    // - `versions_seen`: Tracks which versions have been processed
+    //
+    // RISK: We then OVERRIDE `channel_values` with `branchedState` (modified state), but the version
+    // tracking fields (`channel_versions`, `versions_seen`) still reference the OLD unmodified state.
+    // This creates a STATE/VERSION INCONSISTENCY.
+    //
+    // IMPACT: When LangGraph's PregelLoop processes this checkpoint:
+    // 1. It reads `channel_versions` expecting them to match `channel_values`
+    // 2. It uses `versions_seen` to determine which updates to apply
+    // 3. Inconsistent version metadata causes `TypeError: Cannot read properties of undefined`
+    //    when PregelLoop tries to access channels using stale version references
+    //
+    // WHY THIS CURRENTLY WORKS:
+    // - The `saveCheckpoint()` call at line 137 may regenerate version fields internally
+    // - OR the checkpoint adapter may validate/rebuild version metadata on save
+    // - BUT this behavior is NOT guaranteed by the LangGraph checkpointer interface
+    //
+    // PROPER SOLUTION (Future):
+    // Instead of manual spread + override, use LangGraph's checkpointer API directly:
+    //   const branchCheckpoint = await this.checkpointAdapter.fork(
+    //     threadId,
+    //     fromCheckpointId,
+    //     { newState: branchedState, metadata: branchMetadata }
+    //   );
+    //
+    // VERIFICATION: This pattern was marked for documentation in TASK_2025_032 Task 3
+    // (elimination of UNSAFE manual checkpoint creation patterns).
+    //
+    // RELATED FIXES:
+    // - functional-workflow.service.ts: Manual checkpoint creation DELETED (Task 1)
+    // - hitl-checkpoint.service.ts: Manual checkpoint creation DELETED (Task 2)
+    //
+    // NEXT STEPS: Investigate checkpointer API for proper branch fork method to eliminate version mismatch risk.
     const branchCheckpoint = {
       ...checkpoint,
       id: `${checkpoint.id}_branch_${branchOptions.name}`,

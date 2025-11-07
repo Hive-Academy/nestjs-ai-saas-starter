@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StateGraph, CompiledStateGraph } from '@langchain/langgraph';
+import {
+  StateGraph,
+  CompiledStateGraph,
+  Annotation,
+  START,
+  END,
+} from '@langchain/langgraph';
 import {
   AgentDefinition,
   AgentState,
@@ -11,6 +17,7 @@ import {
   MULTI_AGENT_CONSTANTS,
   NetworkConfig,
 } from '../interfaces/multi-agent.interface';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 // AgentRegistryService import removed as it's no longer used
 import { NodeFactoryService } from './node-factory.service';
 import { getAgentConfig } from '../decorators/agent.decorator';
@@ -49,16 +56,20 @@ export class GraphBuilderService {
       );
     }
 
-    const graph = new (StateGraph as any)({
-      channels: this.createDefaultStateChannels(),
-    });
+    // Create state annotation using LangGraph 2025 Annotation.Root pattern
+    // Verification trail:
+    // - Pattern source: libs/langgraph-modules/core/src/lib/annotations/agent-state.annotation.ts
+    // - LangGraph 2025 requires Annotation.Root() pattern, not { channels: {...} }
+    // - AgentStateAnnotation provides all standard multi-agent fields with proper reducers
+    // - Verified against: workflow-state.annotation.ts, LangChain docs
+    const graph = new StateGraph(AgentStateAnnotation);
 
     // Create and add supervisor node
     const supervisorNode = await this.nodeFactory.createSupervisorNode(
       agents,
       config
     );
-    (graph as any).addNode('supervisor', supervisorNode);
+    graph.addNode('supervisor', supervisorNode);
 
     // Add worker nodes
     for (const agent of agents) {
@@ -67,12 +78,12 @@ export class GraphBuilderService {
           agent,
           config
         );
-        (graph as any).addNode(agent.id, workerNode);
+        graph.addNode(agent.id, workerNode);
       }
     }
 
     // Add edges
-    this.addSupervisorEdges(graph as any, config.workers);
+    this.addSupervisorEdges(graph, config.workers);
 
     // 🆕 PHASE 2: Read interruption configuration from agent metadata
     let interruptBefore: string[] | undefined;
@@ -131,11 +142,20 @@ export class GraphBuilderService {
     }
 
     // Compile and return
-    return (graph as any).compile({
+    // LangGraph API Note: 'debug' property removed from compile options
+    // Type casting required: LangGraph's strict generic type N[] doesn't match runtime string[]
+    // - checkpointer: unknown type from compilationOptions
+    // - interruptBefore/interruptAfter: string[] from agent metadata, not in graph's type union N
+    // TYPE CAST RATIONALE (supervisor pattern - 3 casts):
+    // 1. checkpointer: BaseCheckpointSaver | undefined → LangGraph expects exact type signature
+    //    Mitigation: Our ICheckpointAdapter provides runtime validation
+    // 2. interruptBefore/After: string[] → LangGraph expects N[] where N is literal union of node names
+    //    Problem: Node names are dynamic (worker IDs), cannot be statically typed as literals
+    //    Mitigation: Runtime validation ensures all worker names exist in graph
+    return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
-      debug: compilationOptions?.debug,
-      interruptBefore,
-      interruptAfter,
+      ...(interruptBefore && { interruptBefore: interruptBefore as any }),
+      ...(interruptAfter && { interruptAfter: interruptAfter as any }),
     });
   }
 
@@ -152,9 +172,10 @@ export class GraphBuilderService {
       agents.map((a) => a.id)
     );
 
-    const graph = new (StateGraph as any)({
-      channels: this.createSwarmStateChannels(config),
-    });
+    // Create state annotation for swarm pattern (LangGraph 2025 API)
+    // Swarm uses base AgentStateAnnotation (no additional channels needed)
+    // Message history management is handled via reducer in createSwarmNode
+    const graph = new StateGraph(AgentStateAnnotation);
 
     // Add all agent nodes with handoff capabilities
     for (const agent of agents) {
@@ -163,15 +184,17 @@ export class GraphBuilderService {
         agents,
         config
       );
-      (graph as any).addNode(agent.id, swarmNode);
+      graph.addNode(agent.id, swarmNode);
     }
 
     // Add edges for swarm pattern
-    this.addSwarmEdges(graph as any, agents);
+    this.addSwarmEdges(graph, agents);
 
-    return (graph as any).compile({
+    // TYPE CAST RATIONALE (sequential pattern - 1 cast):
+    // checkpointer: Same type mismatch as supervisor pattern (see buildSupervisorGraph above)
+    // LangGraph API Note: 'debug' property removed from compile options
+    return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
-      debug: compilationOptions?.debug,
     });
   }
 
@@ -217,19 +240,21 @@ Route tasks based on complexity and specialization.`,
     config: HierarchicalConfig,
     compilationOptions?: AgentNetwork['compilationOptions']
   ): Promise<CompiledStateGraph<any, any>> {
-    const graph = new (StateGraph as any)({
-      channels: {
-        ...this.createDefaultStateChannels(),
-        currentLevel: {
-          reducer: (current: number, update: number) => update,
-          default: () => 0,
-        },
-        escalationReason: {
-          reducer: (current: string, update: string) => update,
-          default: () => '',
-        },
-      },
+    // Create state annotation for hierarchical pattern (LangGraph 2025 API)
+    // Extends AgentStateAnnotation with hierarchical-specific fields
+    const HierarchicalStateAnnotation = Annotation.Root({
+      ...AgentStateAnnotation.spec,
+      currentLevel: Annotation<number>({
+        reducer: (current: number, update: number) => update,
+        default: () => 0,
+      }),
+      escalationReason: Annotation<string>({
+        reducer: (current: string, update: string) => update,
+        default: () => '',
+      }),
     });
+
+    const graph = new StateGraph(HierarchicalStateAnnotation);
 
     // Create supervisor nodes for each level
     for (let levelIndex = 0; levelIndex < config.levels.length; levelIndex++) {
@@ -256,34 +281,47 @@ Route tasks based on complexity and specialization.`,
     graph.addNode('escalation_router', this.createEscalationRouter(config));
 
     // Set entry point to top level
-    graph.addEntrypoint(`level_0_supervisor`);
+    // Type assertion: Dynamic node names not in StateGraph's type union N
+    // TYPE CAST RATIONALE (hierarchical pattern - 5 casts total):
+    // Problem: LangGraph's addEdge<N>(from: N, to: N) expects N to be literal union of node names
+    // Dynamic nodes: level_0_supervisor, level_1_supervisor, etc. (created at runtime)
+    // TypeScript limitation: Template literal types `level_${number}_supervisor` not compatible with literal unions
+    // Mitigation: All nodes registered dynamically above via graph.addNode() before edges created
+    // Safety: Runtime error if node doesn't exist when edge is added
+    graph.addEdge(START as any, 'level_0_supervisor' as any);
 
     // Add conditional escalation edges
+    // Type assertions: Dynamic template literal node names require any casting
+    // StateGraph's generic type N doesn't include runtime-generated node names
     for (
       let levelIndex = 0;
       levelIndex < config.levels.length - 1;
       levelIndex++
     ) {
+      // TYPE CAST RATIONALE: Same as above (dynamic hierarchical node names)
       graph.addConditionalEdges(
-        `level_${levelIndex}_supervisor`,
+        `level_${levelIndex}_supervisor` as any,
         this.createEscalationCondition(config, levelIndex),
         {
-          escalate: `level_${levelIndex + 1}_supervisor`,
-          continue: 'escalation_router',
-          finish: '__end__',
+          escalate: `level_${levelIndex + 1}_supervisor` as any,
+          continue: 'escalation_router' as any,
+          finish: END,
         }
       );
     }
 
     // Final level goes to completion
+    // TYPE CAST RATIONALE: Same as above (dynamic hierarchical node names)
     const finalLevel = config.levels.length - 1;
-    graph.addEdge(`level_${finalLevel}_supervisor`, '__end__');
+    graph.addEdge(`level_${finalLevel}_supervisor` as any, END);
 
     this.logger.log(`Built ${config.levels.length}-level hierarchical graph`);
 
-    return (graph as any).compile({
+    // TYPE CAST RATIONALE (hierarchical pattern - 1 cast):
+    // checkpointer: Same type mismatch as supervisor pattern (see buildSupervisorGraph above)
+    // LangGraph API Note: 'debug' property removed from compile options
+    return graph.compile({
       checkpointer: compilationOptions?.checkpointer as any,
-      debug: compilationOptions?.debug,
     });
   }
 
@@ -357,8 +395,23 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
   }
 
   /**
-   * Create default state channels for basic multi-agent workflows
+   * @deprecated Use AgentStateAnnotation from @hive-academy/langgraph-core instead
+   *
+   * This method is no longer needed with LangGraph 2025 Annotation.Root pattern.
+   * State is now defined using Annotation.Root() which provides better type safety
+   * and aligns with LangChain best practices.
+   *
+   * Migration:
+   * ```typescript
+   * // Old pattern (deprecated)
+   * const graph = new StateGraph({ channels: this.createDefaultStateChannels() });
+   *
+   * // New pattern (LangGraph 2025)
+   * import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
+   * const graph = new StateGraph(AgentStateAnnotation);
+   * ```
    */
+  // @ts-expect-error Deprecated - kept for migration documentation
   private createDefaultStateChannels() {
     return {
       messages: {
@@ -395,8 +448,23 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
   }
 
   /**
-   * Create state channels for swarm pattern with message history management
+   * @deprecated Use AgentStateAnnotation from @hive-academy/langgraph-core instead
+   *
+   * This method is no longer needed with LangGraph 2025 Annotation.Root pattern.
+   * Message history management is now handled via custom reducers in the annotation.
+   *
+   * Migration:
+   * ```typescript
+   * // Old pattern (deprecated)
+   * const graph = new StateGraph({ channels: this.createSwarmStateChannels(config) });
+   *
+   * // New pattern (LangGraph 2025)
+   * import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
+   * const graph = new StateGraph(AgentStateAnnotation);
+   * // Message history management moved to node logic
+   * ```
    */
+  // @ts-expect-error Deprecated - kept for migration documentation
   private createSwarmStateChannels(config: SwarmConfig) {
     return {
       messages: {
@@ -439,10 +507,15 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
 
   /**
    * Add edges for supervisor pattern
+   * @param graph - StateGraph instance (typed as any due to complex generic signature)
+   * @param workers - Array of worker agent IDs
    */
-  private addSupervisorEdges(graph: any, workers: readonly string[]): void {
+  private addSupervisorEdges(
+    graph: StateGraph<any, any, any, any>,
+    workers: readonly string[]
+  ): void {
     // Entry point to supervisor
-    graph.addEdge('__start__', 'supervisor');
+    graph.addEdge(START, 'supervisor');
 
     // Workers return to supervisor
     for (const workerId of workers) {
@@ -459,10 +532,15 @@ Choose the appropriate agent or escalate based on task complexity and scope.`;
 
   /**
    * Add edges for swarm pattern
+   * @param graph - StateGraph instance (typed as any due to complex generic signature)
+   * @param agents - Array of agent definitions
    */
-  private addSwarmEdges(graph: any, agents: readonly AgentDefinition[]): void {
+  private addSwarmEdges(
+    graph: StateGraph<any, any, any, any>,
+    agents: readonly AgentDefinition[]
+  ): void {
     // Entry point to first agent
-    graph.addEdge('__start__', agents[0].id);
+    graph.addEdge(START, agents[0].id);
 
     // Each agent can route to any other agent or end
     for (const agent of agents) {

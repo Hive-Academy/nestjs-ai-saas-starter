@@ -14,16 +14,12 @@ export * from './lib/core/graph-optimization.service';
 // Decorator Bridge Services (cleaned up)
 export * from './lib/services/decorator-translation.service';
 export * from './lib/services/multi-agent-translation.service';
-
-// CENTRALIZED REGISTRATION: The single source of truth for all agents, tools, workflows
-export * from './lib/services/central-registry.service';
 export * from './lib/interfaces/decorator-bridge.interface';
 export * from './lib/interfaces/multi-agent-bridge.interface';
 // Removed duplicate enhanced decorator interfaces - use canonical ones from source modules
 
 // Streaming Services (moved from streaming module to avoid circular dependency)
 export * from './lib/streaming/workflow-stream.service';
-export * from './lib/streaming/workflow-stream-orchestrator.service';
 export * from './lib/streaming/stream-management.service';
 export * from './lib/streaming/token-processing.service';
 export * from './lib/streaming/stream-event-processor.service';

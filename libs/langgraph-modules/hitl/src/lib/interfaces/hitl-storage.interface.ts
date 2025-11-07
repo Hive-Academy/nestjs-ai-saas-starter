@@ -78,6 +78,11 @@ export abstract class IHitlStorageService {
   abstract getByExecutionId(executionId: string): Promise<any[]>;
 
   /**
+   * Get pending approvals for a specific execution (Phase 1 lazy-loading)
+   */
+  abstract getPendingByExecution(executionId: string): Promise<any[]>;
+
+  /**
    * Update approval request
    */
   abstract update(request: any): Promise<void>;

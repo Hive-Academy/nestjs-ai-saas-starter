@@ -146,4 +146,33 @@ export class CheckpointSaverRegistry implements ICheckpointSaverRegistry {
     this.defaultSaverName = undefined;
     this.logger.log('Cleared all checkpoint savers');
   }
+
+  /**
+   * Lists all registered checkpoint savers
+   */
+  public listSavers(): Array<{
+    name: string;
+    default: boolean;
+    metadata?: CheckpointSaverMetadata;
+  }> {
+    return Array.from(this.savers.entries()).map(([name]) => ({
+      name,
+      default: this.defaultSaverName === name,
+      metadata: this.metadata.get(name),
+    }));
+  }
+
+  /**
+   * Gets the number of registered savers
+   */
+  public getSaverCount(): number {
+    return this.savers.size;
+  }
+
+  /**
+   * Clears all registered savers (useful for testing)
+   */
+  public clearSavers(): void {
+    this.clear();
+  }
 }

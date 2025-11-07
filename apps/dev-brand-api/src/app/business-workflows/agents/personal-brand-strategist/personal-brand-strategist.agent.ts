@@ -17,7 +17,7 @@ import { AIMessage } from '@langchain/core/messages';
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
-import type { TypedWorkflowAgentState } from '../../types';
+import type { TypedAgentState } from '../../types';
 import type { BrandAnalysis, BrandData } from '../shared/agent.types';
 import type { BrandStrategistMetadata } from '../shared/metadata.types';
 import {
@@ -67,7 +67,7 @@ import {
 })
 @Injectable()
 export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<BrandStrategistMetadata>
+  TypedAgentState<BrandStrategistMetadata>
 > {
   constructor(
     private readonly llm: LlmProviderService,
@@ -100,8 +100,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeBrandAnalysis(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
 
     return {
@@ -121,8 +121,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async gatherBrandData(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
     const achievements = state.metadata.achievements || [];
     const githubData = state.metadata.githubData;
@@ -182,8 +182,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamToken({ enabled: true, format: 'structured' })
   async analyzeBrandPositioning(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const brandData = state.metadata.brandData;
     const githubUsername = state.metadata.githubUsername || 'developer';
 
@@ -249,7 +249,7 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    */
   @Node({ type: 'condition' })
   async assessBrandStrength(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
+    state: TypedAgentState<BrandStrategistMetadata>
   ): Promise<{ route: string }> {
     const brandScore = state.metadata.brandScore || 0.5;
     const route = brandScore > 0.7 ? 'optimize' : 'rebuild';
@@ -262,8 +262,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    */
   @Node({ type: 'standard' })
   async optimizeBrand(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const brandAnalysis = state.metadata.brandAnalysis;
     const githubUsername = state.metadata.githubUsername || 'developer';
 
@@ -310,8 +310,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    */
   @Node({ type: 'standard' })
   async rebuildStrategy(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const brandAnalysis = state.metadata.brandAnalysis;
     const githubUsername = state.metadata.githubUsername || 'developer';
     const brandData = state.metadata.brandData;
@@ -393,8 +393,8 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
     }),
   })
   async generateFinalStrategy(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<BrandStrategistMetadata>>> {
+    state: TypedAgentState<BrandStrategistMetadata>
+  ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
     const strategyType = state.metadata.strategyType;
     const finalStrategy = state.metadata.finalStrategy;
@@ -455,7 +455,7 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    */
   @Edge('assessBrandStrength', 'optimizeBrand')
   shouldOptimizeBrand(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
+    state: TypedAgentState<BrandStrategistMetadata>
   ): boolean {
     const brandScore = state.metadata.brandScore || 0.5;
     return brandScore > 0.7;
@@ -465,9 +465,7 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    * Conditional edge: route to rebuild for weak brands
    */
   @Edge('assessBrandStrength', 'rebuildStrategy')
-  shouldRebuildBrand(
-    state: TypedWorkflowAgentState<BrandStrategistMetadata>
-  ): boolean {
+  shouldRebuildBrand(state: TypedAgentState<BrandStrategistMetadata>): boolean {
     const brandScore = state.metadata.brandScore || 0.5;
     return brandScore <= 0.7;
   }

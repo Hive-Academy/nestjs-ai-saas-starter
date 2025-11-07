@@ -39,7 +39,7 @@ export class HuggingFaceEmbeddingProvider extends BaseEmbeddingProvider {
     this.model = config.model ?? 'BAAI/bge-small-en-v1.5';
     this.apiEndpoint =
       config.apiEndpoint ??
-      `https://api-inference.huggingface.co/models/${this.model}`;
+      `https://router.huggingface.co/hf-inference/models/${this.model}`;
     this.batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
     this.httpClient = new HttpClient(config.http);
     this.validator = new InputValidator();

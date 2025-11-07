@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
 } from '@hive-academy/nestjs-chromadb';
 import { CodeAchievementEntity } from '../../entities/chromadb/code-achievement.entity';
@@ -14,8 +15,16 @@ import { CodeAchievementEntity } from '../../entities/chromadb/code-achievement.
  */
 @Injectable()
 export class CodeAchievementRepository extends ChromaDBRepository<CodeAchievementEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(CodeAchievementEntity, 'dev-achievements', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      CodeAchievementEntity,
+      'dev-achievements',
+      chromaDB,
+      collectionRegistry
+    );
   }
 
   /**

@@ -12,6 +12,7 @@ import {
   GraphPatternService,
   RelationshipBulkOperationsService,
   RateLimit,
+  ParameterBindingUtility,
 } from '@hive-academy/nestjs-neo4j';
 import { Developer } from '../../entities/neo4j/developer.entity';
 
@@ -81,19 +82,17 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
     }
 
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (d:Developer)
+        WHERE d.email = $email
+        RETURN d
+      `;
 
-      const emailParam = bindParam.add(email.toLowerCase().trim());
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        email: email.toLowerCase().trim(),
+      });
 
-      queryBuilder
-        .match('(d:Developer)')
-        .where(`d.email = $${emailParam}`)
-        .return('d');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(query, params);
 
       if (result.records.length === 0) {
         return null;
@@ -173,22 +172,19 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
     analytics: Developer['analytics']
   ): Promise<void> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (d:Developer)
+        WHERE d.id = $userId
+        SET d.analytics = $analytics, d.updatedAt = datetime()
+        RETURN d.id as id
+      `;
 
-      const userIdParam = bindParam.add(userId);
-      const analyticsParam = bindParam.add(JSON.stringify(analytics));
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        userId,
+        analytics: JSON.stringify(analytics),
+      });
 
-      queryBuilder
-        .match('(d:Developer)')
-        .where(`d.id = $${userIdParam}`)
-        .set(`d.analytics = $${analyticsParam}`)
-        .set('d.updatedAt = datetime()')
-        .return('d.id as id');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
     } catch (error) {
       throw new Error(`Failed to update developer analytics: ${error}`);
     }
@@ -216,31 +212,26 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
         throw new Error(`Developer not found: ${userId}`);
       }
 
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
-
-      const userIdParam = bindParam.add(userId);
-      const limitParam = bindParam.add(20);
-
-      queryBuilder
-        .match('(u:Developer)-[:ACHIEVED]->(a:Achievement)')
-        .where(`u.id = $${userIdParam}`)
-        .return(
-          `
+      const baseQuery = `
+        MATCH (u:Developer)-[:ACHIEVED]->(a:Achievement)
+        WHERE u.id = $userId
+        RETURN
           a.id as id,
           a.description as description,
           a.technologies as technologies,
           a.impact as impact,
           a.date as date,
           a.analysis.innovationScore as innovationScore
-        `
-        )
-        .orderBy('a.date DESC')
-        .limit(`$${limitParam}`);
+        ORDER BY a.date DESC
+        LIMIT $limit
+      `;
 
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        userId,
+        limit: 20,
+      });
+
+      const result = await this.neogma.run(query, params);
       const achievements = result.records.map((record) => ({
         id: record.get('id'),
         description: record.get('description'),
@@ -538,26 +529,22 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
   @Safe()
   async getActiveDevelopers(daysActive = 30): Promise<Developer[]> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MATCH (d:Developer)
+        WHERE d.isActive = $isActive
+        MATCH (d)-[:ACHIEVED]->(a:Achievement)
+        WITH d, MAX(a.date) as lastActivity
+        WHERE lastActivity IS NULL OR duration.between(date(lastActivity), date()).days <= $daysActive
+        RETURN d
+        ORDER BY d.updatedAt DESC
+      `;
 
-      const isActiveParam = bindParam.add(true);
-      const daysActiveParam = bindParam.add(daysActive);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        isActive: true,
+        daysActive,
+      });
 
-      queryBuilder
-        .match('(d:Developer)')
-        .where(`d.isActive = $${isActiveParam}`)
-        .match('(d)-[:ACHIEVED]->(a:Achievement)')
-        .with('d, MAX(a.date) as lastActivity')
-        .where(
-          `lastActivity IS NULL OR duration.between(date(lastActivity), date()).days <= $${daysActiveParam}`
-        )
-        .return('d')
-        .orderBy('d.updatedAt DESC');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      const result = await this.neogma.run(cypher, params);
+      const result = await this.neogma.run(query, params);
 
       return result.records.map((record) =>
         this.mapNodeToDeveloper(record.get('d').properties)
@@ -590,44 +577,34 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
         updatedAt: new Date(),
       };
 
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        CREATE (d:Developer {
+          id: $id,
+          email: $email,
+          name: $name,
+          currentSkills: $currentSkills,
+          careerGoals: $careerGoals,
+          analytics: $analytics,
+          isActive: $isActive,
+          joinedAt: datetime($joinedAt),
+          updatedAt: datetime($updatedAt)
+        })
+        RETURN d
+      `;
 
-      const idParam = bindParam.add(developer.id);
-      const emailParam = bindParam.add(developer.email);
-      const nameParam = bindParam.add(developer.name);
-      const currentSkillsParam = bindParam.add(
-        JSON.stringify(developer.currentSkills || [])
-      );
-      const careerGoalsParam = bindParam.add(
-        JSON.stringify(developer.careerGoals || [])
-      );
-      const analyticsParam = bindParam.add(
-        JSON.stringify(developer.analytics || {})
-      );
-      const isActiveParam = bindParam.add(developer.isActive ?? true);
-      const joinedAtParam = bindParam.add(developer.joinedAt!.toISOString());
-      const updatedAtParam = bindParam.add(developer.updatedAt!.toISOString());
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        id: developer.id,
+        email: developer.email,
+        name: developer.name,
+        currentSkills: JSON.stringify(developer.currentSkills || []),
+        careerGoals: JSON.stringify(developer.careerGoals || []),
+        analytics: JSON.stringify(developer.analytics || {}),
+        isActive: developer.isActive ?? true,
+        joinedAt: developer.joinedAt!.toISOString(),
+        updatedAt: developer.updatedAt!.toISOString(),
+      });
 
-      queryBuilder
-        .create(
-          `(d:Developer {
-          id: $${idParam},
-          email: $${emailParam},
-          name: $${nameParam},
-          currentSkills: $${currentSkillsParam},
-          careerGoals: $${careerGoalsParam},
-          analytics: $${analyticsParam},
-          isActive: $${isActiveParam},
-          joinedAt: datetime($${joinedAtParam}),
-          updatedAt: datetime($${updatedAtParam})
-        })`
-        )
-        .return('d');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
 
       // Create initial technology relationships
       if (initialTechnologies.length > 0) {
@@ -695,47 +672,39 @@ export class DeveloperRepository extends Neo4jRepositoryBase<Developer> {
     }
   ): Promise<void> {
     try {
-      const queryBuilder = this.neogma.createQueryBuilder();
-      const bindParam = queryBuilder.getBindParam();
+      const baseQuery = `
+        MERGE (u:Developer {id: $userId})
+        CREATE (s:BrandStrategy {
+          id: $strategyId,
+          positioning: $positioning,
+          targetAudience: $targetAudience,
+          confidenceScore: $confidenceScore,
+          implementationProgress: $implementationProgress,
+          marketResonance: $marketResonance,
+          createdAt: $createdAt
+        })
+        CREATE (u)-[:HAS_STRATEGY]->(s)
+        WITH u, s
+        UNWIND $strengths as strength
+        MERGE (st:Strength {name: strength})
+        CREATE (s)-[:LEVERAGES]->(st)
+        CREATE (u)-[:POSSESSES]->(st)
+        RETURN count(st) as strengthsCreated
+      `;
 
-      const userIdParam = bindParam.add(userId);
-      const strategyIdParam = bindParam.add(strategy.id);
-      const positioningParam = bindParam.add(strategy.positioning);
-      const targetAudienceParam = bindParam.add(strategy.targetAudience);
-      const confidenceScoreParam = bindParam.add(strategy.confidenceScore);
-      const implementationProgressParam = bindParam.add(
-        strategy.metrics?.implementationProgress || 0.1
-      );
-      const marketResonanceParam = bindParam.add(
-        strategy.metrics?.marketResonance || 0.6
-      );
-      const createdAtParam = bindParam.add(strategy.createdAt);
-      const strengthsParam = bindParam.add(strategy.strengths);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        userId,
+        strategyId: strategy.id,
+        positioning: strategy.positioning,
+        targetAudience: strategy.targetAudience,
+        confidenceScore: strategy.confidenceScore,
+        implementationProgress: strategy.metrics?.implementationProgress || 0.1,
+        marketResonance: strategy.metrics?.marketResonance || 0.6,
+        createdAt: strategy.createdAt,
+        strengths: strategy.strengths,
+      });
 
-      queryBuilder
-        .merge('(u:Developer {id: $' + userIdParam + '})')
-        .create(
-          `(s:BrandStrategy {
-          id: $${strategyIdParam},
-          positioning: $${positioningParam},
-          targetAudience: $${targetAudienceParam},
-          confidenceScore: $${confidenceScoreParam},
-          implementationProgress: $${implementationProgressParam},
-          marketResonance: $${marketResonanceParam},
-          createdAt: $${createdAtParam}
-        })`
-        )
-        .create('(u)-[:HAS_STRATEGY]->(s)')
-        .with('u, s')
-        .unwind(`$${strengthsParam} as strength`)
-        .merge('(st:Strength {name: strength})')
-        .create('(s)-[:LEVERAGES]->(st)')
-        .create('(u)-[:POSSESSES]->(st)')
-        .return('count(st) as strengthsCreated');
-
-      const cypher = queryBuilder.getStatement();
-      const params = bindParam.get();
-      await this.neogma.run(cypher, params);
+      await this.neogma.run(query, params);
     } catch (error) {
       throw new Error(
         `Failed to create brand strategy relationships: ${error}`

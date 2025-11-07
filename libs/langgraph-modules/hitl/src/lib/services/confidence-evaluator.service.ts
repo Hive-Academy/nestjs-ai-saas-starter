@@ -152,20 +152,24 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     }
   }
 
+  /**
+   * Module initialization: Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic pattern loading from onModuleInit()
+   * - Old behavior: Queried ChromaDB for ALL patterns at startup
+   * - New behavior: Patterns loaded lazily when evaluateConfidence() is called
+   * - Impact: Zero startup queries, instant application start
+   */
   async onModuleInit(): Promise<void> {
-    this.logger.log(
-      'Confidence Evaluator Service initializing with persistent storage'
-    );
-
     if (this.confidenceStorage) {
-      await this.loadHistoricalPatterns();
+      // Initialize ML hooks without loading data
       await this.initializeMLHooks();
       this.logger.log(
-        '✅ Confidence Evaluator Service initialized with storage adapter'
+        '✅ ConfidenceEvaluatorService initialized (lazy-loading enabled - patterns load on-demand)'
       );
     } else {
       this.logger.warn(
-        '⚠️  Confidence Evaluator Service running in degraded mode without storage'
+        '⚠️  ConfidenceEvaluatorService running without storage adapter - confidence learning disabled'
       );
     }
   }
@@ -732,41 +736,43 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   }
 
   /**
-   * Load historical patterns from persistent storage
+   * Load patterns for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic loading
+   * Call this when workflows need confidence evaluation, not at startup
+   *
+   * @param executionId - Workflow execution ID
+   * @returns Number of patterns loaded
    */
-  private async loadHistoricalPatterns(): Promise<void> {
+  async loadPatternsForExecution(executionId: string): Promise<number> {
     if (!this.confidenceStorage) {
-      this.logger.warn(
-        'No storage adapter available - cannot load historical patterns'
+      this.logger.debug(
+        `No storage adapter - skipping pattern loading for ${executionId}`
       );
-      return;
+      return 0;
     }
 
     try {
-      // Load all patterns from adapter storage, not stub comment
-      const allPatterns = await this.confidenceStorage.getAllActivePatterns();
-      allPatterns.forEach((pattern) => {
-        this.patternCache.set(pattern.nodeId, pattern);
-      });
+      // Load patterns for specific execution only
+      const executionHistory =
+        await (this.confidenceStorage.getHistoricalFactors?.(executionId) ??
+          this.confidenceStorage.getConfidenceHistory(executionId));
 
-      const allHistory = await this.confidenceStorage.getAllActiveHistory();
-      Object.entries(allHistory).forEach(([executionId, factors]) => {
-        this.historyCache.set(executionId, factors);
-      });
+      if (executionHistory) {
+        this.historyCache.set(executionId, executionHistory);
+        this.logger.debug(
+          `✅ Loaded ${executionHistory.length} confidence factors for execution ${executionId}`
+        );
+        return executionHistory.length;
+      }
 
-      this.logger.log(
-        `✅ Loaded ${allPatterns.length} patterns and ${
-          Object.keys(allHistory).length
-        } history entries from persistent storage`
-      );
+      return 0;
     } catch (error) {
-      this.logger.error(
-        '❌ CRITICAL: Failed to load confidence data - service will fail fast',
-        error
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to load patterns for execution ${executionId}: ${errorMsg}. Continuing with default confidence.`
       );
-      throw new Error(
-        'Cannot initialize ConfidenceEvaluatorService without persistent storage access'
-      );
+      return 0;
     }
   }
 

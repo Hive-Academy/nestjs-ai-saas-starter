@@ -38,12 +38,31 @@ export class GraphOptimizationService {
     try {
       const namespace = `graphs.compilation.optimizations`;
 
+      // 🔍 DEBUG: Log search parameters
+      const searchQuery = 'graph optimization patterns';
+      this.logger.debug(
+        `[enhanceWithOptimizationPatterns] Calling memoryAdapter.search with:`
+      );
+      this.logger.debug(
+        `  query: "${searchQuery}" (type: ${typeof searchQuery}, length: ${
+          searchQuery.length
+        })`
+      );
+      this.logger.debug(`  namespace: ${JSON.stringify([namespace])}`);
+      this.logger.debug(`  limit: 10`);
+
       // Retrieve learned optimization patterns for this graph type
       const optimizationData = await this.memoryAdapter.search({
-        query: 'graph optimization patterns',
+        query: searchQuery,
         namespace: [namespace],
         limit: 10,
       });
+
+      this.logger.debug(
+        `[enhanceWithOptimizationPatterns] Search returned ${
+          optimizationData?.length || 0
+        } results`
+      );
 
       if (!optimizationData || optimizationData.length === 0) {
         return options;

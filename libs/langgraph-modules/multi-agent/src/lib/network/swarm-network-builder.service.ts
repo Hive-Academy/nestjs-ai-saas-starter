@@ -129,7 +129,13 @@ export class SwarmNetworkBuilderService {
     const initialAgent = config.initialAgent || agentsWithHandoffs[0].id;
     const routeToAgents = agentsWithHandoffs.map((a) => a.id);
 
-    // Add official router using LangGraph swarm primitives
+    // TYPE CAST RATIONALE (swarm pattern - 4 casts total):
+    // Problem: StateGraph<SwarmState> has different generic signature than StateGraph<AgentState>
+    // SwarmState = { activeAgent: string; messages: BaseMessage[] }
+    // AgentState = { messages: BaseMessage[]; metadata: {...}; threadId: string; ... }
+    // LangGraph's swarm primitives (addActiveAgentRouter) expect SwarmState, we use AgentState
+    // Mitigation: SwarmState is subset of AgentState (structural typing compatible)
+    // Safety: Runtime validation ensures activeAgent field exists in state
     addActiveAgentRouter(graph as any, {
       routeTo: routeToAgents,
       defaultActiveAgent: initialAgent,
@@ -142,15 +148,18 @@ export class SwarmNetworkBuilderService {
         agentsWithHandoffs,
         config
       );
+      // TYPE CAST RATIONALE: Same as above (SwarmState vs AgentState mismatch)
       (graph as any).addNode(agent.id, swarmNode);
     }
 
     // Step 5: Add edges for swarm routing
+    // TYPE CAST RATIONALE: Same as above (SwarmState vs AgentState mismatch)
     this.addSwarmEdges(graph as any, agentsWithHandoffs, config);
 
     this.logger.log(`Swarm network built successfully: ${networkId}`);
 
     // Step 6: Compile and return
+    // TYPE CAST RATIONALE: Same as above (SwarmState vs AgentState mismatch + checkpointer type)
     return (graph as any).compile({
       checkpointer: compilationOptions?.checkpointer as any,
       debug: compilationOptions?.debug,

@@ -4,6 +4,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import { ToolRegistryService } from './tool-registry.service';
+import type { WeightedObject } from '../types/internal-types';
+import { hasWeights } from '../types/internal-types';
 
 /**
  * Enhanced service for creating and managing LangGraph ToolNodes
@@ -103,7 +105,8 @@ export class ToolNodeService {
     return async (state: TState): Promise<Partial<TState>> => {
       try {
         // Execute tools based on messages in state
-        const result = await toolNode.invoke(state as any);
+        const typedToolNode = toolNode as any;
+        const result = await typedToolNode.invoke(state as any);
 
         // Return the result as a partial state update
         return result as Partial<TState>;
@@ -214,28 +217,34 @@ export class ToolNodeService {
         typeof sourceValue === 'number'
       ) {
         // Weighted average for numeric values
-        const currentWeight = (target as any).__weights?.[key] || 1;
+        const weightedTarget = hasWeights(target)
+          ? target
+          : (target as WeightedObject);
+        const currentWeight = weightedTarget.__weights?.[key] || 1;
         const totalWeight = currentWeight + weight;
         target[key] =
           (targetValue * currentWeight + sourceValue * weight) / totalWeight;
 
         // Track weights for future merges
-        if (!(target as any).__weights) {
-          (target as any).__weights = {};
+        if (!weightedTarget.__weights) {
+          weightedTarget.__weights = {};
         }
-        (target as any).__weights[key] = totalWeight;
+        weightedTarget.__weights[key] = totalWeight;
       } else if (
         typeof targetValue === 'string' &&
         typeof sourceValue === 'string'
       ) {
         // Confidence-based selection for strings (higher weight wins)
-        const currentWeight = (target as any).__weights?.[key] || 1;
+        const weightedTarget = hasWeights(target)
+          ? target
+          : (target as WeightedObject);
+        const currentWeight = weightedTarget.__weights?.[key] || 1;
         if (weight > currentWeight) {
           target[key] = sourceValue;
-          if (!(target as any).__weights) {
-            (target as any).__weights = {};
+          if (!weightedTarget.__weights) {
+            weightedTarget.__weights = {};
           }
-          (target as any).__weights[key] = weight;
+          weightedTarget.__weights[key] = weight;
         }
       } else if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
         // Merge arrays with weight-based prioritization
@@ -258,13 +267,16 @@ export class ToolNodeService {
         this.applyWeightedMerge(target[key], sourceValue, weight);
       } else {
         // For other types, use weight-based selection
-        const currentWeight = (target as any).__weights?.[key] || 1;
+        const weightedTarget = hasWeights(target)
+          ? target
+          : (target as WeightedObject);
+        const currentWeight = weightedTarget.__weights?.[key] || 1;
         if (weight >= currentWeight) {
           target[key] = sourceValue;
-          if (!(target as any).__weights) {
-            (target as any).__weights = {};
+          if (!weightedTarget.__weights) {
+            weightedTarget.__weights = {};
           }
-          (target as any).__weights[key] = weight;
+          weightedTarget.__weights[key] = weight;
         }
       }
     }
@@ -359,9 +371,14 @@ export class ToolNodeService {
 
       try {
         // Execute tools with timeout if specified
+        const typedToolNode = toolNode as any;
         const result = options?.timeout
-          ? await this.executeWithTimeout(toolNode, state, options.timeout)
-          : await toolNode.invoke(state as any);
+          ? await this.executeWithTimeout(
+              toolNode,
+              state as any,
+              options.timeout
+            )
+          : await typedToolNode.invoke(state as any);
 
         // Track metrics
         this.updateExecutionMetrics(nodeId, Date.now() - startTime, true);
@@ -530,13 +547,14 @@ export class ToolNodeService {
         reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
-      toolNode
+      const typedToolNode = toolNode as any;
+      typedToolNode
         .invoke(state as any)
-        .then((result) => {
+        .then((result: any) => {
           clearTimeout(timeout);
-          resolve(result);
+          resolve(result as any);
         })
-        .catch((error) => {
+        .catch((error: any) => {
           clearTimeout(timeout);
           reject(error);
         });

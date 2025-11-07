@@ -13,13 +13,7 @@ import {
 } from '@hive-academy/nestjs-neo4j';
 import { Module } from '@nestjs/common';
 
-// Memory Repositories
-import { VectorMemoryRepository } from './chromadb/vector-memory.repository';
-import { LangGraphStoreRepository } from './chromadb/langgraph-store.repository';
-import { MemoryGraphRepository } from './neo4j/memory-graph.repository';
-import { StoreGraphRepository } from './neo4j/store-graph.repository';
-
-// ChromaDB Entities (for forFeature registration)
+// Application-specific ChromaDB Entities (Analytics)
 import { AudienceAnalysisEntity } from '../entities/chromadb/audience-analysis.entity';
 import { BrandMentionEntity } from '../entities/chromadb/brand-mention.entity';
 import { BrandStrategyEntity } from '../entities/chromadb/brand-strategy.entity';
@@ -28,10 +22,8 @@ import { CompetitorAnalysisEntity } from '../entities/chromadb/competitor-analys
 import { ContentPerformanceEntity } from '../entities/chromadb/content-performance.entity';
 import { DeveloperProfileEntity } from '../entities/chromadb/developer-profile.entity';
 import { TechTrendEntity } from '../entities/chromadb/tech-trend.entity';
-import { VectorMemoryEntity } from '../entities/chromadb/vector-memory.entity';
-import { LangGraphStoreEntity } from '../entities/chromadb/langgraph-store.entity';
 
-// Custom ChromaDB Repositories (analytics only)
+// Application-specific ChromaDB Repositories (Analytics)
 import { AudienceRepository } from './chromadb/audience-analysis.repository';
 import { BrandMentionRepository } from './chromadb/brand-mention.repository';
 import { BrandStrategyRepository } from './chromadb/brand-strategy.repository';
@@ -41,64 +33,32 @@ import { ContentPerformanceRepository } from './chromadb/content-performance.rep
 import { DeveloperProfileRepository } from './chromadb/developer-profile.repository';
 import { TechTrendsRepository } from './chromadb/tech-trends.repository';
 
-// HITL Repositories (needed by AdaptersModule)
-import { ApprovalChainRepository } from './neo4j/approval-chain.repository';
-import { ApprovalRequestRepository } from './neo4j/approval-request.repository';
-import { ConfidencePatternRepository } from './neo4j/confidence-pattern.repository';
-import { FeedbackRepository } from './neo4j/feedback.repository';
-import { InterruptionRepository } from './neo4j/interruption.repository';
-
-// Business Domain Repositories
+// Application-specific Neo4j Repositories (Business Domain)
 import { AchievementRepository } from './neo4j/achievement.repository';
 import { DeveloperRepository } from './neo4j/developer.repository';
 
-// Neo4j Entities (for forFeature registration)
+// Application-specific Neo4j Entities (Business Domain)
 import { Achievement } from '../entities/neo4j/achievement.entity';
-import { ApprovalChain } from '../entities/neo4j/approval-chain.entity';
-import { ApprovalRequest } from '../entities/neo4j/approval-request.entity';
-import { ConfidencePattern } from '../entities/neo4j/confidence-pattern.entity';
 import { Developer } from '../entities/neo4j/developer.entity';
-import { FeedbackEntry } from '../entities/neo4j/feedback-entry.entity';
-import { InterruptionPoint } from '../entities/neo4j/interruption-point.entity';
-import { Memory } from '../entities/neo4j/memory.entity';
-import { StoreItemEntity } from '../entities/neo4j/store-item.entity';
-
-// Graph Services (local implementations)
-import { GraphAgentService } from './services/graph-agent.service';
-import { GraphCrudService } from './services/graph-crud.service';
-import { GraphHelpersService } from './services/graph-helpers.service';
-import { GraphTraversalService as LocalGraphTraversalService } from './services/graph-traversal.service';
 
 /**
- * Repository Module - TypeORM-Style Pattern (UPDATED)
+ * Repository Module - Application-Specific Repositories
  *
  * ARCHITECTURE:
- * - Uses Neo4jModule.forFeature() to auto-generate Neo4j repositories
- * - Uses ChromaDBModule.forFeature() to auto-generate ChromaDB repositories
+ * - Generic entities/repositories/adapters are now in @hive-academy/langgraph-adapters
+ * - This module only handles application-specific entities (analytics and business domain)
+ * - Uses Neo4jModule.forFeature() and ChromaDBModule.forFeature() for auto-generation
  * - Custom repositories override defaults via provider pattern
  * - Exports via getRepositoryToken() for type-safe injection
- * - Both Neo4j and ChromaDB now follow the same TypeORM-style pattern
  */
 @Module({
   imports: [
     ChromaDBModule,
     Neo4jModule,
-    // ✅ Auto-generate Neo4j repositories for all entities
-    Neo4jModule.forFeature([
-      Memory,
-      StoreItemEntity,
-      ApprovalChain,
-      ApprovalRequest,
-      InterruptionPoint,
-      ConfidencePattern,
-      FeedbackEntry,
-      Developer,
-      Achievement,
-    ]),
-    // ✅ Auto-generate ChromaDB repositories for all entities
+    // Application-specific Neo4j entities
+    Neo4jModule.forFeature([Developer, Achievement]),
+    // Application-specific ChromaDB entities (Analytics)
     ChromaDBModule.forFeature([
-      VectorMemoryEntity,
-      LangGraphStoreEntity,
       CodeAchievementEntity,
       BrandStrategyEntity,
       ContentPerformanceEntity,
@@ -110,25 +70,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     ]),
   ],
   providers: [
-    // ❌ REMOVED: Neo4jCrudService is now provided by Neo4jModule (global service)
-    // ❌ REMOVED: GraphMetricsService, GraphPatternService, GraphTraversalService
-    //     These are now exported from Neo4jModule - no need to re-register
-
-    // Graph services (local implementations - dependencies of MemoryGraphRepository)
-    LocalGraphTraversalService,
-    GraphAgentService,
-    GraphCrudService,
-    GraphHelpersService,
-
-    // ✅ Custom ChromaDB Repositories (override auto-generated for analytics)
-    {
-      provide: getChromaRepositoryToken(VectorMemoryEntity),
-      useClass: VectorMemoryRepository,
-    },
-    {
-      provide: getChromaRepositoryToken(LangGraphStoreEntity),
-      useClass: LangGraphStoreRepository,
-    },
+    // Application-specific ChromaDB Repositories (Analytics)
     {
       provide: getChromaRepositoryToken(CodeAchievementEntity),
       useClass: CodeAchievementRepository,
@@ -162,36 +104,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
       useClass: CompetitorAnalysisRepository,
     },
 
-    // ✅ Custom Neo4j Repositories (override auto-generated defaults)
-    {
-      provide: getRepositoryToken(Memory),
-      useClass: MemoryGraphRepository,
-    },
-    {
-      provide: getRepositoryToken(StoreItemEntity),
-      useClass: StoreGraphRepository,
-    },
-    {
-      provide: getRepositoryToken(ApprovalRequest),
-      useClass: ApprovalRequestRepository,
-    },
-    // ✅ ApprovalChainRepository now has its own entity (composition pattern)
-    {
-      provide: getRepositoryToken(ApprovalChain),
-      useClass: ApprovalChainRepository,
-    },
-    {
-      provide: getRepositoryToken(InterruptionPoint),
-      useClass: InterruptionRepository,
-    },
-    {
-      provide: getRepositoryToken(ConfidencePattern),
-      useClass: ConfidencePatternRepository,
-    },
-    {
-      provide: getRepositoryToken(FeedbackEntry),
-      useClass: FeedbackRepository,
-    },
+    // Application-specific Neo4j Repositories (Business Domain)
     {
       provide: getRepositoryToken(Developer),
       useClass: DeveloperRepository,
@@ -338,9 +251,7 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     },
   ],
   exports: [
-    // ✅ ChromaDB Repositories (exported via injection tokens)
-    getChromaRepositoryToken(VectorMemoryEntity),
-    getChromaRepositoryToken(LangGraphStoreEntity),
+    // Application-specific ChromaDB Repositories (Analytics)
     getChromaRepositoryToken(CodeAchievementEntity),
     getChromaRepositoryToken(BrandStrategyEntity),
     getChromaRepositoryToken(ContentPerformanceEntity),
@@ -350,19 +261,9 @@ import { GraphTraversalService as LocalGraphTraversalService } from './services/
     getChromaRepositoryToken(AudienceAnalysisEntity),
     getChromaRepositoryToken(CompetitorAnalysisEntity),
 
-    // ✅ Neo4j Repositories (exported via injection tokens)
-    getRepositoryToken(Memory),
-    getRepositoryToken(StoreItemEntity),
-    getRepositoryToken(ApprovalChain),
-    getRepositoryToken(ApprovalRequest),
-    getRepositoryToken(InterruptionPoint),
-    getRepositoryToken(ConfidencePattern),
-    getRepositoryToken(FeedbackEntry),
+    // Application-specific Neo4j Repositories (Business Domain)
     getRepositoryToken(Developer),
     getRepositoryToken(Achievement),
-
-    // ❌ REMOVED: Graph services are now exported from Neo4jModule directly
-    // No need to re-export them here
 
     // ✅ Relationship Core Repositories (exported via injection tokens)
     'USES_TECHNOLOGY_REPOSITORY',

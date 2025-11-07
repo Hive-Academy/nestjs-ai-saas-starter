@@ -1,42 +1,70 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import {
-  NodeIdBuilder,
-  ICheckpointAdapter,
-  BaseCheckpointMetadata,
-  BaseCheckpointTuple,
-} from '@hive-academy/langgraph-core';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { NodeIdBuilder } from '@hive-academy/langgraph-core';
 import { HumanApprovalRequest } from './approval-workflow.types';
-import { IHitlCheckpointService } from '../interfaces/hitl-services.interface';
 import { HITL_DEFAULTS } from '../constants';
+import {
+  IApprovalStateStorageService,
+  ApprovalStateData,
+} from '../interfaces/approval-state-storage.interface';
 
 /**
- * Service for handling HITL checkpoint operations
- * Manages state persistence and workflow recovery
+ * Service for handling HITL approval state persistence - REFACTORED Phase 6
+ *
+ * **Phase 6 Migration** (Adapter Pattern):
+ * - Migrated from direct repository injection to adapter interface
+ * - Uses IApprovalStateStorageService for storage abstraction
+ * - Enables swapping storage backends without service changes
+ * - Follows same pattern as other HITL storage services
+ *
+ * **Phase 5 Migration** (TASK_2025_032):
+ * - Migrated from checkpoint-based storage to Neo4j repository pattern
+ * - Approval state is operational data, NOT workflow state
+ * - Neo4j provides queryable approval history with relationships
+ * - LangGraph still handles workflow checkpoints automatically
+ *
+ * **Why Adapter Pattern**:
+ * - Consistent with other HITL storage (IHitlStorageService, etc.)
+ * - Enables testing with mock adapters
+ * - Allows swapping Neo4j for PostgreSQL/MongoDB/etc.
+ * - Clean separation: Service → Adapter → Repository → Database
+ *
+ * **Integration**: Uses IApprovalStateStorageService adapter interface
+ *
+ * Verification:
+ * - Pattern: libs/langgraph-modules/hitl/src/lib/services/*.service.ts
+ * - Source: task-tracking/TASK_2025_032/checkpoint-package-assessment.md:729-770
  */
 @Injectable()
-export class HitlCheckpointService implements IHitlCheckpointService {
+export class HitlCheckpointService {
   private readonly logger = new Logger(HitlCheckpointService.name);
-  private currentStep = 0;
 
   constructor(
-    @Inject('ICheckpointAdapter')
-    private readonly checkpointAdapter: ICheckpointAdapter
+    @Optional()
+    @Inject('IApprovalStateStorageService')
+    private readonly approvalStateStorage?: IApprovalStateStorageService
   ) {
-    this.logger.log(
-      '💾 HITL Checkpoint Service initialized with adapter-first storage'
-    );
+    if (!this.approvalStateStorage) {
+      this.logger.warn(
+        '⚠️ No approval state storage adapter configured. Approval state persistence will be disabled.'
+      );
+    } else {
+      this.logger.log(
+        '💾 HITL Checkpoint Service initialized with approval state storage'
+      );
+    }
   }
 
   /**
-   * Save approval workflow state at critical points
+   * Save approval workflow state to storage
    */
   async saveApprovalState(
     request: HumanApprovalRequest,
     source: string,
     additionalData?: Record<string, unknown>
   ): Promise<void> {
-    if (!this.checkpointAdapter) {
-      return; // Gracefully handle when checkpoint adapter is not available
+    if (!this.approvalStateStorage) {
+      this.logger.debug('No approval state storage configured - skipping save');
+      return;
     }
 
     try {
@@ -45,86 +73,118 @@ export class HitlCheckpointService implements IHitlCheckpointService {
         request.nodeId
       );
 
-      const checkpointData = {
+      const approvalState: ApprovalStateData = {
         id: request.id,
-        channel_values: {
-          request,
-          additionalData,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const metadata: BaseCheckpointMetadata = {
-        timestamp: new Date().toISOString(),
-        source: source as 'input' | 'loop' | 'update' | 'fork',
-        step: ++this.currentStep,
-        parents: {
-          executionId: request.executionId,
-          nodeId: request.nodeId,
-          requestId: request.id,
-        },
-        workflowState: request.workflowState,
-        confidence: request.confidence.current,
-        riskLevel: request.riskAssessment?.level,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
         threadId,
-        checkpointData,
-        metadata,
-        'hitl-approval'
-      );
+        nodeId: request.nodeId,
+        status: this.mapWorkflowStateToStatus(request.workflowState),
+        metadata: {
+          executionId: request.executionId,
+          source,
+          workflowState: request.workflowState,
+          confidence: request.confidence.current,
+          riskLevel: request.riskAssessment?.level,
+          additionalData,
+        },
+        requestedAt: request.timestamps.requested,
+      };
+
+      await this.approvalStateStorage.saveApprovalState(approvalState);
 
       this.logger.debug(
-        `Saved approval checkpoint for request ${request.id} at ${source}`
+        `Saved approval state for request ${request.id} at ${source}`
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Failed to save approval checkpoint for request ${request.id}: ${errorMsg}`
+        `Failed to save approval state for request ${request.id}: ${errorMsg}`
       );
       // Don't throw - gracefully continue approval workflow
     }
   }
 
   /**
-   * Resume approval workflow from saved state
+   * Map approval workflow state to storage status
+   */
+  private mapWorkflowStateToStatus(
+    workflowState: string
+  ): 'pending' | 'approved' | 'rejected' | 'escalated' | 'timeout' {
+    switch (workflowState.toLowerCase()) {
+      case 'approved':
+        return 'approved';
+      case 'rejected':
+        return 'rejected';
+      case 'escalated':
+        return 'escalated';
+      case 'timeout':
+        return 'timeout';
+      default:
+        return 'pending';
+    }
+  }
+
+  /**
+   * Resume approval workflow from storage state
    */
   async resumeApprovalWorkflow(
     executionId: string,
     nodeId: string,
-    checkpointId?: string
+    approvalId?: string
   ): Promise<HumanApprovalRequest | null> {
-    if (!this.checkpointAdapter) {
-      this.logger.warn(
-        'Cannot resume approval workflow - no checkpoint adapter available'
-      );
+    if (!this.approvalStateStorage) {
+      this.logger.debug('No approval state storage configured - cannot resume');
       return null;
     }
 
     try {
       const threadId = this.generateApprovalThreadId(executionId, nodeId);
 
-      const checkpoint = await this.checkpointAdapter.loadCheckpoint<{
-        request: HumanApprovalRequest;
-        additionalData?: Record<string, unknown>;
-        timestamp: string;
-      }>(threadId, checkpointId, 'hitl-approval');
+      // Load approval state from storage
+      let approvalState: ApprovalStateData | null;
 
-      if (!checkpoint?.channel_values?.request) {
+      if (approvalId) {
+        approvalState = await this.approvalStateStorage.loadApprovalState(
+          approvalId
+        );
+      } else {
+        // Load most recent approval for this thread
+        const approvals = await this.approvalStateStorage.listApprovalsByThread(
+          threadId,
+          {
+            limit: 1,
+          }
+        );
+        approvalState = approvals[0] || null;
+      }
+
+      if (!approvalState) {
         this.logger.warn(
-          `No checkpoint found for approval workflow: ${executionId}/${nodeId}`
+          `No approval state found for: ${executionId}/${nodeId}`
         );
         return null;
       }
 
-      const restoredRequest = checkpoint.channel_values.request;
+      // Reconstruct HumanApprovalRequest from stored state
+      // Note: This is a minimal reconstruction - full request may need to be rebuilt
+      const restoredRequest: Partial<HumanApprovalRequest> = {
+        id: approvalState.id,
+        executionId:
+          (approvalState.metadata as any)?.executionId || executionId,
+        nodeId: approvalState.nodeId,
+        workflowState:
+          (approvalState.metadata as any)?.workflowState ||
+          approvalState.status,
+        timestamps: {
+          requested: approvalState.requestedAt,
+          responded: approvalState.respondedAt,
+        } as any,
+      };
 
       this.logger.log(
-        `Resumed approval workflow for request ${restoredRequest.id} from checkpoint`
+        `Resumed approval workflow for request ${restoredRequest.id} from storage`
       );
 
-      return restoredRequest;
+      return restoredRequest as HumanApprovalRequest;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(
@@ -135,7 +195,7 @@ export class HitlCheckpointService implements IHitlCheckpointService {
   }
 
   /**
-   * Save approval chain progression
+   * Save approval chain progression to storage
    */
   async saveChainProgress(
     request: HumanApprovalRequest,
@@ -143,54 +203,31 @@ export class HitlCheckpointService implements IHitlCheckpointService {
     approvers: string[],
     chainStatus: string
   ): Promise<void> {
-    if (!this.checkpointAdapter || !request.chainId) {
-      return; // Gracefully handle when checkpoint adapter is not available or no chain
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - skipping chain save'
+      );
+      return;
+    }
+
+    if (!request.chainId) {
+      return; // No chain ID - nothing to save
     }
 
     try {
-      const threadId = this.generateChainThreadId(
-        request.chainId,
-        request.executionId
-      );
-
-      const chainData = {
-        id: `${request.chainId}-${chainLevel}`,
-        channel_values: {
-          chainId: request.chainId,
-          level: chainLevel,
-          approvers,
-          status: chainStatus,
-          requestId: request.id,
-          executionId: request.executionId,
-          nodeId: request.nodeId,
-          timestamp: new Date().toISOString(),
-        },
-      };
-
-      const metadata: BaseCheckpointMetadata = {
-        timestamp: new Date().toISOString(),
-        source: 'update',
-        step: ++this.currentStep,
-        parents: {
-          chainId: request.chainId,
-          executionId: request.executionId,
-          requestId: request.id,
-          level: chainLevel,
-        },
-        chainLevel,
-        chainStatus,
-        approverCount: approvers.length,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
-        threadId,
-        chainData,
-        metadata,
-        'hitl-chain'
-      );
+      await this.approvalStateStorage.saveApprovalChain({
+        chainId: request.chainId,
+        executionId: request.executionId,
+        level: chainLevel,
+        approvers,
+        status: chainStatus,
+        requestId: request.id,
+        nodeId: request.nodeId,
+        timestamp: new Date(),
+      });
 
       this.logger.debug(
-        `Saved chain progress checkpoint for chain ${request.chainId} level ${chainLevel}`
+        `Saved chain progress for chain ${request.chainId} level ${chainLevel}`
       );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -202,46 +239,35 @@ export class HitlCheckpointService implements IHitlCheckpointService {
   }
 
   /**
-   * Resume approval chain from saved state
+   * Resume approval chain from storage state
    */
   async resumeApprovalChain(
     chainId: string,
-    executionId: string,
-    checkpointId?: string
+    executionId: string
   ): Promise<{
     level: number;
     approvers: string[];
     status: string;
   } | null> {
-    if (!this.checkpointAdapter) {
-      this.logger.warn(
-        'Cannot resume approval chain - no checkpoint adapter available'
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot resume chain'
       );
       return null;
     }
 
     try {
-      const threadId = this.generateChainThreadId(chainId, executionId);
+      const chainData = await this.approvalStateStorage.loadApprovalChain(
+        chainId,
+        executionId
+      );
 
-      const checkpoint = await this.checkpointAdapter.loadCheckpoint<{
-        chainId: string;
-        level: number;
-        approvers: string[];
-        status: string;
-        requestId: string;
-        executionId: string;
-        nodeId: string;
-        timestamp: string;
-      }>(threadId, checkpointId, 'hitl-chain');
-
-      if (!checkpoint?.channel_values) {
+      if (!chainData) {
         this.logger.warn(
-          `No chain checkpoint found for chain: ${chainId}/${executionId}`
+          `No chain state found for chain: ${chainId}/${executionId}`
         );
         return null;
       }
-
-      const chainData = checkpoint.channel_values;
 
       this.logger.log(
         `Resumed approval chain ${chainId} at level ${chainData.level} with status ${chainData.status}`
@@ -286,48 +312,52 @@ export class HitlCheckpointService implements IHitlCheckpointService {
   }
 
   /**
-   * Get all approval checkpoints for execution
+   * Get all approval states for execution from storage
    */
   async getApprovalCheckpoints(
     executionId: string,
     nodeId: string,
     limit?: number
-  ): Promise<readonly BaseCheckpointTuple[]> {
-    if (!this.checkpointAdapter) {
+  ): Promise<ApprovalStateData[]> {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot get checkpoints'
+      );
       return [];
     }
 
     try {
       const threadId = this.generateApprovalThreadId(executionId, nodeId);
-      return await this.checkpointAdapter.listCheckpoints(
-        threadId,
-        { limit: limit || 10 },
-        'hitl-approval'
-      );
+      return await this.approvalStateStorage.listApprovalsByThread(threadId, {
+        limit: limit || 10,
+      });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Failed to get approval checkpoints for ${executionId}/${nodeId}: ${errorMsg}`
+        `Failed to get approval states for ${executionId}/${nodeId}: ${errorMsg}`
       );
       return [];
     }
   }
 
   /**
-   * Cleanup old approval checkpoints
+   * Cleanup old approval states from storage
    */
   async cleanupApprovalCheckpoints(maxAge?: number): Promise<number> {
-    if (!this.checkpointAdapter) {
+    if (!this.approvalStateStorage) {
+      this.logger.debug(
+        'No approval state storage configured - cannot cleanup'
+      );
       return 0;
     }
 
     try {
-      return await this.checkpointAdapter.cleanupCheckpoints({
-        maxAge: maxAge || HITL_DEFAULTS.FEEDBACK_RETENTION_MS,
-      });
+      return await this.approvalStateStorage.cleanupOldApprovals(
+        maxAge || HITL_DEFAULTS.FEEDBACK_RETENTION_MS
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.warn(`Failed to cleanup approval checkpoints: ${errorMsg}`);
+      this.logger.warn(`Failed to cleanup approval states: ${errorMsg}`);
       return 0;
     }
   }

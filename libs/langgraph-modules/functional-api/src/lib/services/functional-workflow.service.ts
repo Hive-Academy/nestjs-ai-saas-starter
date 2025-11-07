@@ -27,8 +27,6 @@ import {
   UnknownTaskError,
 } from '../errors/functional-workflow.errors';
 import type {
-  BaseCheckpoint,
-  BaseCheckpointMetadata,
   BaseCheckpointTuple,
   ICheckpointAdapter,
   IStreamingService,
@@ -122,7 +120,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
         ...enhancedContext, // Apply memory-enhanced context
       } as TState;
 
-      let checkpointCount = 0;
+      const checkpointCount = 0;
       const executionPath: string[] = [];
 
       // Execute tasks in dependency order
@@ -168,16 +166,6 @@ export class FunctionalWorkflowService implements OnModuleInit {
           } as TState;
 
           executionPath.push(taskName);
-
-          // Handle checkpointing
-          if (
-            this.options.enableCheckpointing &&
-            (result.shouldCheckpoint ||
-              this.shouldAutoCheckpoint(checkpointCount))
-          ) {
-            await this.saveCheckpoint(executionId, currentState);
-            checkpointCount++;
-          }
 
           await this.emitStreamEvent({
             type: 'task_complete',
@@ -482,63 +470,6 @@ export class FunctionalWorkflowService implements OnModuleInit {
   }
 
   /**
-   * Determines if auto-checkpointing should occur
-   */
-  private shouldAutoCheckpoint(checkpointCount: number): boolean {
-    if (!this.options.enableCheckpointing || !this.options.checkpointInterval) {
-      return false;
-    }
-
-    const checkpointEveryNTasks = 5;
-    return checkpointCount % checkpointEveryNTasks === 0;
-  }
-
-  /**
-   * Saves a checkpoint using the ICheckpointAdapter
-   */
-  private async saveCheckpoint(
-    executionId: string,
-    state: FunctionalWorkflowState
-  ): Promise<void> {
-    try {
-      const checkpoint: BaseCheckpoint<FunctionalWorkflowState> = {
-        id: `checkpoint_${executionId}_${Date.now()}`,
-        channel_values: state,
-      };
-
-      const metadata: BaseCheckpointMetadata = {
-        executionId,
-        timestamp: new Date().toISOString(),
-        source: 'input' as const,
-        step: state.currentStep || 0,
-        parents: {},
-        workflowName: state.workflowName,
-        currentTask: state.currentTask,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
-        executionId,
-        checkpoint,
-        metadata
-      );
-
-      this.logger.debug(`Checkpoint saved for execution ${executionId}`);
-
-      await this.emitStreamEvent({
-        type: 'checkpoint_saved',
-        timestamp: new Date(),
-        metadata: { executionId, checkpointId: checkpoint.id },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to save checkpoint for execution ${executionId}`,
-        error
-      );
-      // Don't throw - checkpoint failures shouldn't stop workflow execution
-    }
-  }
-
-  /**
    * Emits a stream event through the streaming service
    */
   private async emitStreamEvent(event: WorkflowStreamEvent): Promise<void> {
@@ -832,7 +763,7 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
       // Run the graph with checkpointing if enabled
       let finalState: TState;
-      let checkpointCount = 0;
+      const checkpointCount = 0;
 
       if (this.options.enableCheckpointing) {
         // Stream execution for checkpoint opportunities
@@ -841,12 +772,6 @@ export class FunctionalWorkflowService implements OnModuleInit {
 
         for await (const update of stream) {
           lastState = { ...lastState, ...update } as TState;
-
-          // Save checkpoint at intervals
-          if (this.shouldAutoCheckpoint(checkpointCount)) {
-            await this.saveCheckpoint(executionId, lastState);
-            checkpointCount++;
-          }
         }
 
         finalState = lastState;

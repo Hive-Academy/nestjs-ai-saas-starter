@@ -1,23 +1,59 @@
-import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CompiledStateGraph } from '@langchain/langgraph';
+import {
+  ILangGraphCheckpointSaver,
+  isLangGraphCheckpointSaver,
+} from '@hive-academy/langgraph-checkpoint';
+import {
+  generateExecutionId,
+  ICheckpointAdapter,
+  NodeIdBuilder,
+} from '@hive-academy/langgraph-core';
 import { HumanMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import { CompiledStateGraph } from '@langchain/langgraph';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AgentRegistryService } from '../agent/agent-registry.service';
+import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
+import { getAgentConfig } from '../decorators/agent.decorator';
+import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
 import {
   AgentNetwork,
+  AgentNetworkSchema,
+  AgentNotFoundError,
   AgentState,
   MultiAgentResult,
   NetworkConfigurationError,
-  AgentNotFoundError,
-  AgentNetworkSchema,
+  SupervisorConfig,
+  SwarmConfig,
+  HierarchicalConfig,
 } from '../interfaces/multi-agent.interface';
-import type { MultiAgentModuleOptions } from '../interfaces/multi-agent.interface';
-import { AgentRegistryService } from '../agent/agent-registry.service';
 import { GraphBuilderService } from './graph-builder.service';
-import { MULTI_AGENT_MODULE_OPTIONS } from '../constants/multi-agent.constants';
-import { generateExecutionId } from '@hive-academy/langgraph-core';
-import { getAgentConfig } from '../decorators/agent.decorator';
+import type { MultiAgentGraph, WorkflowResult } from '../types/internal-types';
+
+/**
+ * Type guards for network configurations
+ */
+function isSupervisorConfig(config: unknown): config is SupervisorConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    'workers' in config &&
+    Array.isArray((config as SupervisorConfig).workers)
+  );
+}
+
+function isSwarmConfig(config: unknown): config is SwarmConfig {
+  return typeof config === 'object' && config !== null;
+}
+
+function isHierarchicalConfig(config: unknown): config is HierarchicalConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    'levels' in config &&
+    Array.isArray((config as HierarchicalConfig).levels)
+  );
+}
 
 /**
  * High-level service for managing agent networks and workflow execution
@@ -68,36 +104,63 @@ export class NetworkManagerService {
         );
       }
 
+      // BUGFIX (TASK_2025_032): Re-enabled checkpointer after removing manual checkpoint interference
       // Prepare compilation options with checkpointer if enabled
+      this.logger.debug('[CHECKPOINT] prepareCompilationOptions - BEFORE:', {
+        networkId: networkConfig.id,
+        hasCheckpointerInConfig:
+          !!networkConfig.compilationOptions?.checkpointer,
+        compilationOptions: networkConfig.compilationOptions,
+      });
+
       const compilationOptions = await this.prepareCompilationOptions(
         networkConfig.compilationOptions,
         networkConfig.id
       );
+
+      this.logger.debug('[CHECKPOINT] prepareCompilationOptions - AFTER:', {
+        networkId: networkConfig.id,
+        hasCheckpointerInResult: !!compilationOptions.checkpointer,
+        compilationOptions,
+      });
 
       // Build the appropriate graph type
       let graph: CompiledStateGraph<any, any>;
 
       switch (networkConfig.type) {
         case 'supervisor':
+          if (!isSupervisorConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError(
+              'Invalid supervisor configuration'
+            );
+          }
           graph = await this.graphBuilder.buildSupervisorGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
 
         case 'swarm':
+          if (!isSwarmConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError('Invalid swarm configuration');
+          }
           graph = await this.graphBuilder.buildSwarmGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
 
         case 'hierarchical':
+          if (!isHierarchicalConfig(networkConfig.config)) {
+            throw new NetworkConfigurationError(
+              'Invalid hierarchical configuration'
+            );
+          }
           graph = await this.graphBuilder.buildHierarchicalGraph(
             networkConfig.agents,
-            networkConfig.config as any,
+            networkConfig.config,
             compilationOptions
           );
           break;
@@ -107,6 +170,33 @@ export class NetworkManagerService {
             `Unsupported network type: ${networkConfig.type}`
           );
       }
+
+      // 🔍 DIAGNOSTIC LOGGING: Verify graph was compiled with channels
+      const graphAny = graph as any;
+      this.logger.debug(
+        `[DIAGNOSTIC] Graph compiled successfully for ${networkConfig.id}:`,
+        {
+          graphType: typeof graph,
+          hasChannels: !!graphAny.channels,
+          channelKeys: graphAny.channels
+            ? Object.keys(graphAny.channels)
+            : 'UNDEFINED',
+          channelCount: graphAny.channels
+            ? Object.keys(graphAny.channels).length
+            : 0,
+          graphConstructorName: graph?.constructor?.name || 'UNKNOWN',
+          // 🔍 NEW: Check for __input__ specifically
+          hasInputChannel:
+            graphAny.channels && '__input__' in graphAny.channels,
+          // 🔍 NEW: Check other internal graph properties
+          hasBuilder: !!graphAny.builder,
+          hasNodes: !!graphAny.nodes,
+          nodeKeys: graphAny.nodes ? Object.keys(graphAny.nodes) : 'UNDEFINED',
+          // 🔍 NEW: Check if state schema/spec is present
+          hasStateSchema: !!graphAny.stateSchema,
+          hasSpec: !!graphAny.spec,
+        }
+      );
 
       // Store compiled graph and configuration
       this.networks.set(networkConfig.id, graph);
@@ -141,6 +231,37 @@ export class NetworkManagerService {
   }
 
   /**
+   * Generate canonical thread ID using NODE_ID_STANDARD pattern
+   * Pattern: multi-agent|execution:<networkId>:<timestamp>
+   *
+   * @param networkId - The network identifier
+   * @param timestamp - Execution start timestamp
+   * @returns Canonical thread ID following NODE_ID_STANDARD
+   */
+  private generateThreadId(networkId: string, timestamp: number): string {
+    return NodeIdBuilder.create()
+      .domain('multi-agent')
+      .phase('execution')
+      .activity(networkId)
+      .detail(timestamp.toString())
+      .build();
+  }
+
+  /**
+   * Determine initial agent for workflow execution
+   *
+   * @param networkConfig - Network configuration
+   * @returns Initial agent ID (supervisor or first worker)
+   */
+  private getInitialAgent(networkConfig: AgentNetwork): string {
+    if (networkConfig.type === 'supervisor' && networkConfig.config) {
+      return 'supervisor';
+    }
+    // For other network types, return first agent or default
+    return networkConfig.agents[0]?.id || 'coordinator';
+  }
+
+  /**
    * Execute multi-agent workflow
    */
   async executeWorkflow(
@@ -165,20 +286,28 @@ export class NetworkManagerService {
         typeof msg === 'string' ? new HumanMessage(msg) : msg
       );
 
-      const initialState: AgentState = {
+      const executionId = generateExecutionId();
+      const threadId = this.generateThreadId(networkId, startTime);
+      const currentAgent = this.getInitialAgent(networkConfig);
+
+      const initialState: Partial<AgentState> = {
         messages,
+        threadId, // ✅ FIXED: Canonical thread ID for memory operations
+        current: currentAgent, // ✅ FIXED: Initial agent for memory context
         metadata: {
           networkId,
           networkType: networkConfig.type,
           startTime,
-          executionId: generateExecutionId(),
+          executionId,
         },
       };
 
       this.logger.debug(`Executing workflow on network ${networkId}`, {
         type: networkConfig.type,
         messageCount: messages.length,
-        executionId: initialState.metadata?.executionId,
+        threadId,
+        currentAgent,
+        executionId,
       });
 
       this.eventEmitter.emit('workflow.started', {
@@ -188,18 +317,76 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      // Execute the workflow
-      const result = await (graph as any).invoke(initialState as any, {
+      // 🔍 DIAGNOSTIC LOGGING: Graph state before execution
+      this.logger.debug(`[DIAGNOSTIC] Graph details before invoke:`, {
+        networkId,
+        graphType: typeof graph,
+        hasChannels: !!(graph as any).channels,
+        channelKeys: (graph as any).channels
+          ? Object.keys((graph as any).channels)
+          : 'UNDEFINED',
+        graphCompiled: !!(graph as any).compiled,
+      });
+
+      // 🔍 DIAGNOSTIC LOGGING: Initial state structure
+      this.logger.debug(`[DIAGNOSTIC] Initial state being passed to invoke:`, {
+        stateKeys: Object.keys(initialState),
+        messagesCount: initialState.messages?.length,
+        hasThreadId: !!initialState.threadId,
+        hasCurrent: !!initialState.current,
+        hasMetadata: !!initialState.metadata,
+        metadataKeys: initialState.metadata
+          ? Object.keys(initialState.metadata)
+          : 'NONE',
+      });
+
+      // 🔍 DIAGNOSTIC LOGGING: Config being passed
+      // BUGFIX (TASK_2025_032): Add checkpointer to runtime config
+      const invokeConfig = {
         ...input.config,
+        checkpointer: networkConfig.compilationOptions?.checkpointer, // ✅ Runtime checkpointer
         configurable: {
           ...input.config?.configurable,
+          thread_id: threadId, // ✅ Thread ID for checkpoint operations
           networkId,
           networkType: networkConfig.type,
         },
+      };
+      this.logger.debug(`[DIAGNOSTIC] Invoke config:`, {
+        hasConfig: !!input.config,
+        configKeys: input.config ? Object.keys(input.config) : 'NONE',
+        configurableKeys: invokeConfig.configurable
+          ? Object.keys(invokeConfig.configurable)
+          : 'NONE',
+        hasCheckpointer: !!invokeConfig.checkpointer,
+        hasThreadId: !!invokeConfig.configurable?.thread_id,
       });
 
+      // Execute the workflow
+      // BUGFIX (TASK_2025_033): Use graph.stream() when streamMode is provided
+      if (input.streamMode) {
+        // Return async iterator from graph.stream() for streaming execution
+        this.logger.debug(
+          `[DIAGNOSTIC] Calling graph.stream() with mode: ${input.streamMode}...`
+        );
+        const typedGraph = graph as MultiAgentGraph;
+        return typedGraph.stream(initialState as any, {
+          ...invokeConfig,
+          streamMode: input.streamMode,
+        }) as any;
+      }
+
+      // Existing invoke() path for non-streaming execution
+      this.logger.debug(`[DIAGNOSTIC] Calling graph.invoke()...`);
+      const typedGraph = graph as MultiAgentGraph;
+      const result: any = await typedGraph.invoke(
+        initialState as any,
+        invokeConfig
+      );
+      this.logger.debug(`[DIAGNOSTIC] graph.invoke() completed successfully`);
+
       const executionTime = Date.now() - startTime;
-      const executionPath = this.extractExecutionPath(result);
+      const executionPath = this.extractExecutionPath(result as AgentState);
 
       this.eventEmitter.emit('workflow.completed', {
         networkId,
@@ -211,14 +398,26 @@ export class NetworkManagerService {
         timestamp: new Date().toISOString(),
       });
 
-      return {
-        finalState: result as any,
-        executionPath,
+      const resultState = result as Partial<AgentState>;
+      const workflowResult = {
+        finalState: resultState,
         executionTime,
+        tokenUsage: this.extractTokenUsage(resultState),
+      } as WorkflowResult;
+
+      return {
+        ...workflowResult,
+        executionPath,
         success: true,
-        tokenUsage: this.extractTokenUsage(result as any),
       };
     } catch (error) {
+      // 🔍 DIAGNOSTIC LOGGING: Capture error details
+      this.logger.error(`[DIAGNOSTIC] graph.invoke() FAILED with error:`, {
+        errorName:
+          error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : 'NO STACK',
+      });
       const executionTime = Date.now() - startTime;
 
       this.logger.error(
@@ -274,15 +473,29 @@ export class NetworkManagerService {
       typeof msg === 'string' ? new HumanMessage(msg) : msg
     );
 
-    const initialState: AgentState = {
+    const executionId = generateExecutionId();
+    const threadId = this.generateThreadId(networkId, startTime);
+    const currentAgent = this.getInitialAgent(networkConfig);
+
+    const initialState: Partial<AgentState> = {
       messages,
+      threadId, // ✅ FIXED: Canonical thread ID for memory operations
+      current: currentAgent, // ✅ FIXED: Initial agent for memory context
       metadata: {
         networkId,
         networkType: networkConfig.type,
         startTime,
-        executionId: generateExecutionId(),
+        executionId,
       },
     };
+
+    this.logger.debug(`Executing workflow on network ${networkId}`, {
+      type: networkConfig.type,
+      messageCount: messages.length,
+      threadId,
+      currentAgent,
+      executionId,
+    });
 
     try {
       // 🆕 PHASE 2: Read streaming configuration from agent metadata
@@ -334,47 +547,97 @@ export class NetworkManagerService {
         }
       }
 
-      this.eventEmitter.emit('workflow.stream.started', {
-        networkId,
-        executionId: initialState.metadata?.executionId,
-        streamMode: streamOptions.streamMode,
-        subgraphs: streamOptions.subgraphs,
-        timestamp: new Date().toISOString(),
+      const startExecutionId = initialState.metadata?.executionId || 'unknown';
+
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_START
+      this.eventEmitter.emit(`workflow.stream.${startExecutionId}`, {
+        type: 'workflow:start', // StreamEventType.WORKFLOW_START
+        data: {
+          networkId,
+          streamMode: streamOptions.streamMode,
+          subgraphs: streamOptions.subgraphs,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: startExecutionId,
+          nodeId: 'workflow-start',
+        },
       });
 
       // Stream the workflow execution with enhanced streaming options
       let finalResult: AgentState | undefined;
       const executionPath: string[] = [];
 
-      for await (const chunk of (graph as any).stream(
+      const typedGraph = graph as any;
+      for await (const chunk of typedGraph.stream(
         initialState as any,
         streamOptions
-      )) {
+      ) as AsyncIterable<any>) {
         // Track execution path
-        if (chunk.current) {
-          executionPath.push(chunk.current);
+        const chunkState = chunk as any;
+        if (chunkState.current) {
+          executionPath.push(chunkState.current);
         }
 
-        finalResult = chunk;
-        yield chunk;
+        finalResult = chunkState as AgentState;
+
+        // 🚀 STREAMING INTEGRATION: Emit events via EventEmitter2
+        // This ensures streaming events reach WebSocketBridge → Frontend
+        // Note: We use EventEmitter2 directly to avoid circular dependency with workflow-engine
+        const executionId = initialState.metadata?.executionId || 'unknown';
+
+        // BUGFIX: Emit proper StreamUpdate format with valid StreamEventType enum
+        // The WebSocketBridgeService expects StreamUpdate objects with type from StreamEventType enum
+        this.eventEmitter.emit(`workflow.stream.${executionId}`, {
+          type: 'values', // StreamEventType.VALUES - state snapshots from LangGraph stream mode
+          data: {
+            state: chunkState,
+            agentId: chunkState.current,
+            networkId,
+          },
+          timestamp: new Date(),
+          metadata: {
+            executionId,
+            nodeId: chunkState.current || 'unknown-agent',
+            agentType: chunkState.current,
+            streamMode: streamOptions.streamMode,
+          },
+        });
+
+        yield chunkState;
       }
 
       const executionTime = Date.now() - startTime;
+      const completedExecutionId =
+        initialState.metadata?.executionId || 'unknown';
 
-      this.eventEmitter.emit('workflow.stream.completed', {
-        networkId,
-        executionId: initialState.metadata?.executionId,
-        executionTime,
-        executionPath,
-        timestamp: new Date().toISOString(),
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_END
+      this.eventEmitter.emit(`workflow.stream.${completedExecutionId}`, {
+        type: 'workflow:end', // StreamEventType.WORKFLOW_END
+        data: {
+          networkId,
+          executionTime,
+          executionPath,
+          success: true,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: completedExecutionId,
+          nodeId: 'workflow-completed',
+        },
       });
 
-      return {
-        finalState: (finalResult || initialState) as any,
-        executionPath,
+      const resultState = (finalResult || initialState) as AgentState;
+      const workflowResult = {
+        finalState: resultState,
         executionTime,
+        tokenUsage: this.extractTokenUsage(resultState),
+      } as WorkflowResult;
+
+      return {
+        ...workflowResult,
+        executionPath,
         success: true,
-        tokenUsage: this.extractTokenUsage(finalResult as any),
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -384,11 +647,22 @@ export class NetworkManagerService {
         error
       );
 
-      this.eventEmitter.emit('workflow.stream.failed', {
-        networkId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        executionTime,
-        timestamp: new Date().toISOString(),
+      const failedExecutionId = initialState.metadata?.executionId || 'unknown';
+
+      // BUGFIX: Emit proper StreamUpdate format with StreamEventType.WORKFLOW_ERROR
+      this.eventEmitter.emit(`workflow.stream.${failedExecutionId}`, {
+        type: 'workflow:error', // StreamEventType.WORKFLOW_ERROR
+        data: {
+          networkId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
+          executionTime,
+        },
+        timestamp: new Date(),
+        metadata: {
+          executionId: failedExecutionId,
+          nodeId: 'workflow-error',
+        },
       });
 
       return {
@@ -543,7 +817,7 @@ export class NetworkManagerService {
    * Extract token usage from result
    */
   private extractTokenUsage(
-    result?: AgentState
+    result?: Partial<AgentState>
   ): MultiAgentResult['tokenUsage'] {
     if (!result?.metadata?.tokenUsage) {
       return undefined;
@@ -563,17 +837,26 @@ export class NetworkManagerService {
    */
   private async createCheckpointerForNetwork(
     networkId: string
-  ): Promise<ICheckpointAdapter | null> {
+  ): Promise<ILangGraphCheckpointSaver | null> {
+    this.logger.debug(
+      `[CHECKPOINT] createCheckpointerForNetwork called for ${networkId}`,
+      {
+        hasCheckpointAdapter: !!this.checkpointAdapter,
+        checkpointingEnabled: this.isCheckpointingEnabled(),
+        moduleOptions: this.options,
+      }
+    );
+
     // Graceful degradation when checkpoint adapter not available
     if (!this.checkpointAdapter) {
-      this.logger.debug(
-        'CheckpointAdapter not available - checkpointing disabled'
+      this.logger.warn(
+        '[CHECKPOINT] CheckpointAdapter not available - checkpointing disabled'
       );
       return null;
     }
 
     if (!this.isCheckpointingEnabled()) {
-      this.logger.debug('Checkpointing disabled in configuration');
+      this.logger.warn('[CHECKPOINT] Checkpointing disabled in configuration');
       return null;
     }
 
@@ -587,13 +870,37 @@ export class NetworkManagerService {
         return null;
       }
 
-      // Return the adapter directly as the checkpointer
-      // LangGraph will use the adapter's methods for checkpoint operations
+      // TASK_2025_029: Get the actual LangGraph saver, not the ICheckpointAdapter
+      // LangGraph's compile() expects a BaseCheckpointSaver with put/get/list methods
+      // Type-safe access to getLangGraphSaver() method
+      const adapter = this.checkpointAdapter as ICheckpointAdapter & {
+        getLangGraphSaver?: (
+          saverName?: string
+        ) => ILangGraphCheckpointSaver | null;
+      };
+
+      const langGraphSaver = adapter.getLangGraphSaver?.();
+
+      if (!langGraphSaver) {
+        this.logger.warn(
+          `No LangGraph saver available - checkpointing disabled for network ${networkId}`
+        );
+        return null;
+      }
+
+      // Validate that the saver implements the required interface
+      if (!isLangGraphCheckpointSaver(langGraphSaver)) {
+        this.logger.error(
+          `Invalid checkpoint saver - missing required methods (get, getTuple, list, put, putWrites, deleteThread)`
+        );
+        return null;
+      }
+
       this.logger.debug(
-        `Checkpoint adapter configured for network ${networkId}`
+        `LangGraph checkpointer configured for network ${networkId}`
       );
 
-      return this.checkpointAdapter;
+      return langGraphSaver;
     } catch (error) {
       this.logger.error(
         `Failed to configure checkpointer for network ${networkId}:`,

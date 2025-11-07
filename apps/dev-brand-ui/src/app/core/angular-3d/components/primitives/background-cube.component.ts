@@ -62,9 +62,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { Mesh } from 'three';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
+import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 /**
  * BackgroundCube Component
@@ -75,7 +76,7 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
 @Component({
   selector: 'app-background-cube',
   standalone: true,
-  imports: [Float3dDirective, Performance3dDirective],
+  imports: [Float3dDirective, Performance3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -90,7 +91,7 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
       [performanceConfig]="performanceConfig()"
     >
       <!-- Box geometry with reactive size -->
-      <ngt-box-geometry [args]="boxGeometryArgs()" />
+      <ngt-box-geometry *args="boxGeometryArgs()" />
 
       <!-- Lambert material for simple, performant rendering -->
       <ngt-mesh-lambert-material
@@ -124,10 +125,10 @@ export class BackgroundCubeComponent implements OnInit {
   readonly depthSegments = input<number>(1);
 
   // Material properties - Lambert for simple lighting
-  readonly color = input<number>(0x4a90e2);
+  readonly color = input<number>(Colors3D.accent.blue.hex);
   readonly transparent = input<boolean>(false);
   readonly opacity = input<number>(1.0);
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0);
 
   // Shadow configuration
@@ -184,7 +185,6 @@ export class BackgroundCubeComponent implements OnInit {
 
   constructor() {
     // Register Angular Three primitives
-    registerAngularThreePrimitives();
 
     // Setup reactive effects
     this.setupReactiveEffects();

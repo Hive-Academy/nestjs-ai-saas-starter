@@ -39,7 +39,7 @@
     "@hive-academy/langgraph-core": "0.0.1",
     "@hive-academy/langgraph-functional-api": "0.0.1",
     "@nestjs/config": "4.0.2",
-    "@hive-academy/langgraph-multi-agent": "0.0.1"
+    "@hive-academy/langgraph-memory": "0.0.1"
   },
   "devDependencies": {
     "rollup": "4.49.0",

@@ -126,7 +126,7 @@ After comprehensive analysis of existing sections vs. the migration plan, the ev
 // Typography Scale
 --hero-title: text-5xl md:text-6xl lg:text-7xl
 --section-title: text-4xl md:text-5xl lg:text-6xl
---subsection-title: text-3xl md:text-4xl
+--subsection-title: text-4xl md:text-5xl
 --body: text-base md:text-xl
 
 // Animation System

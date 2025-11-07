@@ -1,73 +1,65 @@
 /**
- * ParticleSystemComponent - Background Particle System
+ * ParticleSystemComponent - Background Particle System with Exclusion Zones
  *
- * Creates a particle system with configurable count, colors, and positioning.
- * Automatically creates particles in zones avoiding the center text area.
+ * Creates a particle system using official angular-three-soba components:
+ * - NgtsPointsBuffer: Efficient particle position handling
+ * - NgtsPointMaterial: Specialized material for point rendering
+ * - Custom position generation with exclusion zones to avoid text areas
  *
- * Pattern Source: hero-section-old.component.ts lines 608-678
+ * Pattern source: https://github.com/angular-threejs/angular-three/blob/main/apps/kitchen-sink/src/app/soba/stars/experience.ts
  *
  * Usage:
  * ```html
  * <app-particle-system
  *   [particleCount]="200"
- *   [colorPalette]="purpleColors"
+ *   [colorPalette]="['#4a1d6b', '#2d1b47', '#1a0d2e']"
  *   [exclusionZone]="{ x: 8, y: 4 }"
+ *   [size]="0.8"
+ *   [opacity]="0.5"
  * />
  * ```
  */
 
 import {
+  ChangeDetectionStrategy,
   Component,
-  AfterViewInit,
-  input,
-  computed,
   CUSTOM_ELEMENTS_SCHEMA,
-  ElementRef,
-  viewChild,
+  computed,
+  input,
 } from '@angular/core';
-import { extend } from 'angular-three';
+import { NgtsPointMaterial } from 'angular-three-soba/materials';
+import { NgtsPointsBuffer } from 'angular-three-soba/performances';
 import * as THREE from 'three';
-
-extend(THREE);
 
 @Component({
   selector: 'app-particle-system',
   standalone: true,
-  imports: [],
+  imports: [NgtsPointsBuffer, NgtsPointMaterial],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <ngt-points #particlePoints>
-      <ngt-buffer-geometry [attach]="['geometry']">
-        <ngt-buffer-attribute
-          attach="attributes-position"
-          [args]="[particleData().positions, 3]"
-        />
-        <ngt-buffer-attribute
-          attach="attributes-color"
-          [args]="[particleData().colors, 3]"
-        />
-        <ngt-buffer-attribute
-          attach="attributes-size"
-          [args]="[particleData().sizes, 1]"
-        />
-      </ngt-buffer-geometry>
-      <ngt-points-material
-        [size]="size()"
-        [sizeAttenuation]="true"
-        [vertexColors]="true"
-        [transparent]="true"
-        [opacity]="opacity()"
-        [blending]="additiveBlending"
+    <ngts-points-buffer
+      [positions]="positions()"
+      [stride]="3"
+      [options]="{ frustumCulled: false }"
+    >
+      <ngts-point-material
+        [options]="{
+          transparent: true,
+          color: averageColor(),
+          size: size(),
+          sizeAttenuation: true,
+          depthWrite: false,
+          opacity: opacity(),
+          blending: additiveBlending
+        }"
       />
-    </ngt-points>
+    </ngts-points-buffer>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ParticleSystemComponent implements AfterViewInit {
-  private readonly meshRef =
-    viewChild<ElementRef<THREE.Points>>('particlePoints');
-
+export class ParticleSystemComponent {
   // Configuration inputs
-
+  readonly particleCount = input<number>(200);
   readonly colorPalette = input<string[]>([
     '#4a1d6b', // Darker purple
     '#2d1b47', // Dark purple
@@ -75,7 +67,6 @@ export class ParticleSystemComponent implements AfterViewInit {
     '#261242', // Dark violet
     '#1e1139', // Dark navy
   ]);
-  readonly particleCount = input<number>(200);
   readonly exclusionZone = input<{ x: number; y: number }>({ x: 8, y: 4 });
   readonly size = input<number>(0.8);
   readonly opacity = input<number>(0.5);
@@ -84,27 +75,18 @@ export class ParticleSystemComponent implements AfterViewInit {
   readonly additiveBlending = THREE.AdditiveBlending;
 
   /**
-   * Generate particle data as computed signal
-   * Based on hero-section-old.component.ts lines 613-654
+   * Generate particle positions with exclusion zone
+   * Particles are placed in a bounded box but avoid the central text area
    */
-  readonly particleData = computed(() => {
+  readonly positions = computed(() => {
     const count = this.particleCount();
     const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
     const exclusion = this.exclusionZone();
-    const colorChoices = this.colorPalette()?.map(
-      (hex) => new THREE.Color(hex)
-    );
-
-    if (!colorChoices || colorChoices.length === 0) {
-      return { positions, colors, sizes };
-    }
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
 
-      // Create a larger "exclusion zone" around the text - push particles to edges
+      // Create particles that avoid the exclusion zone
       let x: number, y: number, z: number;
       do {
         const radius = 12 + Math.random() * 25; // Start further from center
@@ -119,41 +101,20 @@ export class ParticleSystemComponent implements AfterViewInit {
       positions[i3] = x;
       positions[i3 + 1] = y;
       positions[i3 + 2] = z;
-
-      // Random color from our palette
-      const chosenColor =
-        colorChoices[Math.floor(Math.random() * colorChoices.length)];
-      colors[i3] = chosenColor.r;
-      colors[i3 + 1] = chosenColor.g;
-      colors[i3 + 2] = chosenColor.b;
-
-      sizes[i] = Math.random() * 1.5 + 0.3;
     }
 
-    return { positions, colors, sizes };
+    return positions;
   });
 
-  ngAfterViewInit(): void {
-    // Store original position for parallax animation
-    const meshEl = this.meshRef();
-    if (meshEl?.nativeElement) {
-      const mesh = meshEl.nativeElement;
-      // Safety check: ensure position exists before accessing properties
-      if (mesh.position) {
-        mesh.userData['originalPosition'] = {
-          x: mesh.position.x,
-          y: mesh.position.y,
-          z: mesh.position.z,
-        };
-      }
-    }
-  }
-
   /**
-   * Get mesh instance for external manipulation
+   * Calculate average color from palette
+   * NgtsPointMaterial doesn't support per-vertex colors
    */
-  getMesh(): THREE.Points | undefined {
-    const meshEl = this.meshRef();
-    return meshEl?.nativeElement;
-  }
+  readonly averageColor = computed(() => {
+    const palette = this.colorPalette();
+    if (palette.length === 1) return palette[0];
+
+    // Use middle color from palette
+    return palette[Math.floor(palette.length / 2)];
+  });
 }

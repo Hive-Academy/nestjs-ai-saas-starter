@@ -4,12 +4,17 @@ export { HitlModule } from './lib/hitl.module';
 // Config utilities for decorator access
 export * from './lib/utils/hitl-config.accessor';
 
+// Service Locator utilities (for testing/advanced use cases)
+export * from './lib/utils/approval-service.locator';
+
 // Services
 export { HumanApprovalService } from './lib/services/human-approval.service';
 export { ApprovalProcessingService } from './lib/services/approval-processing.service';
 // Phase 1a SOLID Refactoring - New services (2025-01-11)
 export { ApproverIntelligenceService } from './lib/services/approver-intelligence.service';
 export { ApprovalOutcomeService } from './lib/services/approval-outcome.service';
+// Decorator Support Service - Extracted from decorator pattern (2025-01-11)
+export { ApprovalEvaluatorService } from './lib/services/approval-evaluator.service';
 // Phase 1b SOLID Refactoring - Historical search service (2025-01-11)
 export { ApprovalHistorySearchService } from './lib/services/approval-history-search.service';
 export type {
@@ -112,3 +117,11 @@ export type {
   ApproverExpertise,
   ApproverRanking,
 } from './lib/interfaces/approver-intelligence.interface';
+
+// Phase 6: Approval State Storage Interface (Adapter Pattern Refactoring)
+export { IApprovalStateStorageService } from './lib/interfaces/approval-state-storage.interface';
+export type {
+  ApprovalStateData,
+  ApprovalChainData,
+  ListApprovalOptions,
+} from './lib/interfaces/approval-state-storage.interface';

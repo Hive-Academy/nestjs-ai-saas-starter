@@ -36,7 +36,6 @@
 
 import { Component, input } from '@angular/core';
 import { NgtCanvas } from 'angular-three';
-import { MouseParallax3dDirective } from '../directives/mouse-parallax-3d.directive';
 
 export interface CameraConfig {
   position: [number, number, number];
@@ -53,46 +52,25 @@ export interface WebGLRendererConfig {
   precision?: 'highp' | 'mediump' | 'lowp';
 }
 
-export interface MouseParallaxConfig {
-  sensitivity: number;
-  smoothing: number;
-  cameraDistance: number;
-}
-
 @Component({
   selector: 'app-scene-3d',
   standalone: true,
-  imports: [NgtCanvas, MouseParallax3dDirective],
+  imports: [NgtCanvas],
   template: `
-    @if (enableMouseParallax()) {
-    <ngt-canvas
-      [sceneGraph]="sceneGraph()"
-      [camera]="camera()"
-      [gl]="gl()"
-      [shadows]="shadows()"
-      mouseParallax3d
-      [sensitivity]="mouseParallax().sensitivity"
-      [smoothing]="mouseParallax().smoothing"
-      [cameraDistance]="mouseParallax().cameraDistance"
-    />
-    } @else {
     <ngt-canvas
       [sceneGraph]="sceneGraph()"
       [camera]="camera()"
       [gl]="gl()"
       [shadows]="shadows()"
     />
+  `,
+  styles: `
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-    `,
-  ],
 })
 export class Scene3DComponent {
   /**
@@ -103,7 +81,7 @@ export class Scene3DComponent {
 
   /**
    * Camera configuration
-   * Default: Perspective camera at [0, 0, 12] with 75° FOV
+   * Default: Perspective camera at [0, 0, 12] with 75° FOV (Three.js human scale)
    */
   camera = input<CameraConfig>({
     position: [0, 0, 12],
@@ -125,20 +103,4 @@ export class Scene3DComponent {
    * Default: true
    */
   shadows = input<boolean>(true);
-
-  /**
-   * Enable mouse parallax effect
-   * Default: true
-   */
-  enableMouseParallax = input<boolean>(true);
-
-  /**
-   * Mouse parallax configuration
-   * Default: Moderate sensitivity and smoothing
-   */
-  mouseParallax = input<MouseParallaxConfig>({
-    sensitivity: 0.4,
-    smoothing: 5,
-    cameraDistance: 12,
-  });
 }

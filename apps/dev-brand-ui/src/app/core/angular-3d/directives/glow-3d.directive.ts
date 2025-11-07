@@ -52,6 +52,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import * as THREE from 'three';
+import { Colors3D } from '../config/colors.config';
 
 /**
  * Glow3dDirective
@@ -84,7 +85,7 @@ export class Glow3dDirective implements AfterViewInit, OnDestroy {
   >(undefined);
 
   // Legacy individual inputs (deprecated - use glowConfig instead)
-  readonly glowColor = input<number>(0xffffff); // Glow color (hex)
+  readonly glowColor = input<number>(Colors3D.material.white.hex); // Glow color (hex)
   readonly glowIntensity = input<number>(0.2); // Opacity of glow (0-1)
   readonly glowScale = input<number>(1.2); // Scale multiplier for glow mesh
   readonly glowSegments = input<number>(16); // Geometry segments (lower = better performance)

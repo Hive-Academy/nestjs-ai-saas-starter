@@ -440,7 +440,12 @@ export class WorkflowCheckpointService {
             : null,
           isResume: metadata?.source === 'input', // 'resume' is not a valid source, use 'input' instead
           isError: state?.metadata?.error !== undefined,
-          errorMessage: (state?.metadata?.error as any)?.message || null,
+          errorMessage:
+            typeof state?.metadata?.error === 'object' &&
+            state.metadata.error !== null &&
+            'message' in state.metadata.error
+              ? String(state.metadata.error.message)
+              : null,
         },
       };
     });

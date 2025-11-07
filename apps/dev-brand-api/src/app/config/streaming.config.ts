@@ -9,7 +9,8 @@ import type { StreamingModuleOptions } from '@hive-academy/langgraph-streaming';
 export const getStreamingConfig = (): StreamingModuleOptions => ({
   websocket: {
     enabled: process.env.WEBSOCKET_ENABLED !== 'false',
-    port: parseInt(process.env.WEBSOCKET_PORT || '3000', 10),
+    port: parseInt(process.env.WEBSOCKET_PORT || '8080', 10),
+    namespace: process.env.WEBSOCKET_NAMESPACE || '/streaming',
   },
   defaultBufferSize: parseInt(process.env.STREAMING_BUFFER_SIZE || '1000', 10),
   // Enable WebSocket gateway with comprehensive configuration

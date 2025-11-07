@@ -244,7 +244,14 @@ export class ToolBuilderService {
           }
 
           // Make actual HTTP request using axios
-          const axiosConfig = {
+          const axiosConfig: {
+            method: string;
+            url: string;
+            headers: Record<string, string>;
+            timeout: number;
+            validateStatus: (status: number) => boolean;
+            data?: unknown;
+          } = {
             method: method.toLowerCase(),
             url,
             headers: {
@@ -253,7 +260,7 @@ export class ToolBuilderService {
             },
             timeout: 30000, // 30 second timeout for demo stability
             validateStatus: (status: number) => status < 500, // Don't throw on 4xx errors
-          } as any;
+          };
 
           // Add body for POST/PUT requests
           if (body && (method === 'POST' || method === 'PUT')) {

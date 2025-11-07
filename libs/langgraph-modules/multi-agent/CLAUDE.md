@@ -801,6 +801,357 @@ For complete working examples, see:
 
 ---
 
+## Memory Integration Pattern (LangGraph 2025 Compliance)
+
+### Overview
+
+The Multi-Agent Module follows **LangGraph 2025 memory architecture patterns** where memory is accessed **within nodes** via the `store` parameter, NOT through blocking pre-execution calls. This ensures instant workflow execution and eliminates blocking delays.
+
+### Architectural Change (Completed: Commit ae8057a)
+
+**Problem**: Pre-execution memory loading caused 25+ second workflow start delays
+
+**Solution**: Removed blocking memory calls from workflow initialization. Memory is now accessed lazily within agent nodes via `NodeFactoryService`.
+
+### Implementation Pattern
+
+**Before (❌ Blocking Pre-Execution)**:
+
+```typescript
+// ❌ WRONG: Blocking memory call BEFORE workflow execution
+async executeWorkflow(networkId: string, input: any) {
+  // This caused 25+ second delays
+  const coordinationContext = await this.memoryCoordination.getOptimalCoordinationContext(networkId, input);
+  const enhancedInput = await this.memoryCoordination.enhanceInputWithMemoryContext(input, threadId, networkId);
+
+  // Workflow starts with heavy memory overhead
+  return await this.networkManager.executeWorkflow(networkId, enhancedInput);
+}
+```
+
+**After (✅ Memory-in-Nodes Pattern)**:
+
+```typescript
+// ✅ CORRECT: Instant workflow start, memory accessed in nodes
+async executeWorkflow(networkId: string, input: any) {
+  const executionId = this.generateExecutionId(networkId);
+  const threadId = this.generateThreadId(networkId);
+
+  // Initialize empty coordination context (instant start - <100ms)
+  const coordinationContext: any = {};
+  const enhancedInput = input;
+
+  // Workflow starts immediately
+  return await this.networkManager.executeWorkflow(networkId, enhancedInput);
+}
+```
+
+### NodeFactoryService Memory Integration
+
+Memory is now accessed **within agent execution** via `NodeFactoryService.enhanceAgentWithMemory()`:
+
+```typescript
+// libs/langgraph-modules/multi-agent/src/lib/network/node-factory.service.ts:114-183
+
+private async enhanceAgentWithMemory(
+  agent: AgentDefinition,
+  state: AgentState,
+  agentExecution: () => Promise<Partial<AgentState>>
+): Promise<Partial<AgentState>> {
+  try {
+    // 1. Enhance state with memory context BEFORE agent execution
+    let enhancedState = state;
+    if (this.memoryAdapter) {
+      try {
+        const memoryContext = await this.memoryAdapter.getAgentContext(state);
+        enhancedState = {
+          ...state,
+          metadata: {
+            ...state.metadata,
+            memoryContext: {
+              threadMemories: memoryContext.threadMemories.slice(0, 5),
+              userMemories: memoryContext.userMemories.slice(0, 3),
+              relevanceScore: memoryContext.relevanceScore,
+              patterns: memoryContext.userPatterns,
+            },
+          },
+        };
+      } catch (memoryError) {
+        this.logger.warn(`Failed to enhance ${agent.id} with memory context:`, memoryError);
+        // Continue without memory enhancement
+      }
+    }
+
+    // 2. Execute agent with enhanced state
+    const result = await agentExecution();
+
+    // 3. Store agent execution result in memory AFTER execution
+    if (this.memoryAdapter && result) {
+      try {
+        await this.memoryAdapter.storeAgentExecution(enhancedState, result, agent.id);
+      } catch (memoryError) {
+        this.logger.warn(`Failed to store ${agent.id} execution in memory:`, memoryError);
+      }
+    }
+
+    return result;
+  } catch (error) {
+    this.logger.error(`Memory-enhanced execution failed for agent ${agent.id}:`, error);
+    // Fallback to original execution without memory
+    return await agentExecution();
+  }
+}
+```
+
+### Performance Improvement
+
+**Metrics** (from implementation-plan.md:113-208):
+
+- **Before**: 25+ seconds workflow start time (blocking memory calls)
+- **After**: <100ms workflow start time (250x improvement)
+- **Memory Access**: Lazy, per-agent, non-blocking
+- **Failure Handling**: Graceful degradation if memory unavailable
+
+### Code References
+
+**Removed Pre-Execution Memory** (workflow-execution-coordination.service.ts:58-116):
+
+```typescript
+/**
+ * REMOVED: Pre-execution memory loading (LangGraph 2025 alignment)
+ *
+ * Rationale:
+ * - Blocking memory operations caused 25+ second workflow start delays
+ * - LangGraph 2025 recommends "memory-in-nodes" pattern via store parameter
+ * - Pre-execution memory loading violates instant workflow execution principle
+ * - Coordination context will be provided via BaseStore interface (Priority 4)
+ *
+ * See: implementation-plan.md:113-208 (Priority 1: Remove Pre-Execution Memory)
+ */
+
+// Memory superpowers: Get optimal agent coordination based on learned patterns
+// COMMENTED OUT: Blocking pre-execution memory call (25+ second delay)
+// let coordinationContext: any = {};
+// if (this.memoryAdapter) {
+//   try {
+//     coordinationContext = await this.memoryCoordination.getOptimalCoordinationContext(networkId, input);
+//   } catch (error) {
+//     this.logger.warn(`Failed to get coordination context: ${error}`);
+//   }
+// }
+```
+
+**NodeFactoryService Integration** (node-factory.service.ts:114-183):
+
+All agent node functions (supervisor, worker, swarm) now use `enhanceAgentWithMemory()` wrapper:
+
+```typescript
+// Example: Worker node with memory enhancement
+async createWorkerNode(agent: AgentDefinition, config: SupervisorConfig) {
+  return async (state: AgentState): Promise<Partial<AgentState> | Command> => {
+    try {
+      // Execute agent with automagical memory enhancement
+      const agentResult = await this.enhanceAgentWithMemory(
+        agent,
+        filteredState,
+        () => agent.nodeFunction(filteredState)
+      );
+
+      // Process result...
+    } catch (error) {
+      this.logger.error(`Worker agent ${agent.id} execution failed:`, error);
+    }
+  };
+}
+```
+
+### Best Practices
+
+1. **Never** call memory adapters in workflow initialization
+2. **Always** access memory within agent node functions
+3. **Gracefully degrade** if memory unavailable (log warning, continue execution)
+4. **Store results** after agent execution for learning
+5. **Use NodeFactoryService** memory wrappers for consistent patterns
+
+### Migration Guide
+
+If you have custom multi-agent workflows with pre-execution memory:
+
+**Before**:
+
+```typescript
+async executeCustomWorkflow(input: any) {
+  // ❌ Blocking memory call
+  const context = await this.memoryService.getContext(input);
+  return await this.workflow.execute({ ...input, context });
+}
+```
+
+**After**:
+
+```typescript
+async executeCustomWorkflow(input: any) {
+  // ✅ Instant start - memory accessed in nodes
+  return await this.workflow.execute(input);
+}
+
+// In your agent node function:
+async agentNode(state: AgentState) {
+  // ✅ Memory accessed lazily when needed
+  const memoryContext = await this.memoryAdapter.getAgentContext(state);
+  // Use memory context...
+}
+```
+
+---
+
+## Unified Agent State Architecture
+
+### Overview
+
+All multi-agent workflows use **UnifiedAgentState** for consistent metadata handling across supervisor and worker agents. This architecture ensures metadata is ALWAYS initialized in both infrastructure layers, preventing undefined metadata errors.
+
+### Problem Solved
+
+**Before**: Supervisor passed metadata via `config.metadata` but workers expected `state.metadata`, causing `Cannot read properties of undefined` errors.
+
+**After**: Both `WorkflowExecutionCoordinationService` and `MultiAgentWorkflowBase` initialize `state.metadata` before worker execution.
+
+### Type Definitions
+
+```typescript
+// Base state for all agents (in your business-workflows/types)
+interface UnifiedAgentState extends AgentState {
+  messages: BaseMessage[];
+  metadata: {
+    userId?: string;
+    executionId?: string;
+    threadId?: string;
+    workflowType?: string;
+    lastAgent?: string;
+    active_agent?: string;
+    [key: string]: unknown; // Agent-specific metadata
+  };
+  // Workflow execution properties
+  executionId: string;
+  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
+  confidence: number;
+  // ... other workflow properties
+}
+
+// Type-safe agent state with custom metadata
+type TypedAgentState<TMetadata extends Record<string, unknown>> = UnifiedAgentState & {
+  metadata: UnifiedAgentState['metadata'] & TMetadata;
+};
+```
+
+### Agent Migration Pattern
+
+**Before** (TypedWorkflowAgentState):
+
+```typescript
+import { TypedWorkflowAgentState } from '../../types';
+
+export class MyAgent extends DeclarativeWorkflowBase<TypedWorkflowAgentState<MyMetadata>> {
+  async execute(context: TaskExecutionContext<TypedWorkflowAgentState<MyMetadata>>) {
+    // metadata might be undefined ❌
+    const value = state.metadata?.someField; // Optional chaining needed
+  }
+}
+```
+
+**After** (TypedAgentState):
+
+```typescript
+import { TypedAgentState } from '../../types';
+
+export class MyAgent extends DeclarativeWorkflowBase<TypedAgentState<MyMetadata>> {
+  async execute(context: TaskExecutionContext<TypedAgentState<MyMetadata>>) {
+    // metadata guaranteed initialized ✅
+    const value = state.metadata.someField; // No optional chaining needed
+  }
+}
+```
+
+### Metadata Initialization Points
+
+**1. WorkflowExecutionCoordinationService** (workflow start):
+
+Initializes `state.metadata` at workflow execution start with common fields:
+
+```typescript
+// libs/langgraph-modules/multi-agent/src/lib/coordination/workflow-execution-coordination.service.ts:127-147
+
+const initialState = {
+  ...enhancedInput,
+  metadata: {
+    userId: enhancedInput.config?.metadata?.userId,
+    executionId,
+    threadId,
+    workflowType: networkId,
+    active_agent: undefined,
+    lastAgent: undefined,
+    // Merge existing metadata from input
+    ...enhancedInput.config?.metadata,
+  },
+};
+```
+
+**2. MultiAgentWorkflowBase** (before worker execution):
+
+Creates `enhancedState` with initialized metadata before passing to each worker:
+
+```typescript
+// libs/langgraph-modules/multi-agent/src/lib/base/multi-agent-workflow.base.ts:252-266
+
+const enhancedState = {
+  ...state,
+  metadata: {
+    // Merge existing metadata (preserve if already present)
+    ...(state.metadata || {}),
+    // Common metadata fields
+    userId: state.metadata?.userId || state.userId,
+    executionId: state.metadata?.executionId || state.executionId,
+    threadId: state.metadata?.threadId || state.threadId,
+    workflowType: state.metadata?.workflowType,
+    // Agent coordination metadata
+    lastAgent: agentConfig.id,
+  },
+};
+
+// Execute worker with initialized metadata
+const result = await instance.execute(enhancedState);
+```
+
+### Benefits
+
+1. **No Undefined Errors**: Metadata is ALWAYS defined, preventing runtime crashes
+2. **Type Safety**: TypedAgentState<TMetadata> provides compile-time type checking
+3. **Backward Compatible**: Existing config.metadata still works during migration
+4. **Consistent Flow**: Metadata flows predictably: supervisor → worker → supervisor
+5. **Agent Coordination**: lastAgent, active_agent fields enable intelligent routing
+
+### Migration Guide
+
+See [Unified State Migration Guide](../../../task-tracking/TASK_2025_037/migration-guide.md) for detailed step-by-step instructions.
+
+### Code References
+
+**Type Definitions**: apps/dev-brand-api/src/app/business-workflows/types/index.ts:113-220
+
+**Infrastructure Initialization**:
+
+- WorkflowExecutionCoordinationService: libs/langgraph-modules/multi-agent/src/lib/coordination/workflow-execution-coordination.service.ts:127-147
+- MultiAgentWorkflowBase: libs/langgraph-modules/multi-agent/src/lib/base/multi-agent-workflow.base.ts:252-266
+
+**Example Agents** (migrated to TypedAgentState):
+
+- GitHubCodeAnalyzerAgent: apps/dev-brand-api/src/app/business-workflows/agents/github-code-analyzer/
+- PersonalBrandStrategistAgent: apps/dev-brand-api/src/app/business-workflows/agents/personal-brand-strategist/
+- ContentCreatorAgent: apps/dev-brand-api/src/app/business-workflows/agents/content-creator/
+
+---
+
 ## Support
 
 For issues or questions:

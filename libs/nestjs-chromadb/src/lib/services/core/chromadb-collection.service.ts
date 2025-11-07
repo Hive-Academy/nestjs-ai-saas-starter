@@ -9,6 +9,7 @@ import { ChromaDBConnectionService } from './chromadb-connection.service';
 import { EmbeddingService } from '../embedding.service';
 import { ChromaCollectionInfo } from '../../interfaces/chromadb-service.interface';
 import { ChromaDBCollectionNotFoundError } from '../../errors/chromadb.errors';
+import { sanitizeMetadata } from '../../utils/data/metadata.utils';
 
 /**
  * ChromaDB Collection Management Service
@@ -53,6 +54,11 @@ export class ChromaDBCollectionService {
     return this.connectionService.executeWithRetry(async () => {
       const client = this.connectionService.getClient();
 
+      // Sanitize metadata to ensure ChromaDB compatibility (convert arrays/objects to JSON strings)
+      const sanitizedMetadata = metadata
+        ? sanitizeMetadata(metadata)
+        : undefined;
+
       // Use provided embedding function or get from EmbeddingService
       const finalEmbeddingFn =
         embeddingFunction || this.embeddingService.getEmbeddingFunction();
@@ -60,13 +66,13 @@ export class ChromaDBCollectionService {
       if (getOrCreate) {
         return await client.getOrCreateCollection({
           name,
-          metadata,
+          metadata: sanitizedMetadata,
           embeddingFunction: finalEmbeddingFn as EmbeddingFunction,
         });
       } else {
         return await client.createCollection({
           name,
-          metadata,
+          metadata: sanitizedMetadata,
           embeddingFunction: finalEmbeddingFn as EmbeddingFunction,
         });
       }

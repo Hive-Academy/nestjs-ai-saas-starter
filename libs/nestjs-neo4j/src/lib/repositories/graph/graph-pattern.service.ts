@@ -13,6 +13,7 @@ import {
 } from './base-graph.service';
 import type { NeogmaEntity } from '../../types/neogma-types';
 import { NeogmaService } from '../../services/neogma.service';
+import { ParameterBindingUtility } from '../../utilities/parameter-binding.utility';
 
 /**
  * Graph query pattern for flexible matching
@@ -157,58 +158,64 @@ export class GraphPatternService<
     try {
       this.logger.debug('Executing custom graph pattern');
 
-      const queryBuilder = this.createQueryBuilder();
-
       // Build query from pattern
+      const queryParts: string[] = [];
+
       pattern.match.forEach((matchClause) => {
-        queryBuilder.raw(`MATCH ${matchClause}`);
+        queryParts.push(`MATCH ${matchClause}`);
       });
 
       if (pattern.where && pattern.where.length > 0) {
         pattern.where.forEach((whereClause) => {
-          queryBuilder.raw(`WHERE ${whereClause}`);
+          queryParts.push(`WHERE ${whereClause}`);
         });
       }
 
       if (pattern.optional && pattern.optional.length > 0) {
         pattern.optional.forEach((optionalClause) => {
-          queryBuilder.raw(`OPTIONAL MATCH ${optionalClause}`);
+          queryParts.push(`OPTIONAL MATCH ${optionalClause}`);
         });
       }
 
       if (pattern.with && pattern.with.length > 0) {
         pattern.with.forEach((withClause) => {
-          queryBuilder.raw(`WITH ${withClause}`);
+          queryParts.push(`WITH ${withClause}`);
         });
       }
 
-      // Add return clause
-      queryBuilder.return(pattern.return.join(', '));
+      queryParts.push(`RETURN ${pattern.return.join(', ')}`);
 
       if (pattern.orderBy && pattern.orderBy.length > 0) {
         pattern.orderBy.forEach((orderClause) => {
-          queryBuilder.raw(`ORDER BY ${orderClause}`);
+          queryParts.push(`ORDER BY ${orderClause}`);
         });
       }
 
       if (pattern.skip) {
-        queryBuilder.skip(pattern.skip);
+        queryParts.push(`SKIP ${pattern.skip}`);
       }
 
       if (pattern.limit) {
-        queryBuilder.limit(pattern.limit);
+        queryParts.push(`LIMIT ${pattern.limit}`);
       }
 
-      // Add parameters to QueryBuilder if provided
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          queryBuilder.getBindParam().add(key, value);
+      const baseQuery = queryParts.join('\n');
+
+      const { query, params: boundParams } = ParameterBindingUtility.autoBind(
+        baseQuery,
+        params || {}
+      );
+
+      const result = await this.neogmaService.run(query, boundParams);
+
+      const results = result.records.map((record) => {
+        const obj: { [key: string]: unknown } = {};
+        record.keys.forEach((key) => {
+          const keyStr = String(key);
+          obj[keyStr] = record.get(keyStr);
         });
-      }
-
-      const results = await this.executeQueryBuilder<{
-        [key: string]: unknown;
-      }>(queryBuilder, { retries: 2 });
+        return obj;
+      });
 
       this.logPerformance('executeCustomPattern', startTime, results.length);
       return results;
@@ -241,20 +248,18 @@ export class GraphPatternService<
     try {
       this.logger.debug(`Getting subgraph for ${nodeIds.length} nodes`);
 
-      const queryBuilder = this.createQueryBuilder();
       const relationshipClause = this.buildRelationshipClause(options);
       const depth = options?.depth || 1;
 
       // Get nodes and their relationships within the specified depth
-      queryBuilder
-        .raw(`MATCH (n:${this.entityLabel})`)
-        .raw(`WHERE n.id IN $nodeIds`)
-        .raw(
-          `OPTIONAL MATCH path = (n)${relationshipClause.replace(
-            '-',
-            `*1..${depth}-`
-          )}(connected:${this.entityLabel})`
-        ).return(`
+      const baseQuery = `
+        MATCH (n:${this.entityLabel})
+        WHERE n.id IN $nodeIds
+        OPTIONAL MATCH path = (n)${relationshipClause.replace(
+          '-',
+          `*1..${depth}-`
+        )}(connected:${this.entityLabel})
+        RETURN
           collect(DISTINCT n) as centerNodes,
           collect(DISTINCT connected) as connectedNodes,
           collect(DISTINCT {
@@ -263,23 +268,15 @@ export class GraphPatternService<
             type: type(relationships(path)[0]),
             properties: properties(relationships(path)[0])
           }) as relationships
-        `);
+      `;
 
-      // Add nodeIds parameter to QueryBuilder
-      queryBuilder.getBindParam().add('nodeIds', nodeIds);
+      const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+        nodeIds,
+      });
 
-      const [result] = await this.executeQueryBuilder<{
-        centerNodes: T[];
-        connectedNodes: T[];
-        relationships: Array<{
-          source: T;
-          target: T;
-          type: string;
-          properties: { [key: string]: unknown };
-        }>;
-      }>(queryBuilder, { retries: 2 });
+      const queryResult = await this.neogmaService.run(query, params);
 
-      if (!result) {
+      if (!queryResult.records || queryResult.records.length === 0) {
         return {
           nodes: [],
           relationships: [],
@@ -287,10 +284,18 @@ export class GraphPatternService<
         };
       }
 
+      const result = {
+        centerNodes: queryResult.records[0].get('centerNodes'),
+        connectedNodes: queryResult.records[0].get('connectedNodes'),
+        relationships: queryResult.records[0].get('relationships'),
+      };
+
       // Combine center nodes and connected nodes
       const allNodes = [
-        ...(result.centerNodes || []).map((node) => this.mapToEntity(node)),
-        ...(result.connectedNodes || []).map((node) => this.mapToEntity(node)),
+        ...(result.centerNodes || []).map((node: T) => this.mapToEntity(node)),
+        ...(result.connectedNodes || []).map((node: T) =>
+          this.mapToEntity(node)
+        ),
       ];
 
       // Remove duplicates based on ID
@@ -300,14 +305,21 @@ export class GraphPatternService<
 
       const subgraph: SubgraphResult<T> = {
         nodes: uniqueNodes,
-        relationships: (result.relationships || []).map((rel) => ({
-          source: this.mapToEntity(rel.source),
-          target: this.mapToEntity(rel.target),
-          type: rel.type,
-          ...(options?.includeRelationshipProperties && {
-            properties: rel.properties,
-          }),
-        })),
+        relationships: (result.relationships || []).map(
+          (rel: {
+            source: T;
+            target: T;
+            type: string;
+            properties: { [key: string]: unknown };
+          }) => ({
+            source: this.mapToEntity(rel.source),
+            target: this.mapToEntity(rel.target),
+            type: rel.type,
+            ...(options?.includeRelationshipProperties && {
+              properties: rel.properties,
+            }),
+          })
+        ),
         metadata: {
           nodeCount: uniqueNodes.length,
           relationshipCount: (result.relationships || []).length,

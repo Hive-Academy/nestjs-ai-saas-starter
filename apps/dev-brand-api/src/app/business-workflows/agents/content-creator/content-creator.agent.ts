@@ -21,7 +21,7 @@ import { LLMProviderError } from '../../core/errors/business-workflow.errors';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
 import { Optimize } from '../../core/performance/optimization.decorators';
 import { Validate } from '../../core/validation/workflow.validators';
-import type { TypedWorkflowAgentState } from '../../types';
+import type { TypedAgentState } from '../../types';
 import type { BrandStrategy } from '../shared/agent.types';
 import type { ContentCreatorMetadata } from '../shared/metadata.types';
 import {
@@ -98,7 +98,7 @@ import {
 })
 @Injectable()
 export class ContentCreatorAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<ContentCreatorMetadata>
+  TypedAgentState<ContentCreatorMetadata>
 > {
   constructor(
     private readonly llm: LlmProviderService,
@@ -131,8 +131,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true, includeETA: true })
   async initializeContentCreation(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
     const achievements = state.metadata.achievements || [];
 
@@ -157,8 +157,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async gatherBrandContext(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
 
     try {
@@ -208,8 +208,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async generatePlatformContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const achievements = state.metadata.achievements || [];
     const brandVoice = state.metadata.brandVoice;
@@ -309,8 +309,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
   @Node({ type: 'standard' })
   @StreamProgress({ enabled: true })
   async optimizeContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const rawLinkedinContent = state.metadata.rawLinkedinContent;
     const rawDevtoContent = state.metadata.rawDevtoContent;
     const achievements = state.metadata.achievements || [];
@@ -367,7 +367,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    */
   @Node({ type: 'condition' })
   async assessContentQuality(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+    state: TypedAgentState<ContentCreatorMetadata>
   ): Promise<{ route: string }> {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
@@ -450,8 +450,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     }),
   })
   async finalizeContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const linkedinContent = state.metadata.linkedinContent || '';
     const devtoContent = state.metadata.devtoContent || '';
@@ -518,7 +518,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    */
   @Edge('assessContentQuality', 'finalizeContent')
   shouldProceedToFinalize(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+    state: TypedAgentState<ContentCreatorMetadata>
   ): boolean {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;

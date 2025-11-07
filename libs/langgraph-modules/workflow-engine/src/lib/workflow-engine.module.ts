@@ -6,7 +6,6 @@ import { CompilationCacheService } from './core/compilation-cache.service';
 import { MetadataProcessorService } from './core/metadata-processor.service';
 import { SubgraphManagerService } from './core/subgraph-manager.service';
 import { WorkflowStreamService } from './streaming/workflow-stream.service';
-import { WorkflowStreamOrchestratorService } from './streaming/workflow-stream-orchestrator.service';
 import { StreamManagementService } from './streaming/stream-management.service';
 import { TokenProcessingService } from './streaming/token-processing.service';
 import { StreamEventProcessorService } from './streaming/stream-event-processor.service';
@@ -16,7 +15,6 @@ import { DecoratorTranslationService } from './services/decorator-translation.se
 import { MultiAgentTranslationService } from './services/multi-agent-translation.service';
 import { GraphPatternsService } from './core/graph-patterns.service';
 import { GraphOptimizationService } from './core/graph-optimization.service';
-import { CentralRegistryService } from './services/central-registry.service';
 import { CommandProcessorService } from './routing/command-processor.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
@@ -24,12 +22,6 @@ import {
   ICheckpointAdapter,
   IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
-import type {
-  AgentProvider,
-  ToolProvider,
-  WorkflowProvider,
-} from '@hive-academy/langgraph-multi-agent';
-// Removed WorkflowClass import - not available after cleanup
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -48,11 +40,6 @@ export interface WorkflowEngineModuleOptions {
     logLevel?: string;
     traceExecution?: boolean;
   };
-
-  // CENTRALIZED REGISTRATION: Only WorkflowEngineModule accepts these
-  agents?: AgentProvider[];
-  tools?: ToolProvider[];
-  workflows?: WorkflowProvider[];
 
   // Optional adapters for external services
   streamingAdapter?: IStreamingService;
@@ -89,12 +76,7 @@ export class WorkflowEngineModule {
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
-        WorkflowStreamOrchestratorService,
-        // Backward compatibility alias
-        {
-          provide: WorkflowStreamService,
-          useExisting: WorkflowStreamOrchestratorService,
-        },
+        WorkflowStreamService,
 
         WorkflowCheckpointService,
         WorkflowExecutionService,
@@ -106,27 +88,6 @@ export class WorkflowEngineModule {
         GraphOptimizationService,
         // Command processing service
         CommandProcessorService,
-        // CENTRALIZED REGISTRATION: Provider arrays for central registry
-        {
-          provide: 'WORKFLOW_ENGINE_AGENTS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.agents || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        {
-          provide: 'WORKFLOW_ENGINE_TOOLS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.tools || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        {
-          provide: 'WORKFLOW_ENGINE_WORKFLOWS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.workflows || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        // Central registry service for all registration
-        CentralRegistryService,
         {
           provide: 'DecoratorTranslationService',
           useClass: DecoratorTranslationService,
@@ -145,8 +106,8 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        WorkflowStreamOrchestratorService,
         // Streaming services
+        WorkflowStreamService,
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
@@ -156,7 +117,6 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        CentralRegistryService,
         // Command processing service
         CommandProcessorService,
       ],
@@ -198,12 +158,7 @@ export class WorkflowEngineModule {
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
-        WorkflowStreamOrchestratorService,
-        // Backward compatibility alias
-        {
-          provide: WorkflowStreamService,
-          useExisting: WorkflowStreamOrchestratorService,
-        },
+        WorkflowStreamService,
 
         WorkflowCheckpointService,
         WorkflowExecutionService,
@@ -215,27 +170,6 @@ export class WorkflowEngineModule {
         GraphOptimizationService,
         // Command processing service
         CommandProcessorService,
-        // CENTRALIZED REGISTRATION: Provider arrays for central registry
-        {
-          provide: 'WORKFLOW_ENGINE_AGENTS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.agents || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        {
-          provide: 'WORKFLOW_ENGINE_TOOLS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.tools || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        {
-          provide: 'WORKFLOW_ENGINE_WORKFLOWS',
-          useFactory: (options: WorkflowEngineModuleOptions) =>
-            options.workflows || [],
-          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
-        },
-        // Central registry service for all registration
-        CentralRegistryService,
         {
           provide: 'DecoratorTranslationService',
           useClass: DecoratorTranslationService,
@@ -254,8 +188,8 @@ export class WorkflowEngineModule {
         CompilationCacheService,
         MetadataProcessorService,
         SubgraphManagerService,
-        WorkflowStreamOrchestratorService,
         // Streaming services
+        WorkflowStreamService,
         StreamManagementService,
         TokenProcessingService,
         StreamEventProcessorService,
@@ -265,7 +199,6 @@ export class WorkflowEngineModule {
         MultiAgentTranslationService,
         GraphPatternsService,
         GraphOptimizationService,
-        CentralRegistryService,
         // Command processing service
         CommandProcessorService,
       ],

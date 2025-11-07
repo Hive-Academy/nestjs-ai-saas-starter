@@ -43,20 +43,36 @@ export interface AgentNetwork {
   /**
    * Graph compilation options
    * Options passed to LangGraph .compile()
+   *
+   * CRITICAL: This field is now REQUIRED to catch configuration issues at compile-time.
+   * Previously optional, which led to runtime errors when checkpointer was undefined.
+   *
+   * Default configuration:
+   * ```typescript
+   * compilationOptions: {
+   *   enableInterrupts: false,
+   *   checkpointer: undefined, // Explicitly undefined if not using checkpointing
+   *   debug: false,
+   * }
+   * ```
    */
-  compilationOptions?: {
+  compilationOptions: {
     /**
      * Enable state interrupts for human-in-the-loop
+     * Default: false
      */
     enableInterrupts?: boolean;
 
     /**
      * Checkpointer for persistence
+     * IMPORTANT: Set to undefined if not using checkpointing
+     * Set to checkpointer instance if using state persistence
      */
     checkpointer?: unknown;
 
     /**
      * Debug mode
+     * Default: false
      */
     debug?: boolean;
   };
@@ -114,7 +130,7 @@ export interface MultiAgentResult {
   /**
    * Final state of the workflow
    */
-  finalState: AgentState;
+  finalState: Partial<AgentState>;
 
   /**
    * Execution path taken

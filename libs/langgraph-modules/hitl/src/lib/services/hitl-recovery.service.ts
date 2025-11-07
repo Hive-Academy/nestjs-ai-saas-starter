@@ -26,18 +26,39 @@ export class HitlRecoveryService implements IHitlRecoveryService {
   }
 
   /**
-   * Recover pending approvals from persistent storage
+   * Recover pending approvals from persistent storage (lazy-loading)
+   *
+   * PHASE 1 CHANGE: Added optional executionId parameter
+   * - Old behavior: Always recovers ALL pending approvals
+   * - New behavior: If executionId provided, only recovers for that execution
+   * - Impact: When called without executionId (legacy), behaves same as before
+   *           When called with executionId, loads only what's needed
+   *
+   * @param executionId - Optional execution ID to recover approvals for
    */
-  async recoverPendingApprovals(): Promise<void> {
+  async recoverPendingApprovals(executionId?: string): Promise<void> {
     try {
-      this.logger.log(
-        '🔄 Starting recovery of pending approvals from persistent storage'
-      );
+      if (executionId) {
+        this.logger.log(
+          `🔄 Starting recovery of pending approvals for execution ${executionId}`
+        );
+      } else {
+        this.logger.log(
+          '🔄 Starting recovery of ALL pending approvals from persistent storage'
+        );
+      }
 
-      const pendingApprovals = await this.hitlStorage.getAllPending();
+      // Load approvals based on executionId parameter
+      const pendingApprovals = executionId
+        ? await this.hitlStorage.getPendingByExecution(executionId)
+        : await this.hitlStorage.getAllPending();
 
       if (pendingApprovals.length === 0) {
-        this.logger.log('✅ No pending approvals found to recover');
+        this.logger.log(
+          executionId
+            ? `✅ No pending approvals found for execution ${executionId}`
+            : '✅ No pending approvals found to recover'
+        );
         return;
       }
 
@@ -77,7 +98,9 @@ export class HitlRecoveryService implements IHitlRecoveryService {
       this.lastRecoveryTime = new Date();
 
       this.logger.log(
-        `🔄 Recovery complete: ${recoveredCount} recovered, ${failedCount} failed`
+        executionId
+          ? `🔄 Recovery complete for execution ${executionId}: ${recoveredCount} recovered, ${failedCount} failed`
+          : `🔄 Recovery complete: ${recoveredCount} recovered, ${failedCount} failed`
       );
 
       if (errors.length > 0) {
@@ -85,8 +108,16 @@ export class HitlRecoveryService implements IHitlRecoveryService {
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`❌ Failed to recover pending approvals: ${errorMsg}`);
-      throw new Error(`Recovery failed: ${errorMsg}`);
+      this.logger.error(
+        `❌ Failed to recover pending approvals${
+          executionId ? ` for execution ${executionId}` : ''
+        }: ${errorMsg}`
+      );
+      throw new Error(
+        `Recovery failed${
+          executionId ? ` for execution ${executionId}` : ''
+        }: ${errorMsg}`
+      );
     }
   }
 

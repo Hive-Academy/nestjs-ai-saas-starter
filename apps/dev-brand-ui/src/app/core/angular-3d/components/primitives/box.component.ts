@@ -36,15 +36,16 @@ import {
   effect,
   type OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import type { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
+import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 @Component({
   selector: 'app-box',
   standalone: true,
-  imports: [Float3dDirective, Performance3dDirective],
+  imports: [Float3dDirective, Performance3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -57,7 +58,7 @@ import { Performance3dDirective } from '../../directives/performance-3d.directiv
       [floatConfig]="floatConfig()"
       performance3d
     >
-      <ngt-box-geometry [args]="[width(), height(), depth()]" />
+      <ngt-box-geometry *args="[width(), height(), depth()]" />
 
       <ngt-mesh-standard-material
         [color]="color()"
@@ -88,10 +89,10 @@ export class BoxComponent implements OnInit {
   readonly depth = input<number>(1);
 
   // Material properties
-  readonly color = input<number>(0xffd700);
+  readonly color = input<number>(Colors3D.accent.gold.hex);
   readonly metalness = input<number>(0.7);
   readonly roughness = input<number>(0.2);
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0);
   readonly transparent = input<boolean>(false);
   readonly opacity = input<number>(1.0);
@@ -122,7 +123,6 @@ export class BoxComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

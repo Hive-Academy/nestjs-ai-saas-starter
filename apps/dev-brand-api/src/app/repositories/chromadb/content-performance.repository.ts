@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Cached,
 } from '@hive-academy/nestjs-chromadb';
@@ -15,8 +16,16 @@ import { ContentPerformanceEntity } from '../../entities/chromadb/content-perfor
  */
 @Injectable()
 export class ContentPerformanceRepository extends ChromaDBRepository<ContentPerformanceEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(ContentPerformanceEntity, 'content-metrics', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(
+      ContentPerformanceEntity,
+      'content-metrics',
+      chromaDB,
+      collectionRegistry
+    );
   }
 
   /**

@@ -24,6 +24,23 @@ export { ToolRegistrationService } from './lib/tools/tool-registration.service';
 export { ToolRegistryService } from './lib/tools/tool-registry.service';
 
 /**
+ * Memory Access Tools - Agent-driven memory tools (TASK 3)
+ *
+ * Provides tools for agents to autonomously access memory when needed:
+ * - search-memory: Search conversation history
+ * - get-user-patterns: Retrieve behavioral patterns
+ * - store-memory: Store important information
+ *
+ * These replace the hardcoded memory injection pattern with LLM-driven decisions.
+ */
+export { MemoryAccessTools } from './lib/tools/memory-access.tools';
+export type {
+  MemorySearchResponse,
+  UserPatternsResponse,
+  StoreMemoryResponse,
+} from './lib/tools/memory-access.tools';
+
+/**
  * LLM Provider Service - For advanced LLM access in agents
  *
  * ⚠️ NOTE: This service is exported for use within workflow agents that need
@@ -128,3 +145,22 @@ export type {
 
 // Configuration utilities
 export * from './lib/utils/multi-agent-config.accessor';
+
+// ✅ State Validation Utilities - Prevent undefined state access errors (CRITICAL FIX)
+export {
+  validateAgentState,
+  isValidAgentState,
+  ensureAgentState,
+  getStateMetadata,
+  getStateMessages,
+  createDefaultAgentState,
+  InvalidAgentStateError,
+} from './lib/utils/state-validator';
+
+// Legacy validation utilities (deprecated - use state-validator instead)
+export {
+  assertValidAgentState,
+  validateAndWarnAgentState,
+  AgentStateValidationError,
+  type StateValidationResult,
+} from './lib/utils/agent-state-validator';

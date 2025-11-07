@@ -638,6 +638,8 @@ export class MultiAgentCoordinatorService implements OnModuleInit {
         {
           namespace: ['agent-outcomes', userId],
           tags: ['outcome', success ? 'success' : 'failure', task.type],
+          agentId,
+          userId,
         }
       )
       .catch((error) => {

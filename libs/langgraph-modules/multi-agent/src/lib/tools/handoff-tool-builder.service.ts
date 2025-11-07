@@ -8,6 +8,10 @@ import {
   HandoffTool,
   MULTI_AGENT_CONSTANTS,
 } from '../interfaces/multi-agent.interface';
+import {
+  isAIMessageWithToolCalls,
+  ToolWithMetadata,
+} from '../types/internal-types';
 
 /**
  * Service for building handoff tools for swarm patterns
@@ -301,16 +305,15 @@ export class HandoffToolBuilderService {
       },
     });
 
-    // Add metadata
-    (tool as any).handoffMetadata = {
-      official: false,
-      source: '@hive-academy/langgraph-multi-agent',
+    // Add metadata using ToolWithMetadata interface
+    const toolWithMetadata = tool as ToolWithMetadata & typeof tool;
+    toolWithMetadata.handoffMetadata = {
+      sourceAgent: currentAgentId,
       targetAgent: config.targetAgent,
-      hasContextFilter: !!config.contextFilter,
-      createdAt: new Date(),
+      handoffType: 'push',
     };
 
-    return tool;
+    return toolWithMetadata;
   }
 
   /**
@@ -382,25 +385,24 @@ export class HandoffToolBuilderService {
       }
     }
 
-    // Check tool calls
+    // Check tool calls using type guard
     if (result.messages) {
       for (const message of result.messages) {
-        if (
-          (message as any)._getType &&
-          (message as any)._getType() === 'ai' &&
-          'tool_calls' in message
-        ) {
-          const toolCalls = (message as any).tool_calls || [];
+        const msgAny = message as any;
+        if (isAIMessageWithToolCalls(msgAny)) {
+          const toolCalls = msgAny.tool_calls || [];
           for (const toolCall of toolCalls) {
             const matchingTool = handoffTools.find(
-              (tool: any) =>
+              (tool: HandoffTool) =>
                 toolCall.name?.includes(tool.name) ||
                 toolCall.name?.includes(tool.targetAgent)
             );
             if (matchingTool) {
               return {
                 targetAgent: matchingTool.targetAgent,
-                task: toolCall.args?.task_description || result.task,
+                task:
+                  (toolCall.args?.task_description as string | undefined) ||
+                  result.task,
                 reason: `Handoff tool called: ${toolCall.name}`,
               };
             }

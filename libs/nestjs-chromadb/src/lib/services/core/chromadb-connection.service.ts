@@ -11,19 +11,12 @@ import {
   ChromaDBTimeoutError,
 } from '../../errors/chromadb.errors';
 import { CHROMADB_CLIENT } from '../../constants';
+import { Semaphore } from 'semaphore-promise';
 import { IChromaConnection } from '../../interfaces/core/database-abstractions.interface';
-
-/**
- * Connection configuration interface
- */
-export interface ConnectionConfig {
-  host: string;
-  port: number;
-  ssl?: boolean;
-  timeout?: number;
-  retryAttempts?: number;
-  retryDelay?: number;
-}
+import type {
+  ConnectionConfig,
+  QueueMetrics,
+} from '../../interfaces/core/database-abstractions.interface';
 
 /**
  * Connection health status
@@ -46,21 +39,34 @@ export class ChromaDBConnectionService
   implements IChromaConnection, OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(ChromaDBConnectionService.name);
+  private readonly semaphore: Semaphore;
+  private activeOperations = 0;
+  private queuedOperations = 0;
   private isConnected = false;
   private connectionTime?: number;
   private lastHealthCheck?: Date;
+  private connectionReadyPromise?: Promise<void>;
 
   constructor(
     @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
     @Inject('ConnectionConfig') private readonly config: ConnectionConfig
-  ) {}
+  ) {
+    // Initialize semaphore with configurable concurrency limit
+    const maxConcurrent = this.config.maxConcurrentOperations || 5;
+    this.semaphore = new Semaphore(maxConcurrent);
+    this.logger.log(
+      `ChromaDB semaphore initialized: max ${maxConcurrent} concurrent operations`
+    );
+  }
 
   /**
    * Initialize connection on module startup
    */
   async onModuleInit(): Promise<void> {
     try {
-      await this.connect();
+      // Store the connection promise for waitForConnection()
+      this.connectionReadyPromise = this.connect();
+      await this.connectionReadyPromise;
       // Automatic health checks removed - consumers should call isHealthy() when needed
       // This prevents unnecessary database load and initialization race conditions
       this.logger.log('ChromaDB connection initialized successfully');
@@ -166,6 +172,50 @@ export class ChromaDBConnectionService
   }
 
   /**
+   * Wait for ChromaDB connection to be established
+   *
+   * This method ensures that the connection is ready before proceeding with operations.
+   * It prevents race conditions where collection initialization attempts occur before
+   * the connection is fully established.
+   *
+   * **Use Cases**:
+   * - Collection initialization (prevents retry waste)
+   * - Application startup dependencies (ensure ChromaDB ready before serving requests)
+   * - Health check implementations
+   *
+   * **Performance Impact**:
+   * - First call: Waits for connection (0-50ms typically)
+   * - Subsequent calls: Returns immediately (connection already established)
+   *
+   * @returns Promise that resolves when connection is established
+   * @throws ChromaDBConnectionError if connection fails
+   *
+   * @example
+   * ```typescript
+   * // In collection initialization
+   * await this.connectionService.waitForConnection();
+   * const collection = await this.createCollection('my-collection');
+   * ```
+   */
+  async waitForConnection(): Promise<void> {
+    // If already connected, return immediately
+    if (this.isConnected) {
+      return;
+    }
+
+    // If connection is in progress, wait for it
+    if (this.connectionReadyPromise) {
+      await this.connectionReadyPromise;
+      return;
+    }
+
+    // If no connection attempt yet, establish connection now
+    this.logger.debug('Connection not established yet, connecting...');
+    this.connectionReadyPromise = this.connect();
+    await this.connectionReadyPromise;
+  }
+
+  /**
    * Execute operation with connection retry logic
    * Enhanced with detailed timing and error tracking for debugging
    */
@@ -173,6 +223,41 @@ export class ChromaDBConnectionService
     const operationId = `op-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)}`;
+    const queueStart = Date.now();
+
+    this.queuedOperations++;
+
+    // Acquire semaphore permit (blocks if at max concurrency)
+    const release = await this.semaphore.acquire();
+
+    this.queuedOperations--;
+    this.activeOperations++;
+
+    try {
+      const queueWaitTime = Date.now() - queueStart;
+
+      this.logger.debug(
+        `[${operationId}] Semaphore acquired after ${queueWaitTime}ms wait (active: ${this.activeOperations}, queued: ${this.queuedOperations})`
+      );
+
+      // Execute with existing retry logic
+      return await this.executeWithRetryInternal(operation, operationId);
+    } finally {
+      this.activeOperations--;
+      // Always release semaphore, even on error
+      release();
+      this.logger.debug(`[${operationId}] Semaphore released`);
+    }
+  }
+
+  /**
+   * Internal retry implementation (existing retry logic)
+   * @private
+   */
+  private async executeWithRetryInternal<T>(
+    operation: () => Promise<T>,
+    operationId: string
+  ): Promise<T> {
     const startTime = Date.now();
     let lastError: Error;
 
@@ -226,18 +311,35 @@ export class ChromaDBConnectionService
         const duration = Date.now() - attemptStartTime;
 
         // Detailed error logging with full context
+        // Extract original error from ChromaDB client's cause property
+        const originalError = (error as any)?.cause;
+        const errorCode = originalError?.code || (error as any)?.code;
+        const errorType =
+          error instanceof ChromaDBTimeoutError
+            ? 'TIMEOUT'
+            : error instanceof ChromaDBConnectionError
+            ? 'CONNECTION'
+            : 'UNKNOWN';
+
         this.logger.error(
           `[${operationId}] ❌ FAILED on attempt ${attempt}/${this.config.retryAttempts}`,
           {
             duration,
             totalTime: Date.now() - startTime,
-            errorType:
-              error instanceof ChromaDBTimeoutError
-                ? 'TIMEOUT'
-                : error instanceof ChromaDBConnectionError
-                ? 'CONNECTION'
-                : 'UNKNOWN',
+            errorType,
             errorMessage: lastError.message,
+            // CRITICAL: Log the original error details
+            originalError: originalError
+              ? {
+                  message: originalError.message,
+                  code: originalError.code,
+                  errno: originalError.errno,
+                  syscall: originalError.syscall,
+                  address: originalError.address,
+                  port: originalError.port,
+                }
+              : undefined,
+            errorCode, // Network error codes: ECONNREFUSED, ETIMEDOUT, etc.
             isConnectionError: this.isConnectionError(error),
             wasConnected: this.isConnected,
             willRetry: attempt < this.config.retryAttempts,
@@ -255,6 +357,7 @@ export class ChromaDBConnectionService
 
         // Don't retry on last attempt
         if (attempt === this.config.retryAttempts) {
+          const originalError = (lastError as any)?.cause;
           this.logger.error(
             `[${operationId}] 🔴 FINAL FAILURE after ${
               Date.now() - startTime
@@ -262,6 +365,15 @@ export class ChromaDBConnectionService
             {
               totalAttempts: attempt,
               finalError: lastError.message,
+              // Log original error in final failure too
+              originalErrorCode:
+                originalError?.code || (lastError as any)?.code,
+              originalErrorMessage: originalError?.message,
+              connectionConfig: {
+                host: this.config.host,
+                port: this.config.port,
+                ssl: this.config.ssl,
+              },
             }
           );
           break;
@@ -314,6 +426,23 @@ export class ChromaDBConnectionService
         this.config.timeout || 10000
       );
     } catch (error) {
+      // CRITICAL: Log the raw error BEFORE ChromaDB client swallows it
+      const rawError = error as any;
+      this.logger.error(
+        `🔴 RAW CONNECTION ERROR (before ChromaDB client processing):`,
+        {
+          errorName: rawError?.name,
+          errorMessage: rawError?.message,
+          errorCode: rawError?.code,
+          errno: rawError?.errno,
+          syscall: rawError?.syscall,
+          address: rawError?.address,
+          port: rawError?.port,
+          cause: rawError?.cause,
+          stack: rawError?.stack?.split('\n').slice(0, 3).join('\n'),
+        }
+      );
+
       throw new ChromaDBConnectionError(
         `Connection test failed: ${
           error instanceof Error ? error.message : error
@@ -325,18 +454,24 @@ export class ChromaDBConnectionService
 
   /**
    * Add timeout to promise
+   * Uses config.timeout (default 30000ms) instead of hardcoded 10000ms
    */
   private async withTimeout<T>(
     promise: Promise<T>,
-    timeoutMs = 10000
+    timeoutMs?: number
   ): Promise<T> {
+    // Use provided timeout, fallback to config timeout, then default to 30000ms
+    const effectiveTimeout = timeoutMs ?? this.config.timeout ?? 30000;
+
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
         () =>
           reject(
-            new ChromaDBTimeoutError(`Operation timed out after ${timeoutMs}ms`)
+            new ChromaDBTimeoutError(
+              `Operation timed out after ${effectiveTimeout}ms`
+            )
           ),
-        timeoutMs
+        effectiveTimeout
       );
     });
 
@@ -422,5 +557,17 @@ export class ChromaDBConnectionService
    */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get operation queue metrics for observability
+   */
+  getQueueMetrics(): QueueMetrics {
+    const maxConcurrent = this.config.maxConcurrentOperations || 5;
+    return {
+      availablePermits: maxConcurrent - this.activeOperations,
+      queueDepth: this.queuedOperations,
+      maxConcurrent,
+    };
   }
 }

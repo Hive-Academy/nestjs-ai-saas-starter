@@ -36,12 +36,13 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
+import { NgtArgs } from 'angular-three';
 import { Mesh } from 'three';
 
 @Component({
   selector: 'app-torus',
   standalone: true,
+  imports: [NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -52,7 +53,7 @@ import { Mesh } from 'three';
       [receiveShadow]="receiveShadow()"
     >
       <ngt-torus-geometry
-        [args]="[radius(), tube(), radialSegments(), tubularSegments(), arc()]"
+        *args="[radius(), tube(), radialSegments(), tubularSegments(), arc()]"
       />
 
       <ngt-mesh-standard-material
@@ -108,7 +109,6 @@ export class TorusComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

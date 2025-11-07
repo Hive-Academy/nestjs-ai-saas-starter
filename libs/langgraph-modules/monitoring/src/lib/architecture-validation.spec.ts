@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 
 // Core library test imports
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { HitlModule } from '@hive-academy/langgraph-hitl';
 
@@ -10,7 +10,7 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
   describe('Build System Integration Tests', () => {
     it('should validate that all modules are buildable and importable', () => {
       // Test that all module imports resolve correctly at compile time
-      expect(LanggraphModulesCheckpointModule).toBeDefined();
+      expect(CheckpointModule).toBeDefined();
       expect(StreamingModule).toBeDefined();
       expect(HitlModule).toBeDefined();
 
@@ -19,7 +19,7 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
 
     it('should validate that modules have correct static methods', () => {
       // Test that the direct import pattern works
-      expect(typeof LanggraphModulesCheckpointModule.forRoot).toBe('function');
+      expect(typeof CheckpointModule.forRoot).toBe('function');
       expect(typeof StreamingModule.forRoot).toBe('function');
       expect(typeof HitlModule.forRoot).toBe('function');
 
@@ -35,9 +35,7 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
       };
       const hitlConfig = { defaultTimeout: 30000, confidenceThreshold: 0.8 };
 
-      expect(() =>
-        LanggraphModulesCheckpointModule.forRoot(checkpointConfig)
-      ).not.toThrow();
+      expect(() => CheckpointModule.forRoot(checkpointConfig)).not.toThrow();
       expect(() => StreamingModule.forRoot(streamingConfig)).not.toThrow();
       expect(() => HitlModule.forRoot(hitlConfig)).not.toThrow();
 
@@ -51,7 +49,7 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
       // The fact that we can import modules directly proves the dynamic system is eliminated
 
       const moduleConfigs = [
-        LanggraphModulesCheckpointModule.forRoot({
+        CheckpointModule.forRoot({
           checkpoint: { maxPerThread: 100 },
         }),
         StreamingModule.forRoot({ websocket: { enabled: true } }),
@@ -72,7 +70,7 @@ describe('TASK_INT_011 Phase 3 Architecture Validation', () => {
     it('should validate Phase 3 Subtask 3.2 - Optional Dependency Pattern', () => {
       // Test that modules can work with minimal or empty configurations
       expect(() => {
-        LanggraphModulesCheckpointModule.forRoot({});
+        CheckpointModule.forRoot({});
         StreamingModule.forRoot({});
         HitlModule.forRoot({});
       }).not.toThrow();

@@ -1,0 +1,25 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Streaming: Lightning bolt with flowing energy -->
+
+  <!-- Main lightning bolt -->
+  <path d="M 140 40 L 90 128 L 120 128 L 100 216 L 190 108 L 150 108 L 140 40 Z"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Flowing wave lines (showing streaming motion) -->
+  <!-- Top waves -->
+  <path d="M 50 60 Q 60 55 70 60 T 90 60" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 50 75 Q 60 70 70 75 T 90 75" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.4"/>
+
+  <!-- Middle waves -->
+  <path d="M 40 130 Q 50 125 60 130 T 80 130" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 40 145 Q 50 140 60 145 T 80 145" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.4"/>
+
+  <!-- Bottom waves -->
+  <path d="M 160 180 Q 170 175 180 180 T 200 180" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.6"/>
+  <path d="M 160 195 Q 170 190 180 195 T 200 195" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.4"/>
+
+  <!-- Energy particles -->
+  <circle cx="75" cy="68" r="2" fill="#6366F1" opacity="0.8"/>
+  <circle cx="55" cy="138" r="2" fill="#6366F1" opacity="0.8"/>
+  <circle cx="175" cy="188" r="2" fill="#6366F1" opacity="0.8"/>
+</svg>

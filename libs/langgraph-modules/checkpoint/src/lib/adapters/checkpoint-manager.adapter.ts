@@ -7,198 +7,129 @@ import {
   type CheckpointCleanupOptions,
 } from '@hive-academy/langgraph-core';
 import type { CheckpointManagerService } from '../core/checkpoint-manager.service';
-import type {
-  EnhancedCheckpointMetadata,
-  EnhancedCheckpoint,
-  ListCheckpointsOptions,
-  CheckpointCleanupOptions as EnhancedCheckpointCleanupOptions,
-} from '../interfaces/checkpoint.interface';
+import type { ILangGraphCheckpointSaver } from '../interfaces/langgraph-checkpoint.interface';
 
 /**
- * Adapter implementation that wraps CheckpointManagerService
- * This bridges the gap between the shared interface and the actual service implementation
+ * Simplified adapter that bridges CheckpointManagerService to ICheckpointAdapter interface
+ * Uses LangGraph types directly - no complex type conversions
  */
 export class CheckpointManagerAdapter extends ICheckpointAdapter {
   constructor(private readonly checkpointManager: CheckpointManagerService) {
     super();
   }
 
+  /**
+   * CRITICAL: Get native LangGraph saver for use with graph.compile({ checkpointer })
+   * This is the most important method for consumers
+   */
+  getLangGraphSaver(saverName?: string): ILangGraphCheckpointSaver | null {
+    return this.checkpointManager.getLangGraphSaver(saverName);
+  }
+
+  /**
+   * List checkpoints - direct delegation to manager
+   */
+  async listCheckpoints(
+    threadId: string,
+    options?: CheckpointListOptions,
+    saverName?: string
+  ): Promise<readonly BaseCheckpointTuple[]> {
+    const checkpoints = await this.checkpointManager.listCheckpoints(
+      threadId,
+      options,
+      saverName
+    );
+
+    // Use LangGraph types directly - minimal conversion to base types
+    return checkpoints.map((tuple) => {
+      const config = tuple.config;
+      const checkpoint = tuple.checkpoint;
+      const metadata = tuple.metadata;
+
+      return [
+        config,
+        {
+          id: checkpoint.id,
+          channel_values: checkpoint.channel_values,
+        } as BaseCheckpoint,
+        {
+          timestamp: checkpoint.ts || '',
+          source: (metadata?.source || 'loop') as
+            | 'input'
+            | 'loop'
+            | 'update'
+            | 'fork',
+          step: metadata?.step || 0,
+          parents: metadata?.parents || {},
+        } as BaseCheckpointMetadata,
+      ] as BaseCheckpointTuple;
+    });
+  }
+
+  /**
+   * Load checkpoint - direct delegation to manager
+   */
+  async loadCheckpoint<T = unknown>(
+    threadId: string,
+    checkpointId?: string,
+    saverName?: string
+  ): Promise<BaseCheckpoint<T> | null> {
+    const checkpoint = await this.checkpointManager.loadCheckpoint(
+      threadId,
+      checkpointId,
+      saverName
+    );
+
+    if (!checkpoint) {
+      return null;
+    }
+
+    // Minimal conversion to BaseCheckpoint
+    return {
+      id: checkpoint.id,
+      channel_values: checkpoint.channel_values as T,
+    };
+  }
+
+  /**
+   * Cleanup checkpoints - direct delegation to manager
+   */
+  async cleanupCheckpoints(options: CheckpointCleanupOptions): Promise<number> {
+    return this.checkpointManager.cleanupCheckpoints(options);
+  }
+
+  /**
+   * Health check - simplified to just verify saver exists
+   */
+  async isHealthy(saverName?: string): Promise<boolean> {
+    return this.checkpointManager.getLangGraphSaver(saverName) !== null;
+  }
+
+  /**
+   * Not implemented - manual checkpoint saves removed in TASK_2025_032
+   * LangGraph handles all checkpoint creation automatically
+   */
   async saveCheckpoint<T = unknown>(
     threadId: string,
     checkpoint: T,
     metadata?: BaseCheckpointMetadata,
     saverName?: string
   ): Promise<void> {
-    // Convert minimal metadata to enhanced metadata
-    const enhancedMetadata = metadata
-      ? this.toEnhancedMetadata(metadata)
-      : undefined;
-
-    return this.checkpointManager.saveCheckpoint(
-      threadId,
-      checkpoint,
-      enhancedMetadata,
-      saverName
+    throw new Error(
+      'Manual checkpoint saves not supported - LangGraph creates checkpoints automatically when using compile({ checkpointer })'
     );
   }
 
-  async loadCheckpoint<T = unknown>(
-    threadId: string,
-    checkpointId?: string,
-    saverName?: string
-  ): Promise<BaseCheckpoint<T> | null> {
-    const result = await this.checkpointManager.loadCheckpoint(
-      threadId,
-      checkpointId,
-      saverName
-    );
-
-    if (!result) {
-      return null;
-    }
-
-    // Convert enhanced checkpoint to base checkpoint
-    return this.toBaseCheckpoint<T>(result as EnhancedCheckpoint<T>);
-  }
-
-  async listCheckpoints(
-    threadId: string,
-    options?: CheckpointListOptions,
-    saverName?: string
-  ): Promise<readonly BaseCheckpointTuple[]> {
-    // Convert minimal options to enhanced options
-    const enhancedOptions = options
-      ? this.toEnhancedListOptions(options)
-      : undefined;
-
-    const checkpoints = await this.checkpointManager.listCheckpoints(
-      threadId,
-      enhancedOptions,
-      saverName
-    );
-
-    // Convert enhanced tuples to base tuples
-    return checkpoints.map(
-      ([config, checkpoint, metadata]) =>
-        [
-          config,
-          this.toBaseCheckpoint(checkpoint),
-          this.toBaseMetadata(metadata),
-        ] as BaseCheckpointTuple
-    );
-  }
-
+  /**
+   * Not implemented - no consumers use this method
+   */
   async deleteCheckpoint(
     threadId: string,
     checkpointId: string,
     saverName?: string
   ): Promise<boolean> {
-    // Use the CheckpointManagerService deleteCheckpoint method (will add it)
-    return this.checkpointManager.deleteCheckpoint(
-      threadId,
-      checkpointId,
-      saverName
+    throw new Error(
+      'Individual checkpoint deletion not implemented - use cleanupCheckpoints() for maintenance'
     );
-  }
-
-  async cleanupCheckpoints(options: CheckpointCleanupOptions): Promise<number> {
-    // Convert minimal cleanup options to enhanced options
-    const enhancedOptions = this.toEnhancedCleanupOptions(options);
-
-    return this.checkpointManager.cleanupCheckpoints(enhancedOptions);
-  }
-
-  async isHealthy(saverName?: string): Promise<boolean> {
-    try {
-      if (saverName) {
-        // Check health for a specific saver
-        const healthStatus = await this.checkpointManager.getHealthStatus(
-          saverName
-        );
-        return healthStatus?.status === 'healthy';
-      }
-
-      // Check overall health using the synchronous summary method
-      const healthSummary = this.checkpointManager.getHealthSummary();
-      const overall = healthSummary.overall;
-      return overall && 'healthy' in overall ? overall.healthy : false;
-    } catch (error) {
-      console.error('Health check failed:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Convert base metadata to enhanced metadata
-   */
-  private toEnhancedMetadata(
-    metadata: BaseCheckpointMetadata
-  ): EnhancedCheckpointMetadata {
-    return {
-      ...metadata,
-      parents: metadata.parents
-        ? Object.fromEntries(
-            Object.entries(metadata.parents).map(([k, v]) => [k, String(v)])
-          )
-        : {},
-      // Add any additional fields that the enhanced version needs
-    };
-  }
-
-  /**
-   * Convert enhanced checkpoint to base checkpoint
-   */
-  private toBaseCheckpoint<T>(
-    enhancedCheckpoint: EnhancedCheckpoint<T>
-  ): BaseCheckpoint<T> {
-    return {
-      id: enhancedCheckpoint.id,
-      channel_values: enhancedCheckpoint.channel_values,
-    };
-  }
-
-  /**
-   * Convert enhanced metadata to base metadata
-   */
-  private toBaseMetadata(
-    enhancedMetadata: EnhancedCheckpointMetadata
-  ): BaseCheckpointMetadata {
-    return {
-      timestamp: enhancedMetadata.timestamp || '',
-      source: enhancedMetadata.source,
-      step: enhancedMetadata.step,
-      parents: enhancedMetadata.parents || {},
-      // Copy any additional fields
-      ...Object.fromEntries(
-        Object.entries(enhancedMetadata).filter(
-          ([key]) => !['timestamp', 'source', 'step', 'parents'].includes(key)
-        )
-      ),
-    };
-  }
-
-  /**
-   * Convert base list options to enhanced list options
-   */
-  private toEnhancedListOptions(
-    options: CheckpointListOptions
-  ): ListCheckpointsOptions {
-    return {
-      limit: options.limit,
-      offset: options.offset,
-      // Add any additional mapping needed
-    };
-  }
-
-  /**
-   * Convert base cleanup options to enhanced cleanup options
-   */
-  private toEnhancedCleanupOptions(
-    options: CheckpointCleanupOptions
-  ): EnhancedCheckpointCleanupOptions {
-    return {
-      maxAge: options.maxAge,
-      // Add any additional mapping needed
-    };
   }
 }

@@ -40,10 +40,11 @@ import {
   effect,
   OnInit,
 } from '@angular/core';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Mesh } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
+import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 export type PolyhedronType =
   | 'icosahedron'
@@ -54,7 +55,7 @@ export type PolyhedronType =
 @Component({
   selector: 'app-polyhedron',
   standalone: true,
-  imports: [Float3dDirective, Performance3dDirective],
+  imports: [Float3dDirective, Performance3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -68,13 +69,13 @@ export type PolyhedronType =
       performance3d
     >
       @switch (type()) { @case ('icosahedron') {
-      <ngt-icosahedron-geometry [args]="[radius(), detail()]" />
+      <ngt-icosahedron-geometry *args="[radius(), detail()]" />
       } @case ('octahedron') {
-      <ngt-octahedron-geometry [args]="[radius(), detail()]" />
+      <ngt-octahedron-geometry *args="[radius(), detail()]" />
       } @case ('tetrahedron') {
-      <ngt-tetrahedron-geometry [args]="[radius(), detail()]" />
+      <ngt-tetrahedron-geometry *args="[radius(), detail()]" />
       } @case ('dodecahedron') {
-      <ngt-dodecahedron-geometry [args]="[radius(), detail()]" />
+      <ngt-dodecahedron-geometry *args="[radius(), detail()]" />
       } }
 
       <ngt-mesh-standard-material
@@ -108,10 +109,10 @@ export class PolyhedronComponent implements OnInit {
   readonly detail = input<number>(0); // 0 = flat faces, higher = more subdivisions
 
   // Material properties
-  readonly color = input<number>(0x8a2be2);
+  readonly color = input<number>(Colors3D.accent.blueViolet.hex);
   readonly metalness = input<number>(0.7);
   readonly roughness = input<number>(0.2);
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0);
   readonly transparent = input<boolean>(false);
   readonly opacity = input<number>(1.0);
@@ -142,7 +143,6 @@ export class PolyhedronComponent implements OnInit {
   private isInitialized = false;
 
   constructor() {
-    registerAngularThreePrimitives();
     this.setupReactiveEffects();
   }
 

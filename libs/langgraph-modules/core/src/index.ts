@@ -51,9 +51,21 @@ export type {
   StreamingOptions,
   StreamTransformer,
   StreamFilter,
+  IWorkflowProvider,
 } from './lib/interfaces/workflow.interface';
 
 // Note: WorkflowState and HumanFeedback are already exported above
+
+// Agent provider interfaces (type-only exports)
+export type {
+  IAgentProvider,
+  IAgentWorkflowConfig,
+  IMultiAgentStreamingConfig,
+  IMultiAgentInterruptionConfig,
+} from './lib/interfaces/agent.interface';
+
+// Tool provider interfaces (type-only exports)
+export type { IToolProvider } from './lib/interfaces/tool.interface';
 
 // Workflow config interface (both type and runtime export for WorkflowExecutionConfig)
 export type { WorkflowExecutionConfig } from './lib/interfaces/workflow-config.interface';
@@ -68,6 +80,12 @@ export {
   WorkflowStateAnnotation,
   createCustomStateAnnotation,
 } from './lib/annotations/workflow-state.annotation';
+export {
+  AgentStateAnnotation,
+  createCustomAgentStateAnnotation,
+} from './lib/annotations/agent-state.annotation';
+// Note: AgentState type is NOT exported here to avoid conflict with memory-adapter AgentState
+// Import directly from './lib/annotations/agent-state.annotation' if needed
 
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';

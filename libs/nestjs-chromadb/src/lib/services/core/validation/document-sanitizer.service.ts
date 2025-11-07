@@ -176,9 +176,11 @@ export class DocumentSanitizerService {
 
   /**
    * Sanitize metadata value
+   * ChromaDB only supports string, number, and boolean in metadata
+   * Arrays and objects must be JSON-stringified
    */
   private sanitizeMetadataValue(value: any): string | number | boolean {
-    // ChromaDB only supports string, number, and boolean values
+    // Handle primitives that ChromaDB supports directly
     if (typeof value === 'string') {
       // Remove null characters and normalize whitespace
       return value
@@ -195,7 +197,31 @@ export class DocumentSanitizerService {
       return value;
     }
 
-    // Convert other types to strings
+    // Handle arrays - JSON stringify for ChromaDB compatibility
+    if (Array.isArray(value)) {
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to JSON.stringify array metadata value: ${error}`
+        );
+        return '[]';
+      }
+    }
+
+    // Handle objects - JSON stringify for ChromaDB compatibility
+    if (typeof value === 'object' && value !== null) {
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to JSON.stringify object metadata value: ${error}`
+        );
+        return '{}';
+      }
+    }
+
+    // Convert other types to strings as fallback
     if (value !== null && value !== undefined) {
       try {
         return String(value).trim();

@@ -477,6 +477,12 @@ export class WorkflowGraphBuilderService {
         nodeCount: definition.nodes.length,
         edgeCount: definition.edges.length,
       },
+      next: undefined,
+      current: undefined,
+      scratchpad: '',
+      task: undefined,
+      threadId: undefined,
+      userId: undefined,
     };
 
     return await this.memoryAdapter.getAgentContext(state);
@@ -536,6 +542,12 @@ export class WorkflowGraphBuilderService {
         graphType: graphComplexity.complexity,
         workflowName: definition.name,
       },
+      next: undefined,
+      current: undefined,
+      scratchpad: '',
+      task: undefined,
+      threadId: undefined,
+      userId: undefined,
     };
 
     const result: Partial<AgentState> = {

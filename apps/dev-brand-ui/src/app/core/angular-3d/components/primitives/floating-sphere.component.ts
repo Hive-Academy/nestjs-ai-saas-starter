@@ -64,8 +64,9 @@ import {
 } from '@angular/core';
 
 import { Mesh } from 'three';
-import { registerAngularThreePrimitives } from '../../utils/angular-three-primitives';
 import { Float3dDirective } from '../../directives/float-3d.directive';
+import { Colors3D } from '../../config/colors.config';
+import { NgtArgs } from 'angular-three';
 
 /**
  * FloatingSphere Component
@@ -76,7 +77,7 @@ import { Float3dDirective } from '../../directives/float-3d.directive';
 @Component({
   selector: 'app-floating-sphere',
   standalone: true,
-  imports: [Float3dDirective],
+  imports: [Float3dDirective, NgtArgs],
   template: `
     <ngt-mesh
       #mesh
@@ -90,7 +91,7 @@ import { Float3dDirective } from '../../directives/float-3d.directive';
     >
       <!-- Sphere geometry with reactive args -->
       <ngt-sphere-geometry
-        [args]="[radius(), widthSegments(), heightSegments()]"
+        *args="[radius(), widthSegments(), heightSegments()]"
       />
 
       <!-- Physical material for metallic appearance -->
@@ -111,9 +112,9 @@ import { Float3dDirective } from '../../directives/float-3d.directive';
       @if (glowConfig()) {
       <ngt-mesh>
         <ngt-sphere-geometry
-          [args]="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
+          *args="[radius() * (glowConfig()!.scale ?? 1.5), 16, 16]"
         />
-        <ngt-mesh-basic-material
+        <ngt-mesh-standard-material
           [color]="glowConfig()!.color ?? emissive()"
           [transparent]="true"
           [opacity]="glowConfig()!.opacity ?? 0.2"
@@ -144,7 +145,7 @@ export class FloatingSphereComponent implements OnInit {
   readonly heightSegments = input<number>(32);
 
   // Material properties - Physical Material for metallic appearance
-  readonly color = input<number>(0xff0000);
+  readonly color = input<number>(Colors3D.neon.red.hex);
   readonly metalness = input<number>(0.8);
   readonly roughness = input<number>(0.2);
   readonly clearcoat = input<number>(1.0);
@@ -154,7 +155,7 @@ export class FloatingSphereComponent implements OnInit {
   readonly thickness = input<number>(0.5);
 
   // Emissive properties for glow effect
-  readonly emissive = input<number>(0x000000);
+  readonly emissive = input<number>(Colors3D.material.black.hex);
   readonly emissiveIntensity = input<number>(0.2);
 
   // Shadow configuration
@@ -201,7 +202,6 @@ export class FloatingSphereComponent implements OnInit {
 
   constructor() {
     // Register Angular Three primitives on component construction
-    registerAngularThreePrimitives();
 
     // Setup reactive effects for input changes
     this.setupReactiveEffects();

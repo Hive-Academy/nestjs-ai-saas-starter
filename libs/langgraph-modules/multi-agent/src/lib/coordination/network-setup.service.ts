@@ -69,7 +69,12 @@ export class NetworkSetupService {
     networkId: string,
     agents: AgentDefinition[],
     networkType: 'supervisor' | 'swarm' | 'hierarchical' = 'supervisor',
-    config?: any
+    config?: {
+      enableInterrupts?: boolean;
+      checkpointer?: unknown;
+      debug?: boolean;
+      [key: string]: unknown;
+    }
   ): Promise<string> {
     // Register all agents with memory tracking
     for (const agent of agents) {
@@ -80,6 +85,20 @@ export class NetworkSetupService {
     // These searches require embedding generation which is slow and unnecessary
     // for fresh networks with no execution history
     const networkOptimizations: any = {};
+
+    // Extract compilationOptions from config (if provided)
+    // IMPORTANT: Default enableInterrupts to true (for HITL workflows)
+    // IMPORTANT: Leave checkpointer undefined to allow NetworkManagerService to inject it
+    // NetworkManagerService.prepareCompilationOptions() will add checkpointer if checkpointing is enabled
+    const compilationOptions = {
+      enableInterrupts: config?.enableInterrupts ?? true, // Default: true (enable HITL by default)
+      checkpointer: config?.checkpointer, // No default - NetworkManagerService handles injection
+      debug: config?.debug ?? false,
+    };
+
+    // Remove compilationOptions from config to avoid duplication
+    const { enableInterrupts, checkpointer, debug, ...networkSpecificConfig } =
+      config || {};
 
     // Create default configuration based on type
     let networkConfig: AgentNetwork;
@@ -97,8 +116,9 @@ export class NetworkSetupService {
             workers: networkOptimizations.agentOrder || agents.map((a) => a.id),
             // Memory superpowers: Apply learned network optimizations
             ...networkOptimizations.configuration,
-            ...config,
+            ...networkSpecificConfig,
           },
+          compilationOptions,
         };
         break;
 
@@ -120,8 +140,9 @@ export class NetworkSetupService {
             },
             // Memory superpowers: Apply learned swarm optimizations
             ...networkOptimizations.configuration,
-            ...config,
+            ...networkSpecificConfig,
           },
+          compilationOptions,
         };
         break;
 
@@ -134,8 +155,9 @@ export class NetworkSetupService {
             levels: networkOptimizations.levels || [agents.map((a) => a.id)],
             // Memory superpowers: Apply learned hierarchical optimizations
             ...networkOptimizations.configuration,
-            ...config,
+            ...networkSpecificConfig,
           },
+          compilationOptions,
         };
         break;
     }

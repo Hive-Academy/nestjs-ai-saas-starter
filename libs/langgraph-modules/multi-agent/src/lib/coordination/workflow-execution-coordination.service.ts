@@ -10,6 +10,7 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { MultiAgentResult } from '../interfaces/multi-agent.interface';
 import { NetworkManagerService } from '../network/network-manager.service';
 import { MemoryCoordinationService } from './memory-coordination.service';
+import { CoordinationLearningService } from './coordination-learning.service';
 
 /**
  * Workflow Execution Coordination Service
@@ -36,7 +37,9 @@ export class WorkflowExecutionCoordinationService {
     private readonly streamingService: IStreamingService,
     @Optional()
     @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: IMemoryAdapter
+    private readonly memoryAdapter?: IMemoryAdapter,
+    @Optional()
+    private readonly coordinationLearningService?: CoordinationLearningService
   ) {}
 
   /**
@@ -54,54 +57,96 @@ export class WorkflowExecutionCoordinationService {
     const executionId = this.generateExecutionId(networkId);
     const threadId = this.generateThreadId(networkId);
 
+    /**
+     * REMOVED: Pre-execution memory loading (LangGraph 2025 alignment)
+     *
+     * Rationale:
+     * - Blocking memory operations caused 25+ second workflow start delays
+     * - LangGraph 2025 recommends "memory-in-nodes" pattern via store parameter
+     * - Pre-execution memory loading violates instant workflow execution principle
+     * - Coordination context will be provided via BaseStore interface (Priority 4)
+     *
+     * See: implementation-plan.md:113-208 (Priority 1: Remove Pre-Execution Memory)
+     */
+
     // Memory superpowers: Get optimal agent coordination based on learned patterns
-    let coordinationContext: any = {};
-    if (this.memoryAdapter) {
-      try {
-        coordinationContext =
-          await this.memoryCoordination.getOptimalCoordinationContext(
-            networkId,
-            input
-          );
-        this.logger.debug(
-          `Retrieved coordination context for network ${networkId}`,
-          {
-            agentCompatibility:
-              coordinationContext.agentCompatibility?.length || 0,
-            networkOptimizations:
-              coordinationContext.networkOptimizations?.length || 0,
-            performancePatterns:
-              coordinationContext.performancePatterns?.length || 0,
-          }
-        );
-      } catch (error) {
-        this.logger.warn(`Failed to get coordination context: ${error}`);
-      }
-    }
-
+    // COMMENTED OUT: Blocking pre-execution memory call (25+ second delay)
+    // let coordinationContext: any = {};
+    // if (this.memoryAdapter) {
+    // try {
+    // coordinationContext =
+    // await this.memoryCoordination.getOptimalCoordinationContext(
+    // networkId,
+    // input
+    // );
+    // this.logger.debug(
+    // `Retrieved coordination context for network ${networkId}`,
+    // {
+    // agentCompatibility:
+    // coordinationContext.agentCompatibility?.length || 0,
+    // networkOptimizations:
+    // coordinationContext.networkOptimizations?.length || 0,
+    // performancePatterns:
+    // coordinationContext.performancePatterns?.length || 0,
+    // }
+    // );
+    // } catch (error) {
+    // this.logger.warn(`Failed to get coordination context: ${error}`);
+    // }
+    // }
+    //
     // Automagical: Enhance initial state with memory context if available
-    let enhancedInput = input;
-    if (this.memoryAdapter) {
-      try {
-        enhancedInput =
-          await this.memoryCoordination.enhanceInputWithMemoryContext(
-            input,
-            threadId,
-            networkId
-          );
-        this.logger.debug(
-          `Enhanced input with memory context for execution ${executionId}`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to enhance input with memory context: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
-    }
+    // COMMENTED OUT: Blocking input enhancement (causes cascade failures)
+    // let enhancedInput = input;
+    // if (this.memoryAdapter) {
+    // try {
+    // enhancedInput =
+    // await this.memoryCoordination.enhanceInputWithMemoryContext(
+    // input,
+    // threadId,
+    // networkId
+    // );
+    // this.logger.debug(
+    // `Enhanced input with memory context for execution ${executionId}`
+    // );
+    // } catch (error) {
+    // this.logger.warn(
+    // `Failed to enhance input with memory context: ${
+    // error instanceof Error ? error.message : String(error)
+    // }`
+    // );
+    // }
+    // }
 
-    // Prepare checkpoint-enabled config
+    // Initialize empty coordination context and use input directly (instant start)
+    const coordinationContext: any = {};
+    const enhancedInput = input;
+
+    // Initialize state.metadata BEFORE workflow execution (TASK_2025_037)
+    // This ensures metadata exists from the very beginning of workflow execution
+    const initialState = {
+      messages: enhancedInput.messages || [],
+      metadata: {
+        // Common metadata fields (unified state architecture)
+        userId: enhancedInput.config?.metadata?.userId,
+        executionId,
+        threadId,
+        workflowType: networkId,
+        networkId,
+        // Agent coordination metadata (for multi-agent workflows)
+        active_agent: undefined,
+        lastAgent: undefined,
+        // Merge any existing metadata from input
+        ...enhancedInput.config?.metadata,
+        // Coordination intelligence (preserved for backward compatibility)
+        coordinationContext,
+        agentCompatibility: coordinationContext.agentCompatibility || [],
+        networkOptimizations: coordinationContext.networkOptimizations || [],
+        performancePatterns: coordinationContext.performancePatterns || [],
+      },
+    };
+
+    // Prepare checkpoint-enabled config (maintain backward compatibility)
     const checkpointConfig: RunnableConfig = {
       ...enhancedInput.config,
       configurable: {
@@ -128,20 +173,8 @@ export class WorkflowExecutionCoordinationService {
       },
     };
 
-    // Save initial checkpoint if adapter is available
-    if (this.checkpointAdapter) {
-      try {
-        await this.saveWorkflowCheckpoint(threadId, {
-          networkId,
-          executionId,
-          phase: 'start',
-          messages: input.messages,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to save initial checkpoint: ${error}`);
-      }
-    }
+    // BUGFIX (TASK_2025_032): Removed manual checkpoint saves
+    // LangGraph's compile({ checkpointer }) handles all checkpointing internally
 
     // Stream workflow start event
     if (this.streamingService) {
@@ -164,7 +197,7 @@ export class WorkflowExecutionCoordinationService {
     const executionStartTime = Date.now();
 
     const result = await this.networkManager.executeWorkflow(networkId, {
-      ...enhancedInput,
+      ...initialState,
       config: checkpointConfig,
     });
 
@@ -189,46 +222,44 @@ export class WorkflowExecutionCoordinationService {
       }
     }
 
-    // Save completion checkpoint if adapter is available
-    if (this.checkpointAdapter && result) {
-      try {
-        await this.saveWorkflowCheckpoint(threadId, {
-          networkId,
-          executionId,
-          phase: 'complete',
-          result: {
-            success: result.success,
-            executionTime: result.executionTime,
-            executionPath: result.executionPath,
-          },
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to save completion checkpoint: ${error}`);
-      }
-    }
+    // BUGFIX (TASK_2025_032): Removed completion checkpoint save
+    // LangGraph handles all checkpointing automatically
 
-    // Automagical: Store conversation turn in memory if available
+    // TASK_2025_029 Phase 1: Async background memory writes (non-blocking)
+    // Changed from blocking await to fire-and-forget background queue
     if (this.memoryAdapter && result) {
-      try {
-        await this.memoryCoordination.storeConversationInMemory(
+      this.memoryCoordination
+        .storeConversationInMemory(
           enhancedInput,
           result,
           threadId,
           executionId,
           networkId,
           this.networkManager.getNetworkConfig(networkId)?.agents?.length || 0
+        )
+        .then(() => {
+          this.logger.debug(
+            `Stored conversation turn in memory for execution ${executionId}`
+          );
+        })
+        .catch((error) => {
+          this.logger.warn(
+            `Failed to store conversation in memory: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        });
+    }
+
+    // Background coordination learning (fire-and-forget)
+    if (this.coordinationLearningService && result) {
+      this.coordinationLearningService
+        .learnFromExecution(result)
+        .catch((err) =>
+          this.logger.warn(
+            `Background coordination learning failed (non-blocking): ${err}`
+          )
         );
-        this.logger.debug(
-          `Stored conversation turn in memory for execution ${executionId}`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to store conversation in memory: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
     }
 
     // Stream workflow completion event
@@ -301,46 +332,7 @@ export class WorkflowExecutionCoordinationService {
     return `exec_${networkId}_${Date.now()}`;
   }
 
-  /**
-   * Save workflow checkpoint with state and metadata
-   */
-  private async saveWorkflowCheckpoint(
-    threadId: string,
-    state: Record<string, unknown>
-  ): Promise<void> {
-    if (!this.checkpointAdapter) {
-      return;
-    }
-
-    try {
-      const checkpoint = {
-        id: `checkpoint_${threadId}_${Date.now()}`,
-        channel_values: state,
-      };
-
-      const metadata = {
-        threadId,
-        timestamp: new Date().toISOString(),
-        source: 'input' as const,
-        step: 0,
-        parents: {},
-        networkId: state.networkId as string,
-        executionId: state.executionId as string,
-        phase: state.phase as string,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
-        threadId,
-        checkpoint,
-        metadata
-      );
-
-      this.logger.debug(`Checkpoint saved for thread ${threadId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to save checkpoint for thread ${threadId}:`,
-        error
-      );
-    }
-  }
+  // BUGFIX (TASK_2025_032): Removed saveWorkflowCheckpoint() method entirely
+  // This method created malformed checkpoints missing channel_versions and versions_seen
+  // LangGraph's compile({ checkpointer }) handles all checkpointing correctly
 }

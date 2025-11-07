@@ -64,6 +64,7 @@ import type {
 import type { NeogmaEntity } from '../types/neogma-types';
 import type { QueryBuilder } from 'neogma';
 import type { QueryResult } from '../types/neogma-types';
+import { ParameterBindingUtility } from '../utilities/parameter-binding.utility';
 
 /**
  * TypeORM-style base repository for Neo4j entities
@@ -288,14 +289,29 @@ export class Neo4jRepository<T extends NeogmaEntity> {
   /**
    * Create a Neogma QueryBuilder instance for custom queries
    *
+   * Note: For most cases, prefer using ParameterBindingUtility.autoBind() for simpler parameter management.
+   *
    * @returns QueryBuilder instance
    *
-   * @example
+   * @example Using autoBind (RECOMMENDED)
+   * ```typescript
+   * async findByEmail(email: string): Promise<User | null> {
+   *   const cypher = `
+   *     MATCH (u:${this.label} {email: $email})
+   *     RETURN u
+   *   `;
+   *   const { query, params } = ParameterBindingUtility.autoBind(cypher, { email });
+   *   const result = await this.executeQuery(query, params);
+   *   return result.records[0]?.get('u').properties || null;
+   * }
+   * ```
+   *
+   * @example Using QueryBuilder (for complex queries)
    * ```typescript
    * async findByEmail(email: string): Promise<User | null> {
    *   const qb = this.createQueryBuilder();
    *   const bindParam = qb.getBindParam();
-   *   const emailParam = bindParam.add(email);
+   *   const emailParam = bindParam.getUniqueNameAndAdd('email', email);
    *
    *   qb.match(`(u:${this.label})`)
    *     .where(`u.email = $${emailParam}`)
@@ -360,20 +376,20 @@ export class Neo4jRepository<T extends NeogmaEntity> {
     type: string,
     properties?: Record<string, unknown>
   ): Promise<void> {
-    const qb = this.createQueryBuilder();
-    const bindParam = qb.getBindParam();
-    const fromIdParam = bindParam.add(fromId);
-    const toIdParam = bindParam.add(toId);
-    const propsParam = properties ? bindParam.add(properties) : null;
+    const cypher = `
+      MATCH (from:${this.label} {id: $fromId})
+      MATCH (to {id: $toId})
+      CREATE (from)-[r:${type}${properties ? ' $props' : ''}]->(to)
+      RETURN r
+    `;
 
-    qb.match(`(from:${this.label})`)
-      .where(`from.id = $${fromIdParam}`)
-      .match(`(to)`)
-      .where(`to.id = $${toIdParam}`)
-      .create(`(from)-[r:${type}${propsParam ? ` $${propsParam}` : ''}]->(to)`)
-      .return('r');
+    const { query, params } = ParameterBindingUtility.autoBind(cypher, {
+      fromId,
+      toId,
+      props: properties,
+    });
 
-    await this.executeQuery(qb.getStatement(), bindParam.get());
+    await this.executeQuery(query, params);
   }
 
   /**
@@ -401,10 +417,6 @@ export class Neo4jRepository<T extends NeogmaEntity> {
     relationshipType: string,
     direction: 'OUT' | 'IN' | 'BOTH' = 'OUT'
   ): Promise<R[]> {
-    const qb = this.createQueryBuilder();
-    const bindParam = qb.getBindParam();
-    const idParam = bindParam.add(id);
-
     const pattern =
       direction === 'OUT'
         ? `(from:${this.label})-[:${relationshipType}]->(related)`
@@ -412,12 +424,15 @@ export class Neo4jRepository<T extends NeogmaEntity> {
         ? `(from:${this.label})<-[:${relationshipType}]-(related)`
         : `(from:${this.label})-[:${relationshipType}]-(related)`;
 
-    qb.match(pattern).where(`from.id = $${idParam}`).return('related');
+    const cypher = `
+      MATCH ${pattern}
+      WHERE from.id = $id
+      RETURN related
+    `;
 
-    const result = await this.executeQuery<QueryResult>(
-      qb.getStatement(),
-      bindParam.get()
-    );
+    const { query, params } = ParameterBindingUtility.autoBind(cypher, { id });
+
+    const result = await this.executeQuery<QueryResult>(query, params);
     return result.records.map((r) => r.get('related').properties as R);
   }
 

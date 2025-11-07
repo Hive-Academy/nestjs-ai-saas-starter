@@ -10,6 +10,16 @@ export * from './lib/services/websocket-bridge.service';
 export * from './lib/services/event-stream-processor.service';
 export * from './lib/services/streaming-websocket.service';
 
+// Workflow Streaming Orchestrator - High-level consumer facade
+export {
+  WorkflowStreamingOrchestrator,
+  type WorkflowExecutionInfo,
+  type ExecutionStatus,
+  type ExecutionStatusType,
+  type StreamableWorkflow,
+  type StartWorkflowOptions,
+} from './lib/services/workflow-streaming-orchestrator.service';
+
 // Adapter for core interface compatibility
 export * from './lib/adapters/streaming-service.adapter';
 

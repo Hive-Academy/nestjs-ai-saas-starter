@@ -7,6 +7,7 @@ import {
   AgentState,
   MultiAgentResult,
 } from '../interfaces/multi-agent.interface';
+import { BackgroundMemoryService } from '../services/background-memory.service';
 
 /**
  * Memory Coordination Service
@@ -25,10 +26,21 @@ export class MemoryCoordinationService {
   constructor(
     @Optional()
     @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: IMemoryAdapter
+    private readonly memoryAdapter?: IMemoryAdapter,
+    @Optional()
+    private readonly backgroundMemory?: BackgroundMemoryService
   ) {
     if (this.memoryAdapter) {
       this.logger.log('Memory adapter available - memory superpowers enabled');
+      if (this.backgroundMemory) {
+        this.logger.log(
+          'BackgroundMemoryService available - using batched async writes'
+        );
+      } else {
+        this.logger.warn(
+          'BackgroundMemoryService not available - using direct writes'
+        );
+      }
     }
   }
 
@@ -307,7 +319,7 @@ export class MemoryCoordinationService {
     }
 
     try {
-      const mockState: AgentState = {
+      const mockState = {
         messages: input.messages.map((msg) =>
           typeof msg === 'string' ? new HumanMessage(msg) : msg
         ),
@@ -318,7 +330,17 @@ export class MemoryCoordinationService {
           ...input.config?.metadata,
           networkId,
         },
-      };
+        // Required AgentState fields from WorkflowState
+        executionId: `exec_${Date.now()}`,
+        status: 'active' as const,
+        completedNodes: [],
+        confidence: 1.0,
+        retryCount: 0,
+        timestamps: {
+          started: new Date(),
+        },
+        startedAt: new Date(),
+      } as unknown as AgentState;
 
       const memoryContext = await this.memoryAdapter.getAgentContext(mockState);
 
@@ -387,25 +409,54 @@ export class MemoryCoordinationService {
           ? aiMessages[aiMessages.length - 1].content
           : 'No response generated';
 
-      await this.memoryAdapter.storeConversationTurn(
-        threadId,
-        String(humanContent),
-        String(aiContent),
-        {
-          executionId,
-          networkId,
-          agentPath: result.executionPath,
-          executionTime: result.executionTime,
-          success: result.success,
-          timestamp: new Date().toISOString(),
-          type: 'multi_agent_conversation',
-          importance: result.success ? 0.8 : 0.5,
-          userId: (input.config?.metadata?.userId as string) || 'unknown',
-          agentCount,
-          checkpointEnabled: true,
-          streamingEnabled: true,
-        }
-      );
+      // TASK_2025_029: Extract userId from config with better fallback handling
+      const userId =
+        (input.config?.metadata?.userId as string) ||
+        (input.config?.configurable?.user_id as string) ||
+        undefined;
+
+      // TASK_2025_029: Only store if userId is available (prevent 'unknown' agent errors)
+      if (!userId) {
+        this.logger.debug(
+          `Skipping conversation memory storage - no userId available (execution: ${executionId})`
+        );
+        return;
+      }
+
+      const metadata = {
+        executionId,
+        networkId,
+        agentPath: result.executionPath,
+        executionTime: result.executionTime,
+        success: result.success,
+        timestamp: new Date().toISOString(),
+        type: 'multi_agent_conversation',
+        importance: result.success ? 0.8 : 0.5,
+        userId, // Now guaranteed to be defined
+        agentCount,
+        checkpointEnabled: true,
+        streamingEnabled: true,
+        agentId: networkId, // TASK_2025_029: Use networkId as agentId for conversation context
+      };
+
+      // TASK_2025_029: Use BackgroundMemoryService for queued writes (batching + non-blocking)
+      if (this.backgroundMemory) {
+        await this.backgroundMemory.queueConversationWrite(
+          threadId,
+          String(humanContent),
+          String(aiContent),
+          metadata,
+          'low' // Low priority for conversation storage
+        );
+      } else {
+        // Fallback to direct write (no batching)
+        await this.memoryAdapter.storeConversationTurn(
+          threadId,
+          String(humanContent),
+          String(aiContent),
+          metadata
+        );
+      }
 
       this.logger.debug(
         `Stored conversation turn in memory: ${executionId} (${String(

@@ -119,23 +119,8 @@ export class StreamCoordinationService {
       this.generateThreadId(networkId);
     const startTime = Date.now();
 
-    // Save initial checkpoint for streaming if adapter is available
-    if (this.checkpointAdapter) {
-      try {
-        await this.saveWorkflowCheckpoint(threadId, {
-          networkId,
-          executionId,
-          phase: 'stream_start',
-          messages: input.messages,
-          streamMode: input.streamMode || 'values',
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        this.logger.warn(
-          `Failed to save initial streaming checkpoint: ${error}`
-        );
-      }
-    }
+    // BUGFIX (TASK_2025_032): Removed manual checkpoint saves
+    // LangGraph's compile({ checkpointer }) handles all checkpointing internally
 
     // Stream start event
     if (this.streamingService) {
@@ -159,23 +144,8 @@ export class StreamCoordinationService {
       for await (const update of originalStream) {
         stepCount++;
 
-        // Save periodic checkpoints during streaming
-        if (this.checkpointAdapter && stepCount % 5 === 0) {
-          try {
-            await this.saveWorkflowCheckpoint(threadId, {
-              networkId,
-              executionId,
-              phase: 'stream_update',
-              step: stepCount,
-              current: update.current,
-              timestamp: new Date().toISOString(),
-            });
-          } catch (error) {
-            this.logger.warn(
-              `Failed to save streaming checkpoint at step ${stepCount}: ${error}`
-            );
-          }
-        }
+        // BUGFIX (TASK_2025_032): Removed periodic checkpoint saves
+        // LangGraph handles checkpointing automatically during execution
 
         // Stream progress events for each update
         if (this.streamingService && update) {
@@ -198,23 +168,8 @@ export class StreamCoordinationService {
 
       const executionTime = Date.now() - startTime;
 
-      // Save final checkpoint
-      if (this.checkpointAdapter) {
-        try {
-          await this.saveWorkflowCheckpoint(threadId, {
-            networkId,
-            executionId,
-            phase: 'stream_complete',
-            totalSteps: stepCount,
-            executionTime,
-            timestamp: new Date().toISOString(),
-          });
-        } catch (error) {
-          this.logger.warn(
-            `Failed to save final streaming checkpoint: ${error}`
-          );
-        }
-      }
+      // BUGFIX (TASK_2025_032): Removed final checkpoint save
+      // LangGraph handles all checkpointing internally
 
       // Stream completion
       if (this.streamingService) {
@@ -281,46 +236,7 @@ export class StreamCoordinationService {
     return `exec_${networkId}_${Date.now()}`;
   }
 
-  /**
-   * Save workflow checkpoint with state and metadata
-   */
-  private async saveWorkflowCheckpoint(
-    threadId: string,
-    state: Record<string, unknown>
-  ): Promise<void> {
-    if (!this.checkpointAdapter) {
-      return;
-    }
-
-    try {
-      const checkpoint = {
-        id: `checkpoint_${threadId}_${Date.now()}`,
-        channel_values: state,
-      };
-
-      const metadata = {
-        threadId,
-        timestamp: new Date().toISOString(),
-        source: 'input' as const,
-        step: 0,
-        parents: {},
-        networkId: state.networkId as string,
-        executionId: state.executionId as string,
-        phase: state.phase as string,
-      };
-
-      await this.checkpointAdapter.saveCheckpoint(
-        threadId,
-        checkpoint,
-        metadata
-      );
-
-      this.logger.debug(`Checkpoint saved for thread ${threadId}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to save checkpoint for thread ${threadId}:`,
-        error
-      );
-    }
-  }
+  // BUGFIX (TASK_2025_032): Removed saveWorkflowCheckpoint() method entirely
+  // This method created malformed checkpoints missing channel_versions and versions_seen
+  // LangGraph's compile({ checkpointer }) handles all checkpointing correctly
 }

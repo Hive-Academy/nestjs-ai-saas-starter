@@ -1,0 +1,33 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Multi-Agent: Team of 4 agents in collaboration -->
+
+  <!-- Agent 1 (top-left) -->
+  <circle cx="90" cy="90" r="20" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 70 110 Q 90 120 110 110" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Agent 2 (top-right) -->
+  <circle cx="166" cy="90" r="20" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 146 110 Q 166 120 186 110" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Agent 3 (bottom-left) -->
+  <circle cx="90" cy="166" r="20" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 70 186 Q 90 196 110 186" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Agent 4 (bottom-right) -->
+  <circle cx="166" cy="166" r="20" fill="none" stroke="#6366F1" stroke-width="3"/>
+  <path d="M 146 186 Q 166 196 186 186" fill="none" stroke="#6366F1" stroke-width="3"/>
+
+  <!-- Collaboration lines (connecting agents) -->
+  <line x1="110" y1="90" x2="146" y2="90" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+  <line x1="90" y1="110" x2="90" y2="146" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+  <line x1="166" y1="110" x2="166" y2="146" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+  <line x1="110" y1="166" x2="146" y2="166" stroke="#6366F1" stroke-width="2" opacity="0.5"/>
+
+  <!-- Diagonal collaboration -->
+  <line x1="110" y1="110" x2="146" y2="146" stroke="#6366F1" stroke-width="2" opacity="0.3"/>
+  <line x1="146" y1="110" x2="110" y2="146" stroke="#6366F1" stroke-width="2" opacity="0.3"/>
+
+  <!-- Central hub (shared knowledge) -->
+  <circle cx="128" cy="128" r="8" fill="none" stroke="#6366F1" stroke-width="2"/>
+  <circle cx="128" cy="128" r="3" fill="#6366F1"/>
+</svg>

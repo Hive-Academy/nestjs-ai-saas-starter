@@ -73,6 +73,11 @@ export interface IApprovalChainStorageService {
   getAllActiveRequests(): Promise<ApprovalRequest[]>;
 
   /**
+   * Get active approval requests for a specific execution (Phase 1 lazy-loading)
+   */
+  getActiveRequestsByExecution(executionId: string): Promise<ApprovalRequest[]>;
+
+  /**
    * Get pending approvals for a specific approver
    */
   getPendingApprovalsForApprover(
