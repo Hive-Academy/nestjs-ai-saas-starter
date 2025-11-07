@@ -32,7 +32,6 @@ import {
   IApprovalChainStorageService,
 } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
 import {
   WorkflowEngineModule,
@@ -45,7 +44,6 @@ import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
 import { getMonitoringConfig } from './config/monitoring.config';
 import { getNeo4jConfig } from './config/neo4j.config';
-import { getStreamingConfig } from './config/streaming.config';
 import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
@@ -70,14 +68,10 @@ import { CompetitiveIntelligenceService } from './services/competitive-intellige
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
 
-// App streaming manager
-import { AppStreamingManager } from './services/app-streaming-manager.service';
-
 // Core interface for adapter pattern
 import {
   ICheckpointAdapter,
   IMemoryAdapter,
-  IStreamingService,
 } from '@hive-academy/langgraph-core';
 
 @Module({
@@ -155,22 +149,6 @@ import {
       },
     }),
 
-    // PROPERLY CONFIGURED STREAMING MODULE
-    StreamingModule.forRoot({
-      ...getStreamingConfig(),
-      websocket: {
-        enabled: true,
-        port: 3000, // Using main server port
-      },
-      gateway: {
-        enabled: true,
-        cors: {
-          origin: true,
-          credentials: true,
-        },
-      },
-    }),
-
     // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
     HitlModule.forRootAsync({
       imports: [LangGraphAdaptersModule], // Import to access HITL adapter tokens
@@ -205,21 +183,19 @@ import {
       ],
     }),
 
-    // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
+    // Workflow engine WITH CHECKPOINT AND MEMORY - adapter injection
     WorkflowEngineModule.forRootAsync({
       useFactory: async (
-        streamingAdapter: IStreamingService,
         checkpointAdapter: ICheckpointAdapter,
         memoryAdapter: IMemoryAdapter
       ): Promise<WorkflowEngineModuleOptions> => {
         return {
           ...getWorkflowEngineConfig(),
-          streamingAdapter,
           checkpointAdapter,
           memoryAdapter,
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
+      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
@@ -288,7 +264,6 @@ import {
   ],
   controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [
-    AppStreamingManager,
     PerformanceDashboardService,
     BrandMonitoringService,
     ContentStrategyEngine,

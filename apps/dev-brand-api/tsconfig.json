@@ -20,9 +20,6 @@
       "path": "../../libs/langgraph-modules/time-travel"
     },
     {
-      "path": "../../libs/langgraph-modules/streaming"
-    },
-    {
       "path": "../../libs/langgraph-modules/platform"
     },
     {

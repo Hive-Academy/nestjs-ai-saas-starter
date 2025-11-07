@@ -56,9 +56,6 @@
       "path": "../../libs/langgraph-modules/time-travel/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/langgraph-modules/streaming/tsconfig.lib.json"
-    },
-    {
       "path": "../../libs/langgraph-modules/platform/tsconfig.lib.json"
     },
     {

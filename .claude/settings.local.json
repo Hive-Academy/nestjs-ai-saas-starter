@@ -29,7 +29,8 @@
       "Bash(node:*)",
       "mcp__docs-langchain__SearchDocsByLangChain",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(npx nx sync)"
     ],
     "deny": [],
     "ask": [],

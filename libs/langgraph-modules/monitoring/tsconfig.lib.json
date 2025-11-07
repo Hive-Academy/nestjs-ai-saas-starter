@@ -17,9 +17,6 @@
       "path": "../hitl/tsconfig.lib.json"
     },
     {
-      "path": "../streaming/tsconfig.lib.json"
-    },
-    {
       "path": "../checkpoint/tsconfig.lib.json"
     }
   ]

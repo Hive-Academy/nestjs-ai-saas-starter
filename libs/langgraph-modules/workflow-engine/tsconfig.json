@@ -11,9 +11,6 @@
       "path": "../core"
     },
     {
-      "path": "../streaming"
-    },
-    {
       "path": "./tsconfig.lib.json"
     }
   ]
