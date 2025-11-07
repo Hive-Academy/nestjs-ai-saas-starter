@@ -1,21 +1,6 @@
 import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { WorkflowGraphBuilderService } from './core/workflow-graph-builder.service';
-import { CompilationCacheService } from './core/compilation-cache.service';
 import { MetadataProcessorService } from './core/metadata-processor.service';
-import { SubgraphManagerService } from './core/subgraph-manager.service';
-import { WorkflowStreamService } from './streaming/workflow-stream.service';
-import { StreamManagementService } from './streaming/stream-management.service';
-import { TokenProcessingService } from './streaming/token-processing.service';
-import { StreamEventProcessorService } from './streaming/stream-event-processor.service';
-import { WorkflowCheckpointService } from './core/workflow-checkpoint.service';
-import { WorkflowExecutionService } from './core/workflow-execution.service';
-import { DecoratorTranslationService } from './services/decorator-translation.service';
-import { MultiAgentTranslationService } from './services/multi-agent-translation.service';
-import { GraphPatternsService } from './core/graph-patterns.service';
-import { GraphOptimizationService } from './core/graph-optimization.service';
-import { CommandProcessorService } from './routing/command-processor.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
   IStreamingService,
@@ -60,66 +45,16 @@ export class WorkflowEngineModule {
 
     return {
       module: WorkflowEngineModule,
-      imports: [ConfigModule, StreamingModule],
+      imports: [ConfigModule],
       providers: [
         {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useValue: options,
         },
-        // Core services
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
+        // Thin metadata layer only
         MetadataProcessorService,
-        SubgraphManagerService,
-
-        // Split streaming services
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowStreamService,
-
-        WorkflowCheckpointService,
-        WorkflowExecutionService,
-
-        // Decorator translation services
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-        {
-          provide: 'DecoratorTranslationService',
-          useClass: DecoratorTranslationService,
-        },
-        {
-          provide: 'MultiAgentTranslationService',
-          useClass: MultiAgentTranslationService,
-        },
-        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
-        // Services will inject it directly via @Inject('ICheckpointAdapter')
-
-        // Note: IStreamingService is provided by StreamingModule via adapter pattern
       ],
-      exports: [
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
-        MetadataProcessorService,
-        SubgraphManagerService,
-        // Streaming services
-        WorkflowStreamService,
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowCheckpointService,
-        WorkflowExecutionService,
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-      ],
+      exports: [MetadataProcessorService],
       global: true,
     };
   }
@@ -135,73 +70,17 @@ export class WorkflowEngineModule {
   }): DynamicModule {
     return {
       module: WorkflowEngineModule,
-      imports: [
-        ConfigModule,
-        StreamingModule.forRoot({
-          websocket: { enabled: false }, // Default disabled, can be overridden by app module
-          defaultBufferSize: 50,
-        }),
-      ],
+      imports: [ConfigModule],
       providers: [
         {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
-        // Core services
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
+        // Thin metadata layer only
         MetadataProcessorService,
-        SubgraphManagerService,
-
-        // Split streaming services
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowStreamService,
-
-        WorkflowCheckpointService,
-        WorkflowExecutionService,
-
-        // Decorator translation services
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-        {
-          provide: 'DecoratorTranslationService',
-          useClass: DecoratorTranslationService,
-        },
-        {
-          provide: 'MultiAgentTranslationService',
-          useClass: MultiAgentTranslationService,
-        },
-        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
-        // Services will inject it directly via @Inject('ICheckpointAdapter')
-
-        // Note: IStreamingService is provided by StreamingModule via adapter pattern
       ],
-      exports: [
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
-        MetadataProcessorService,
-        SubgraphManagerService,
-        // Streaming services
-        WorkflowStreamService,
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowCheckpointService,
-        WorkflowExecutionService,
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-      ],
+      exports: [MetadataProcessorService],
       global: true,
     };
   }

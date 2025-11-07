@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { FunctionalApiModule } from './functional-api.module';
-import { FunctionalWorkflowService } from './services/functional-workflow.service';
+import { WorkflowValidator } from './validation/workflow-validator';
+import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
 import {
   NoOpCheckpointAdapter,
   type IStreamingService,
@@ -131,38 +132,42 @@ class MockMemoryAdapter implements IMemoryAdapter {
 
 describe('FunctionalApiModule', () => {
   describe('forRoot', () => {
-    it('should create module without checkpoint adapter', async () => {
+    it('should create module with default options', async () => {
       const moduleRef = await Test.createTestingModule({
         imports: [FunctionalApiModule.forRoot()],
       }).compile();
 
-      const workflowService = moduleRef.get<FunctionalWorkflowService>(
-        FunctionalWorkflowService
-      );
-      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
+      const workflowValidator =
+        moduleRef.get<WorkflowValidator>(WorkflowValidator);
+      const moduleOptions = moduleRef.get(FUNCTIONAL_API_MODULE_OPTIONS);
 
-      expect(workflowService).toBeDefined();
-      expect(checkpointAdapter).toBeInstanceOf(NoOpCheckpointAdapter);
+      expect(workflowValidator).toBeDefined();
+      expect(moduleOptions).toBeDefined();
+      expect(moduleOptions.defaultTimeout).toBe(30000);
+      expect(moduleOptions.enableCheckpointing).toBe(true);
     });
 
-    it('should create module with custom checkpoint adapter', async () => {
+    it('should create module with custom options', async () => {
       const customAdapter = new NoOpCheckpointAdapter();
 
       const moduleRef = await Test.createTestingModule({
         imports: [
           FunctionalApiModule.forRoot({
             checkpointAdapter: customAdapter,
+            defaultTimeout: 5000,
+            enableStreaming: true,
           }),
         ],
       }).compile();
 
-      const workflowService = moduleRef.get<FunctionalWorkflowService>(
-        FunctionalWorkflowService
-      );
-      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
+      const workflowValidator =
+        moduleRef.get<WorkflowValidator>(WorkflowValidator);
+      const moduleOptions = moduleRef.get(FUNCTIONAL_API_MODULE_OPTIONS);
 
-      expect(workflowService).toBeDefined();
-      expect(checkpointAdapter).toBe(customAdapter);
+      expect(workflowValidator).toBeDefined();
+      expect(moduleOptions.checkpointAdapter).toBe(customAdapter);
+      expect(moduleOptions.defaultTimeout).toBe(5000);
+      expect(moduleOptions.enableStreaming).toBe(true);
     });
   });
 
@@ -181,35 +186,37 @@ describe('FunctionalApiModule', () => {
         ],
       }).compile();
 
-      const workflowService = moduleRef.get<FunctionalWorkflowService>(
-        FunctionalWorkflowService
-      );
-      const checkpointAdapter = moduleRef.get('ICheckpointAdapter');
+      const workflowValidator =
+        moduleRef.get<WorkflowValidator>(WorkflowValidator);
+      const moduleOptions = moduleRef.get(FUNCTIONAL_API_MODULE_OPTIONS);
 
-      expect(workflowService).toBeDefined();
-      expect(checkpointAdapter).toBe(customAdapter);
+      expect(workflowValidator).toBeDefined();
+      expect(moduleOptions.checkpointAdapter).toBe(customAdapter);
+      expect(moduleOptions.defaultTimeout).toBe(5000);
     });
 
-    it('should work with streaming service', async () => {
+    it('should work with streaming and memory adapters', async () => {
       const mockStreamingService = new MockStreamingService();
+      const mockMemoryAdapter = new MockMemoryAdapter();
       const customAdapter = new NoOpCheckpointAdapter();
 
       const moduleRef = await Test.createTestingModule({
         imports: [
           FunctionalApiModule.forRoot({
             checkpointAdapter: customAdapter,
-
             streamingAdapter: mockStreamingService,
+            memoryAdapter: mockMemoryAdapter,
           }),
         ],
       }).compile();
 
-      const workflowService = moduleRef.get<FunctionalWorkflowService>(
-        FunctionalWorkflowService
-      );
+      const workflowValidator =
+        moduleRef.get<WorkflowValidator>(WorkflowValidator);
+      const moduleOptions = moduleRef.get(FUNCTIONAL_API_MODULE_OPTIONS);
 
-      expect(workflowService).toBeDefined();
-      expect(mockStreamingService).toBeDefined();
+      expect(workflowValidator).toBeDefined();
+      expect(moduleOptions.streamingAdapter).toBe(mockStreamingService);
+      expect(moduleOptions.memoryAdapter).toBe(mockMemoryAdapter);
     });
   });
 });

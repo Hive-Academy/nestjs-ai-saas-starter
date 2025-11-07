@@ -27,7 +27,9 @@
       "Bash(npx tsc:*)",
       "WebFetch(domain:langchain-ai.github.io)",
       "Bash(node:*)",
-      "mcp__docs-langchain__SearchDocsByLangChain"
+      "mcp__docs-langchain__SearchDocsByLangChain",
+      "Bash(find:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": [],

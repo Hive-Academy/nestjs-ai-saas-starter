@@ -1,36 +1,12 @@
 // Module
 export * from './lib/workflow-engine.module';
 
-// Core Services (moved from main library)
-export * from './lib/core/workflow-graph-builder.service';
-export * from './lib/core/compilation-cache.service';
+// Core Services (thin metadata layer only)
 export * from './lib/core/metadata-processor.service';
-export * from './lib/core/subgraph-manager.service';
-export * from './lib/core/workflow-checkpoint.service';
-export * from './lib/core/workflow-execution.service';
-export * from './lib/core/graph-patterns.service';
-export * from './lib/core/graph-optimization.service';
 
-// Decorator Bridge Services (cleaned up)
-export * from './lib/services/decorator-translation.service';
-export * from './lib/services/multi-agent-translation.service';
-export * from './lib/interfaces/decorator-bridge.interface';
-export * from './lib/interfaces/multi-agent-bridge.interface';
-// Removed duplicate enhanced decorator interfaces - use canonical ones from source modules
-
-// Streaming Services (moved from streaming module to avoid circular dependency)
-export * from './lib/streaming/workflow-stream.service';
-export * from './lib/streaming/stream-management.service';
-export * from './lib/streaming/token-processing.service';
-export * from './lib/streaming/stream-event-processor.service';
-
-// Routing (moved from main library)
-export * from './lib/routing/command-processor.service';
-
-// Base Classes
+// Base Classes (DI containers only)
 export * from './lib/base/unified-workflow.base';
 export * from './lib/base/declarative-workflow.base';
-export * from './lib/base/streaming-workflow.base';
 export * from './lib/base/agent-node.base';
 
 // Interfaces

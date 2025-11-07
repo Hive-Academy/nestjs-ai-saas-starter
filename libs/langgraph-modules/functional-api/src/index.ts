@@ -1,10 +1,8 @@
 // Module
 export * from './lib/functional-api.module';
 
-// Services
-export * from './lib/services/functional-workflow.service';
-export * from './lib/services/workflow-registration.service';
-export * from './lib/services/graph-generator.service';
+// ❌ PURGED: Services deleted (functional-workflow, workflow-registration, graph-generator)
+// Services will be replaced with direct LangGraph usage in rebuild phase
 
 // Validation
 export * from './lib/validation/workflow-validator';

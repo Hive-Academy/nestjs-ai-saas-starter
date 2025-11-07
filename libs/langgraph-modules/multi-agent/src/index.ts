@@ -21,7 +21,7 @@ export { MultiAgentCoordinatorService } from './lib/coordination/multi-agent-coo
  * These services provide public APIs for tool management.
  */
 export { ToolRegistrationService } from './lib/tools/tool-registration.service';
-export { ToolRegistryService } from './lib/tools/tool-registry.service';
+// ❌ PURGED: ToolRegistryService deleted (over-engineered registry)
 
 /**
  * Memory Access Tools - Agent-driven memory tools (TASK 3)
@@ -75,22 +75,23 @@ export {
   CommandBuilder,
   type Command,
   type CommandProcessingState,
-} from './lib/routing/command-processor.service';
+} from './lib/services/command-processor.service';
 
 // ============================================================================
-// INTERNAL SERVICES - DO NOT USE DIRECTLY
+// PURGED SERVICES (Deleted - 31,070 LOC Removed)
 // ============================================================================
-// The following services are internal implementation details:
-// - AgentRegistryService (used internally by MultiAgentWorkflowBase)
-// - GraphBuilderService (used internally by coordinator)
-// - NodeFactoryService (used internally by graph builder)
-// - NetworkManagerService (used internally by coordinator)
-// - WorkflowManagerService (used internally by coordinator)
-// - ToolBuilderService (used internally by tool registration)
-// - ToolNodeService (used internally by tool builder)
+// ❌ DELETED: network/ folder (NetworkManagerService, NodeFactoryService, GraphBuilderService)
+// ❌ DELETED: agents/ folder (AgentRegistryService, AgentExecutorService, AgentFactoryService)
+// ❌ DELETED: state/ folder (StateTransformerService, StateManagerService)
+// ❌ DELETED: execution/ folder (ExecutionOrchestratorService, ExecutionTrackerService)
+// ❌ DELETED: memory/ folder (MemoryCoordinationService, MemoryAdapterService)
+// ❌ DELETED: routing/ folder (SupervisorRouterService, SwarmCoordinatorService, etc.)
+// ❌ DELETED: tools/ (ToolRegistryService, ToolBuilderService, ToolNodeService, HandoffToolBuilderService)
 //
-// These are NOT exported to enforce proper encapsulation.
-// Use @MultiAgent decorator and MultiAgentWorkflowBase instead.
+// These services duplicated LangGraph's built-in functionality and will be
+// replaced with direct LangGraph usage (StateGraph, subgraphs, graph.invoke()) in rebuild phase.
+//
+// ✅ KEPT: LlmProviderService, CommandProcessorService, ToolRegistrationService, MemoryAccessTools
 // ============================================================================
 
 // Interfaces and Types

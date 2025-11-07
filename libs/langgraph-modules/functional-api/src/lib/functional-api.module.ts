@@ -4,11 +4,7 @@ import {
   FunctionalApiModuleAsyncOptions,
   FunctionalApiOptionsFactory,
 } from './interfaces/module-options.interface';
-import { FunctionalWorkflowService } from './services/functional-workflow.service';
-import { WorkflowRegistrationService } from './services/workflow-registration.service';
-import { GraphGeneratorService } from './services/graph-generator.service';
 import { WorkflowValidator } from './validation/workflow-validator';
-import { FunctionalApiModuleInitializer } from './services/functional-api-module-initializer.service';
 import { FUNCTIONAL_API_MODULE_OPTIONS } from './constants/module.constants';
 import { setFunctionalApiConfig } from './utils/functional-api-config.accessor';
 
@@ -35,23 +31,8 @@ export class FunctionalApiModule {
     return {
       module: FunctionalApiModule,
       imports: [],
-      providers: [
-        optionsProvider,
-        // Don't re-provide adapter tokens - they're injected from external modules
-        // The adapters are passed via module options and don't need to be re-provided
-        WorkflowValidator,
-        WorkflowRegistrationService,
-        GraphGeneratorService,
-        FunctionalWorkflowService,
-        FunctionalApiModuleInitializer,
-      ],
-      exports: [
-        FunctionalWorkflowService,
-        WorkflowRegistrationService,
-        GraphGeneratorService,
-        WorkflowValidator,
-        FUNCTIONAL_API_MODULE_OPTIONS,
-      ],
+      providers: [optionsProvider, WorkflowValidator],
+      exports: [WorkflowValidator, FUNCTIONAL_API_MODULE_OPTIONS],
     };
   }
 
@@ -64,23 +45,8 @@ export class FunctionalApiModule {
     return {
       module: FunctionalApiModule,
       imports: [...(options.imports || [])],
-      providers: [
-        ...asyncProviders,
-        // Don't re-provide adapter tokens - they're injected from external modules
-        // The adapters are passed via module options and don't need to be re-provided
-        WorkflowValidator,
-        WorkflowRegistrationService,
-        GraphGeneratorService,
-        FunctionalWorkflowService,
-        FunctionalApiModuleInitializer,
-      ],
-      exports: [
-        FunctionalWorkflowService,
-        WorkflowRegistrationService,
-        GraphGeneratorService,
-        WorkflowValidator,
-        FUNCTIONAL_API_MODULE_OPTIONS,
-      ],
+      providers: [...asyncProviders, WorkflowValidator],
+      exports: [WorkflowValidator, FUNCTIONAL_API_MODULE_OPTIONS],
     };
   }
 
