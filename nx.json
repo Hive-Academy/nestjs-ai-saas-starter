@@ -42,8 +42,6 @@
         "libs/langgraph-modules/streaming/*",
         "libs/langgraph-modules/workflow-engine/*",
         "libs/langgraph-modules/time-travel/*",
-        "libs/langgraph-modules/multi-agent/*",
-        "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
         "libs/langgraph-modules/platform/*"
@@ -146,8 +144,6 @@
       "libs/langgraph-modules/streaming",
       "libs/langgraph-modules/workflow-engine",
       "libs/langgraph-modules/time-travel",
-      "libs/langgraph-modules/multi-agent",
-      "libs/langgraph-modules/functional-api",
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
       "libs/langgraph-modules/platform",

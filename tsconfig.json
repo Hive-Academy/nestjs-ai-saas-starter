@@ -16,12 +16,6 @@
       "path": "./libs/langgraph-modules/time-travel"
     },
     {
-      "path": "./libs/langgraph-modules/multi-agent"
-    },
-    {
-      "path": "./libs/langgraph-modules/functional-api"
-    },
-    {
       "path": "./libs/langgraph-modules/monitoring"
     },
     {

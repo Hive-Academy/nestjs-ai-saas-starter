@@ -22,7 +22,6 @@ import { RepositoryModule } from './repositories/repository.module';
 
 // LangGraph modules with proper streaming integration
 import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
-import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import {
   HitlModule,
   HitlModuleOptions,
@@ -33,7 +32,6 @@ import {
   IApprovalChainStorageService,
 } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { StreamingModule } from '@hive-academy/langgraph-streaming';
 import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
 import {
@@ -227,38 +225,38 @@ import {
     }),
 
     // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
-    MultiAgentModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ) => {
-        return {
-          ...getMultiAgentConfig(),
-          streamingAdapter,
-          checkpointAdapter,
-          memoryAdapter,
-        };
-      },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    }),
+    // MultiAgentModule.forRootAsync({
+    //   useFactory: async (
+    //     streamingAdapter: IStreamingService,
+    //     checkpointAdapter: ICheckpointAdapter,
+    //     memoryAdapter: IMemoryAdapter
+    //   ) => {
+    //     return {
+    //       ...getMultiAgentConfig(),
+    //       streamingAdapter,
+    //       checkpointAdapter,
+    //       memoryAdapter,
+    //     };
+    //   },
+    //   inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
+    // }),
 
     // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
-    FunctionalApiModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ): Promise<any> => {
-        return {
-          ...getFunctionalApiConfig(),
-          streamingAdapter,
-          checkpointAdapter,
-          memoryAdapter,
-        };
-      },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    }),
+    // FunctionalApiModule.forRootAsync({
+    //   useFactory: async (
+    //     streamingAdapter: IStreamingService,
+    //     checkpointAdapter: ICheckpointAdapter,
+    //     memoryAdapter: IMemoryAdapter
+    //   ): Promise<any> => {
+    //     return {
+    //       ...getFunctionalApiConfig(),
+    //       streamingAdapter,
+    //       checkpointAdapter,
+    //       memoryAdapter,
+    //     };
+    //   },
+    //   inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
+    // }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),

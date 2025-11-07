@@ -26,9 +26,6 @@
       "path": "../../libs/langgraph-modules/platform"
     },
     {
-      "path": "../../libs/langgraph-modules/multi-agent"
-    },
-    {
       "path": "../../libs/langgraph-modules/monitoring"
     },
     {
@@ -36,9 +33,6 @@
     },
     {
       "path": "../../libs/langgraph-modules/hitl"
-    },
-    {
-      "path": "../../libs/langgraph-modules/functional-api"
     },
     {
       "path": "../../libs/langgraph-modules/core"

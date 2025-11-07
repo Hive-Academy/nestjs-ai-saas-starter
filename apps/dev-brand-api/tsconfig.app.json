@@ -62,9 +62,6 @@
       "path": "../../libs/langgraph-modules/platform/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/langgraph-modules/multi-agent/tsconfig.lib.json"
-    },
-    {
       "path": "../../libs/langgraph-modules/monitoring/tsconfig.lib.json"
     },
     {
@@ -72,9 +69,6 @@
     },
     {
       "path": "../../libs/langgraph-modules/hitl/tsconfig.lib.json"
-    },
-    {
-      "path": "../../libs/langgraph-modules/functional-api/tsconfig.lib.json"
     },
     {
       "path": "../../libs/langgraph-modules/core/tsconfig.lib.json"
