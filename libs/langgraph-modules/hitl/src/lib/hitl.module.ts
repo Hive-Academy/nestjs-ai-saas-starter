@@ -23,6 +23,7 @@ import { ApprovalOutcomeService } from './services/approval-outcome.service';
 import { ApprovalHistorySearchService } from './services/approval-history-search.service';
 // Decorator Support Service - Extracted from decorator (2025-01-11)
 import { ApprovalEvaluatorService } from './services/approval-evaluator.service';
+import { HitlModuleInitializerService } from './services/hitl-module-initializer.service';
 import { setHitlConfig } from './utils/hitl-config.accessor';
 
 // Provider factory and validator
@@ -93,6 +94,7 @@ export class HitlModule {
         ApprovalHistorySearchService, // Historical approval pattern search
         // Decorator Support Service - Extracted from decorator (2025-01-11)
         ApprovalEvaluatorService, // Centralized approval decision logic for decorators
+        HitlModuleInitializerService, // Module initialization & service locator registration
         // Processing & helper services
         ApprovalProcessingService, // Depends on ApproverIntelligence & ApprovalOutcome
         ApprovalTimeoutService,

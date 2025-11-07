@@ -106,10 +106,23 @@ export class NetworkManagerService {
 
       // BUGFIX (TASK_2025_032): Re-enabled checkpointer after removing manual checkpoint interference
       // Prepare compilation options with checkpointer if enabled
+      this.logger.debug('[CHECKPOINT] prepareCompilationOptions - BEFORE:', {
+        networkId: networkConfig.id,
+        hasCheckpointerInConfig:
+          !!networkConfig.compilationOptions?.checkpointer,
+        compilationOptions: networkConfig.compilationOptions,
+      });
+
       const compilationOptions = await this.prepareCompilationOptions(
         networkConfig.compilationOptions,
         networkConfig.id
       );
+
+      this.logger.debug('[CHECKPOINT] prepareCompilationOptions - AFTER:', {
+        networkId: networkConfig.id,
+        hasCheckpointerInResult: !!compilationOptions.checkpointer,
+        compilationOptions,
+      });
 
       // Build the appropriate graph type
       let graph: CompiledStateGraph<any, any>;
@@ -825,16 +838,25 @@ export class NetworkManagerService {
   private async createCheckpointerForNetwork(
     networkId: string
   ): Promise<ILangGraphCheckpointSaver | null> {
+    this.logger.debug(
+      `[CHECKPOINT] createCheckpointerForNetwork called for ${networkId}`,
+      {
+        hasCheckpointAdapter: !!this.checkpointAdapter,
+        checkpointingEnabled: this.isCheckpointingEnabled(),
+        moduleOptions: this.options,
+      }
+    );
+
     // Graceful degradation when checkpoint adapter not available
     if (!this.checkpointAdapter) {
-      this.logger.debug(
-        'CheckpointAdapter not available - checkpointing disabled'
+      this.logger.warn(
+        '[CHECKPOINT] CheckpointAdapter not available - checkpointing disabled'
       );
       return null;
     }
 
     if (!this.isCheckpointingEnabled()) {
-      this.logger.debug('Checkpointing disabled in configuration');
+      this.logger.warn('[CHECKPOINT] Checkpointing disabled in configuration');
       return null;
     }
 

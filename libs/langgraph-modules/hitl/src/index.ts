@@ -4,6 +4,9 @@ export { HitlModule } from './lib/hitl.module';
 // Config utilities for decorator access
 export * from './lib/utils/hitl-config.accessor';
 
+// Service Locator utilities (for testing/advanced use cases)
+export * from './lib/utils/approval-service.locator';
+
 // Services
 export { HumanApprovalService } from './lib/services/human-approval.service';
 export { ApprovalProcessingService } from './lib/services/approval-processing.service';

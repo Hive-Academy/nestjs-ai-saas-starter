@@ -6,6 +6,7 @@ import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
 import type { ApprovalChainService } from '../services/approval-chain.service';
 import { getHitlConfigWithDefaults } from '../utils/hitl-config.accessor';
+import { getApprovalEvaluatorService } from '../utils/approval-service.locator';
 
 /**
  * Risk level enumeration for approval decisions
@@ -174,15 +175,14 @@ export function RequiresApproval(
       state: WorkflowState
     ): Promise<any> {
       try {
-        // ✅ NEW: Get ApprovalEvaluatorService from DI container
-        const evaluatorService = this.approvalEvaluatorService;
+        // ✅ REFACTORED: Get ApprovalEvaluatorService from service locator
+        // No manual injection required - service automatically available from module
+        const evaluatorService = getApprovalEvaluatorService();
 
         if (!evaluatorService) {
           throw new Error(
-            `ApprovalEvaluatorService not injected into ${
-              target.constructor?.name || 'class'
-            }. ` +
-              `Classes using @RequiresApproval must inject ApprovalEvaluatorService.`
+            `ApprovalEvaluatorService not initialized. ` +
+              `Ensure HitlModule.forRoot() is imported in your root module.`
           );
         }
 
@@ -281,31 +281,33 @@ export function RequiresApproval(
       }
     };
 
-    // ✅ REMOVED: No longer adding prototype methods
-    // All logic now delegated to ApprovalEvaluatorService
-    // Classes using @RequiresApproval must inject ApprovalEvaluatorService
+    // ✅ ARCHITECTURE: Service Locator Pattern
+    // ApprovalEvaluatorService accessed via service locator (no manual injection required)
+    // Service is stored globally by HitlModule during initialization
+    // This eliminates the need for consumers to inject ApprovalEvaluatorService
 
     return descriptor;
   };
 }
 
 /**
- * DEPRECATED PROTOTYPE METHODS - Removed in favor of ApprovalEvaluatorService
+ * ARCHITECTURE NOTES
  *
- * The following methods were previously added to the class prototype:
- * - evaluateSkipConditions
- * - evaluateApprovalRequired
- * - routeToApproval
+ * Service Access Pattern:
+ * - ApprovalEvaluatorService accessed via service locator (getApprovalEvaluatorService())
+ * - No manual injection required in consumer classes
+ * - Service automatically available when HitlModule.forRoot() is imported
  *
- * They are now implemented in ApprovalEvaluatorService for proper DI support.
+ * Previous Architecture (REMOVED):
+ * - Required manual injection: constructor(@Inject(...) private approvalEvaluator)
+ * - Error-prone: Easy to forget injection
+ * - Poor DX: Extra boilerplate in every consumer class
+ *
+ * New Architecture (CURRENT):
+ * - Automatic service access via service locator
+ * - Zero boilerplate in consumer classes
+ * - Just use @RequiresApproval() - it works!
  */
-
-// Removed old prototype method implementations (moved to ApprovalEvaluatorService)
-// The following methods were previously added to the class prototype:
-// - evaluateSkipConditions
-// - evaluateApprovalRequired
-// - routeToApproval
-// They are now implemented in ApprovalEvaluatorService for proper DI support.
 
 /**
  * Get approval options from a method

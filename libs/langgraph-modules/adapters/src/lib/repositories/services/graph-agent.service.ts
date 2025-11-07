@@ -33,7 +33,11 @@ export class GraphAgentService {
    * Track a memory entry in the graph database
    * Moved from MemoryGraphService.trackMemory() (lines 38-78)
    */
-  @Safe()
+  @Safe({
+    transforms: {
+      autoInt: false, // ✅ Disable automatic int() wrapping - we manually convert to primitives
+    },
+  })
   async trackMemory(memory: MemoryEntry): Promise<void> {
     try {
       // Build base query with user relationship conditionally
@@ -125,7 +129,11 @@ export class GraphAgentService {
    * Track multiple memories in batch
    * Moved from MemoryGraphService.trackMemoriesBatch() (lines 83-121)
    */
-  @Safe()
+  @Safe({
+    transforms: {
+      autoInt: false, // ✅ Disable automatic int() wrapping - we manually convert to primitives
+    },
+  })
   async trackMemoriesBatch(memories: readonly MemoryEntry[]): Promise<void> {
     if (memories.length === 0) return;
 

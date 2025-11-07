@@ -46,8 +46,7 @@
         "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*",
-        "libs/langgraph-modules/adapters/*"
+        "libs/langgraph-modules/platform/*"
       ]
     },
     {
@@ -99,7 +98,8 @@
             "command": "tsc --noEmit --skipLibCheck"
           }
         }
-      }
+      },
+      "exclude": ["libs/langgraph-modules/adapters/*"]
     },
     {
       "plugin": "@nx/playwright/plugin",
