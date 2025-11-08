@@ -125,22 +125,71 @@ export class WorkflowExecutionService {
   /**
    * Execute multi-agent workflow using LangGraph subgraphs
    *
-   * @param workflowClass - Decorated multi-agent workflow class
+   * Coordinates multiple agents as subgraphs within a supervisor workflow.
+   * Each agent is compiled as an independent StateGraph and added as a node
+   * to the supervisor graph for orchestrated execution.
+   *
+   * @param supervisorClass - Decorated supervisor workflow class
+   * @param agentClasses - Array of decorated agent classes
    * @param input - Initial workflow state
-   * @param config - Optional RunnableConfig
+   * @param config - Optional RunnableConfig (thread_id, etc.)
    * @returns Final workflow state
    *
    * Implementation: Task 3.4
+   *
+   * Pattern:
+   * 1. Extract supervisor metadata
+   * 2. Build agent subgraphs using buildAgentGraph() helper
+   * 3. Add agent subgraphs as nodes to supervisor graph
+   * 4. Compile supervisor with checkpoint adapter
+   * 5. Execute via LangGraph's native invoke()
    */
-  async executeMultiAgentWorkflow<TState>(
-    workflowClass: any,
+  async executeMultiAgentWorkflow<TState extends WorkflowState = WorkflowState>(
+    supervisorClass: any,
+    agentClasses: any[],
     input: TState,
     config?: RunnableConfig
   ): Promise<TState> {
     this.logger.debug(
-      `executeMultiAgentWorkflow() - To be implemented in Task 3.4`
+      `Executing multi-agent workflow with supervisor ${supervisorClass.name} and ${agentClasses.length} agents`
     );
-    throw new Error('Not yet implemented - Task 3.4');
+
+    // 1. Extract supervisor metadata using MetadataProcessorService
+    const supervisorDef =
+      this.metadataProcessor.extractWorkflowDefinition<TState>(supervisorClass);
+
+    // 2. Validate supervisor metadata
+    this.metadataProcessor.validateWorkflowDefinition(supervisorDef);
+
+    // 3. Build agent subgraphs using buildAgentGraph() helper (Task 3.5)
+    this.logger.debug(`Building ${agentClasses.length} agent subgraphs`);
+    const agentGraphs = await Promise.all(
+      agentClasses.map((AgentClass) => this.buildAgentGraph(AgentClass))
+    );
+
+    // 4. Build supervisor StateGraph from metadata (reuse helper from Task 3.2)
+    const supervisorGraph = this.buildStateGraph(supervisorDef);
+
+    // 5. Add agent subgraphs as nodes to supervisor graph
+    agentGraphs.forEach(({ id, graph }) => {
+      this.logger.debug(`Adding agent subgraph as node: ${id}`);
+      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
+      // The compiled graph is a valid node handler: (state: TState) => Promise<TState>
+      supervisorGraph.addNode(id, graph);
+    });
+
+    // 6. Compile supervisor graph with checkpoint adapter
+    const compiled = supervisorGraph.compile({
+      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+    });
+
+    // 7. Execute using LangGraph's native invoke()
+    const result = await compiled.invoke(input, config);
+
+    this.logger.log(
+      `Multi-agent workflow ${supervisorDef.name} completed successfully with ${agentGraphs.length} agents`
+    );
+    return result as TState;
   }
 
   /**
@@ -155,7 +204,6 @@ export class WorkflowExecutionService {
    * This method extracts agent metadata, builds StateGraph using buildStateGraph(),
    * compiles the graph, and returns { id, graph } for use as subgraph node.
    */
-  // @ts-expect-error - Will be used in Task 3.4 (executeMultiAgentWorkflow)
   private async buildAgentGraph(AgentClass: any): Promise<{
     id: string;
     graph: any; // CompiledGraph type from LangGraph
