@@ -119,9 +119,7 @@ export class ExecuteDevBrandResponseDto {
 export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
 
-  constructor(
-    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow
-  ) {}
+  constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow) {}
 
   /**
    * Start DevBrand Workflow

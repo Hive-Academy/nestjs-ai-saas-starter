@@ -5,16 +5,15 @@ import {
 } from '@hive-academy/langgraph-workflow-engine';
 // Removed deleted streaming package imports (EventStreamProcessorService, StreamProgress, StreamToken)
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import {
-  DeclarativeWorkflowBase,
-  MetadataProcessorService,
-  SubgraphManagerService,
-  WorkflowGraphBuilderService,
-  WorkflowStreamService,
-} from '@hive-academy/langgraph-workflow-engine';
+// Removed deleted services and base class (no longer needed):
+// - DeclarativeWorkflowBase (not exported, decorator-driven architecture)
+// - WorkflowGraphBuilderService (deleted in consolidation)
+// - SubgraphManagerService (deleted in consolidation)
+// - WorkflowStreamService (deleted with streaming package)
+// - MetadataProcessorService (not needed without base class)
+// - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
-import { Inject, Injectable, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Injectable } from '@nestjs/common';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
 import type { TypedAgentState } from '../../types';
 import type { BrandAnalysis, BrandData } from '../shared/agent.types';
@@ -65,29 +64,13 @@ import {
   },
 })
 @Injectable()
-export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
-  TypedAgentState<BrandStrategistMetadata>
-> {
+export class PersonalBrandStrategistAgent {
   constructor(
     private readonly llm: LlmProviderService,
-    private readonly memory: PersonalBrandMemoryService,
-    @Inject(EventEmitter2) eventEmitter: EventEmitter2,
-    @Inject(WorkflowGraphBuilderService)
-    graphBuilder: WorkflowGraphBuilderService,
-    @Inject(SubgraphManagerService) subgraphManager: SubgraphManagerService,
-    @Inject(MetadataProcessorService)
-    metadataProcessor: MetadataProcessorService,
-    @Optional()
-    @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService
+    private readonly memory: PersonalBrandMemoryService
   ) {
-    super(
-      eventEmitter,
-      graphBuilder,
-      subgraphManager,
-      metadataProcessor,
-      streamService
-    );
+    // No super() call - no base class
+    // Agents use @Agent decorator for orchestration (decorator-driven, not inheritance-driven)
   }
 
   /**

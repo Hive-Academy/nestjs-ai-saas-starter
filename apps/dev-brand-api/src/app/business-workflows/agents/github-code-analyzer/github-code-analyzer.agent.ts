@@ -1,5 +1,4 @@
-import { Injectable, Inject, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Injectable } from '@nestjs/common';
 import {
   Agent,
   LlmProviderService,
@@ -13,14 +12,14 @@ import type {
   TaskExecutionResult,
 } from '@hive-academy/langgraph-workflow-engine';
 import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
-import {
-  DeclarativeWorkflowBase,
-  WorkflowGraphBuilderService,
-  SubgraphManagerService,
-  MetadataProcessorService,
-  WorkflowStreamService,
-} from '@hive-academy/langgraph-workflow-engine';
-// Removed deleted EventStreamProcessorService import
+// Removed deleted services and base class (no longer needed):
+// - DeclarativeWorkflowBase (not exported, decorator-driven architecture)
+// - WorkflowGraphBuilderService (deleted in consolidation)
+// - SubgraphManagerService (deleted in consolidation)
+// - WorkflowStreamService (deleted with streaming package)
+// - EventStreamProcessorService (deleted)
+// - MetadataProcessorService (not needed without base class)
+// - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
 import { GitHubIntegrationTools } from '../../core/tools/github-integration.tools';
 import { GitHubIntegrationError } from '../../core/errors/business-workflow.errors';
@@ -95,29 +94,13 @@ import {
   },
 })
 @Injectable()
-export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
-  TypedAgentState<GitHubAnalyzerMetadata>
-> {
+export class GitHubCodeAnalyzerAgent {
   constructor(
     private readonly llmProvider: LlmProviderService,
-    private readonly githubTools: GitHubIntegrationTools,
-    @Inject(EventEmitter2) eventEmitter: EventEmitter2,
-    @Inject(WorkflowGraphBuilderService)
-    graphBuilder: WorkflowGraphBuilderService,
-    @Inject(SubgraphManagerService) subgraphManager: SubgraphManagerService,
-    @Inject(MetadataProcessorService)
-    metadataProcessor: MetadataProcessorService,
-    @Optional()
-    @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService
+    private readonly githubTools: GitHubIntegrationTools
   ) {
-    super(
-      eventEmitter,
-      graphBuilder,
-      subgraphManager,
-      metadataProcessor,
-      streamService
-    );
+    // No super() call - no base class
+    // Agents use @Agent decorator for orchestration (decorator-driven, not inheritance-driven)
   }
 
   /**
