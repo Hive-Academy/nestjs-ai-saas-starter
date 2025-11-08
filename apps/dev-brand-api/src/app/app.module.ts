@@ -3,12 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core library imports
-import {
-  IGraphService,
-  IVectorService,
-  MemoryModule,
-  MemoryModuleOptions,
-} from '@hive-academy/langgraph-memory';
+import { MemoryModule } from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
@@ -123,21 +118,8 @@ import {
     // Application-specific repositories (analytics and business domain)
     RepositoryModule,
 
-    // Memory module with adapters - injects tokens from LangGraphAdaptersModule
-    MemoryModule.forRootAsync({
-      imports: [LangGraphAdaptersModule], // Import to access exported adapter tokens
-      useFactory: async (
-        vectorAdapter: IVectorService,
-        graphAdapter: IGraphService
-      ): Promise<MemoryModuleOptions> => ({
-        ...getMemoryConfig(),
-        adapters: {
-          vector: vectorAdapter,
-          graph: graphAdapter,
-        },
-      }),
-      inject: ['IVectorService', 'IGraphService'],
-    }),
+    // Memory module with BaseStore pattern (ChromaDBBaseStore injected internally)
+    MemoryModule.forRoot(getMemoryConfig()),
 
     // Checkpoint module with new adapter pattern
     CheckpointModule.forRootAsync({

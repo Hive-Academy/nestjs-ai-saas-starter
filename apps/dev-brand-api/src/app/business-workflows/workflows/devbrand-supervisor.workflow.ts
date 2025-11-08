@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   MultiAgent,
   MultiAgentTopology,
-  MultiAgentWorkflowBase,
   SupervisorConfig,
 } from '@hive-academy/langgraph-workflow-engine';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
@@ -117,10 +116,14 @@ Each agent builds on the work of the previous agent.`,
   debug: false,
 })
 @Injectable()
-export class DevBrandSupervisorWorkflow extends MultiAgentWorkflowBase {
-  constructor(private readonly brandMemory: PersonalBrandMemoryService) {
-    super();
-  }
+export class DevBrandSupervisorWorkflow {
+  private readonly logger = new Logger(DevBrandSupervisorWorkflow.name);
+
+  constructor(
+    // Preserved for future implementation after base class restoration
+    // @ts-expect-error - Intentionally unused until multi-agent execution is restored (TASK_2025_039)
+    private readonly _brandMemory: PersonalBrandMemoryService
+  ) {}
 
   /**
    * Execute the complete personal branding workflow
@@ -145,8 +148,8 @@ export class DevBrandSupervisorWorkflow extends MultiAgentWorkflowBase {
     );
 
     try {
-      // Build supervisor message
-      const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
+      // Build supervisor message (unused until implementation restored)
+      const _supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
 
 User Context:
 - User ID: ${input.userId}
@@ -160,58 +163,62 @@ Task Sequence:
 
 Please coordinate the three agents to complete this workflow.`;
 
-      // Execute multi-agent coordination (automatic streaming/HITL)
-      const result = await this.executeSimple(supervisorMessage, {
-        userId: input.userId,
-        githubUsername: input.githubUsername,
-        executionId,
-        workflowType: 'personal-branding',
-      });
+      // Explicitly mark as intentionally unused (preserved for future implementation)
+      void _supervisorMessage;
 
-      this.logger.log(
-        `✅ Multi-agent coordination completed. Execution path: ${result.executionPath?.join(
-          ' → '
-        )}`
+      // TODO: Implement multi-agent coordination with LangGraph native API
+      // The @MultiAgent decorator should provide coordination, but we need to
+      // wire up the proper execution method without the base class
+      throw new Error(
+        'Multi-agent execution not yet implemented after base class removal. ' +
+          'Requires LangGraph native API integration. See TASK_2025_039.'
       );
 
-      // Extract results from agent coordination
-      const agentResults = {
-        githubAnalysis: result.finalState.metadata?.githubData || {},
-        brandStrategy: result.finalState.metadata?.brandStrategy || {},
-        contentCreation: result.finalState.metadata?.generatedContent || {},
-      };
-
-      // Store achievements in personal brand memory
-      const achievements =
-        agentResults.githubAnalysis?.achievements ||
-        agentResults.githubAnalysis?.data?.achievements ||
-        [];
-
-      if (achievements.length > 0) {
-        this.logger.log(
-          `Storing ${achievements.length} achievements in memory`
-        );
-
-        for (const achievement of achievements) {
-          await this.brandMemory.storeCodeAchievement(input.userId, {
-            id: achievement.id || `achievement-${Date.now()}`,
-            description: achievement.description,
-            technologies: achievement.technologies || [],
-            impact: achievement.impact || 'medium',
-            date: new Date().toISOString(),
-            repository: achievement.repository || 'unknown',
-            userId: input.userId,
-          });
-        }
-      }
-
-      // Return consolidated results
-      return {
-        achievements,
-        strategy: agentResults.brandStrategy,
-        content: agentResults.contentCreation,
-        confidence: result.finalState.metadata?.confidence || 0.8,
-      };
+      // ORIGINAL CODE (requires base class methods):
+      // const result = await this.executeSimple(supervisorMessage, {
+      //   userId: input.userId,
+      //   githubUsername: input.githubUsername,
+      //   executionId,
+      //   workflowType: 'personal-branding',
+      // });
+      //
+      // this.logger.log(
+      //   `✅ Multi-agent coordination completed. Execution path: ${result.executionPath?.join(' → ')}`
+      // );
+      //
+      // // Extract results from agent coordination
+      // const agentResults = {
+      //   githubAnalysis: result.finalState.metadata?.githubData || {},
+      //   brandStrategy: result.finalState.metadata?.brandStrategy || {},
+      //   contentCreation: result.finalState.metadata?.generatedContent || {},
+      // };
+      //
+      // // Store achievements in personal brand memory
+      // const achievements = agentResults.githubAnalysis?.achievements ||
+      //   agentResults.githubAnalysis?.data?.achievements || [];
+      //
+      // if (achievements.length > 0) {
+      //   this.logger.log(`Storing ${achievements.length} achievements in memory`);
+      //   for (const achievement of achievements) {
+      //     await this.brandMemory.storeCodeAchievement(input.userId, {
+      //       id: achievement.id || `achievement-${Date.now()}`,
+      //       description: achievement.description,
+      //       technologies: achievement.technologies || [],
+      //       impact: achievement.impact || 'medium',
+      //       date: new Date().toISOString(),
+      //       repository: achievement.repository || 'unknown',
+      //       userId: input.userId,
+      //     });
+      //   }
+      // }
+      //
+      // // Return consolidated results
+      // return {
+      //   achievements,
+      //   strategy: agentResults.brandStrategy,
+      //   content: agentResults.contentCreation,
+      //   confidence: result.finalState.metadata?.confidence || 0.8,
+      // };
     } catch (error) {
       this.logger.error('Multi-agent coordination failed:', error);
       throw new Error(
@@ -227,43 +234,50 @@ Please coordinate the three agents to complete this workflow.`;
    *
    * Returns an async iterator for real-time streaming of agent events
    * Implements StreamableWorkflow interface
+   *
+   * TODO: Implement with LangGraph native streaming after base class removal
    */
   async *executeWithStreaming(
     input: DevBrandWorkflowInput
   ): AsyncGenerator<any, void, unknown> {
-    const executionId = input.executionId || `devbrand-${Date.now()}`;
-
-    const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
-
-User Context:
-- User ID: ${input.userId}
-- GitHub Username: ${input.githubUsername}
-- Execution ID: ${executionId}
-
-Task Sequence:
-1. Analyze GitHub profile to extract achievements and technical skills
-2. Develop personal brand strategy based on the analysis
-3. Create platform-specific content (LinkedIn, Dev.to) for the brand`;
-
-    // Execute with streaming
-    const stream = await this.executeCoordination(
-      {
-        messages: [supervisorMessage],
-        config: {
-          metadata: {
-            userId: input.userId,
-            githubUsername: input.githubUsername,
-            executionId,
-            workflowType: 'personal-branding',
-          },
-        },
-      },
-      { stream: true, streamMode: 'values' }
+    // TODO: Implement streaming with LangGraph native API
+    throw new Error(
+      'Multi-agent streaming execution not yet implemented after base class removal. ' +
+        'Requires LangGraph native streaming API integration. See TASK_2025_039.'
     );
 
-    // Yield events from stream
-    for await (const event of stream) {
-      yield event;
-    }
+    // ORIGINAL CODE (requires base class methods):
+    // const executionId = input.executionId || `devbrand-${Date.now()}`;
+    //
+    // const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
+    //
+    // User Context:
+    // - User ID: ${input.userId}
+    // - GitHub Username: ${input.githubUsername}
+    // - Execution ID: ${executionId}
+    //
+    // Task Sequence:
+    // 1. Analyze GitHub profile to extract achievements and technical skills
+    // 2. Develop personal brand strategy based on the analysis
+    // 3. Create platform-specific content (LinkedIn, Dev.to) for the brand`;
+    //
+    // const stream = await this.executeCoordination(
+    //   {
+    //     messages: [supervisorMessage],
+    //     config: {
+    //       metadata: {
+    //         userId: input.userId,
+    //         githubUsername: input.githubUsername,
+    //         executionId,
+    //         workflowType: 'personal-branding',
+    //       },
+    //     },
+    //   },
+    //   { stream: true, streamMode: 'values' }
+    // );
+    //
+    // for await (const event of stream) {
+    //   yield event;
+    // }
   }
 }
