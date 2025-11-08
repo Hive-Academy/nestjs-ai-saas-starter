@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { StateGraph } from '@langchain/langgraph';
-import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import type {
+  BaseCheckpointSaver,
+  BaseStore,
+} from '@langchain/langgraph-checkpoint';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import type {
@@ -31,17 +34,41 @@ export class WorkflowExecutionService {
 
   constructor(
     private readonly metadataProcessor: MetadataProcessorService,
-    private readonly checkpointAdapter: ICheckpointAdapter
+    private readonly checkpointAdapter: ICheckpointAdapter,
+
+    // NEW: Inject BaseStore from MemoryModule (optional enhancement)
+    @Optional()
+    @Inject('BaseStore')
+    private readonly store?: BaseStore
   ) {
     this.logger.log('WorkflowExecutionService initialized');
+    if (this.store) {
+      this.logger.log(
+        'BaseStore available - nodes can access via RunnableConfig.store'
+      );
+    }
   }
 
   /**
    * Execute a workflow using LangGraph's native invoke()
    *
+   * Store Access Pattern (if MemoryModule imported):
+   * Nodes can access the store via RunnableConfig:
+   *
+   * @example
+   * async function myNode(state: State, config: RunnableConfig): Promise<Partial<State>> {
+   *   const store = config.store as BaseStore;
+   *   if (store) {
+   *     // Use LangGraph BaseStore methods
+   *     await store.put(['memories', userId], 'key', { data: 'value' });
+   *     const items = await store.search(['memories', userId], { query: 'search term' });
+   *   }
+   *   return { processed: true };
+   * }
+   *
    * @param workflowClass - Decorated workflow class
    * @param input - Initial workflow state
-   * @param config - Optional RunnableConfig (thread_id, etc.)
+   * @param config - Optional LangGraph config (checkpointing, store access)
    * @returns Final workflow state
    *
    * Implementation: Task 3.2
@@ -63,9 +90,10 @@ export class WorkflowExecutionService {
     // 3. Build StateGraph from metadata
     const graph = this.buildStateGraph(definition);
 
-    // 4. Compile with checkpointer
+    // 4. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      store: this.store, // NEW: Pass store to graph (optional)
     });
 
     // 5. Execute with LangGraph's native invoke()
@@ -102,9 +130,10 @@ export class WorkflowExecutionService {
     // 3. Build StateGraph from metadata (reuse helper from Task 3.2)
     const graph = this.buildStateGraph(definition);
 
-    // 4. Compile with checkpointer
+    // 4. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      store: this.store, // NEW: Pass store to graph (optional)
     });
 
     // 5. Stream using LangGraph's native stream()
@@ -178,9 +207,10 @@ export class WorkflowExecutionService {
       supervisorGraph.addNode(id, graph);
     });
 
-    // 6. Compile supervisor graph with checkpoint adapter
+    // 6. Compile supervisor graph with BOTH checkpointer and store
     const compiled = supervisorGraph.compile({
       checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      store: this.store, // NEW: Pass store to supervisor graph (optional)
     });
 
     // 7. Execute using LangGraph's native invoke()
@@ -222,9 +252,10 @@ export class WorkflowExecutionService {
     // 3. Build StateGraph (reuse buildStateGraph pattern from Task 3.2)
     const graph = this.buildStateGraph(agentDefinition);
 
-    // 4. Compile the agent graph with checkpoint adapter
+    // 4. Compile the agent graph with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      store: this.store, // NEW: Pass store to agent graph (optional)
     });
 
     // 5. Return with agent id for subgraph coordination
