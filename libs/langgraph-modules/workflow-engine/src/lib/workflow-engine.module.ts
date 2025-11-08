@@ -1,6 +1,7 @@
 import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MetadataProcessorService } from './core/metadata-processor.service';
+import { WorkflowExecutionService } from './execution/workflow-execution.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
   IStreamingService,
@@ -51,10 +52,13 @@ export class WorkflowEngineModule {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useValue: options,
         },
-        // Thin metadata layer only
+        // Core services
         MetadataProcessorService,
+
+        // Execution services
+        WorkflowExecutionService,
       ],
-      exports: [MetadataProcessorService],
+      exports: [MetadataProcessorService, WorkflowExecutionService],
       global: true,
     };
   }
@@ -77,10 +81,13 @@ export class WorkflowEngineModule {
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
-        // Thin metadata layer only
+        // Core services
         MetadataProcessorService,
+
+        // Execution services
+        WorkflowExecutionService,
       ],
-      exports: [MetadataProcessorService],
+      exports: [MetadataProcessorService, WorkflowExecutionService],
       global: true,
     };
   }

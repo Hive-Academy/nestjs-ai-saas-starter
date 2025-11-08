@@ -90,6 +90,9 @@ export * from './lib/utils/multi-agent/agent-state-validator';
 // Core Services (thin metadata layer)
 export * from './lib/core/metadata-processor.service';
 
+// Execution Services
+export * from './lib/execution/workflow-execution.service';
+
 // Base Classes (DI containers)
 // export * from './lib/base/unified-workflow.base'; // TODO: Add missing core service dependencies
 // export * from './lib/base/declarative-workflow.base'; // TODO: Add missing core service dependencies
