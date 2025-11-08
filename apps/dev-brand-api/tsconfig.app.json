@@ -53,9 +53,6 @@
       "path": "../../libs/langgraph-modules/workflow-engine/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/langgraph-modules/time-travel/tsconfig.lib.json"
-    },
-    {
       "path": "../../libs/langgraph-modules/platform/tsconfig.lib.json"
     },
     {
