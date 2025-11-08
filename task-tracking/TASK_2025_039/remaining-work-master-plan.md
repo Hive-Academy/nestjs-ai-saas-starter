@@ -652,6 +652,12 @@ for await (const chunk of this.workflowExecution.streamWorkflow(MyWorkflow, inpu
 
 **Recommended Start**: Task 2 (MetadataProcessorService) - highest impact, critical path
 
+**UPDATE (2025-01-08)**: Task 7 added for Memory Library migration to BaseStore pattern. See:
+
+- `task-tracking/TASK_2025_039/memory-library-architectural-assessment.md` for detailed analysis
+- `task-tracking/TASK_2025_039/tasks.md` Task 7 for implementation breakdown (10 atomic subtasks)
+- Adds ~4,300 LOC reduction, bringing total to ~35,256 LOC (98% reduction)
+
 ---
 
 ## Appendix: Key Principles

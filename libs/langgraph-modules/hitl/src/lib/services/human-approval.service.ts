@@ -13,7 +13,6 @@ import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
 import { HitlMemoryLearningService } from './hitl-memory-learning.service';
-import { HitlCheckpointService } from './hitl-checkpoint.service';
 import { HitlValidationService } from './hitl-validation.service';
 import { HitlRecoveryService } from './hitl-recovery.service';
 import { HitlApprovalRequestService } from './hitl-approval-request.service';
@@ -52,7 +51,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly approvalStreamingService: ApprovalStreamingService,
     private readonly userInterruptionService: UserInterruptionService,
     private readonly hitlMemoryLearningService: HitlMemoryLearningService,
-    private readonly hitlCheckpointService: HitlCheckpointService,
     private readonly hitlValidationService: HitlValidationService,
     private readonly hitlRecoveryService: HitlRecoveryService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,

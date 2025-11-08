@@ -12,7 +12,6 @@ import { HitlTimeoutService } from './services/hitl-timeout.service';
 import { HumanApprovalService } from './services/human-approval.service';
 import { UserInterruptionService } from './services/user-interruption.service';
 import { HitlMemoryLearningService } from './services/hitl-memory-learning.service';
-import { HitlCheckpointService } from './services/hitl-checkpoint.service';
 import { HitlValidationService } from './services/hitl-validation.service';
 import { HitlRecoveryService } from './services/hitl-recovery.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
@@ -107,7 +106,6 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,
@@ -134,7 +132,6 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService,
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,
@@ -184,7 +181,6 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,
@@ -211,7 +207,6 @@ export class HitlModule {
         HitlTimeoutService,
         // New specialized HITL services
         HitlMemoryLearningService,
-        HitlCheckpointService,
         HitlValidationService,
         HitlRecoveryService,
         HitlApprovalRequestService,
