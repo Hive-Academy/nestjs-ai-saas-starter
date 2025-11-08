@@ -144,9 +144,9 @@ export class HealthController {
           integration: 'configured',
         },
         'langgraph-streaming': {
-          status: 'available',
-          version: '0.0.1',
-          integration: 'configured',
+          status: 'deleted',
+          version: 'n/a',
+          integration: 'migrated to native LangGraph streaming',
         },
         'langgraph-time-travel': {
           status: 'available',

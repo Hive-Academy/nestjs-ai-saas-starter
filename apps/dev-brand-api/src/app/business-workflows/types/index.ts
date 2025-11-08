@@ -7,7 +7,7 @@
 // export type * from './customer-support.types';
 
 // Agent workflow state bridge
-import type { AgentState } from '@hive-academy/langgraph-multi-agent';
+import type { AgentState } from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * WorkflowAgentState - Bridge interface that extends both AgentState and includes workflow-specific properties

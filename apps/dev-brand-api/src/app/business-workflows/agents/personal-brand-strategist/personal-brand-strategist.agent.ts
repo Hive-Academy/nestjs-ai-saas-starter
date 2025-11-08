@@ -1,10 +1,9 @@
-import { Edge, Node } from '@hive-academy/langgraph-functional-api';
-import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { Edge, Node } from '@hive-academy/langgraph-workflow-engine';
 import {
-  EventStreamProcessorService,
-  StreamProgress,
-  StreamToken,
-} from '@hive-academy/langgraph-streaming';
+  Agent,
+  LlmProviderService,
+} from '@hive-academy/langgraph-workflow-engine';
+// Removed deleted streaming package imports (EventStreamProcessorService, StreamProgress, StreamToken)
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import {
   DeclarativeWorkflowBase,
@@ -80,16 +79,14 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
     metadataProcessor: MetadataProcessorService,
     @Optional()
     @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService,
-    @Optional() eventProcessor?: EventStreamProcessorService
+    streamService?: WorkflowStreamService
   ) {
     super(
       eventEmitter,
       graphBuilder,
       subgraphManager,
       metadataProcessor,
-      streamService,
-      eventProcessor
+      streamService
     );
   }
 
@@ -98,7 +95,6 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    * Initializes the analysis and sets up the workflow state
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true, includeETA: true })
   async initializeBrandAnalysis(
     state: TypedAgentState<BrandStrategistMetadata>
   ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
@@ -119,7 +115,6 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    * Gathers comprehensive brand data from memory and GitHub metadata
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   async gatherBrandData(
     state: TypedAgentState<BrandStrategistMetadata>
   ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {
@@ -180,7 +175,6 @@ export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase<
    * Analyzes current brand positioning using LLM
    */
   @Node({ type: 'standard' })
-  @StreamToken({ enabled: true, format: 'structured' })
   async analyzeBrandPositioning(
     state: TypedAgentState<BrandStrategistMetadata>
   ): Promise<Partial<TypedAgentState<BrandStrategistMetadata>>> {

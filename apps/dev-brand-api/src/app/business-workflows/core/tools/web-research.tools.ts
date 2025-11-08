@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TavilySearch } from '@langchain/tavily';
-import { Tool } from '@hive-academy/langgraph-multi-agent';
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
 
 // Define proper TypeScript interfaces for Tavily responses
 interface TavilySearchResult {

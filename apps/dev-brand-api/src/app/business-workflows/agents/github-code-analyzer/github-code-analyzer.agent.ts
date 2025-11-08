@@ -1,14 +1,17 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import {
+  Agent,
+  LlmProviderService,
+} from '@hive-academy/langgraph-workflow-engine';
 import type { TypedAgentState } from '../../types';
-import { StreamToken, StreamProgress } from '@hive-academy/langgraph-streaming';
+// Removed deleted streaming package imports (StreamToken, StreamProgress)
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import { Entrypoint, Task } from '@hive-academy/langgraph-functional-api';
+import { Entrypoint, Task } from '@hive-academy/langgraph-workflow-engine';
 import type {
   TaskExecutionContext,
   TaskExecutionResult,
-} from '@hive-academy/langgraph-functional-api';
+} from '@hive-academy/langgraph-workflow-engine';
 import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
 import {
   DeclarativeWorkflowBase,
@@ -17,7 +20,7 @@ import {
   MetadataProcessorService,
   WorkflowStreamService,
 } from '@hive-academy/langgraph-workflow-engine';
-import { EventStreamProcessorService } from '@hive-academy/langgraph-streaming';
+// Removed deleted EventStreamProcessorService import
 import { AIMessage } from '@langchain/core/messages';
 import { GitHubIntegrationTools } from '../../core/tools/github-integration.tools';
 import { GitHubIntegrationError } from '../../core/errors/business-workflow.errors';
@@ -106,16 +109,14 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
     metadataProcessor: MetadataProcessorService,
     @Optional()
     @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService,
-    @Optional() eventProcessor?: EventStreamProcessorService
+    streamService?: WorkflowStreamService
   ) {
     super(
       eventEmitter,
       graphBuilder,
       subgraphManager,
       metadataProcessor,
-      streamService,
-      eventProcessor
+      streamService
     );
   }
 
@@ -124,7 +125,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * Initializes analysis and extracts GitHub username from input
    */
   @Entrypoint({ timeout: 15000 })
-  @StreamProgress({ enabled: true, includeETA: true })
   async initializeGitHubAnalysis(
     context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
@@ -162,8 +162,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Comprehensive repository and commit analysis
    */
   @Task({ dependsOn: ['initializeGitHubAnalysis'] })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   @Validate
   @Optimize({
     cache: { ttl: 900000, maxSize: 100 },
@@ -226,7 +224,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Transform code contributions into achievements
    */
   @Task({ dependsOn: ['analyzeGitHubActivity'] })
-  @StreamProgress({ enabled: true })
   async extractAchievements(
     context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
@@ -275,7 +272,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Professional insights about work patterns
    */
   @Task({ dependsOn: ['extractAchievements'] })
-  @StreamProgress({ enabled: true })
   async generateDeveloperInsights(
     context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
@@ -328,8 +324,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: LLM-powered professional narrative generation
    */
   @Task({ dependsOn: ['generateDeveloperInsights'] })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   async synthesizeWithAI(
     context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
@@ -410,7 +404,6 @@ export class GitHubCodeAnalyzerAgent extends DeclarativeWorkflowBase<
    * - WebSocket events: interruption_request, interruption_resolved
    */
   @Task({ dependsOn: ['synthesizeWithAI'] })
-  @StreamProgress({ enabled: true })
   @RequiresApproval({
     confidenceThreshold: 0.8,
     timeoutMs: 120000, // 2 minutes

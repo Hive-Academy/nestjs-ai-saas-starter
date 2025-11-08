@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
 import { Neo4jCrudService } from '@hive-academy/nestjs-neo4j';
 
 // DevBrand Chat Studio MVP Components (Post-Legacy Cleanup)
@@ -15,7 +14,6 @@ import { RepositoryModule } from '../repositories/repository.module';
 import { WebResearchTools } from './core/tools/web-research.tools';
 import { GitHubIntegrationTools } from './core/tools/github-integration.tools';
 import { BrandStrategistTools } from './core/tools/brand-strategist.tools';
-import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 
 /**
  * DevBrand Chat Studio MVP Module - Post-Legacy Cleanup
@@ -29,9 +27,7 @@ import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 @Module({
   imports: [
     ConfigModule, // For environment configuration
-    WorkflowEngineModule, // Required for DeclarativeWorkflowBase services
-    FunctionalApiModule, // Required for FunctionalWorkflow services
-    MultiAgentModule, // Required for Agent decorator services
+    WorkflowEngineModule, // Required for DeclarativeWorkflowBase services and all workflow patterns
     RepositoryModule, // Provides all repositories (ChromaDB + Neo4j)
   ],
   providers: [

@@ -4,8 +4,7 @@ import {
   MultiAgentTopology,
   MultiAgentWorkflowBase,
   SupervisorConfig,
-} from '@hive-academy/langgraph-multi-agent';
-import type { StreamableWorkflow } from '@hive-academy/langgraph-streaming';
+} from '@hive-academy/langgraph-workflow-engine';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
@@ -118,10 +117,7 @@ Each agent builds on the work of the previous agent.`,
   debug: false,
 })
 @Injectable()
-export class DevBrandSupervisorWorkflow
-  extends MultiAgentWorkflowBase
-  implements StreamableWorkflow<DevBrandWorkflowInput, any>
-{
+export class DevBrandSupervisorWorkflow extends MultiAgentWorkflowBase {
   constructor(private readonly brandMemory: PersonalBrandMemoryService) {
     super();
   }

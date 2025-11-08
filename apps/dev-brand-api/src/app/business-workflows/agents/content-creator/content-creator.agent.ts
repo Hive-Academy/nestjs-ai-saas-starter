@@ -1,11 +1,14 @@
 import { generateId } from '@hive-academy/langgraph-core';
-import { Edge, Node } from '@hive-academy/langgraph-functional-api';
-import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { Edge, Node } from '@hive-academy/langgraph-workflow-engine';
 import {
-  EventStreamProcessorService,
-  StreamProgress,
-  StreamToken,
-} from '@hive-academy/langgraph-streaming';
+  Agent,
+  LlmProviderService,
+} from '@hive-academy/langgraph-workflow-engine';
+// Removed deleted streaming package imports:
+// - EventStreamProcessorService (deleted)
+// - StreamProgress (deleted)
+// - StreamToken (deleted)
+// Migration: Decorators removed, streaming now uses LangGraph native graph.stream()
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import {
   DeclarativeWorkflowBase,
@@ -111,16 +114,14 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     metadataProcessor: MetadataProcessorService,
     @Optional()
     @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService,
-    @Optional() eventProcessor?: EventStreamProcessorService
+    streamService?: WorkflowStreamService
   ) {
     super(
       eventEmitter,
       graphBuilder,
       subgraphManager,
       metadataProcessor,
-      streamService,
-      eventProcessor
+      streamService
     );
   }
 
@@ -129,7 +130,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Initializes content creation and extracts key parameters
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true, includeETA: true })
   async initializeContentCreation(
     state: TypedAgentState<ContentCreatorMetadata>
   ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
@@ -155,7 +155,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Memory service integration for brand consistency
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   async gatherBrandContext(
     state: TypedAgentState<ContentCreatorMetadata>
   ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
@@ -198,8 +197,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: AI-powered content generation with brand consistency
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   @Validate
   @Optimize({
     cache: { ttl: 600000, maxSize: 50 },
@@ -307,7 +304,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Platform-specific optimization and enhancement
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   async optimizeContent(
     state: TypedAgentState<ContentCreatorMetadata>
   ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
@@ -406,7 +402,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * - WebSocket events: interruption_request, interruption_resolved
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   @RequiresApproval({
     confidenceThreshold: 0.75,
     timeoutMs: 300000, // 5 minutes for content review

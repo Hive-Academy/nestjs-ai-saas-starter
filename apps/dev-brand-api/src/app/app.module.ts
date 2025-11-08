@@ -32,7 +32,6 @@ import {
   IApprovalChainStorageService,
 } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
 import {
   WorkflowEngineModule,
   WorkflowEngineModuleOptions,
@@ -44,7 +43,6 @@ import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
 import { getMonitoringConfig } from './config/monitoring.config';
 import { getNeo4jConfig } from './config/neo4j.config';
-import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
@@ -235,23 +233,7 @@ import {
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 
-    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT AND MEMORY - adapter injection
-    ...(process.env.NODE_ENV !== 'production' ||
-    process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
-      ? [
-          TimeTravelModule.forRootAsync({
-            useFactory: async (
-              checkpointAdapter: ICheckpointAdapter,
-              memoryAdapter: IMemoryAdapter
-            ) => ({
-              ...getTimeTravelConfig(),
-              checkpointAdapter,
-              memoryAdapter,
-            }),
-            inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
-          }),
-        ]
-      : []),
+    // NOTE: TimeTravelModule removed - package deleted in consolidation
 
     // Health checks
     TerminusModule.forRoot({

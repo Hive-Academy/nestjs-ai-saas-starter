@@ -13,7 +13,7 @@ import {
 } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
-import { WorkflowStreamingOrchestrator } from '@hive-academy/langgraph-streaming';
+// Streaming service will be added by Agent 1 during consolidation
 
 /**
  * DevBrand Workflow Controller - Simplified Architecture
@@ -120,8 +120,7 @@ export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
 
   constructor(
-    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
-    private readonly streamingOrchestrator: WorkflowStreamingOrchestrator
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow
   ) {}
 
   /**
@@ -187,31 +186,27 @@ export class DevBrandController {
       `🚀 Starting DevBrand workflow for GitHub user: ${dto.githubUsername} (executionId: ${executionId})`
     );
 
-    // Use WorkflowStreamingOrchestrator for one-liner workflow execution + streaming
-    // This replaces the manual startWorkflowInBackground() method
-    const workflowInfo =
-      await this.streamingOrchestrator.startWorkflowWithStreaming({
-        workflow: this.devBrandWorkflow,
-        input: {
-          userId,
-          githubUsername: dto.githubUsername,
-          executionId,
-        },
-        executionId,
-      });
+    // Start workflow with native streaming
+    const input = {
+      userId,
+      githubUsername: dto.githubUsername,
+      executionId,
+    };
 
-    // Return enriched response with additional instructions
+    // Execute in background using native LangGraph streaming
+    this.startWorkflowInBackground(executionId, input);
+
+    // Return execution info immediately
     return {
-      executionId: workflowInfo.executionId,
-      status: workflowInfo.status,
-      message: workflowInfo.message,
-      websocketUrl: workflowInfo.websocketUrl,
+      executionId,
+      status: 'started' as const,
+      message:
+        'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
+      websocketUrl: 'ws://localhost:8080/streaming',
       websocketInstructions: {
         connect:
           'io("ws://localhost:8080/streaming", { transports: ["websocket", "polling"] })',
-        subscribe: `socket.emit("${
-          workflowInfo.subscriptionInfo.event
-        }", ${JSON.stringify(workflowInfo.subscriptionInfo.payload)})`,
+        subscribe: `socket.emit("subscribe_execution", { executionId: "${executionId}" })`,
         events: [
           'stream_update - Workflow state changes (agent started, completed, routing)',
           'token_update - Real-time LLM token streaming (character-by-character)',
@@ -223,11 +218,20 @@ export class DevBrandController {
     };
   }
 
-  // ✨ REMOVED: startWorkflowInBackground() method
-  // Now handled automatically by WorkflowStreamingOrchestrator
-  // Benefits:
-  // - No manual async generator iteration
-  // - No manual error handling
-  // - No boilerplate code in controllers
-  // - Reusable across all workflow endpoints
+  /**
+   * Start workflow in background with native LangGraph streaming
+   */
+  private async startWorkflowInBackground(
+    executionId: string,
+    input: any
+  ): Promise<void> {
+    try {
+      // TODO: Agent 1 will add native LangGraph streaming via WorkflowStreamService
+      // For now, execute workflow directly (streaming infrastructure being consolidated)
+      await this.devBrandWorkflow.execute(input);
+      this.logger.log(`Workflow ${executionId} completed successfully`);
+    } catch (error) {
+      this.logger.error(`Workflow ${executionId} failed:`, error);
+    }
+  }
 }

@@ -7,8 +7,8 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { Tool } from '@hive-academy/langgraph-multi-agent';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
+import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
 import { ChromaDBService } from '@hive-academy/nestjs-chromadb';
 import type { BrandVoice, Achievement } from '../../agents/shared/agent.types';
 
