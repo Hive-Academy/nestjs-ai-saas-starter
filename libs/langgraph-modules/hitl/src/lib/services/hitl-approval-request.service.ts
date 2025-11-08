@@ -47,18 +47,19 @@ export class HitlApprovalRequestService {
   /**
    * Create and setup a human approval request
    *
-   * **Phase 1 Change**: Added config parameter for LangGraph checkpointer access
+   * **Phase 1 Change**: Added optional config parameter for LangGraph checkpointer access
+   * Config is optional for backward compatibility with decorator-based approvals
    */
   async createApprovalRequest(
     executionId: string,
     nodeId: string,
     message: string,
     state: WorkflowState,
-    config: RunnableConfig,
     options: RequiresApprovalOptions = {},
     hitlStorage: IHitlStorageService,
     approvalCache: Map<string, HumanApprovalRequest>,
-    handleTimeout: (requestId: string) => Promise<void>
+    handleTimeout: (requestId: string) => Promise<void>,
+    config?: RunnableConfig
   ): Promise<HumanApprovalRequest> {
     const requestId = generateId('approval');
 

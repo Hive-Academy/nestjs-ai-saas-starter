@@ -154,17 +154,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    if (result.success && request) {
-      await this.hitlCheckpointService.saveApprovalState(
-        request,
-        'approval_processed',
-        {
-          decision: response.decision,
-          approver: response.approver,
-          nextState: result.nextState,
-        }
-      );
-    }
+    // NOTE: State persistence handled by LangGraph checkpointer
+    // No manual checkpoint saving needed
 
     if (result.success && request) {
       try {
@@ -236,14 +227,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
       if (request) {
         // Save chain completion checkpoint via checkpoint service
-        if (request.chainId) {
-          await this.hitlCheckpointService.saveChainProgress(
-            request,
-            event.level || 0,
-            request.approvers || [],
-            event.status
-          );
-        }
+        // NOTE: Chain progress tracked via Neo4j adapter storage
+        // LangGraph checkpointer handles workflow state persistence
 
         await this.processApprovalResponse(request.id, {
           requestId: request.id,
@@ -279,13 +264,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   get memoryLearning() {
     return this.hitlMemoryLearningService;
-  }
-
-  /**
-   * Get checkpoint service for state persistence
-   */
-  get checkpoints() {
-    return this.hitlCheckpointService;
   }
 
   /**
@@ -438,33 +416,11 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     nodeId: string,
     checkpointId?: string
   ): Promise<HumanApprovalRequest | null> {
-    const restoredRequest =
-      await this.hitlCheckpointService.resumeApprovalWorkflow(
-        executionId,
-        nodeId,
-        checkpointId
-      );
-
-    if (restoredRequest) {
-      // Add to cache and re-setup timeout if needed
-      this.approvalCache.set(restoredRequest.id, restoredRequest);
-
-      if (restoredRequest.workflowState === ApprovalWorkflowState.IN_PROGRESS) {
-        const timeElapsed =
-          Date.now() - restoredRequest.timestamps.requested.getTime();
-        const remainingTimeout = restoredRequest.timeout.duration - timeElapsed;
-
-        if (remainingTimeout > 0) {
-          restoredRequest.timeout.duration = remainingTimeout;
-          this.approvalTimeoutService.setupTimeout(
-            restoredRequest.id,
-            restoredRequest,
-            (id) => this.handleTimeout(id)
-          );
-        }
-      }
-    }
-
-    return restoredRequest;
+    // NOTE: LangGraph handles workflow state restoration via checkpointer
+    // Approval workflows should be resumed via LangGraph API, not manually
+    this.logger.warn(
+      'resumeApprovalWorkflow() is deprecated - use LangGraph workflow resumption instead'
+    );
+    return null;
   }
 }

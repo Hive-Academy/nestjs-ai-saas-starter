@@ -16,6 +16,7 @@
 **Services Remaining**: 992 LOC (MetadataProcessorService 654 + WorkflowExecutionService 338)
 
 **Key Insight**: The workflow-engine library has been successfully simplified to just 2 core services (992 LOC total). The 3 services to delete (1,554 LOC) are:
+
 1. Multi-agent helper services that belong in a dedicated multi-agent package
 2. Performance optimization services that are premature abstraction
 
@@ -24,6 +25,7 @@
 ## ✅ KEEP Services
 
 ### MetadataProcessorService
+
 - **Path**: `libs/langgraph-modules/workflow-engine/src/lib/core/metadata-processor.service.ts`
 - **LOC**: 654
 - **Why KEEP**: Thin decorator metadata extraction layer - core responsibility
@@ -34,6 +36,7 @@
 - **Consumers**: WorkflowExecutionService uses this to extract decorator metadata before building graphs
 
 ### WorkflowExecutionService
+
 - **Path**: `libs/langgraph-modules/workflow-engine/src/lib/execution/workflow-execution.service.ts`
 - **LOC**: 338
 - **Why KEEP**: NEW thin service that replaces all graph builders - direct LangGraph API usage
@@ -52,6 +55,7 @@
 ## ❌ DELETE Services
 
 ### 1. BackgroundMemoryService
+
 - **Path**: `libs/langgraph-modules/workflow-engine/src/lib/services/background-memory.service.ts`
 - **LOC**: 363
 - **Replaced By**: This should be in `@hive-academy/langgraph-memory` package, not workflow-engine
@@ -70,6 +74,7 @@
 - **Impact**: ZERO - not registered in WorkflowEngineModule providers
 
 ### 2. CommandProcessorService
+
 - **Path**: `libs/langgraph-modules/workflow-engine/src/lib/services/command-processor.service.ts`
 - **LOC**: 611
 - **Replaced By**: LangGraph native Command pattern + direct state updates
@@ -89,6 +94,7 @@
   - If complex command processing needed, implement in dedicated multi-agent package
 - **Impact**: ZERO - not registered in WorkflowEngineModule providers
 - **LangGraph Equivalent**:
+
   ```typescript
   // ❌ OLD: Over-engineered service
   const command = await commandProcessor.processCommand(...)
@@ -98,6 +104,7 @@
   ```
 
 ### 3. LlmProviderService
+
 - **Path**: `libs/langgraph-modules/workflow-engine/src/lib/services/llm/llm-provider.service.ts`
 - **LOC**: 580
 - **Replaced By**: Direct LangChain provider usage in application code
@@ -117,13 +124,14 @@
   - If centralized LLM management needed, create dedicated `@hive-academy/langgraph-llm` package
 - **Impact**: ZERO - not registered in WorkflowEngineModule providers
 - **Direct LangChain Equivalent**:
+
   ```typescript
   // ❌ OLD: Over-engineered service layer
-  const llm = await llmProvider.getLLM({ model: 'gpt-4' })
+  const llm = await llmProvider.getLLM({ model: 'gpt-4' });
 
   // ✅ NEW: Direct LangChain usage
-  import { ChatOpenAI } from '@langchain/openai'
-  const llm = new ChatOpenAI({ model: 'gpt-4', temperature: 0 })
+  import { ChatOpenAI } from '@langchain/openai';
+  const llm = new ChatOpenAI({ model: 'gpt-4', temperature: 0 });
   ```
 
 ---
@@ -131,6 +139,7 @@
 ## Deletion Categories
 
 ### Category 1: Multi-Agent Helpers (Should be in dedicated package)
+
 - **BackgroundMemoryService**: 363 LOC - Async memory writes for multi-agent coordination
 - **CommandProcessorService**: 611 LOC - Multi-agent command processing
 - **LlmProviderService**: 580 LOC - LLM provider management for multi-agent systems
@@ -138,12 +147,14 @@
 - **Rationale**: These are multi-agent coordination infrastructure, not workflow-engine core functionality
 
 ### Category 2: Performance Optimizations (Premature abstraction)
+
 - **BackgroundMemoryService**: 363 LOC - Background memory writes
 - **LlmProviderService**: 580 LOC (caching, preloading, connectivity testing)
 - **Total**: 2 services, 943 LOC
 - **Rationale**: Performance optimizations should be in application layer or dedicated packages
 
 ### Category 3: Over-Engineered Abstractions
+
 - **CommandProcessorService**: 611 LOC - Wraps LangGraph native Command pattern
 - **Total**: 1 service, 611 LOC
 - **Rationale**: LangGraph provides native support - this is redundant
@@ -155,11 +166,13 @@
 ### Why These Services Don't Belong in Workflow-Engine
 
 **Workflow-Engine Responsibility** (ONLY):
+
 1. Extract decorator metadata (MetadataProcessorService)
 2. Build LangGraph StateGraph from metadata (WorkflowExecutionService)
 3. Execute workflows using LangGraph API (WorkflowExecutionService)
 
 **NOT Workflow-Engine Responsibility**:
+
 1. ❌ Memory management (BackgroundMemoryService) → belongs in `@hive-academy/langgraph-memory`
 2. ❌ Multi-agent command processing (CommandProcessorService) → belongs in dedicated multi-agent package
 3. ❌ LLM provider management (LlmProviderService) → belongs in dedicated multi-agent package or application layer
@@ -189,9 +202,9 @@ exports: [MetadataProcessorService, WorkflowExecutionService],
 
 ```typescript
 // Lines 53-55 in src/index.ts
-export * from './lib/services/llm/llm-provider.service';       // ❌ DELETE
-export * from './lib/services/command-processor.service';      // ❌ DELETE
-export * from './lib/services/background-memory.service';      // ❌ DELETE
+export * from './lib/services/llm/llm-provider.service'; // ❌ DELETE
+export * from './lib/services/command-processor.service'; // ❌ DELETE
+export * from './lib/services/background-memory.service'; // ❌ DELETE
 ```
 
 These exports will be removed in Task 4.4.
@@ -201,6 +214,7 @@ These exports will be removed in Task 4.4.
 ## Expected Outcomes
 
 ### Immediate Impact
+
 - **Total LOC Deleted**: 1,554 LOC
 - **Services Deleted**: 3 services
 - **Services Remaining**: 2 services (992 LOC total)
@@ -208,10 +222,12 @@ These exports will be removed in Task 4.4.
 - **Breaking Changes**: None (services not used internally)
 
 ### Package Clarity
+
 **Before**: Workflow-engine with mixed responsibilities (workflow + multi-agent + memory + LLM)
 **After**: Workflow-engine with SINGLE responsibility (decorator metadata → LangGraph StateGraph → execute)
 
 ### Simplification Metrics
+
 - **Before Total**: 2,546 LOC across 5 services
 - **After Total**: 992 LOC across 2 services
 - **Reduction**: 61% reduction in code complexity
@@ -222,20 +238,26 @@ These exports will be removed in Task 4.4.
 ## Risk Assessment
 
 ### Zero-Risk Deletions
+
 All 3 services are ZERO-RISK to delete because:
+
 1. ✅ NOT registered in WorkflowEngineModule providers
 2. ✅ NOT imported by any internal workflow-engine files
 3. ✅ Only exported from index.ts (external API)
 4. ✅ No consumers found in codebase search
 
 ### External Consumer Impact
+
 If any external code imports these services, they will need to:
+
 1. **BackgroundMemoryService**: Move to `@hive-academy/langgraph-memory` OR implement in application layer
 2. **CommandProcessorService**: Use LangGraph native Command pattern OR implement in dedicated multi-agent package
 3. **LlmProviderService**: Use LangChain providers directly OR create dedicated `@hive-academy/langgraph-llm` package
 
 ### Migration Support
+
 Provide clear migration guide in BREAKING_CHANGES.md:
+
 - BackgroundMemoryService → Memory package or application layer
 - CommandProcessorService → LangGraph Command pattern
 - LlmProviderService → Direct LangChain usage
@@ -258,7 +280,9 @@ Provide clear migration guide in BREAKING_CHANGES.md:
 ## Next Steps
 
 ### Task 4.2: Delete the 3 identified services
+
 **Actions**:
+
 1. Delete `libs/langgraph-modules/workflow-engine/src/lib/services/background-memory.service.ts` (363 LOC)
 2. Delete `libs/langgraph-modules/workflow-engine/src/lib/services/command-processor.service.ts` (611 LOC)
 3. Delete `libs/langgraph-modules/workflow-engine/src/lib/services/llm/llm-provider.service.ts` (580 LOC)
@@ -267,7 +291,9 @@ Provide clear migration guide in BREAKING_CHANGES.md:
 **Expected**: 1,554 LOC deleted, clean service layer
 
 ### Task 4.3: Update workflow-engine exports
+
 **Actions**:
+
 1. Remove exports from `src/index.ts` (lines 53-55)
 2. Update CLAUDE.md to reflect simplified architecture
 3. Document breaking changes in BREAKING_CHANGES.md
@@ -275,7 +301,9 @@ Provide clear migration guide in BREAKING_CHANGES.md:
 **Expected**: Clean export surface, clear migration guide
 
 ### Task 4.4: Run full typecheck and fix errors
+
 **Actions**:
+
 1. Run `npx nx run workflow-engine:typecheck`
 2. Fix any import errors (should be zero based on analysis)
 3. Run `npx nx test workflow-engine` to verify tests pass
@@ -283,7 +311,9 @@ Provide clear migration guide in BREAKING_CHANGES.md:
 **Expected**: Zero errors, all tests passing
 
 ### Task 4.5: Create BREAKING_CHANGES.md
+
 **Actions**:
+
 1. Document removed services
 2. Provide migration guide for each service
 3. Link to recommended alternatives
@@ -294,13 +324,13 @@ Provide clear migration guide in BREAKING_CHANGES.md:
 
 ## Appendix: Service Responsibility Matrix
 
-| Service | LOC | Responsibility | Belongs In | Status |
-|---------|-----|----------------|------------|--------|
-| MetadataProcessorService | 654 | Extract decorator metadata | workflow-engine | ✅ KEEP |
-| WorkflowExecutionService | 338 | Build StateGraph, execute workflows | workflow-engine | ✅ KEEP |
-| BackgroundMemoryService | 363 | Async memory writes | @hive-academy/langgraph-memory | ❌ DELETE |
-| CommandProcessorService | 611 | Multi-agent command processing | dedicated multi-agent package | ❌ DELETE |
-| LlmProviderService | 580 | LLM provider management | dedicated multi-agent package | ❌ DELETE |
+| Service                  | LOC | Responsibility                      | Belongs In                     | Status    |
+| ------------------------ | --- | ----------------------------------- | ------------------------------ | --------- |
+| MetadataProcessorService | 654 | Extract decorator metadata          | workflow-engine                | ✅ KEEP   |
+| WorkflowExecutionService | 338 | Build StateGraph, execute workflows | workflow-engine                | ✅ KEEP   |
+| BackgroundMemoryService  | 363 | Async memory writes                 | @hive-academy/langgraph-memory | ❌ DELETE |
+| CommandProcessorService  | 611 | Multi-agent command processing      | dedicated multi-agent package  | ❌ DELETE |
+| LlmProviderService       | 580 | LLM provider management             | dedicated multi-agent package  | ❌ DELETE |
 
 **Key Principle**: Workflow-engine = Decorator Metadata → LangGraph StateGraph → Execute. Nothing more.
 
@@ -315,6 +345,7 @@ The workflow-engine library has been successfully simplified to its core respons
 3. Over-engineered wrappers around LangGraph native features
 
 Deleting these services will:
+
 - Reduce complexity by 61%
 - Clarify package boundaries
 - Eliminate redundant abstractions
