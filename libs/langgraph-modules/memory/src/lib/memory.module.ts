@@ -1,112 +1,229 @@
-import { Module, DynamicModule, Provider } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+/**
+ * @fileoverview NestJS Memory Module - BaseStore DI Bridge
+ *
+ * Provides LangGraph BaseStore implementation via ChromaDBBaseStore.
+ * Thin dependency injection layer enabling workflow nodes to access
+ * persistent memory storage through LangGraph's standard Store interface.
+ *
+ * Key Features:
+ * - BaseStore provider via factory pattern
+ * - ChromaDBService integration
+ * - forRoot() and forRootAsync() configuration
+ * - Global module pattern for cross-module availability
+ *
+ * Consumer Usage:
+ * ```typescript
+ * // 1. Module Import
+ * @Module({
+ *   imports: [
+ *     ChromaDBModule.forRoot({ url: 'http://localhost:8000' }),
+ *     MemoryModule.forRoot({ collection: 'langgraph_store' }),
+ *   ],
+ * })
+ * export class AppModule {}
+ *
+ * // 2. Service Injection
+ * @Injectable()
+ * export class WorkflowService {
+ *   constructor(
+ *     @Inject('BaseStore') private readonly store: BaseStore
+ *   ) {}
+ *
+ *   async compileGraph() {
+ *     return builder.compile({
+ *       checkpointer: this.checkpointer,
+ *       store: this.store, // Store available to all nodes
+ *     });
+ *   }
+ * }
+ *
+ * // 3. Node Access (LangGraph Nodes)
+ * async function myNode(state: State, config: RunnableConfig): Promise<Partial<State>> {
+ *   // Store automatically available via config
+ *   const store = config.store as BaseStore;
+ *
+ *   // Use LangGraph BaseStore methods
+ *   await store.put(['memories', userId], 'context', { query, result });
+ *   const memories = await store.search(['memories', userId], { query, limit: 5 });
+ *
+ *   return { memories, processed: true };
+ * }
+ * ```
+ *
+ * @module MemoryModule
+ */
 
-import type {
-  MemoryModuleOptions,
-  MemoryModuleAsyncOptions,
-} from './interfaces/memory-module-options.interface';
-
-import {
-  MemoryConfigFactory,
-  MemoryAdapterFactory,
-  MemoryProviderFactory,
-  MemoryAsyncProviderFactory,
-} from './factories';
+import { DynamicModule, Module } from '@nestjs/common';
+import { ChromaDBModule, ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import { ChromaDBBaseStore } from './stores/chromadb-base-store';
 
 /**
- * Enhanced NestJS Memory Module with Adapter Pattern Support
+ * Memory module configuration options
  *
- * REFACTORED: Extracted responsibilities into focused factories
- * - MemoryConfigFactory: Configuration merging
- * - MemoryAdapterFactory: Adapter validation and provider creation
- * - MemoryProviderFactory: Service provider creation
- * - MemoryAsyncProviderFactory: Async configuration provider creation
+ * Minimal configuration for BaseStore provider with optional future enhancements.
  *
- * Benefits:
- * - Single Responsibility Principle (SRP)
- * - DRY: No duplication between forRoot and forRootAsync
- * - Testable: Each factory can be unit tested independently
- * - Maintainable: Easy to extend and modify
+ * @interface MemoryModuleOptions
+ */
+export interface MemoryModuleOptions {
+  /**
+   * ChromaDB collection name for storing LangGraph items
+   *
+   * @default 'langgraph_store'
+   */
+  collection?: string;
+
+  /**
+   * Enable semantic search capabilities (future enhancement)
+   *
+   * When enabled, BaseStore search operations will use vector similarity
+   * in addition to metadata filtering.
+   *
+   * @default false
+   */
+  enableSemanticSearch?: boolean;
+}
+
+/**
+ * Async configuration options for MemoryModule
  *
- * Provides:
- * - Adapter-based vector database integration (required)
- * - Adapter-based graph database integration (optional)
- * - Memory orchestration services
- * - Store services for cross-thread memory
- * - Agent memory services
- * - Global IMemoryAdapter for consuming modules
+ * Supports dynamic configuration loading from external sources
+ * (ConfigService, database, etc.)
+ *
+ * @interface MemoryModuleAsyncOptions
+ */
+export interface MemoryModuleAsyncOptions {
+  /**
+   * Modules to import for async configuration dependencies
+   */
+  imports?: any[];
+
+  /**
+   * Factory function to create module options asynchronously
+   *
+   * @param args - Injected dependencies
+   * @returns Module options or promise resolving to options
+   */
+  useFactory: (
+    ...args: any[]
+  ) => Promise<MemoryModuleOptions> | MemoryModuleOptions;
+
+  /**
+   * Dependencies to inject into useFactory function
+   */
+  inject?: any[];
+}
+
+/**
+ * Memory Module - BaseStore DI Bridge
+ *
+ * Provides LangGraph BaseStore implementation for persistent memory storage.
+ * Designed as a thin dependency injection layer connecting ChromaDB to LangGraph's
+ * store interface.
+ *
+ * Architecture:
+ * - Single responsibility: Provide BaseStore implementation
+ * - Zero business logic: Pure DI configuration
+ * - Global availability: All modules can inject BaseStore
+ *
+ * @class MemoryModule
  */
 @Module({})
 export class MemoryModule {
   /**
    * Configure module with synchronous options
    *
-   * REFACTORED: Now uses factories for clean separation of concerns
+   * Creates BaseStore provider using ChromaDBService factory injection.
+   * Suitable for static configuration values.
+   *
+   * @param options - Memory module configuration
+   * @returns Dynamic module configuration
+   *
+   * @example
+   * ```typescript
+   * MemoryModule.forRoot({
+   *   collection: 'langgraph_store',
+   *   enableSemanticSearch: false,
+   * })
+   * ```
    */
   static forRoot(options: MemoryModuleOptions = {}): DynamicModule {
-    // 1. Merge options with defaults
-    const mergedOptions = MemoryConfigFactory.mergeWithDefaults(options);
-
-    // 2. Validate adapters
-    MemoryAdapterFactory.validateAdapters(options);
-
-    // 3. Build providers
-    const providers: Provider[] = [
-      // Configuration
-      MemoryProviderFactory.createConfigProvider(mergedOptions),
-
-      // Adapters (IVectorService, IGraphService)
-      ...MemoryAdapterFactory.createAdapterProviders(options),
-
-      // Core services (Store, Memory, Agent services)
-      ...MemoryProviderFactory.createCoreProviders(),
-    ];
-
-    // 4. Add IMemoryAdapter provider if vector adapter available
-    const hasVectorAdapter = !!options.adapters?.vector;
-    if (hasVectorAdapter) {
-      providers.push(MemoryProviderFactory.createMemoryAdapterProvider());
-    }
-
-    // 5. Build exports
-    const exports = MemoryProviderFactory.getExports(hasVectorAdapter);
+    const collectionName = options.collection || 'langgraph_store';
 
     return {
       module: MemoryModule,
-      imports: [ConfigModule],
-      providers,
-      exports,
-      global: true, // ← CRITICAL: Make memory global like checkpoint
+      imports: [
+        // Import ChromaDBModule to get ChromaDBService
+        ChromaDBModule,
+      ],
+      providers: [
+        {
+          provide: 'BaseStore',
+          useFactory: (chromaDB: ChromaDBService) => {
+            // Create ChromaDBBaseStore instance with injected dependencies
+            return new ChromaDBBaseStore(chromaDB, collectionName);
+          },
+          inject: [ChromaDBService],
+        },
+      ],
+      exports: ['BaseStore'],
+      global: true, // Make BaseStore available globally
     };
   }
 
   /**
    * Configure module with asynchronous options
    *
-   * REFACTORED: Now uses factories for clean separation of concerns
+   * Creates BaseStore provider using async factory for dynamic configuration.
+   * Suitable for loading configuration from external sources (ConfigService,
+   * database, environment variables, etc.)
+   *
+   * @param options - Async module configuration
+   * @returns Dynamic module configuration
+   *
+   * @example
+   * ```typescript
+   * MemoryModule.forRootAsync({
+   *   imports: [ConfigModule],
+   *   useFactory: async (configService: ConfigService) => ({
+   *     collection: configService.get('LANGGRAPH_STORE_COLLECTION'),
+   *     enableSemanticSearch: configService.get('ENABLE_SEMANTIC_SEARCH'),
+   *   }),
+   *   inject: [ConfigService],
+   * })
+   * ```
    */
   static forRootAsync(options: MemoryModuleAsyncOptions): DynamicModule {
-    // 1. Build providers
-    const providers: Provider[] = [
-      // Async configuration
-      ...MemoryAsyncProviderFactory.createAsyncProviders(options),
-
-      // Core services (Store, Memory, Agent services)
-      ...MemoryProviderFactory.createCoreProviders(),
-
-      // IMemoryAdapter (always provided in async mode)
-      MemoryProviderFactory.createMemoryAdapterProvider(),
-    ];
-
-    // 2. Build exports (always include IMemoryAdapter in async mode)
-    const exports = MemoryProviderFactory.getExports(true);
-
     return {
       module: MemoryModule,
-      imports: [ConfigModule, ...(options.imports || [])],
-      providers,
-      exports,
-      global: true,
+      imports: [
+        // Import ChromaDBModule for ChromaDBService
+        ChromaDBModule,
+        // Import user-provided modules for async configuration
+        ...(options.imports || []),
+      ],
+      providers: [
+        // Provider for async module options
+        {
+          provide: 'MEMORY_MODULE_OPTIONS',
+          useFactory: options.useFactory,
+          inject: options.inject || [],
+        },
+        // BaseStore provider with async configuration
+        {
+          provide: 'BaseStore',
+          useFactory: (
+            chromaDB: ChromaDBService,
+            moduleOptions: MemoryModuleOptions
+          ) => {
+            const collectionName =
+              moduleOptions?.collection || 'langgraph_store';
+            return new ChromaDBBaseStore(chromaDB, collectionName);
+          },
+          inject: [ChromaDBService, 'MEMORY_MODULE_OPTIONS'],
+        },
+      ],
+      exports: ['BaseStore'],
+      global: true, // Make BaseStore available globally
     };
   }
 }
