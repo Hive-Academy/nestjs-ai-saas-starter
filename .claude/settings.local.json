@@ -33,7 +33,8 @@
       "Bash(npx nx sync)",
       "Bash(done)",
       "Bash(cloc:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(npx nx run:*)"
     ],
     "deny": [],
     "ask": [],
