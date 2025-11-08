@@ -7,20 +7,25 @@ import {
   WorkflowState,
   Command,
 } from '../interfaces';
+// Local decorator imports (functional-api library was deleted, decorators now local)
+import { getWorkflowMetadata } from '../decorators/functional/workflow.decorator';
 import {
-  getWorkflowMetadata,
   getWorkflowNodes,
-  getWorkflowEdges,
   getAllStreamingMetadata,
+  type NodeMetadata,
+} from '../decorators/functional/node.decorator';
+import {
+  getWorkflowEdges,
+  type EdgeMetadata,
+} from '../decorators/functional/edge.decorator';
+import {
   getEntrypointMetadata,
+  type EntrypointMetadata,
+} from '../decorators/functional/entrypoint.decorator';
+import {
   getTaskMetadata,
-} from '@hive-academy/langgraph-functional-api';
-import type {
-  NodeMetadata,
-  EdgeMetadata,
-  EntrypointMetadata,
-  TaskMetadata,
-} from '@hive-academy/langgraph-functional-api';
+  type TaskMetadata,
+} from '../decorators/functional/task.decorator';
 
 // Placeholder types for streaming metadata
 interface StreamTokenMetadata {
@@ -165,6 +170,9 @@ export class MetadataProcessorService {
   /**
    * Compile task-based workflow (@Entrypoint + @Task pattern)
    * Based on LangGraph's Functional API design
+   *
+   * THIN LAYER: Extracts metadata ONLY, no graph building.
+   * WorkflowExecutionService builds StateGraph edges from taskDependencies metadata.
    */
   private compileTaskBasedWorkflow<TState extends WorkflowState>(
     workflowClass: any,
@@ -233,16 +241,20 @@ export class MetadataProcessorService {
       `Found ${nodes.length} task-based nodes for workflow ${workflowOptions.name}`
     );
 
-    // Generate edges from task dependencies
-    const edges = this.generateEdgesFromDependencies(nodes, taskDependencies);
+    // THIN LAYER: Store dependencies as metadata, DON'T generate edges
+    // WorkflowExecutionService will build StateGraph edges from this metadata
+    const taskDependenciesObject: Record<string, readonly string[]> = {};
+    for (const [taskId, deps] of taskDependencies.entries()) {
+      taskDependenciesObject[taskId] = deps;
+    }
 
-    // Convert to WorkflowDefinition
+    // Convert to WorkflowDefinition (metadata only, no graph building)
     const definition: WorkflowDefinition<TState> = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
       channels: workflowOptions.channels,
       nodes: this.convertNodesToDefinition<TState>(nodes),
-      edges: this.convertEdgesToDefinition<TState>(edges, nodes),
+      edges: [], // Empty - WorkflowExecutionService builds edges from taskDependencies metadata
       entryPoint: entrypointId || nodes[0]?.id || 'start',
       config: {
         requiresApproval: workflowOptions.requiresHumanApproval,
@@ -251,13 +263,14 @@ export class MetadataProcessorService {
           pattern: 'functional-task',
           tags: workflowOptions.tags,
           interruptNodes: workflowOptions.interruptNodes,
+          taskDependencies: taskDependenciesObject, // NEW: Raw dependency metadata for graph building
           ...workflowOptions,
         },
       },
     };
 
     this.logger.log(
-      `Generated task-based workflow definition for ${definition.name}`
+      `Extracted task-based workflow metadata for ${definition.name} (edges will be built by WorkflowExecutionService)`
     );
     return definition;
   }
@@ -309,44 +322,14 @@ export class MetadataProcessorService {
   }
 
   /**
-   * Generate edges from task dependencies (for functional-task pattern)
-   * @param nodes All discovered nodes
-   * @param taskDependencies Map of task ID to its dependencies
-   * @returns EdgeMetadata array representing the dependency graph
+   * DELETED: generateEdgesFromDependencies() removed as part of thin layer refactoring.
+   *
+   * Rationale: Edge generation is graph building logic, not metadata extraction.
+   * Task dependencies are now stored in WorkflowDefinition.config.metadata.taskDependencies
+   * and WorkflowExecutionService builds edges when creating LangGraph StateGraph.
+   *
+   * Removed: Task 2.2 (Simplify MetadataProcessorService)
    */
-  private generateEdgesFromDependencies(
-    nodes: NodeMetadata[],
-    taskDependencies: Map<string, readonly string[]>
-  ): EdgeMetadata[] {
-    const edges: EdgeMetadata[] = [];
-
-    for (const [taskId, dependencies] of taskDependencies.entries()) {
-      // For each dependency, create an edge from dependency -> task
-      for (const depId of dependencies) {
-        const depNode = nodes.find(
-          (n) => n.id === depId || n.methodName === depId
-        );
-        if (!depNode) {
-          this.logger.warn(
-            `Dependency '${depId}' not found for task '${taskId}'`
-          );
-          continue;
-        }
-
-        edges.push({
-          from: depNode.id,
-          to: taskId,
-          condition: undefined,
-          metadata: {
-            type: 'dependency',
-            generated: true,
-          },
-        });
-      }
-    }
-
-    return edges;
-  }
 
   /**
    * Get edge metadata from class
