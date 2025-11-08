@@ -50,10 +50,17 @@ import { DEFAULT_HITL_CONFIG, HITL_CONFIG } from './constants';
  * - Recovery handled by LangGraph native checkpointer
  * - No manual recovery service needed
  *
+ * **TASK_2025_040 Phase 3** (RunnableConfig Integration):
+ * - Services now access checkpointer via RunnableConfig parameter
+ * - No standalone checkpoint/recovery services in providers
+ * - 18 enterprise services preserved with native LangGraph integration
+ * - Pattern: Embedded state management (workflow-engine alignment)
+ *
  * Provides:
  * - Adapter-based storage integration for approval persistence
- * - Human approval orchestration services
+ * - Human approval orchestration services (18 specialized services)
  * - Neo4j-based approval state persistence (Phase 5)
+ * - LangGraph native interrupt() and Command({ resume }) patterns
  * - 100% backward compatibility with existing configurations
  * - Extensibility through custom adapter injection
  */

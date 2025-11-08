@@ -1,15 +1,24 @@
 import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { RunnableConfig } from '@langchain/core/runnables';
 import type { IStreamingService } from '@hive-academy/langgraph-core';
+import { RunnableConfigFactory } from '../config/runnable-config.factory';
 import { HITL_EVENTS } from '../constants';
 
 /**
  * Notification service for HITL approval requests
  *
+ * Phase 3 - RunnableConfig Integration:
+ * This service now reads interrupt payloads from __interrupt__ field
+ * instead of custom checkpoint service state.
+ *
  * This service handles notifications for approval requests including:
  * - Console logging for demo visibility
  * - WebSocket events for real-time UI updates
  * - Email/Slack/SMS notifications (future extensibility)
+ *
+ * Pattern: Access checkpointer via RunnableConfig (not service injection)
+ * Evidence: implementation-plan.md:394-408 (notification service integration)
  */
 @Injectable()
 export class HitlNotificationService {
@@ -24,6 +33,59 @@ export class HitlNotificationService {
     this.logger.debug('HitlNotificationService initialized', {
       streamingAvailable: !!this.streaming,
     });
+  }
+
+  /**
+   * Poll for notifications by reading __interrupt__ field from checkpointer state.
+   * Replaces custom checkpoint service with LangGraph native interrupt() field access.
+   *
+   * @param config - LangGraph RunnableConfig with checkpointer
+   * @param threadId - Workflow thread ID
+   * @param checkpointNs - Checkpoint namespace for thread lookup
+   * @returns Interrupt payload or null if no active interrupts
+   *
+   * @see research-report.md:416-446 (notification integration pattern)
+   * @see implementation-plan.md:394-408 (RunnableConfig access)
+   */
+  async pollForNotifications(
+    config: RunnableConfig,
+    threadId: string,
+    checkpointNs = ''
+  ): Promise<any | null> {
+    try {
+      const checkpointer = RunnableConfigFactory.getCheckpointer(config);
+      if (!checkpointer) {
+        this.logger.warn('Checkpointer not available for notification polling');
+        return null;
+      }
+
+      // Get latest checkpoint for thread
+      const checkpoint = await checkpointer.get({
+        configurable: { thread_id: threadId, checkpoint_ns: checkpointNs },
+      });
+
+      if (!checkpoint) {
+        this.logger.debug(`No checkpoint found for thread ${threadId}`);
+        return null;
+      }
+
+      // Read __interrupt__ field for notification context
+      const interrupts = (checkpoint as any).channel_values?.__interrupt__;
+      if (!interrupts || interrupts.length === 0) {
+        return null;
+      }
+
+      // Return first interrupt payload (most recent)
+      const interruptPayload = interrupts[0];
+      this.logger.debug(`Found interrupt notification for thread ${threadId}`, {
+        type: interruptPayload.type,
+      });
+
+      return interruptPayload;
+    } catch (error) {
+      this.logger.error('Failed to poll for notifications:', error);
+      return null;
+    }
   }
 
   /**

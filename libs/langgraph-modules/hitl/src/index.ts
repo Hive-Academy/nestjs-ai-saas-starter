@@ -7,6 +7,9 @@ export * from './lib/utils/hitl-config.accessor';
 // Service Locator utilities (for testing/advanced use cases)
 export * from './lib/utils/approval-service.locator';
 
+// RunnableConfig factory for checkpointer/store access (Phase 3)
+export { RunnableConfigFactory } from './lib/config/runnable-config.factory';
+
 // Services
 export { HumanApprovalService } from './lib/services/human-approval.service';
 export { ApprovalProcessingService } from './lib/services/approval-processing.service';
