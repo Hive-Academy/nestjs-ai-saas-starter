@@ -403,82 +403,9 @@ export class MetadataProcessorService {
       });
     });
 
-    // Add implicit edges based on node order and patterns
-    this.addImplicitEdges(edges, nodeMetadata);
-
+    // NOTE: Edge generation removed (graph building logic)
+    // WorkflowExecutionService builds edges from decorator metadata
     return edges;
-  }
-
-  /**
-   * Add implicit edges based on workflow patterns
-   */
-  private addImplicitEdges<TState extends WorkflowState>(
-    edges: Array<WorkflowEdge<TState>>,
-    nodeMetadata: NodeMetadata[]
-  ): void {
-    // If no explicit edges, create sequential edges
-    if (edges.length === 0 && nodeMetadata.length > 1) {
-      this.logger.debug('No explicit edges found, creating sequential edges');
-
-      for (let i = 0; i < nodeMetadata.length - 1; i++) {
-        const currentNode = nodeMetadata[i];
-        const nextNode = nodeMetadata[i + 1];
-
-        // Skip if edge already exists
-        const existingEdge = edges.find(
-          (e) =>
-            e.from === currentNode.id &&
-            (typeof e.to === 'string' ? e.to === nextNode.id : false)
-        );
-
-        if (!existingEdge) {
-          edges.push({
-            from: currentNode.id,
-            to: nextNode.id,
-            config: {
-              metadata: { type: 'implicit', generated: true },
-            },
-          });
-        }
-      }
-    }
-
-    // Add approval routing edges for nodes that require approval
-    nodeMetadata.forEach((node) => {
-      if (node.requiresApproval) {
-        const approvalEdge = edges.find(
-          (e) =>
-            e.from === node.id &&
-            (typeof e.to === 'string' ? e.to === 'human_approval' : false)
-        );
-
-        if (!approvalEdge) {
-          edges.push({
-            from: node.id,
-            to: {
-              condition: (state: TState) => {
-                // Route to approval if confidence is low or explicitly required
-                const threshold = node.confidenceThreshold || 0.7;
-                return state.confidence < threshold || state.requiresApproval
-                  ? 'human_approval'
-                  : null;
-              },
-              routes: {
-                human_approval: 'human_approval',
-              },
-              default: this.findDefaultRoute(nodeMetadata) || 'end',
-            },
-            config: {
-              metadata: {
-                type: 'approval',
-                generated: true,
-                confidenceThreshold: node.confidenceThreshold,
-              },
-            },
-          });
-        }
-      }
-    });
   }
 
   /**
