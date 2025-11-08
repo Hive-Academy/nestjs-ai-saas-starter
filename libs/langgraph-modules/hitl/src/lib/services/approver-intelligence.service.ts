@@ -1,4 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import type { BaseStore } from '@langchain/langgraph-checkpoint';
 import type {
   IMemoryAdapter,
   AgentMemoryContext,
@@ -55,11 +57,13 @@ export class ApproverIntelligenceService {
    *
    * @param request The approval request requiring intelligent routing
    * @param potentialApprovers List of eligible approvers
+   * @param config Optional RunnableConfig for BaseStore access
    * @returns Promise of selected approver ID with ranking reasoning
    */
   async selectBestApprover(
     request: HumanApprovalRequest,
-    potentialApprovers: string[]
+    potentialApprovers: string[],
+    config?: RunnableConfig
   ): Promise<ApproverRanking> {
     // Graceful degradation - default to first approver if memory unavailable
     if (!this.memoryAdapter) {
@@ -78,6 +82,30 @@ export class ApproverIntelligenceService {
     }
 
     try {
+      // Access BaseStore for cross-workflow approver pattern learning
+      const store = config?.configurable?.store as BaseStore | undefined;
+      let historicalPatterns: any[] = [];
+
+      if (store) {
+        try {
+          // Retrieve historical approver selection patterns
+          const items = await store.search([
+            'approver-patterns',
+            request.riskAssessment?.level || 'unknown',
+          ]);
+          historicalPatterns = items.slice(0, 10);
+          this.logger.debug(
+            `Retrieved ${historicalPatterns.length} historical approver patterns from BaseStore`
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to retrieve historical patterns from BaseStore: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+
       // Step 1: Get approver profiles with behavior patterns from memory
       const approverProfiles = await Promise.all(
         potentialApprovers.map(async (approverId) => {
@@ -159,6 +187,35 @@ export class ApproverIntelligenceService {
           selectionReason: selectedApprover.reason,
         }
       );
+
+      // Store selection pattern in BaseStore for ML learning
+      if (store) {
+        try {
+          await store.put(
+            ['approver-patterns', request.riskAssessment?.level || 'unknown'],
+            `selection-${request.executionId}`,
+            {
+              executionId: request.executionId,
+              selectedApproverId: selectedApprover.approverId,
+              score: selectedApprover.score,
+              riskLevel: request.riskAssessment?.level,
+              confidence: request.confidence.current,
+              reason: selectedApprover.reason,
+              timestamp: new Date(),
+              historicalPatternsUsed: historicalPatterns.length,
+            }
+          );
+          this.logger.debug(
+            `Stored approver selection pattern in BaseStore for ML learning`
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to store selection pattern in BaseStore: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
 
       return {
         selectedApproverId: selectedApprover.approverId,
@@ -464,5 +521,57 @@ export class ApproverIntelligenceService {
       successRate: 0.5,
       experienceCount: 0,
     };
+  }
+
+  /**
+   * Store approver feedback pattern in BaseStore for continuous learning
+   *
+   * This method should be called after an approval is completed to store
+   * the feedback pattern for future ML-based approver selection improvements.
+   *
+   * @param approverId The approver who provided the feedback
+   * @param decision The approval decision (approved/rejected)
+   * @param responseTime Time taken to respond in milliseconds
+   * @param riskLevel Risk level of the approval
+   * @param config RunnableConfig for BaseStore access
+   */
+  async storeFeedbackPattern(
+    approverId: string,
+    decision: 'approved' | 'rejected',
+    responseTime: number,
+    riskLevel: string,
+    config?: RunnableConfig
+  ): Promise<void> {
+    const store = config?.configurable?.store as BaseStore | undefined;
+
+    if (!store) {
+      this.logger.debug(
+        'BaseStore not available - skipping feedback pattern storage'
+      );
+      return;
+    }
+
+    try {
+      await store.put(
+        ['approver-feedback', approverId],
+        `feedback-${Date.now()}`,
+        {
+          approverId,
+          decision,
+          responseTime,
+          riskLevel,
+          timestamp: new Date(),
+        }
+      );
+      this.logger.debug(
+        `Stored feedback pattern for approver ${approverId} in BaseStore`
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to store feedback pattern in BaseStore: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 }
