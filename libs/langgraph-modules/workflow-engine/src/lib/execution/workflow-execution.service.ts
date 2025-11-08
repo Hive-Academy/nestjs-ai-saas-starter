@@ -85,15 +85,41 @@ export class WorkflowExecutionService {
    *
    * Implementation: Task 3.3
    */
-  async *streamWorkflow<TState>(
+  async *streamWorkflow<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
     input: TState,
-    config?: RunnableConfig
+    config?: RunnableConfig & { streamMode?: 'values' | 'updates' | 'messages' }
   ): AsyncIterable<TState> {
-    this.logger.debug(`streamWorkflow() - To be implemented in Task 3.3`);
-    // Temporary yield to satisfy require-yield eslint rule
-    yield input;
-    throw new Error('Not yet implemented - Task 3.3');
+    this.logger.debug(`Streaming workflow from class ${workflowClass.name}`);
+
+    // 1. Extract metadata using MetadataProcessorService
+    const definition =
+      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+
+    // 2. Validate metadata
+    this.metadataProcessor.validateWorkflowDefinition(definition);
+
+    // 3. Build StateGraph from metadata (reuse helper from Task 3.2)
+    const graph = this.buildStateGraph(definition);
+
+    // 4. Compile with checkpointer
+    const compiled = graph.compile({
+      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+    });
+
+    // 5. Stream using LangGraph's native stream()
+    const streamMode = config?.streamMode || 'values';
+
+    const stream = await compiled.stream(input, {
+      ...config,
+      streamMode,
+    });
+
+    for await (const chunk of stream) {
+      yield chunk as TState;
+    }
+
+    this.logger.log(`Workflow ${definition.name} streaming completed`);
   }
 
   /**
