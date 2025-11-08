@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { StateGraph } from '@langchain/langgraph';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import type {
+  WorkflowDefinition,
+  WorkflowState,
+  ConditionalRouting,
+} from '../interfaces/workflow-engine.interface';
 
 /**
  * WorkflowExecutionService
@@ -23,10 +30,8 @@ export class WorkflowExecutionService {
   private readonly logger = new Logger(WorkflowExecutionService.name);
 
   constructor(
-    // @ts-expect-error - Will be used in Task 3.2
-    private readonly _metadataProcessor: MetadataProcessorService,
-    // @ts-expect-error - Will be used in Task 3.2
-    private readonly _checkpointAdapter: ICheckpointAdapter
+    private readonly metadataProcessor: MetadataProcessorService,
+    private readonly checkpointAdapter: ICheckpointAdapter
   ) {
     this.logger.log('WorkflowExecutionService initialized');
   }
@@ -41,13 +46,33 @@ export class WorkflowExecutionService {
    *
    * Implementation: Task 3.2
    */
-  async executeWorkflow<TState>(
+  async executeWorkflow<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
     input: TState,
     config?: RunnableConfig
   ): Promise<TState> {
-    this.logger.debug(`executeWorkflow() - To be implemented in Task 3.2`);
-    throw new Error('Not yet implemented - Task 3.2');
+    this.logger.debug(`Executing workflow from class ${workflowClass.name}`);
+
+    // 1. Extract metadata using MetadataProcessorService
+    const definition =
+      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+
+    // 2. Validate metadata
+    this.metadataProcessor.validateWorkflowDefinition(definition);
+
+    // 3. Build StateGraph from metadata
+    const graph = this.buildStateGraph(definition);
+
+    // 4. Compile with checkpointer
+    const compiled = graph.compile({
+      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+    });
+
+    // 5. Execute with LangGraph's native invoke()
+    const result = await compiled.invoke(input, config);
+
+    this.logger.log(`Workflow ${definition.name} executed successfully`);
+    return result as TState;
   }
 
   /**
@@ -107,5 +132,102 @@ export class WorkflowExecutionService {
   }> {
     this.logger.debug(`buildAgentGraph() - To be implemented in Task 3.5`);
     throw new Error('Not yet implemented - Task 3.5');
+  }
+
+  /**
+   * Build LangGraph StateGraph from WorkflowDefinition metadata
+   * This is where we convert metadata to actual graph structure
+   *
+   * @param definition - WorkflowDefinition extracted from decorators
+   * @returns StateGraph instance ready for compilation
+   */
+  private buildStateGraph<TState extends WorkflowState = WorkflowState>(
+    definition: WorkflowDefinition<TState>
+  ): StateGraph<TState> {
+    this.logger.debug(
+      `Building StateGraph for workflow ${definition.name} with ${definition.nodes.length} nodes`
+    );
+
+    // Create StateGraph with channels from definition
+    const graph = new StateGraph<TState>(definition.channels);
+
+    // Add all nodes
+    definition.nodes.forEach((node) => {
+      this.logger.debug(`Adding node: ${node.id}`);
+      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
+      // Handler signature is correct: (state: TState) => Promise<Partial<TState> | Command>
+      graph.addNode(node.id, node.handler);
+    });
+
+    // Add edges from metadata
+    this.addEdgesFromMetadata(graph, definition);
+
+    // Set entry point (cast to any for type compatibility)
+    graph.setEntryPoint(definition.entryPoint as any);
+
+    this.logger.debug(
+      `StateGraph built successfully for ${definition.name} with entry point ${definition.entryPoint}`
+    );
+    return graph;
+  }
+
+  /**
+   * Add edges to StateGraph from WorkflowDefinition metadata
+   * Handles both explicit edges and taskDependencies metadata
+   *
+   * @param graph - StateGraph to add edges to
+   * @param definition - WorkflowDefinition with edge and task metadata
+   */
+  private addEdgesFromMetadata<TState extends WorkflowState = WorkflowState>(
+    graph: StateGraph<TState>,
+    definition: WorkflowDefinition<TState>
+  ): void {
+    // 1. Add explicit edges from @Edge decorators
+    definition.edges.forEach((edge) => {
+      if (typeof edge.to === 'string') {
+        // Simple edge: from -> to
+        this.logger.debug(`Adding edge: ${edge.from} -> ${edge.to}`);
+        graph.addEdge(edge.from as any, edge.to as any);
+      } else {
+        // Conditional edge with routing
+        const conditionalTo = edge.to as ConditionalRouting<TState>;
+        this.logger.debug(
+          `Adding conditional edge from ${edge.from} with routes: ${Object.keys(
+            conditionalTo.routes
+          ).join(', ')}`
+        );
+        graph.addConditionalEdges(
+          edge.from as any,
+          conditionalTo.condition as any,
+          conditionalTo.routes as any
+        );
+      }
+    });
+
+    // 2. Add edges from taskDependencies metadata (functional-task pattern)
+    const taskDeps = definition.config?.metadata?.taskDependencies as
+      | Record<string, readonly string[]>
+      | undefined;
+
+    if (taskDeps) {
+      this.logger.debug(
+        `Building edges from taskDependencies for ${
+          Object.keys(taskDeps).length
+        } tasks`
+      );
+
+      // For each task, add edge from dependency -> task
+      for (const [taskId, dependencies] of Object.entries(taskDeps)) {
+        if (dependencies.length === 0) {
+          // Task with no dependencies - already handled by entryPoint
+          continue;
+        }
+
+        for (const depId of dependencies) {
+          this.logger.debug(`Adding dependency edge: ${depId} -> ${taskId}`);
+          graph.addEdge(depId as any, taskId as any);
+        }
+      }
+    }
   }
 }
