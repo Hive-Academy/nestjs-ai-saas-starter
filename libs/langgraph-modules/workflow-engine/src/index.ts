@@ -50,9 +50,10 @@ export * from './lib/decorators/multi-agent/tool.decorator';
 // are exported from multi-agent.decorator above, so we skip re-exporting from interfaces
 
 // Multi-Agent Services
-export * from './lib/services/llm/llm-provider.service';
-export * from './lib/services/command-processor.service';
-export * from './lib/services/background-memory.service';
+// Removed exports for deleted services (Task 4.2):
+// - LlmProviderService
+// - CommandProcessorService
+// - BackgroundMemoryService
 
 // Multi-Agent Tools
 // export * from './lib/tools/tool-registration.service'; // TODO: Add missing tool-registry.service dependency
