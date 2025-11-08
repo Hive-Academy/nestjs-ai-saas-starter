@@ -525,6 +525,33 @@ export class MetadataProcessorService {
   }
 
   /**
+   * Validate workflow metadata before compilation
+   * Catches decorator configuration errors early
+   */
+  validateWorkflowMetadata(workflowClass: any): void {
+    // 1. Check for @Workflow decorator
+    const workflowOptions = getWorkflowMetadata(workflowClass);
+    if (!workflowOptions) {
+      throw new Error(`No @Workflow decorator found on ${workflowClass.name}`);
+    }
+
+    // 2. Check workflow name is provided
+    if (!workflowOptions.name) {
+      throw new Error(`Workflow name is required for ${workflowClass.name}`);
+    }
+
+    // 3. Validate decorator pattern consistency
+    // This calls the existing detectWorkflowPattern() method
+    // which already validates no mixing of patterns
+    this.detectWorkflowPattern(workflowClass, workflowOptions);
+
+    // 4. Log successful validation
+    this.logger.debug(
+      `Workflow metadata validated for ${workflowOptions.name}`
+    );
+  }
+
+  /**
    * Validate workflow definition
    */
   validateWorkflowDefinition<TState extends WorkflowState>(
