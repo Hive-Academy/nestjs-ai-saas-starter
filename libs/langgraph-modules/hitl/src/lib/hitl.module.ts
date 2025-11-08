@@ -13,7 +13,6 @@ import { HumanApprovalService } from './services/human-approval.service';
 import { UserInterruptionService } from './services/user-interruption.service';
 import { HitlMemoryLearningService } from './services/hitl-memory-learning.service';
 import { HitlValidationService } from './services/hitl-validation.service';
-import { HitlRecoveryService } from './services/hitl-recovery.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
 // Phase 1a SOLID Refactoring - New services
 import { ApproverIntelligenceService } from './services/approver-intelligence.service';
@@ -45,6 +44,11 @@ import { DEFAULT_HITL_CONFIG, HITL_CONFIG } from './constants';
  * - ICheckpointAdapter is NO LONGER REQUIRED for approval storage
  * - LangGraph handles workflow checkpoints automatically
  * - Zero breaking changes for existing configurations
+ *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Recovery):
+ * - Removed HitlRecoveryService from providers and exports
+ * - Recovery handled by LangGraph native checkpointer
+ * - No manual recovery service needed
  *
  * Provides:
  * - Adapter-based storage integration for approval persistence
@@ -107,7 +111,6 @@ export class HitlModule {
         // New specialized HITL services
         HitlMemoryLearningService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         // Orchestrator service that depends on the above
         HumanApprovalService,
@@ -133,7 +136,6 @@ export class HitlModule {
         // New specialized HITL services
         HitlMemoryLearningService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HITL_CONFIG,
       ],
@@ -182,7 +184,6 @@ export class HitlModule {
         // New specialized HITL services
         HitlMemoryLearningService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HumanApprovalService,
         ApprovalEvaluatorService,
@@ -208,7 +209,6 @@ export class HitlModule {
         // New specialized HITL services
         HitlMemoryLearningService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HITL_CONFIG,
       ],

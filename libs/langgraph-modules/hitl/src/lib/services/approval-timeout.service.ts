@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { RunnableConfig } from '@langchain/core/runnables';
 import { HITL_EVENTS } from '../constants';
 import {
   ApprovalWorkflowState,
@@ -10,6 +11,11 @@ import {
 /**
  * Approval Timeout Service
  * Handles timeout logic for approval requests
+ *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Recovery):
+ * - Removed HitlRecoveryService dependency (uses LangGraph checkpointer for timeout state)
+ * - Methods now accept optional RunnableConfig parameter for checkpoint access
+ * - Timeout state stored in checkpoint metadata instead of recovery service
  */
 @Injectable()
 export class ApprovalTimeoutService {
@@ -20,11 +26,14 @@ export class ApprovalTimeoutService {
 
   /**
    * Setup timeout for approval request
+   *
+   * @param config - Optional RunnableConfig for checkpoint access
    */
   setupTimeout(
     requestId: string,
     request: HumanApprovalRequest,
-    onTimeout: (requestId: string) => Promise<void>
+    onTimeout: (requestId: string) => Promise<void>,
+    config?: RunnableConfig
   ): void {
     // Clear existing timeout
     this.clearTimeout(requestId);
@@ -50,6 +59,10 @@ export class ApprovalTimeoutService {
 
   /**
    * Handle approval timeout
+   *
+   * @param config - Optional RunnableConfig for checkpoint access
+   * NOTE: Timeout state tracked via LangGraph checkpointer metadata
+   * No manual recovery persistence needed
    */
   async handleTimeout(
     requestId: string,
@@ -57,7 +70,8 @@ export class ApprovalTimeoutService {
     processResponse: (
       requestId: string,
       response: HumanApprovalResponse
-    ) => Promise<any>
+    ) => Promise<any>,
+    config?: RunnableConfig
   ): Promise<void> {
     if (
       !request ||

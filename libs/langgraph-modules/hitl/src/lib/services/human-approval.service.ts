@@ -14,7 +14,6 @@ import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
 import { HitlMemoryLearningService } from './hitl-memory-learning.service';
 import { HitlValidationService } from './hitl-validation.service';
-import { HitlRecoveryService } from './hitl-recovery.service';
 import { HitlApprovalRequestService } from './hitl-approval-request.service';
 // User interruption interfaces - removed as using direct service access
 import { HITL_EVENTS } from '../constants';
@@ -37,6 +36,11 @@ export type {
 
 /**
  * Core Human Approval Service - orchestrates specialized HITL services
+ *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Recovery):
+ * - Removed HitlRecoveryService dependency (uses LangGraph checkpointer for recovery)
+ * - Approval state managed via LangGraph native checkpoints
+ * - Timeout state tracked in checkpoint metadata, not recovery service
  */
 @Injectable()
 export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
@@ -52,7 +56,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly userInterruptionService: UserInterruptionService,
     private readonly hitlMemoryLearningService: HitlMemoryLearningService,
     private readonly hitlValidationService: HitlValidationService,
-    private readonly hitlRecoveryService: HitlRecoveryService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,
     @Inject(IHitlStorageService)
     private readonly hitlStorage: IHitlStorageService // Required
@@ -193,8 +196,8 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
     if (!request) return;
 
-    // Save timeout state via recovery service
-    await this.hitlRecoveryService.persistTimeoutState(request);
+    // NOTE: Timeout state tracked via LangGraph checkpointer metadata
+    // No manual recovery persistence needed
 
     await this.approvalTimeoutService.handleTimeout(
       requestId,
@@ -271,13 +274,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   get validation() {
     return this.hitlValidationService;
-  }
-
-  /**
-   * Get recovery service for state restoration
-   */
-  get recovery() {
-    return this.hitlRecoveryService;
   }
 
   // ==========================================

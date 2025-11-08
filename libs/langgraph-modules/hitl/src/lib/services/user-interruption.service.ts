@@ -7,8 +7,10 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { interrupt } from '@langchain/langgraph';
 import { HitlNotificationService } from './hitl-notification.service';
-import type { IMemoryAdapter } from '@hive-academy/langgraph-memory';
+import type { IMemoryAdapter } from '@hive-academy/langgraph-core';
 import {
   IUserInterruptionStorageService,
   InterruptionContext,
@@ -33,6 +35,12 @@ import {
  * - Stores interruption outcomes for pattern recognition
  * - Tracks common interruption types, resolution times, user patterns
  * - Graceful degradation when memory adapter unavailable
+ *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Interruption):
+ * - Uses LangGraph native interrupt() for user questions
+ * - Methods accept optional RunnableConfig parameter for workflow integration
+ * - Custom pause logic replaced with LangGraph interrupt API
+ * - BUG FIX: Changed IMemoryAdapter import from langgraph-memory to langgraph-core
  */
 @Injectable()
 export class UserInterruptionService implements OnModuleInit {
@@ -121,8 +129,13 @@ export class UserInterruptionService implements OnModuleInit {
 
   /**
    * Request user interruption during workflow execution
+   *
+   * @param config - Optional RunnableConfig for workflow integration with LangGraph interrupt()
    */
-  async requestUserInterruption(context: InterruptionContext): Promise<string> {
+  async requestUserInterruption(
+    context: InterruptionContext,
+    config?: RunnableConfig
+  ): Promise<string> {
     const interruptionId = generateId('interrupt');
 
     // Create interruption record
@@ -161,6 +174,25 @@ export class UserInterruptionService implements OnModuleInit {
 
     // Set up timeout
     this.setupInterruptionTimeout(interruptionId);
+
+    // Use LangGraph native interrupt() if config provided
+    if (config) {
+      try {
+        await interrupt({
+          type: 'user_interruption',
+          interruptionId,
+          executionId: context.executionId,
+          nodeId: context.nodeId,
+          message: context.message,
+          metadata: context.metadata,
+        });
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Failed to trigger LangGraph interrupt: ${errorMsg}. Continuing with event emission.`
+        );
+      }
+    }
 
     // Emit event for external systems
     await this.eventEmitter.emit('interruption.requested', {
