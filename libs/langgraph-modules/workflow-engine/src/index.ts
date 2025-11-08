@@ -50,10 +50,7 @@ export * from './lib/decorators/multi-agent/tool.decorator';
 // are exported from multi-agent.decorator above, so we skip re-exporting from interfaces
 
 // Multi-Agent Services
-// Removed exports for deleted services (Task 4.2):
-// - LlmProviderService
-// - CommandProcessorService
-// - BackgroundMemoryService
+export { LlmProviderService } from './lib/services/llm/llm-provider.service';
 
 // Multi-Agent Tools
 // export * from './lib/tools/tool-registration.service'; // TODO: Add missing tool-registry.service dependency
@@ -72,6 +69,12 @@ export type * from './lib/interfaces/multi-agent/agent.types';
 export type * from './lib/interfaces/multi-agent/handoff.types';
 export type * from './lib/interfaces/multi-agent/network.types';
 export type * from './lib/interfaces/multi-agent/routing.types';
+
+// LLM Configuration Interfaces
+export type {
+  LlmConfig,
+  LlmModuleOptions,
+} from './lib/interfaces/llm-config.interface';
 
 // Multi-Agent Types
 export * from './lib/types/agent-config.interface';
