@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
+import type { BaseStore } from '@langchain/langgraph-checkpoint';
 import type {
   WorkflowState,
   HumanFeedback,
@@ -160,7 +161,7 @@ export class HumanApprovalNode {
   /**
    * Execute human approval checkpoint
    * @param state - Current workflow state
-   * @param config - RunnableConfig containing checkpointer and thread configuration
+   * @param config - RunnableConfig containing checkpointer, store, and thread configuration
    * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
   async execute<TState extends WorkflowState = WorkflowState>(
@@ -183,6 +184,14 @@ export class HumanApprovalNode {
       );
       throw new Error(
         'Checkpointer not configured. Human approval requires checkpointer for state persistence.'
+      );
+    }
+
+    // Access BaseStore for cross-workflow memory (optional enhancement)
+    const store = config.configurable?.store as BaseStore | undefined;
+    if (store) {
+      this.logger.debug(
+        `BaseStore available for approval context storage in execution ${executionId}`
       );
     }
 
@@ -220,6 +229,25 @@ export class HumanApprovalNode {
 
     this.logger.log(`Human approval requested for execution ${executionId}`);
 
+    // Retrieve historical approval patterns from BaseStore (if available)
+    let historicalApprovals: any[] = [];
+    if (store) {
+      try {
+        const userId = (state as any).userId || 'system';
+        const items = await store.search(['approval-context', userId]);
+        historicalApprovals = items.slice(0, 5); // Get top 5 similar approvals
+        this.logger.debug(
+          `Retrieved ${historicalApprovals.length} historical approvals from BaseStore`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to retrieve historical approvals from BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
     // Extract proposed actions
     const proposedActions = options?.extractActions
       ? options.extractActions(state)
@@ -234,7 +262,17 @@ export class HumanApprovalNode {
         proposedActions,
         confidence,
         risks: state.risks,
-        metadata: state.metadata,
+        metadata: {
+          ...(state.metadata || {}),
+          historicalApprovals:
+            historicalApprovals.length > 0
+              ? historicalApprovals.map((item) => ({
+                  executionId: item.value?.executionId,
+                  confidence: item.value?.confidence,
+                  timestamp: item.value?.timestamp,
+                }))
+              : undefined,
+        },
       },
       timestamp: new Date(),
       timeoutMs: options?.timeoutMs,
@@ -243,6 +281,34 @@ export class HumanApprovalNode {
 
     // Store pending approval
     this.pendingApprovals.set(executionId, approvalRequest);
+
+    // Store approval context in BaseStore for cross-workflow memory (if available)
+    if (store) {
+      try {
+        const userId = (state as any).userId || 'system';
+        await store.put(
+          ['approval-context', userId],
+          `approval-${executionId}`,
+          {
+            executionId,
+            nodeId: state.currentNode,
+            proposedActions,
+            confidence,
+            risks: approvalRequest.context.risks,
+            timestamp: approvalRequest.timestamp,
+          }
+        );
+        this.logger.debug(
+          `Stored approval context in BaseStore for user ${userId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to store approval context in BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     // Emit event for external systems
     await this.eventEmitter.emit(
