@@ -116,6 +116,14 @@ export type {
   WorkflowExecutionConfig,
 } from './lib/interfaces/workflow-engine.interface';
 
+// ============================================================================
+// DEBUGGING UTILITIES
+// ============================================================================
+
+// Debugging helpers (thin helpers using checkpoint adapter)
+export * from './lib/debugging/replay-workflow.helper';
+export * from './lib/debugging/checkpoint-timeline.helper';
+
 // Constants
 export * from './lib/constants';
 
