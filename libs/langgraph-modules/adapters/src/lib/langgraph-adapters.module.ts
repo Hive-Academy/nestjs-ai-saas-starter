@@ -43,7 +43,7 @@ import {
 } from './repositories/services';
 
 // Adapters
-import { Neo4jGraphAdapter, ChromaVectorAdapter } from './adapters/memory';
+// Memory adapters deleted in Task 7.6 - replaced by ChromaDBBaseStore
 import {
   Neo4jHitlStorageAdapter,
   Neo4jApprovalChainStorageAdapter,
@@ -65,7 +65,7 @@ import {
  * - Follows TypeORM-style pattern with forFeature() registration
  * - Custom repositories override auto-generated defaults
  * - String token injection prevents circular dependencies
- * - Adapters implement library interfaces (IGraphService, IVectorService, IHitlStorageService, etc.)
+ * - Adapters implement library interfaces (IHitlStorageService, etc.)
  *
  * DI FLOW:
  * 1. Registers entities with Neo4jModule.forFeature() and ChromaDBModule.forFeature()
@@ -152,15 +152,8 @@ import {
       useClass: LangGraphStoreRepository,
     },
 
-    // Memory Adapters (implement library interfaces)
-    {
-      provide: 'IVectorService',
-      useClass: ChromaVectorAdapter,
-    },
-    {
-      provide: 'IGraphService',
-      useClass: Neo4jGraphAdapter,
-    },
+    // Memory adapters deleted in Task 7.6 - replaced by ChromaDBBaseStore pattern
+    // IVectorService and IGraphService no longer provided
 
     // HITL Storage Adapters (implement library interfaces with custom tokens to prevent circular dependencies)
     {
@@ -198,9 +191,7 @@ import {
     getChromaRepositoryToken(VectorMemoryEntity),
     getChromaRepositoryToken(LangGraphStoreEntity),
 
-    // Export adapter tokens for MemoryModule to inject
-    'IVectorService',
-    'IGraphService',
+    // Memory adapters no longer exported - MemoryModule uses BaseStore pattern
 
     // Export adapter tokens for HitlModule to inject
     'HITL_STORAGE',
