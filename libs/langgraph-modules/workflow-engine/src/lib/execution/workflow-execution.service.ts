@@ -144,20 +144,51 @@ export class WorkflowExecutionService {
   }
 
   /**
-   * Build agent graph for subgraph usage
+   * Build agent graph for subgraph usage in multi-agent workflows
    *
-   * @param _AgentClass - Decorated agent class
-   * @returns Compiled graph with id
+   * @param AgentClass - Decorated agent class with @Agent decorator
+   * @returns Compiled graph with agent id for subgraph coordination
    *
    * Implementation: Task 3.5
+   *
+   * Pattern: Agents use same decorators as workflows (@Workflow, @Node, @Edge, @Task).
+   * This method extracts agent metadata, builds StateGraph using buildStateGraph(),
+   * compiles the graph, and returns { id, graph } for use as subgraph node.
    */
-  // @ts-expect-error - Will be used in Task 3.4
-  private async _buildAgentGraph(_AgentClass: any): Promise<{
+  // @ts-expect-error - Will be used in Task 3.4 (executeMultiAgentWorkflow)
+  private async buildAgentGraph(AgentClass: any): Promise<{
     id: string;
     graph: any; // CompiledGraph type from LangGraph
   }> {
-    this.logger.debug(`buildAgentGraph() - To be implemented in Task 3.5`);
-    throw new Error('Not yet implemented - Task 3.5');
+    this.logger.debug(
+      `Building agent graph for subgraph usage from class ${AgentClass.name}`
+    );
+
+    // 1. Extract agent metadata (agents use same decorators as workflows)
+    const agentDefinition =
+      this.metadataProcessor.extractWorkflowDefinition(AgentClass);
+
+    // 2. Validate agent metadata
+    this.metadataProcessor.validateWorkflowDefinition(agentDefinition);
+
+    // 3. Build StateGraph (reuse buildStateGraph pattern from Task 3.2)
+    const graph = this.buildStateGraph(agentDefinition);
+
+    // 4. Compile the agent graph with checkpoint adapter
+    const compiled = graph.compile({
+      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+    });
+
+    // 5. Return with agent id for subgraph coordination
+    const result = {
+      id: agentDefinition.name,
+      graph: compiled,
+    };
+
+    this.logger.log(
+      `Agent graph built successfully for ${result.id} - ready for subgraph coordination`
+    );
+    return result;
   }
 
   /**

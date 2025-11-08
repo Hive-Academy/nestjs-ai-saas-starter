@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { interrupt } from '@langchain/langgraph';
 import type {
   WorkflowState,
   HumanFeedback,
@@ -157,9 +159,13 @@ export class HumanApprovalNode {
 
   /**
    * Execute human approval checkpoint
+   * @param state - Current workflow state
+   * @param config - RunnableConfig containing checkpointer and thread configuration
+   * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
   async execute<TState extends WorkflowState = WorkflowState>(
     state: TState,
+    config: RunnableConfig,
     options?: {
       extractActions?: (state: TState) => ProposedAction[];
       autoApproveThreshold?: number;
@@ -168,6 +174,17 @@ export class HumanApprovalNode {
     }
   ): Promise<Partial<TState>> {
     const { executionId } = state;
+
+    // Validate checkpointer configuration (required for interrupt())
+    const checkpointer = config.configurable?.checkpointer;
+    if (!checkpointer) {
+      this.logger.error(
+        `Checkpointer not configured in RunnableConfig for execution ${executionId}`
+      );
+      throw new Error(
+        'Checkpointer not configured. Human approval requires checkpointer for state persistence.'
+      );
+    }
 
     // Check skip condition
     if (options?.skipCondition?.(state)) {
@@ -241,19 +258,44 @@ export class HumanApprovalNode {
       - Risks: ${approvalRequest.context.risks?.length || 0}
     `);
 
-    // Return state update to indicate waiting for approval
+    // Use LangGraph native interrupt() to pause workflow execution
+    // Workflow will pause here until resumed via Command
+    // Checkpointer automatically saves state at this interrupt point
+    const humanDecision = interrupt({
+      type: 'approval_required',
+      executionId,
+      nodeId: state.currentNode,
+      approvalRequest,
+      confidence,
+      proposedActions,
+      risks: approvalRequest.context.risks,
+    });
+
+    // When workflow resumes via Command, execution continues here
+    // humanDecision contains the approval response data
+    this.logger.log(
+      `Approval received for ${executionId}: ${JSON.stringify(humanDecision)}`
+    );
+
+    // Process human decision and return state update
+    const approved = humanDecision?.decision === 'approved';
+    const feedback = humanDecision?.feedback;
+
     return {
       humanFeedback: {
-        approved: false,
-        status: 'pending',
-        timestamp: approvalRequest.timestamp,
-        metadata: {
-          requestedAt: approvalRequest.timestamp,
-          proposedActions: proposedActions.length,
-        },
-      },
-      waitingForApproval: true,
-      requiresApproval: true,
+        approved,
+        status: approved ? 'approved' : 'rejected',
+        approver: humanDecision?.approver || { id: 'unknown' },
+        message: feedback,
+        timestamp: new Date(),
+        metadata: humanDecision?.modifications,
+      } as HumanFeedback,
+      confidence: approved
+        ? Math.min((confidence || 0) + 0.1, 1.0)
+        : Math.max((confidence || 0) - 0.2, 0.0),
+      waitingForApproval: false,
+      approvalReceived: approved,
+      rejectionReason: !approved ? feedback : undefined,
     } as unknown as Partial<TState>;
   }
 
