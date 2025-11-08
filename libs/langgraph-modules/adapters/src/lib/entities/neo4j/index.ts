@@ -2,14 +2,8 @@
  * Generic Neo4j Entities for LangGraph Modules
  *
  * These entities are generic and reusable across any application
- * using Memory and HITL modules.
+ * using HITL modules.
  */
-
-// Memory entities
-export * from './memory.entity';
-
-// Store entities
-export * from './store-item.entity';
 
 // HITL entities
 export * from './approval-request.entity';
