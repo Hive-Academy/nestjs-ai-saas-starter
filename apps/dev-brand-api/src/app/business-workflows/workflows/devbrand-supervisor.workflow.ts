@@ -194,9 +194,14 @@ export class DevBrandSupervisorWorkflow {
       );
 
       // 3. Extract results from finalState.metadata (inline extraction for Task 2)
-      const achievements = (finalState.metadata as any)?.githubData?.achievements || ([] as Achievement[]);
-      const strategy = (finalState.metadata as any)?.brandStrategy || ({} as BrandStrategy);
-      const content = (finalState.metadata as any)?.generatedContent || ({ linkedin: {}, devto: {} } as PlatformContent);
+      const achievements =
+        (finalState.metadata as any)?.githubData?.achievements ||
+        ([] as Achievement[]);
+      const strategy =
+        (finalState.metadata as any)?.brandStrategy || ({} as BrandStrategy);
+      const content =
+        (finalState.metadata as any)?.generatedContent ||
+        ({ linkedin: {}, devto: {} } as PlatformContent);
       const confidence = (finalState.metadata as any)?.confidence || 0.8;
 
       // 4. Store achievements in memory (individual failures don't fail workflow)

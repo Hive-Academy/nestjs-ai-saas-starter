@@ -178,40 +178,6 @@ import {
       inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
-    // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
-    // MultiAgentModule.forRootAsync({
-    //   useFactory: async (
-    //     streamingAdapter: IStreamingService,
-    //     checkpointAdapter: ICheckpointAdapter,
-    //     memoryAdapter: IMemoryAdapter
-    //   ) => {
-    //     return {
-    //       ...getMultiAgentConfig(),
-    //       streamingAdapter,
-    //       checkpointAdapter,
-    //       memoryAdapter,
-    //     };
-    //   },
-    //   inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    // }),
-
-    // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
-    // FunctionalApiModule.forRootAsync({
-    //   useFactory: async (
-    //     streamingAdapter: IStreamingService,
-    //     checkpointAdapter: ICheckpointAdapter,
-    //     memoryAdapter: IMemoryAdapter
-    //   ): Promise<any> => {
-    //     return {
-    //       ...getFunctionalApiConfig(),
-    //       streamingAdapter,
-    //       checkpointAdapter,
-    //       memoryAdapter,
-    //     };
-    //   },
-    //   inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    // }),
-
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 

@@ -29,9 +29,12 @@ describe('BusinessWorkflowsModule - Dependency Injection Configuration', () => {
 
     beforeAll(() => {
       // Extract metadata using Reflect (NestJS stores module metadata via decorators)
-      moduleMetadata = Reflect.getMetadata('imports', BusinessWorkflowsModule) || [];
-      const providers = Reflect.getMetadata('providers', BusinessWorkflowsModule) || [];
-      const exports = Reflect.getMetadata('exports', BusinessWorkflowsModule) || [];
+      moduleMetadata =
+        Reflect.getMetadata('imports', BusinessWorkflowsModule) || [];
+      const providers =
+        Reflect.getMetadata('providers', BusinessWorkflowsModule) || [];
+      const exports =
+        Reflect.getMetadata('exports', BusinessWorkflowsModule) || [];
 
       moduleMetadata = {
         imports: moduleMetadata,
@@ -41,51 +44,61 @@ describe('BusinessWorkflowsModule - Dependency Injection Configuration', () => {
     });
 
     it('should import WorkflowEngineModule', () => {
-      const hasWorkflowEngineModule = moduleMetadata.imports.includes(WorkflowEngineModule);
+      const hasWorkflowEngineModule =
+        moduleMetadata.imports.includes(WorkflowEngineModule);
       expect(hasWorkflowEngineModule).toBe(true);
     });
 
     it('should import RepositoryModule for database access', () => {
-      const hasRepositoryModule = moduleMetadata.imports.includes(RepositoryModule);
+      const hasRepositoryModule =
+        moduleMetadata.imports.includes(RepositoryModule);
       expect(hasRepositoryModule).toBe(true);
     });
 
     it('should register DevBrandSupervisorWorkflow in providers', () => {
       const providers = moduleMetadata.providers;
-      const hasWorkflow = providers.some((p: any) =>
-        p === DevBrandSupervisorWorkflow || p.provide === DevBrandSupervisorWorkflow
+      const hasWorkflow = providers.some(
+        (p: any) =>
+          p === DevBrandSupervisorWorkflow ||
+          p.provide === DevBrandSupervisorWorkflow
       );
       expect(hasWorkflow).toBe(true);
     });
 
     it('should register GitHubCodeAnalyzerAgent in providers', () => {
       const providers = moduleMetadata.providers;
-      const hasAgent = providers.some((p: any) =>
-        p === GitHubCodeAnalyzerAgent || p.provide === GitHubCodeAnalyzerAgent
+      const hasAgent = providers.some(
+        (p: any) =>
+          p === GitHubCodeAnalyzerAgent || p.provide === GitHubCodeAnalyzerAgent
       );
       expect(hasAgent).toBe(true);
     });
 
     it('should register PersonalBrandStrategistAgent in providers', () => {
       const providers = moduleMetadata.providers;
-      const hasAgent = providers.some((p: any) =>
-        p === PersonalBrandStrategistAgent || p.provide === PersonalBrandStrategistAgent
+      const hasAgent = providers.some(
+        (p: any) =>
+          p === PersonalBrandStrategistAgent ||
+          p.provide === PersonalBrandStrategistAgent
       );
       expect(hasAgent).toBe(true);
     });
 
     it('should register ContentCreatorAgent in providers', () => {
       const providers = moduleMetadata.providers;
-      const hasAgent = providers.some((p: any) =>
-        p === ContentCreatorAgent || p.provide === ContentCreatorAgent
+      const hasAgent = providers.some(
+        (p: any) =>
+          p === ContentCreatorAgent || p.provide === ContentCreatorAgent
       );
       expect(hasAgent).toBe(true);
     });
 
     it('should register PersonalBrandMemoryService in providers', () => {
       const providers = moduleMetadata.providers;
-      const hasService = providers.some((p: any) =>
-        p === PersonalBrandMemoryService || p.provide === PersonalBrandMemoryService
+      const hasService = providers.some(
+        (p: any) =>
+          p === PersonalBrandMemoryService ||
+          p.provide === PersonalBrandMemoryService
       );
       expect(hasService).toBe(true);
     });
@@ -116,9 +129,14 @@ describe('BusinessWorkflowsModule - Dependency Injection Configuration', () => {
 
   describe('Module Configuration Integrity', () => {
     it('should have valid module decorator metadata', () => {
-      const metadata = Reflect.getMetadata('__module:metadata__', BusinessWorkflowsModule);
+      const metadata = Reflect.getMetadata(
+        '__module:metadata__',
+        BusinessWorkflowsModule
+      );
       // NestJS modules should have decorator metadata
-      expect(metadata || Reflect.getMetadata('imports', BusinessWorkflowsModule)).toBeDefined();
+      expect(
+        metadata || Reflect.getMetadata('imports', BusinessWorkflowsModule)
+      ).toBeDefined();
     });
 
     it('should not have circular dependency issues in module structure', () => {

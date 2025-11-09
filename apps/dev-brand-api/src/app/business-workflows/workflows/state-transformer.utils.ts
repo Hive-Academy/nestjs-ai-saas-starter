@@ -23,7 +23,10 @@ import type {
 export function extractAchievements(
   finalState: TypedAgentState<Record<string, unknown>>
 ): Achievement[] {
-  return (finalState.metadata as any)?.githubData?.achievements || ([] as Achievement[]);
+  return (
+    (finalState.metadata as any)?.githubData?.achievements ||
+    ([] as Achievement[])
+  );
 }
 
 /**

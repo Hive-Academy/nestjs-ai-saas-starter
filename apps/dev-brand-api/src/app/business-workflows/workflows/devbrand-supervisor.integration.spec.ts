@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { DevBrandSupervisorWorkflow } from './devbrand-supervisor.workflow';
 import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
@@ -86,7 +86,10 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
             positioning: 'Full-stack developer specializing in AI/ML',
             uniqueValueProposition: 'Building scalable AI-powered applications',
             targetAudience: 'Tech startups, AI companies',
-            recommendations: ['Focus on technical blogs', 'Share open source work'],
+            recommendations: [
+              'Focus on technical blogs',
+              'Share open source work',
+            ],
           },
           generatedContent: {
             linkedin: {
@@ -114,7 +117,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       });
 
       // Assert: Verify workflow execution
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         DevBrandSupervisorWorkflow,
         [
           GitHubCodeAnalyzerAgent,
@@ -184,7 +189,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       });
 
       // Verify executeMultiAgentWorkflow was called with all 3 agents
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         expect.any(Function),
         expect.arrayContaining([
           GitHubCodeAnalyzerAgent,
@@ -264,9 +271,15 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       }
 
       // Assert: Verify state progression
-      expect(events[0].state.metadata).toHaveProperty('step', 'github-analysis');
+      expect(events[0].state.metadata).toHaveProperty(
+        'step',
+        'github-analysis'
+      );
       expect(events[1].state.metadata).toHaveProperty('step', 'brand-strategy');
-      expect(events[2].state.metadata).toHaveProperty('step', 'content-creation');
+      expect(events[2].state.metadata).toHaveProperty(
+        'step',
+        'content-creation'
+      );
     });
 
     it('should call streamWorkflow with correct parameters', async () => {
@@ -484,7 +497,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
 
       // Assert: Verify executeMultiAgentWorkflow called with config containing thread_id
       // This indicates checkpointing is enabled (thread_id required for checkpointing)
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         expect.any(Function),
         expect.any(Array),
         expect.any(Object),
@@ -520,7 +535,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       });
 
       // Assert: Verify initial state passed with metadata
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         expect.any(Function),
         expect.any(Array),
         expect.objectContaining({
@@ -577,7 +594,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       });
 
       // Assert: Verify all 3 agents (which have @RequiresApproval) are passed
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         DevBrandSupervisorWorkflow,
         expect.arrayContaining([
           GitHubCodeAnalyzerAgent,
@@ -614,7 +633,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       });
 
       // Assert: Verify thread_id passed (required for checkpointing/HITL)
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         expect.any(Function),
         expect.any(Array),
         expect.any(Object),
@@ -650,7 +671,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
           userId: 'error-test-user',
           githubUsername: 'testdev',
         })
-      ).rejects.toThrow('DevBrand workflow failed: GitHub API rate limit exceeded');
+      ).rejects.toThrow(
+        'DevBrand workflow failed: GitHub API rate limit exceeded'
+      );
     });
 
     it('should handle non-Error objects thrown during execution', async () => {
@@ -676,10 +699,7 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       );
 
       // Spy on logger
-      const loggerErrorSpy = jest.spyOn(
-        (workflow as any).logger,
-        'error'
-      );
+      const loggerErrorSpy = jest.spyOn((workflow as any).logger, 'error');
 
       // Act: Execute workflow (will fail)
       try {
@@ -716,7 +736,9 @@ describe('DevBrandSupervisorWorkflow - Integration Test Suite', () => {
       }
 
       // Assert: Verify initial state was passed before error occurred
-      expect(mockWorkflowExecution.executeMultiAgentWorkflow).toHaveBeenCalledWith(
+      expect(
+        mockWorkflowExecution.executeMultiAgentWorkflow
+      ).toHaveBeenCalledWith(
         expect.any(Function),
         expect.any(Array),
         expect.objectContaining({
