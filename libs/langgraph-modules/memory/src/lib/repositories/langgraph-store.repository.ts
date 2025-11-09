@@ -7,7 +7,7 @@ import {
   toChromaWhere,
   type AppFilter,
 } from '@hive-academy/nestjs-chromadb';
-import { LangGraphStoreEntity } from '../../entities/chromadb/langgraph-store.entity';
+import { LangGraphStoreEntity } from '../entities/langgraph-store.entity';
 
 /**
  * LangGraphStoreRepository - ChromaDB Repository for LangGraph Store Items

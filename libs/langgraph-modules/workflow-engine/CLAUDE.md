@@ -1364,6 +1364,7 @@ export class PersonalBrandStrategistAgent {
    ```
 
 6. **Enable Time-Travel for Debugging**:
+
    ```typescript
    @FunctionalWorkflow({ timeTravel: true })
    ```
@@ -1400,6 +1401,7 @@ export class PersonalBrandStrategistAgent {
    ```
 
 5. **Don't Hardcode Defaults in Every Decorator**:
+
    ```typescript
    ❌ @Node({ maxRetries: 3, timeout: 30000 }) // Everywhere!
    ✅ WorkflowEngineModule.forRoot({ execution: { defaultTimeout: 30000 } })
@@ -1565,8 +1567,7 @@ export class MyWorkflow {
 
 - **Core Package**: `libs/langgraph-modules/core/CLAUDE.md` - Shared interfaces and types
 - **HITL Module**: `libs/langgraph-modules/hitl/CLAUDE.md` - Human-in-the-loop integration
-- **Streaming Module**: `libs/langgraph-modules/streaming/CLAUDE.md` - Real-time streaming
-- **Checkpoint Module**: `libs/langgraph-modules/checkpoint/CLAUDE.md` - State persistence
+
 - **Memory Module**: `libs/langgraph-modules/memory/CLAUDE.md` - Contextual memory
 
 ---

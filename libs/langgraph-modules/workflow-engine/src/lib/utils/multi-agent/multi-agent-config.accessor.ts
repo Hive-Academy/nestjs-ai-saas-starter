@@ -1,10 +1,7 @@
 import type { MultiAgentModuleOptions } from '../../interfaces/multi-agent/multi-agent.interface';
 import { DEFAULT_MULTI_AGENT_OPTIONS } from '../../constants/multi-agent/multi-agent.constants';
-import type {
-  ICheckpointAdapter,
-  IStreamingService,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 /**
  * Global storage for multi-agent module configuration
@@ -34,11 +31,10 @@ export function getMultiAgentModuleConfig(): MultiAgentModuleOptions {
  */
 export function getMultiAgentConfigWithDefaults(): Omit<
   Required<MultiAgentModuleOptions>,
-  'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
+  'checkpointer' | 'streamingAdapter'
 > & {
-  checkpointAdapter?: ICheckpointAdapter;
+  checkpointer?: BaseCheckpointSaver;
   streamingAdapter?: IStreamingService;
-  memoryAdapter?: IMemoryAdapter;
 } {
   const config = getMultiAgentModuleConfig();
 
@@ -70,8 +66,7 @@ export function getMultiAgentConfigWithDefaults(): Omit<
     tools: config.tools || [],
     agents: config.agents || [],
     workflows: config.workflows || [],
-    checkpointAdapter: config.checkpointAdapter,
+    checkpointer: config.checkpointer,
     streamingAdapter: config.streamingAdapter,
-    memoryAdapter: config.memoryAdapter,
   };
 }

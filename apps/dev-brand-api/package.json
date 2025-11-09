@@ -11,7 +11,6 @@
     "start:prod": "node dist/main.js"
   },
   "dependencies": {
-    "@hive-academy/langgraph-checkpoint": "0.0.1",
     "@hive-academy/langgraph-core": "0.0.1",
     "@hive-academy/langgraph-hitl": "0.0.1",
     "@hive-academy/langgraph-memory": "0.0.1",

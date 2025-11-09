@@ -11,7 +11,6 @@ import { HitlNotificationService } from './services/hitl-notification.service';
 import { HitlTimeoutService } from './services/hitl-timeout.service';
 import { HumanApprovalService } from './services/human-approval.service';
 import { UserInterruptionService } from './services/user-interruption.service';
-import { HitlMemoryLearningService } from './services/hitl-memory-learning.service';
 import { HitlValidationService } from './services/hitl-validation.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
 // Phase 1a SOLID Refactoring - New services
@@ -116,7 +115,6 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
         HitlValidationService,
         HitlApprovalRequestService,
         // Orchestrator service that depends on the above
@@ -141,7 +139,6 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
         HitlValidationService,
         HitlApprovalRequestService,
         HITL_CONFIG,
@@ -189,7 +186,6 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
         HitlValidationService,
         HitlApprovalRequestService,
         HumanApprovalService,
@@ -214,7 +210,6 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
         HitlValidationService,
         HitlApprovalRequestService,
         HITL_CONFIG,

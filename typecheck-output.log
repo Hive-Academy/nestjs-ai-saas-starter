@@ -1,0 +1,146 @@
+npm warn config cache-max This option has been deprecated in favor of `--prefer-online`
+
+ NX   Running target typecheck for 13 projects and 1 task they depend on:
+
+- @hive-academy/langgraph-workflow-engine
+- @hive-academy/langgraph-monitoring
+- @hive-academy/langgraph-adapters
+- @hive-academy/langgraph-platform
+- @hive-academy/langgraph-memory
+- @hive-academy/langgraph-core
+- @hive-academy/langgraph-hitl
+- @hive-academy/langgraph-angular
+- dev-brand-ui-e2e
+- @hive-academy/nestjs-chromadb
+- dev-brand-api
+- @hive-academy/nestjs-neo4j
+- dev-brand-ui
+
+
+
+> nx run @hive-academy/langgraph-core:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-neo4j:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/nestjs-chromadb:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+src/lib/services/text-splitter.service.ts(8,8): error TS2307: Cannot find module '@langchain/textsplitters' or its corresponding type declarations.
+src/lib/services/text-splitter.service.ts(96,22): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/services/text-splitter.service.ts(133,29): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+src/lib/services/text-splitter.service.ts(133,36): error TS7006: Parameter 'index' implicitly has an 'any' type.
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+src/lib/services/text-splitter.service.ts(8,8): error TS2307: Cannot find module '@langchain/textsplitters' or its corresponding type declarations.
+src/lib/services/text-splitter.service.ts(96,22): error TS7006: Parameter 'doc' implicitly has an 'any' type.
+src/lib/services/text-splitter.service.ts(133,29): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+src/lib/services/text-splitter.service.ts(133,36): error TS7006: Parameter 'index' implicitly has an 'any' type.
+Warning: command "tsc --noEmit --project tsconfig.lib.json --strict" exited with non-zero status code(node:22304) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run @hive-academy/langgraph-platform:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run dev-brand-ui:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+
+> nx run @hive-academy/langgraph-hitl:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+> nx run @hive-academy/langgraph-workflow-engine:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+src/lib/debugging/checkpoint-timeline.helper.ts(99,31): error TS2339: Property 'listCheckpoints' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/checkpoint-timeline.helper.ts(106,8): error TS2488: Type 'CheckpointTuple' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/lib/debugging/checkpoint-timeline.helper.ts(306,49): error TS2339: Property 'listCheckpoints' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(131,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(220,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(276,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/execution/workflow-execution.service.ts(54,22): error TS6138: Property 'options' is declared but its value is never read.
+src/lib/interfaces/workflow-metadata.interface.ts(1,15): error TS2305: Module '"@hive-academy/langgraph-core"' has no exported member 'BaseCheckpointMetadata'.
+src/lib/utils/type-guards.ts(5,8): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+src/lib/debugging/checkpoint-timeline.helper.ts(99,31): error TS2339: Property 'listCheckpoints' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/checkpoint-timeline.helper.ts(106,8): error TS2488: Type 'CheckpointTuple' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/lib/debugging/checkpoint-timeline.helper.ts(306,49): error TS2339: Property 'listCheckpoints' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(131,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(220,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/debugging/replay-workflow.helper.ts(276,48): error TS2339: Property 'loadCheckpoint' does not exist on type 'BaseCheckpointSaver<number>'.
+src/lib/execution/workflow-execution.service.ts(54,22): error TS6138: Property 'options' is declared but its value is never read.
+src/lib/interfaces/workflow-metadata.interface.ts(1,15): error TS2305: Module '"@hive-academy/langgraph-core"' has no exported member 'BaseCheckpointMetadata'.
+src/lib/utils/type-guards.ts(5,8): error TS2307: Cannot find module '@hive-academy/langgraph-functional-api' or its corresponding type declarations.
+Warning: command "tsc --noEmit --project tsconfig.lib.json --strict" exited with non-zero status code
+> nx run dev-brand-ui-e2e:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+
+> nx run @hive-academy/langgraph-angular:build:production
+
+[34mBuilding Angular Package[39m
+[37m[39m
+[37m------------------------------------------------------------------------------[39m
+[37mBuilding entry point '@hive-academy/langgraph-angular'[39m
+[37m------------------------------------------------------------------------------[39m
+- Compiling with Angular sources in partial compilation mode.
+[32m✔[39m Compiling with Angular sources in partial compilation mode.
+- Writing FESM and DTS bundles
+[32m✔[39m Writing FESM and DTS bundles
+- Copying assets
+[32m✔[39m Copying assets
+- Writing package manifest
+[32m✔[39m Writing package manifest
+[32m✔[39m Built @hive-academy/langgraph-angular
+[32m[39m
+[32m------------------------------------------------------------------------------[39m
+[32mBuilt Angular Package[39m
+[32m- from: D:/projects/nestjs-ai-saas-starter/libs/langgraph-angular[39m
+[32m- to:   D:/projects/nestjs-ai-saas-starter/dist/libs/langgraph-angular[39m
+[32m------------------------------------------------------------------------------[39m
+[37m[37m[39m[37m[39m
+[37m[37mBuild at: [1m2025-11-09T20:42:23.338Z[22m - Time: [1m604[22mms[39m[37m[39m
+[37m[37m[39m[37m[39m
+(node:22304) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGINT listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:22304) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGTERM listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:22304) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 SIGHUP listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+
+> nx run @hive-academy/langgraph-angular:typecheck
+
+> tsc --build --emitDeclarationOnly
+
+
+> nx run @hive-academy/langgraph-monitoring:typecheck
+
+> tsc --noEmit --project tsconfig.lib.json --strict
+
+
+
+
+ NX   Running target typecheck for 13 projects and 1 task they depend on failed
+
+Tasks not run because their dependencies failed or --nx-bail=true:
+
+- @hive-academy/langgraph-adapters:typecheck
+- @hive-academy/langgraph-memory:typecheck
+- dev-brand-api:typecheck
+
+Failed tasks:
+
+- @hive-academy/nestjs-chromadb:typecheck
+- @hive-academy/langgraph-workflow-engine:typecheck
+

@@ -20,13 +20,6 @@ export { ApprovalOutcomeService } from './lib/services/approval-outcome.service'
 export { ApprovalEvaluatorService } from './lib/services/approval-evaluator.service';
 // Phase 1b SOLID Refactoring - Historical search service (2025-01-11)
 export { ApprovalHistorySearchService } from './lib/services/approval-history-search.service';
-export type {
-  ApprovalRequestContext,
-  SimilarApproval,
-  TimeRange,
-  TrendAnalysis,
-  ApproverDecisionPatterns,
-} from './lib/services/approval-history-search.service';
 export { ApprovalTimeoutService } from './lib/services/approval-timeout.service';
 export { ApprovalStreamingService } from './lib/services/approval-streaming.service';
 export { UserInterruptionService } from './lib/services/user-interruption.service';
@@ -115,11 +108,7 @@ export type {
 } from './lib/interfaces/feedback-storage.interface';
 
 // Approver Intelligence Types (Phase 1 P0-CRITICAL)
-export type {
-  ApproverProfile,
-  ApproverExpertise,
-  ApproverRanking,
-} from './lib/interfaces/approver-intelligence.interface';
+export type { ApproverRanking } from './lib/interfaces/approver-intelligence.interface';
 
 // Phase 6: Approval State Storage Interface (Adapter Pattern Refactoring)
 export { IApprovalStateStorageService } from './lib/interfaces/approval-state-storage.interface';

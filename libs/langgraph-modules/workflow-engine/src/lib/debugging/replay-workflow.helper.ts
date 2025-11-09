@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 /**
  * Workflow Replay Helper
@@ -117,7 +117,7 @@ export interface CanReplayResult {
  * @returns Checkpoint replay result with restored state
  */
 export async function replayFromCheckpoint<T extends Record<string, unknown>>(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string,
   checkpointId: string,
   options: ReplayOptions<T> = {}
@@ -211,7 +211,7 @@ export async function replayFromCheckpoint<T extends Record<string, unknown>>(
  * @returns Validation result indicating if replay is possible
  */
 export async function canReplayCheckpoint(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string,
   checkpointId: string
 ): Promise<CanReplayResult> {
@@ -268,7 +268,7 @@ export async function canReplayCheckpoint(
  * @returns Checkpoint state or null if not found
  */
 export async function getCheckpointState<T extends Record<string, unknown>>(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string,
   checkpointId: string
 ): Promise<T | null> {

@@ -27,10 +27,6 @@ const chalk = colors;
 const LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
-  'langgraph-modules/checkpoint',
-  'langgraph-modules/time-travel',
-  'langgraph-modules/multi-agent',
-  'langgraph-modules/functional-api',
   'langgraph-modules/monitoring',
   'langgraph-modules/platform',
 ];

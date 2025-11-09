@@ -29,15 +29,9 @@ export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
  * Used by decorators to inherit module configuration
  */
 export function getFunctionalApiConfigWithDefaults(): Required<
-  Omit<
-    FunctionalApiModuleOptions,
-    'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
-  >
+  Omit<FunctionalApiModuleOptions, 'checkpointer' | 'streamingAdapter'>
 > &
-  Pick<
-    FunctionalApiModuleOptions,
-    'checkpointAdapter' | 'streamingAdapter' | 'memoryAdapter'
-  > {
+  Pick<FunctionalApiModuleOptions, 'checkpointer' | 'streamingAdapter'> {
   const config = getFunctionalApiConfig();
 
   return {
@@ -50,8 +44,7 @@ export function getFunctionalApiConfigWithDefaults(): Required<
     maxConcurrentTasks: config.maxConcurrentTasks ?? 10,
     enableCycleDetection: config.enableCycleDetection ?? true,
     globalMetadata: config.globalMetadata ?? {},
-    checkpointAdapter: config.checkpointAdapter,
+    checkpointer: config.checkpointer,
     streamingAdapter: config.streamingAdapter,
-    memoryAdapter: config.memoryAdapter,
   };
 }

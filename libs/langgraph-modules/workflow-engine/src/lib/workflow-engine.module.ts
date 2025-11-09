@@ -4,11 +4,8 @@ import { MetadataProcessorService } from './core/metadata-processor.service';
 import { WorkflowExecutionService } from './execution/workflow-execution.service';
 import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
-import {
-  IStreamingService,
-  ICheckpointAdapter,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
+import { IStreamingService } from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -30,8 +27,22 @@ export interface WorkflowEngineModuleOptions {
 
   // Optional adapters for external services
   streamingAdapter?: IStreamingService;
-  checkpointAdapter?: ICheckpointAdapter;
-  memoryAdapter?: IMemoryAdapter;
+
+  /**
+   * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)
+   * Replaces ICheckpointAdapter - uses LangGraph's BaseCheckpointSaver directly
+   *
+   * @example
+   * // Production with Redis
+   * checkpointer: await RedisSaver.fromUrl('redis://localhost:6379')
+   *
+   * // Development with SQLite
+   * checkpointer: SqliteSaver.fromConnString('./data/checkpoints.db')
+   *
+   * // Testing with in-memory
+   * checkpointer: new MemorySaver()
+   */
+  checkpointer?: BaseCheckpointSaver;
 
   /**
    * Tool classes to register with the workflow engine.

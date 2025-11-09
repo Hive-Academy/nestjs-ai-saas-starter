@@ -25,15 +25,6 @@ export class PlatformModule {
         provide: PLATFORM_MODULE_OPTIONS,
         useValue: mergedOptions,
       },
-      // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
-      {
-        provide: 'IMemoryAdapter',
-        useFactory: (options: PlatformModuleOptions) => {
-          // Optional memory adapter for platform memory integration
-          return options.memoryAdapter || null;
-        },
-        inject: [PLATFORM_MODULE_OPTIONS],
-      },
       PlatformClientService,
       WebhookService,
     ];
@@ -56,15 +47,6 @@ export class PlatformModule {
           return this.mergeWithDefaults(moduleOptions);
         },
         inject: options.inject || ([] as any[]),
-      },
-      // 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
-      {
-        provide: 'IMemoryAdapter',
-        useFactory: async (options: PlatformModuleOptions) => {
-          // Optional memory adapter for platform memory integration
-          return options.memoryAdapter || null;
-        },
-        inject: [PLATFORM_MODULE_OPTIONS],
       },
       PlatformClientService,
       WebhookService,

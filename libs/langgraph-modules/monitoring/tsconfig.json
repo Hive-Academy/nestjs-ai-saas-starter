@@ -8,12 +8,6 @@
       "path": "../core"
     },
     {
-      "path": "../hitl"
-    },
-    {
-      "path": "../checkpoint"
-    },
-    {
       "path": "./tsconfig.lib.json"
     }
   ]

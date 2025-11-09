@@ -2,56 +2,8 @@ import type {
   HumanApprovalRequest,
   HumanApprovalResponse,
 } from '../services/approval-workflow.types';
-import type { BaseCheckpointTuple } from '@hive-academy/langgraph-core';
+import type { CheckpointTuple } from '@langchain/langgraph-checkpoint';
 import type { RunnableConfig } from '@langchain/core/runnables';
-
-/**
- * Interface for HITL Memory Learning Service
- * Handles feedback processing and learning from human decisions
- */
-export interface IHitlMemoryLearningService {
-  /**
-   * Learn from human approval feedback
-   * @param request The original approval request
-   * @param response The human response containing feedback
-   */
-  learnFromHumanFeedback(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<void>;
-
-  /**
-   * Store detailed feedback as a separate learning entry
-   * @param request The original approval request
-   * @param response The human response
-   * @param learningThreadId Thread ID for the learning session
-   */
-  storeDetailedFeedback(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse,
-    learningThreadId: string
-  ): Promise<void>;
-
-  /**
-   * Assess the quality of feedback provided
-   * @param response The human response
-   * @returns Quality rating
-   */
-  assessFeedbackQuality(
-    response: HumanApprovalResponse
-  ): 'high' | 'medium' | 'low';
-
-  /**
-   * Calculate the importance of feedback for learning
-   * @param request The original approval request
-   * @param response The human response
-   * @returns Importance score (0-1)
-   */
-  calculateFeedbackImportance(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): number;
-}
 
 /**
  * Interface for HITL Checkpoint Service
@@ -129,7 +81,7 @@ export interface IHitlCheckpointService {
     executionId: string,
     nodeId: string,
     limit?: number
-  ): Promise<readonly BaseCheckpointTuple[]>;
+  ): Promise<readonly CheckpointTuple[]>;
 
   /**
    * Cleanup old approval checkpoints

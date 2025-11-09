@@ -1,8 +1,5 @@
-import type {
-  ICheckpointAdapter,
-  IStreamingService,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
+import type { IStreamingService } from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import type { CheckpointingConfig } from './network.types';
 import type {
   ToolProvider,
@@ -145,22 +142,26 @@ export interface MultiAgentModuleOptions {
   checkpointing?: CheckpointingConfig;
 
   /**
-   * Optional checkpoint adapter for dependency injection
-   * If provided, enables checkpointing features
+   * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)
+   * Replaces ICheckpointAdapter - uses LangGraph's BaseCheckpointSaver directly
+   *
+   * @example
+   * // Production with Redis
+   * checkpointer: await RedisSaver.fromUrl('redis://localhost:6379')
+   *
+   * // Development with SQLite
+   * checkpointer: SqliteSaver.fromConnString('./data/checkpoints.db')
+   *
+   * // Testing with in-memory
+   * checkpointer: new MemorySaver()
    */
-  checkpointAdapter?: ICheckpointAdapter;
+  checkpointer?: BaseCheckpointSaver;
 
   /**
    * Optional streaming adapter for dependency injection
    * If provided, enables real-time streaming features
    */
   streamingAdapter?: IStreamingService;
-
-  /**
-   * Optional memory adapter for dependency injection
-   * If provided, enables memory superpowers for agents
-   */
-  memoryAdapter?: IMemoryAdapter;
 }
 
 /**

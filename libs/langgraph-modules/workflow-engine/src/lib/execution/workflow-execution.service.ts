@@ -8,7 +8,6 @@ import type {
   BaseStore,
 } from '@langchain/langgraph-checkpoint';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import type { ICheckpointAdapter } from '@hive-academy/langgraph-core';
 import type {
   WorkflowDefinition,
   WorkflowState,
@@ -19,11 +18,18 @@ import { AGENT_METADATA_KEY } from '../decorators/multi-agent/agent.decorator';
 import { ToolRegistryService } from '../services/tool-registry.service';
 import { LlmProviderService } from '../services/llm/llm-provider.service';
 import type { LLMWithTools } from '../types/internal-types';
+import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 
 /**
  * WorkflowExecutionService
  *
  * Builds LangGraph StateGraph from WorkflowDefinition metadata and executes workflows.
+ *
+ * ARCHITECTURE CHANGE (2025-01-11):
+ * - Migrated from ICheckpointAdapter to LangGraph native BaseCheckpointSaver
+ * - Checkpointer passed via module options (not DI injection)
+ * - Supports RedisSaver (production), SqliteSaver (dev), MemorySaver (test)
+ * - Zero abstraction layer - direct LangGraph API usage
  *
  * ARCHITECTURE PATTERN:
  * - MetadataProcessorService: Extracts decorator metadata → WorkflowDefinition
@@ -31,29 +37,44 @@ import type { LLMWithTools } from '../types/internal-types';
  *
  * DELEGATION TO LANGGRAPH:
  * - Use StateGraph.addNode(), addEdge(), addConditionalEdges()
- * - Use graph.compile({ checkpointer })
+ * - Use graph.compile({ checkpointer, store })
  * - Use graph.invoke() and graph.stream()
  * - NO custom execution engines, NO custom graph builders
  */
 @Injectable()
 export class WorkflowExecutionService {
   private readonly logger = new Logger(WorkflowExecutionService.name);
+  private readonly checkpointer?: BaseCheckpointSaver;
 
   constructor(
     private readonly metadataProcessor: MetadataProcessorService,
-    private readonly checkpointAdapter: ICheckpointAdapter,
     private readonly moduleRef: ModuleRef,
     private readonly toolRegistry: ToolRegistryService,
+    @Inject('WORKFLOW_ENGINE_MODULE_OPTIONS')
+    private readonly options: WorkflowEngineModuleOptions,
 
-    // NEW: Inject BaseStore from MemoryModule (optional enhancement)
+    // Inject BaseStore from MemoryModule (optional enhancement)
     @Optional()
     @Inject('BaseStore')
     private readonly store?: BaseStore
   ) {
+    // Get checkpointer from module options (LangGraph native)
+    this.checkpointer = options.checkpointer;
+
     this.logger.log('WorkflowExecutionService initialized');
+
+    if (this.checkpointer) {
+      const saverType = this.checkpointer.constructor.name;
+      this.logger.log(`✅ Checkpointer: ${saverType} (LangGraph native)`);
+    } else {
+      this.logger.warn(
+        '⚠️  No checkpointer configured - workflows will not persist state'
+      );
+    }
+
     if (this.store) {
       this.logger.log(
-        'BaseStore available - nodes can access via RunnableConfig.store'
+        '✅ BaseStore available - nodes can access via RunnableConfig.store'
       );
     }
   }
@@ -101,7 +122,7 @@ export class WorkflowExecutionService {
 
     // 4. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
-      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to graph (optional)
     });
 
@@ -142,7 +163,7 @@ export class WorkflowExecutionService {
 
     // 4. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
-      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to graph (optional)
     });
 
@@ -221,7 +242,7 @@ export class WorkflowExecutionService {
 
     // 6. Compile supervisor graph with BOTH checkpointer and store
     const compiled = supervisorGraph.compile({
-      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to supervisor graph (optional)
     });
 
@@ -306,7 +327,7 @@ export class WorkflowExecutionService {
 
     // 7. Compile the agent graph with BOTH checkpointer and store
     const compiled = graph.compile({
-      checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
+      checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to agent graph (optional)
     });
 

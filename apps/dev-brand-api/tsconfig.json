@@ -32,9 +32,6 @@
       "path": "../../libs/langgraph-modules/core"
     },
     {
-      "path": "../../libs/langgraph-modules/checkpoint"
-    },
-    {
       "path": "./tsconfig.app.json"
     }
   ]

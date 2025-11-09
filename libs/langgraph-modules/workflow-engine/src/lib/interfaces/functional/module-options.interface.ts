@@ -1,10 +1,9 @@
 import type { ModuleMetadata, Type } from '@nestjs/common';
 import type {
-  ICheckpointAdapter,
   AsyncModuleFactory,
   IStreamingService,
-  IMemoryAdapter,
 } from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 /**
  * Workflow provider type for explicit registration
@@ -70,22 +69,26 @@ export interface FunctionalApiModuleOptions {
   readonly globalMetadata?: Record<string, unknown>;
 
   /**
-   * Optional checkpoint adapter for state persistence
-   * If not provided, checkpointing will be disabled (uses NoOpCheckpointAdapter)
+   * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)
+   * Replaces ICheckpointAdapter - uses LangGraph's BaseCheckpointSaver directly
+   *
+   * @example
+   * // Production with Redis
+   * checkpointer: await RedisSaver.fromUrl('redis://localhost:6379')
+   *
+   * // Development with SQLite
+   * checkpointer: SqliteSaver.fromConnString('./data/checkpoints.db')
+   *
+   * // Testing with in-memory
+   * checkpointer: new MemorySaver()
    */
-  readonly checkpointAdapter?: ICheckpointAdapter;
+  readonly checkpointer?: BaseCheckpointSaver;
 
   /**
    * Optional streaming service adapter for real-time events
    * If not provided, streaming will be disabled (uses NoOpStreamingService)
    */
   readonly streamingAdapter?: IStreamingService;
-
-  /**
-   * 🧠 MEMORY INTEGRATION: Optional memory adapter for 2025 cross-module memory
-   * If not provided, memory features will be disabled
-   */
-  readonly memoryAdapter?: IMemoryAdapter;
 }
 
 /**

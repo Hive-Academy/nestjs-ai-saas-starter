@@ -54,7 +54,7 @@ export { LlmProviderService } from './lib/services/llm/llm-provider.service';
 
 // Multi-Agent Tools
 // export * from './lib/tools/tool-registration.service'; // TODO: Add missing tool-registry.service dependency
-export * from './lib/tools/memory-access.tools';
+// Note: memory-access.tools deleted during IMemoryAdapter purge (TASK_2025_042)
 
 // Multi-Agent Coordination
 // export * from './lib/coordination/multi-agent-coordinator.service'; // TODO: Add missing service dependencies

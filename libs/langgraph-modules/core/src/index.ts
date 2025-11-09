@@ -93,26 +93,6 @@ export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 export * from './lib/utils/node-id';
 export * from './lib/utils/id-generation.utils';
 
-// Checkpoint integration exports for consumer libraries
-export {
-  // CHECKPOINT_ADAPTER_TOKEN, // Removed - using abstract class pattern
-  NoOpCheckpointAdapter,
-  ICheckpointAdapter,
-} from './lib/interfaces/checkpoint-adapter.interface';
-
-export type {
-  CheckpointIntegrationConfig,
-  BaseCheckpoint,
-  BaseCheckpointMetadata,
-  BaseCheckpointTuple,
-  CheckpointListOptions,
-  CheckpointCleanupOptions,
-} from './lib/interfaces/checkpoint-adapter.interface';
-export {
-  CheckpointIntegrationHelper,
-  createCheckpointIntegration,
-} from './lib/utils/checkpoint-integration.helper';
-
 // Streaming integration exports for consumer libraries
 export {
   NoOpStreamingService,
@@ -131,16 +111,5 @@ export type {
   TokenStreamOptions,
 } from './lib/interfaces/streaming.interface';
 
-// Memory adapter integration exports for consumer libraries
-export {
-  IMemoryAdapter,
-  isMemoryAdapter,
-} from './lib/interfaces/memory-adapter.interface';
-
-export type {
-  AgentState,
-  AgentMemoryContext,
-  UserMemoryPatterns,
-  Store,
-  MemorySearchOptions,
-} from './lib/interfaces/memory-adapter.interface';
+// Memory adapter types removed - replaced by BaseStore pattern (Task 7.6)
+// AgentState, Store, and related types are now part of LangGraph native patterns

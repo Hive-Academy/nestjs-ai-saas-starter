@@ -23,7 +23,6 @@
     "baseUrl": ".",
     "paths": {
       "@hive-academy/langgraph-adapters": ["libs/langgraph-modules/adapters/src/index.ts"],
-      "@hive-academy/langgraph-checkpoint": ["libs/langgraph-modules/checkpoint/src/index.ts"],
       "@hive-academy/langgraph-core": ["libs/langgraph-modules/core/src/index.ts"],
       "@hive-academy/langgraph-hitl": ["libs/langgraph-modules/hitl/src/index.ts"],
       "@hive-academy/langgraph-memory": ["libs/langgraph-modules/memory/src/index.ts"],

@@ -12,7 +12,6 @@ import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
-import { HitlMemoryLearningService } from './hitl-memory-learning.service';
 import { HitlValidationService } from './hitl-validation.service';
 import { HitlApprovalRequestService } from './hitl-approval-request.service';
 // User interruption interfaces - removed as using direct service access
@@ -54,7 +53,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly approvalTimeoutService: ApprovalTimeoutService,
     private readonly approvalStreamingService: ApprovalStreamingService,
     private readonly userInterruptionService: UserInterruptionService,
-    private readonly hitlMemoryLearningService: HitlMemoryLearningService,
     private readonly hitlValidationService: HitlValidationService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,
     @Inject(IHitlStorageService)
@@ -160,24 +158,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     // NOTE: State persistence handled by LangGraph checkpointer
     // No manual checkpoint saving needed
 
-    if (result.success && request) {
-      try {
-        await this.hitlMemoryLearningService.learnFromHumanFeedback(
-          request,
-          response
-        );
-        this.logger.debug(
-          `🧠 Learned from human feedback for request ${requestId}`
-        );
-      } catch (error) {
-        this.logger.warn(
-          `Failed to learn from human feedback: ${
-            error instanceof Error ? error.message : String(error)
-          }`
-        );
-      }
-    }
-
     return result;
   }
 
@@ -260,13 +240,6 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    */
   get userInterruptions() {
     return this.userInterruptionService;
-  }
-
-  /**
-   * Get memory learning service for feedback analysis
-   */
-  get memoryLearning() {
-    return this.hitlMemoryLearningService;
   }
 
   /**

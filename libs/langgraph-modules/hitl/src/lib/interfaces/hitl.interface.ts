@@ -32,17 +32,11 @@ import type { IUserInterruptionStorageService } from './user-interruption.interf
 import type { IApprovalChainStorageService } from './approval-chain-storage.interface';
 import type { IFeedbackStorageService } from './feedback-storage.interface';
 import type { IConfidenceStorageService } from './confidence-storage.interface';
-import type {
-  ICheckpointAdapter,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
 
 export interface HitlModuleOptions {
   defaultTimeout?: number;
   confidenceThreshold?: number;
   enabled?: boolean;
-  checkpointAdapter?: ICheckpointAdapter;
-  memoryAdapter?: IMemoryAdapter;
   adapters?: {
     storage?: Type<IHitlStorageService> | IHitlStorageService;
     interruptionStorage?:

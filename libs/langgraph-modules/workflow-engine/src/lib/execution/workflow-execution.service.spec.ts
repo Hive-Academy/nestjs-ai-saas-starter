@@ -44,13 +44,17 @@ class TestToolsProvider {
     name: 'test-calculator',
     description: 'Performs basic arithmetic calculations',
     schema: z.object({
-      operation: z.enum(['add', 'subtract', 'multiply', 'divide']).describe('The operation to perform'),
+      operation: z
+        .enum(['add', 'subtract', 'multiply', 'divide'])
+        .describe('The operation to perform'),
       a: z.number().describe('First operand'),
       b: z.number().describe('Second operand'),
     }),
   })
   async calculate(input: { operation: string; a: number; b: number }) {
-    this.logger.debug(`Calculating: ${input.operation}(${input.a}, ${input.b})`);
+    this.logger.debug(
+      `Calculating: ${input.operation}(${input.a}, ${input.b})`
+    );
 
     switch (input.operation) {
       case 'add':
@@ -100,7 +104,9 @@ class ToolsWithErrors {
     }),
   })
   async failingTool(input: { shouldFail: boolean }) {
-    this.logger.debug(`Failing tool called with shouldFail=${input.shouldFail}`);
+    this.logger.debug(
+      `Failing tool called with shouldFail=${input.shouldFail}`
+    );
 
     if (input.shouldFail) {
       throw new Error('Tool execution failed intentionally');
@@ -208,7 +214,10 @@ describe('LangGraph Tool Integration', () => {
     expect(registeredTools[0].name).toBe('test-calculator');
 
     // Verify agent has tools configured
-    const agentConfig = Reflect.getMetadata('agent:metadata', TestCalculatorAgent);
+    const agentConfig = Reflect.getMetadata(
+      'agent:metadata',
+      TestCalculatorAgent
+    );
     expect(agentConfig).toBeDefined();
     expect(agentConfig.tools).toContain('test-calculator');
 
@@ -327,9 +336,15 @@ describe('LangGraph Tool Integration', () => {
     expect(searchTools[0].name).toBe('test-search');
 
     // Get multiple tools
-    const multipleTools = toolRegistry.getTools(['test-calculator', 'test-search']);
+    const multipleTools = toolRegistry.getTools([
+      'test-calculator',
+      'test-search',
+    ]);
     expect(multipleTools).toHaveLength(2);
-    expect(multipleTools.map(t => t.name)).toEqual(['test-calculator', 'test-search']);
+    expect(multipleTools.map((t) => t.name)).toEqual([
+      'test-calculator',
+      'test-search',
+    ]);
   });
 
   /**
@@ -343,7 +358,7 @@ describe('LangGraph Tool Integration', () => {
     const allTools = toolRegistry.getTools(['*']);
     expect(allTools.length).toBeGreaterThanOrEqual(3);
 
-    const toolNames = allTools.map(t => t.name);
+    const toolNames = allTools.map((t) => t.name);
     expect(toolNames).toContain('test-calculator');
     expect(toolNames).toContain('test-search');
     expect(toolNames).toContain('failing-tool');

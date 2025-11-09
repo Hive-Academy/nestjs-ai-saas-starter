@@ -15,7 +15,6 @@ import {
   FeedbackEntry,
   InterruptionPoint,
 } from './entities/neo4j';
-import { LangGraphStoreEntity } from './entities/chromadb';
 
 // Repositories
 import {
@@ -25,7 +24,6 @@ import {
   FeedbackRepository,
   InterruptionRepository,
 } from './repositories/neo4j';
-import { LangGraphStoreRepository } from './repositories/chromadb';
 
 // Adapters
 // Memory adapters deleted in Task 7.6 - replaced by ChromaDBBaseStore
@@ -85,7 +83,7 @@ import {
       FeedbackEntry,
     ]),
     // Auto-generate ChromaDB repositories for all generic entities
-    ChromaDBModule.forFeature([LangGraphStoreEntity]),
+    // ChromaDBModule.forFeature([LangGraphStoreEntity]),
   ],
   providers: [
     // Custom Neo4j Repositories (override auto-generated defaults with advanced operations)
@@ -111,10 +109,10 @@ import {
     },
 
     // Custom ChromaDB Repositories (override auto-generated defaults)
-    {
-      provide: getChromaRepositoryToken(LangGraphStoreEntity),
-      useClass: LangGraphStoreRepository,
-    },
+    // {
+    //   provide: getChromaRepositoryToken(LangGraphStoreEntity),
+    //   useClass: LangGraphStoreRepository,
+    // },
 
     // HITL Storage Adapters (implement library interfaces with custom tokens to prevent circular dependencies)
     {
@@ -147,7 +145,7 @@ import {
     getRepositoryToken(FeedbackEntry),
 
     // Export ChromaDB repositories for advanced usage
-    getChromaRepositoryToken(LangGraphStoreEntity),
+    // getChromaRepositoryToken(LangGraphStoreEntity),
 
     // Export adapter tokens for HitlModule to inject
     'HITL_STORAGE',

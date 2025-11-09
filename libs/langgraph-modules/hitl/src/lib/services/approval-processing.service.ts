@@ -7,7 +7,6 @@ import type {
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ApprovalChainService, Approver } from './approval-chain.service';
 import { ApproverIntelligenceService } from './approver-intelligence.service';
-import { ApprovalOutcomeService } from './approval-outcome.service';
 import { HITL_EVENTS } from '../constants';
 import {
   ApprovalWorkflowState,
@@ -25,7 +24,6 @@ import type { ApproverRanking } from '../interfaces/approver-intelligence.interf
  * - Reduced from 1,136 LOC to ~390 LOC (66% reduction)
  * - Extracted ApproverIntelligenceService (~450 LOC)
  * - Extracted ApprovalOutcomeService (~150 LOC)
- * - Maintains all IMemoryAdapter functionality through delegated services
  * - ZERO backward compatibility concerns (direct replacement)
  *
  * **Responsibility**: Orchestrate approval workflows and state transitions
@@ -35,7 +33,6 @@ import type { ApproverRanking } from '../interfaces/approver-intelligence.interf
  * Verification:
  * - Source: approval-processing.service.ts:1-1136 (original monolith)
  * - Pattern: Delegation to specialized services
- * - Integration: All IMemoryAdapter code preserved in delegated services
  */
 @Injectable()
 export class ApprovalProcessingService {
@@ -46,8 +43,7 @@ export class ApprovalProcessingService {
     private readonly feedbackProcessor: FeedbackProcessorService,
     private readonly approvalChainService: ApprovalChainService,
     // Phase 1a: NEW service dependencies (extracted from this file)
-    private readonly approverIntelligence: ApproverIntelligenceService,
-    private readonly approvalOutcome: ApprovalOutcomeService
+    private readonly approverIntelligence: ApproverIntelligenceService // Note: ApprovalOutcomeService methods removed during IMemoryAdapter purge (TASK_2025_042)
   ) {}
 
   /**
@@ -223,17 +219,8 @@ export class ApprovalProcessingService {
       response.approver
     );
 
-    // 🧠 MEMORY LEARNING: Store approval decision for future learning (2025 Pattern)
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalMemoryForLearning(
-      request,
-      response,
-      'approved'
-    );
-
-    // 🎯 PHASE 1 P0-CRITICAL: Track approval outcome as agent execution
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalOutcome(request, response);
+    // Note: Memory learning methods removed during IMemoryAdapter purge (TASK_2025_042)
+    // Approval outcome tracking can be restored via BaseStore if needed
 
     // Update confidence
     const newConfidence = Math.min(request.confidence.current + 0.1, 1.0);
@@ -274,17 +261,8 @@ export class ApprovalProcessingService {
       response.approver
     );
 
-    // 🧠 MEMORY LEARNING: Store rejection decision for future learning (2025 Pattern)
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalMemoryForLearning(
-      request,
-      response,
-      'rejected'
-    );
-
-    // 🎯 PHASE 1 P0-CRITICAL: Track approval outcome as agent execution
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalOutcome(request, response);
+    // Note: Memory learning methods removed during IMemoryAdapter purge (TASK_2025_042)
+    // Approval outcome tracking can be restored via BaseStore if needed
 
     // Decrease confidence
     const newConfidence = Math.max(request.confidence.current - 0.2, 0.0);

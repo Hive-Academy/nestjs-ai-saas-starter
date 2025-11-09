@@ -16,7 +16,6 @@ import { RepositoryModule } from './repositories/repository.module';
 // Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
-import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import {
   HitlModule,
   HitlModuleOptions,
@@ -32,7 +31,7 @@ import {
   WorkflowEngineModuleOptions,
 } from '@hive-academy/langgraph-workflow-engine';
 
-import { getCheckpointConfig } from './config/checkpoint.config';
+import { getCheckpointSaver } from './config/checkpoint.config';
 import { getChromaDBConfig } from './config/chromadb.config';
 import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
@@ -60,12 +59,6 @@ import { CompetitiveIntelligenceService } from './services/competitive-intellige
 
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
-
-// Core interface for adapter pattern
-import {
-  ICheckpointAdapter,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
 
 @Module({
   imports: [
@@ -121,20 +114,10 @@ import {
     // Memory module with BaseStore pattern (ChromaDBBaseStore injected internally)
     MemoryModule.forRoot(getMemoryConfig()),
 
-    // Checkpoint module with new adapter pattern
-    CheckpointModule.forRootAsync({
-      useFactory: async () => {
-        const config = await getCheckpointConfig();
-        return config;
-      },
-    }),
-
-    // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
+    // HITL module - Neo4j storage adapters (NO checkpoint injection needed)
     HitlModule.forRootAsync({
-      imports: [LangGraphAdaptersModule], // Import to access HITL adapter tokens
+      imports: [LangGraphAdaptersModule],
       useFactory: async (
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter,
         hitlStorage: IHitlStorageService,
         interruptionStorage: IUserInterruptionStorageService,
         confidenceStorage: IConfidenceStorageService,
@@ -142,8 +125,6 @@ import {
         approvalChainStorage: IApprovalChainStorageService
       ): Promise<HitlModuleOptions> => ({
         ...getHitlConfig(),
-        checkpointAdapter,
-        memoryAdapter,
         adapters: {
           storage: hitlStorage,
           interruptionStorage: interruptionStorage,
@@ -153,8 +134,6 @@ import {
         },
       }),
       inject: [
-        'ICheckpointAdapter',
-        'IMemoryAdapter',
         'HITL_STORAGE',
         'HITL_INTERRUPTION_STORAGE',
         'HITL_CONFIDENCE_STORAGE',
@@ -163,24 +142,23 @@ import {
       ],
     }),
 
-    // Workflow engine WITH CHECKPOINT AND MEMORY - adapter injection
+    // Workflow engine with LangGraph native checkpoint (RedisSaver for production)
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ): Promise<WorkflowEngineModuleOptions> => {
+      useFactory: async (): Promise<WorkflowEngineModuleOptions> => {
+        // Create LangGraph native checkpointer (RedisSaver/SqliteSaver/MemorySaver)
+        const checkpointer = await getCheckpointSaver();
+
         return {
           ...getWorkflowEngineConfig(),
-          checkpointAdapter,
-          memoryAdapter,
+          checkpointer, // LangGraph BaseCheckpointSaver (not ICheckpointAdapter)
         };
       },
-      inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
     }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 
+    // NOTE: CheckpointModule removed - migrated to LangGraph native (RedisSaver/SqliteSaver)
     // NOTE: TimeTravelModule removed - package deleted in consolidation
 
     // Health checks

@@ -33,17 +33,26 @@
     "ai"
   ],
   "author": "Hive Academy",
-  "license": "MIT",
-  "dependencies": {
-    "tslib": "^2.3.0"
+  "publishConfig": {
+    "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/memory"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
+  "license": "MIT",
   "peerDependencies": {
-    "@nestjs/common": "^10.0.0 || ^11.0.0",
-    "@nestjs/core": "^10.0.0 || ^11.0.0",
-    "@nestjs/config": "^3.0.0 || ^4.0.0",
-    "@langchain/core": "^0.1.0 || ^0.3.0",
-    "zod": "^3.22.0",
-    "rxjs": "^7.0.0",
-    "reflect-metadata": "^0.1.12"
+    "@nestjs/common": "*",
+    "@nestjs/core": "*",
+    "@nestjs/config": "*",
+    "@langchain/core": "*",
+    "zod": "*",
+    "rxjs": "*",
+    "reflect-metadata": "*"
   }
 }

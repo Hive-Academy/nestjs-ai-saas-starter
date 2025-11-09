@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
 import type {
-  ICheckpointAdapter,
-  BaseCheckpointTuple,
-  BaseCheckpointMetadata,
-} from '@hive-academy/langgraph-core';
+  BaseCheckpointSaver,
+  CheckpointTuple,
+  CheckpointMetadata,
+} from '@langchain/langgraph-checkpoint';
 
 /**
  * Checkpoint Timeline Helper
@@ -41,7 +41,7 @@ export interface CheckpointEvent {
   /**
    * Checkpoint metadata (if available)
    */
-  metadata?: BaseCheckpointMetadata;
+  metadata?: CheckpointMetadata;
 
   /**
    * Step number in the execution sequence
@@ -71,7 +71,7 @@ export interface CheckpointEvent {
  * @returns Array of checkpoint events in chronological order
  */
 export async function getCheckpointTimeline(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string,
   options?: {
     /**
@@ -95,7 +95,7 @@ export async function getCheckpointTimeline(
     );
 
     // Use checkpoint adapter's native listCheckpoints method
-    const checkpoints: readonly BaseCheckpointTuple[] =
+    const checkpoints: readonly CheckpointTuple[] =
       await checkpointAdapter.listCheckpoints(threadId, {
         limit: options?.limit || 100,
         offset: options?.offset || 0,
@@ -163,7 +163,7 @@ export async function getCheckpointTimeline(
  * @returns ASCII string visualization of the execution timeline
  */
 export async function visualizeExecutionPath(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string,
   options?: {
     /**
@@ -299,7 +299,7 @@ function abbreviateCheckpointId(checkpointId: string): string {
  * @returns Number of checkpoints for the thread
  */
 export async function getCheckpointCount(
-  checkpointAdapter: ICheckpointAdapter,
+  checkpointAdapter: BaseCheckpointSaver,
   threadId: string
 ): Promise<number> {
   try {
