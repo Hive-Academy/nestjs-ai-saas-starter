@@ -155,7 +155,19 @@ export class DevBrandSupervisorWorkflow {
 
     try {
       // 1. Build LangGraph state from input
+      const now = new Date();
       const initialState: TypedAgentState<Record<string, unknown>> = {
+        id: executionId,
+        createdAt: now,
+        updatedAt: now,
+        version: 1,
+        executionId,
+        status: 'active',
+        confidence: 1.0,
+        retryCount: 0,
+        startedAt: now,
+        timestamps: { started: now },
+        completedNodes: [],
         messages: [],
         metadata: {
           userId: input.userId,
@@ -182,10 +194,10 @@ export class DevBrandSupervisorWorkflow {
       );
 
       // 3. Extract results from finalState.metadata (inline extraction for Task 2)
-      const achievements = finalState.metadata?.githubData?.achievements || [];
-      const strategy = finalState.metadata?.brandStrategy || {};
-      const content = finalState.metadata?.generatedContent || {};
-      const confidence = finalState.metadata?.confidence || 0.8;
+      const achievements = (finalState.metadata as any)?.githubData?.achievements || ([] as Achievement[]);
+      const strategy = (finalState.metadata as any)?.brandStrategy || ({} as BrandStrategy);
+      const content = (finalState.metadata as any)?.generatedContent || ({ linkedin: {}, devto: {} } as PlatformContent);
+      const confidence = (finalState.metadata as any)?.confidence || 0.8;
 
       // 4. Store achievements in memory (individual failures don't fail workflow)
       let storedCount = 0;
@@ -249,7 +261,19 @@ export class DevBrandSupervisorWorkflow {
     );
 
     // 1. Build initial state
+    const now = new Date();
     const initialState: TypedAgentState<Record<string, unknown>> = {
+      id: executionId,
+      createdAt: now,
+      updatedAt: now,
+      version: 1,
+      executionId,
+      status: 'active',
+      confidence: 1.0,
+      retryCount: 0,
+      startedAt: now,
+      timestamps: { started: now },
+      completedNodes: [],
       messages: [],
       metadata: {
         userId: input.userId,
