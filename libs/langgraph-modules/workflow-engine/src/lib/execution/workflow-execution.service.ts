@@ -7,6 +7,7 @@ import type {
   BaseCheckpointSaver,
   BaseStore,
 } from '@langchain/langgraph-checkpoint';
+import { BASE_STORE_TOKEN } from '@hive-academy/langgraph-memory';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import type {
   WorkflowDefinition,
@@ -51,11 +52,11 @@ export class WorkflowExecutionService {
     private readonly moduleRef: ModuleRef,
     private readonly toolRegistry: ToolRegistryService,
     @Inject('WORKFLOW_ENGINE_MODULE_OPTIONS')
-    private readonly options: WorkflowEngineModuleOptions,
+    options: WorkflowEngineModuleOptions,
 
-    // Inject BaseStore from MemoryModule (optional enhancement)
+    // Inject BaseStore from MemoryModule (optional enhancement) - using typed token
     @Optional()
-    @Inject('BaseStore')
+    @Inject(BASE_STORE_TOKEN)
     private readonly store?: BaseStore
   ) {
     // Get checkpointer from module options (LangGraph native)
@@ -83,11 +84,13 @@ export class WorkflowExecutionService {
    * Execute a workflow using LangGraph's native invoke()
    *
    * Store Access Pattern (if MemoryModule imported):
-   * Nodes can access the store via RunnableConfig:
+   * Nodes can access the store via RunnableConfig using type-safe helpers:
    *
    * @example
+   * import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
+   *
    * async function myNode(state: State, config: RunnableConfig): Promise<Partial<State>> {
-   *   const store = config.store as BaseStore;
+   *   const store = RunnableConfigStoreHelpers.getStore(config);
    *   if (store) {
    *     // Use LangGraph BaseStore methods
    *     await store.put(['memories', userId], 'key', { data: 'value' });

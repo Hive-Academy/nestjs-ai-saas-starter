@@ -94,31 +94,38 @@ export async function getCheckpointTimeline(
       }, offset: ${options?.offset || 0})`
     );
 
-    // Use checkpoint adapter's native listCheckpoints method
-    const checkpoints: readonly CheckpointTuple[] =
-      await checkpointAdapter.listCheckpoints(threadId, {
+    // Use checkpoint adapter's native list() method (async generator)
+    const checkpointsGenerator = checkpointAdapter.list(
+      { configurable: { thread_id: threadId } },
+      {
         limit: options?.limit || 100,
-        offset: options?.offset || 0,
-      });
-
-    // Transform checkpoint tuples into timeline events
-    const events: CheckpointEvent[] = checkpoints.map(
-      ([config, checkpoint, metadata]) => {
-        // Extract thread_id from config if available
-        const configThreadId = (config as any)?.configurable?.thread_id as
-          | string
-          | undefined;
-
-        return {
-          checkpointId: checkpoint.id,
-          threadId: configThreadId ?? threadId,
-          nodeId: String(metadata?.step ?? 'unknown'),
-          timestamp: new Date(metadata?.timestamp ?? Date.now()),
-          metadata,
-          step: metadata?.step,
-        };
       }
     );
+
+    // Collect checkpoints from async generator
+    const checkpoints: CheckpointTuple[] = [];
+    for await (const tuple of checkpointsGenerator) {
+      checkpoints.push(tuple);
+    }
+
+    // Transform checkpoint tuples into timeline events
+    const events: CheckpointEvent[] = checkpoints.map((tuple) => {
+      const { config, checkpoint, metadata } = tuple;
+
+      // Extract thread_id from config if available
+      const configThreadId = (config as any)?.configurable?.thread_id as
+        | string
+        | undefined;
+
+      return {
+        checkpointId: checkpoint.id,
+        threadId: configThreadId ?? threadId,
+        nodeId: String(metadata?.step ?? 'unknown'),
+        timestamp: new Date(checkpoint.ts),
+        metadata,
+        step: metadata?.step,
+      };
+    });
 
     // Sort by timestamp (ascending - chronological order)
     events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
@@ -303,11 +310,21 @@ export async function getCheckpointCount(
   threadId: string
 ): Promise<number> {
   try {
-    const checkpoints = await checkpointAdapter.listCheckpoints(threadId, {
-      limit: 1000, // High limit to get accurate count
-    });
+    // Use checkpoint adapter's native list() method (async generator)
+    const checkpointsGenerator = checkpointAdapter.list(
+      { configurable: { thread_id: threadId } },
+      {
+        limit: 1000, // High limit to get accurate count
+      }
+    );
 
-    return checkpoints.length;
+    // Count checkpoints from async generator
+    let count = 0;
+    for await (const _ of checkpointsGenerator) {
+      count++;
+    }
+
+    return count;
   } catch (error) {
     logger.error(
       `Failed to get checkpoint count for thread ${threadId}:`,

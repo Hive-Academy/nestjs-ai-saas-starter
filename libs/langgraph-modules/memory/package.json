@@ -46,6 +46,9 @@
     "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
   },
   "license": "MIT",
+  "dependencies": {
+    "tslib": "*"
+  },
   "peerDependencies": {
     "@nestjs/common": "*",
     "@nestjs/core": "*",
@@ -53,6 +56,7 @@
     "@langchain/core": "*",
     "zod": "*",
     "rxjs": "*",
-    "reflect-metadata": "*"
+    "reflect-metadata": "*",
+    "@hive-academy/nestjs-chromadb": "*"
   }
 }

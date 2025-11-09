@@ -127,13 +127,15 @@ export async function replayFromCheckpoint<T extends Record<string, unknown>>(
       `Replaying workflow from checkpoint ${checkpointId} for thread ${threadId}`
     );
 
-    // 1. Load checkpoint using checkpoint adapter
-    const checkpoint = await checkpointAdapter.loadCheckpoint<T>(
-      threadId,
-      checkpointId
-    );
+    // 1. Load checkpoint using checkpoint adapter's getTuple() method
+    const checkpointTuple = await checkpointAdapter.getTuple({
+      configurable: {
+        thread_id: threadId,
+        checkpoint_id: checkpointId,
+      },
+    });
 
-    if (!checkpoint) {
+    if (!checkpointTuple) {
       const error = new Error(
         `Checkpoint ${checkpointId} not found for thread ${threadId}`
       );
@@ -148,6 +150,8 @@ export async function replayFromCheckpoint<T extends Record<string, unknown>>(
         error,
       };
     }
+
+    const { checkpoint } = checkpointTuple;
 
     // 2. Extract channel values (workflow state)
     let replayState = checkpoint.channel_values as T;
@@ -177,7 +181,7 @@ export async function replayFromCheckpoint<T extends Record<string, unknown>>(
       checkpointId,
       threadId: replayThreadId,
       state: replayState,
-      timestamp: new Date(), // Checkpoint timestamp not available in BaseCheckpoint
+      timestamp: new Date(checkpoint.ts), // Use checkpoint timestamp
       success: true,
     };
   } catch (error) {
@@ -217,17 +221,21 @@ export async function canReplayCheckpoint(
 ): Promise<CanReplayResult> {
   try {
     // Load checkpoint to validate it exists and is accessible
-    const checkpoint = await checkpointAdapter.loadCheckpoint(
-      threadId,
-      checkpointId
-    );
+    const checkpointTuple = await checkpointAdapter.getTuple({
+      configurable: {
+        thread_id: threadId,
+        checkpoint_id: checkpointId,
+      },
+    });
 
-    if (!checkpoint) {
+    if (!checkpointTuple) {
       return {
         canReplay: false,
         reason: `Checkpoint ${checkpointId} not found for thread ${threadId}`,
       };
     }
+
+    const { checkpoint } = checkpointTuple;
 
     // Validate checkpoint has channel values (state)
     if (!checkpoint.channel_values) {
@@ -244,8 +252,6 @@ export async function canReplayCheckpoint(
     return {
       canReplay: true,
       workflowName,
-      // Note: Metadata is not available in BaseCheckpoint interface
-      // Use listCheckpoints() to get full checkpoint tuples with metadata
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -273,12 +279,16 @@ export async function getCheckpointState<T extends Record<string, unknown>>(
   checkpointId: string
 ): Promise<T | null> {
   try {
-    const checkpoint = await checkpointAdapter.loadCheckpoint<T>(
-      threadId,
-      checkpointId
-    );
+    const checkpointTuple = await checkpointAdapter.getTuple({
+      configurable: {
+        thread_id: threadId,
+        checkpoint_id: checkpointId,
+      },
+    });
 
-    return checkpoint ? (checkpoint.channel_values as T) : null;
+    return checkpointTuple
+      ? (checkpointTuple.checkpoint.channel_values as T)
+      : null;
   } catch (error) {
     logger.error(
       `Failed to get checkpoint state for ${checkpointId}:`,

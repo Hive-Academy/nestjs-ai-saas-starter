@@ -22,11 +22,12 @@
  * })
  * export class AppModule {}
  *
- * // 2. Service Injection
+ * // 2. Service Injection (with typed token)
  * @Injectable()
  * export class WorkflowService {
  *   constructor(
- *     @Inject('BaseStore') private readonly store: BaseStore
+ *     @Optional()
+ *     @Inject(BASE_STORE_TOKEN) private readonly store?: BaseStore
  *   ) {}
  *
  *   async compileGraph() {
@@ -37,14 +38,18 @@
  *   }
  * }
  *
- * // 3. Node Access (LangGraph Nodes)
- * async function myNode(state: State, config: RunnableConfig): Promise<Partial<State>> {
- *   // Store automatically available via config
- *   const store = config.store as BaseStore;
+ * // 3. Node Access (LangGraph Nodes - with type-safe helpers)
+ * import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
  *
- *   // Use LangGraph BaseStore methods
- *   await store.put(['memories', userId], 'context', { query, result });
- *   const memories = await store.search(['memories', userId], { query, limit: 5 });
+ * async function myNode(state: State, config: RunnableConfig): Promise<Partial<State>> {
+ *   // Store automatically available via config - use helper for type safety
+ *   const store = RunnableConfigStoreHelpers.getStore(config);
+ *
+ *   if (store) {
+ *     // Use LangGraph BaseStore methods
+ *     await store.put(['memories', userId], 'context', { query, result });
+ *     const memories = await store.search(['memories', userId], { query, limit: 5 });
+ *   }
  *
  *   return { memories, processed: true };
  * }
@@ -54,8 +59,15 @@
  */
 
 import { DynamicModule, Module } from '@nestjs/common';
-import { ChromaDBModule, ChromaDBService } from '@hive-academy/nestjs-chromadb';
+import {
+  ChromaDBModule,
+  ChromaDBService,
+  CollectionRegistryService,
+} from '@hive-academy/nestjs-chromadb';
 import { ChromaDBBaseStore } from './stores/chromadb-base-store';
+import { LangGraphStoreRepository } from './repositories/langgraph-store.repository';
+import { LangGraphStoreEntity } from './entities/langgraph-store.entity';
+import { BASE_STORE_TOKEN } from './tokens/base-store.token';
 
 /**
  * Memory module configuration options
@@ -147,25 +159,37 @@ export class MemoryModule {
    * ```
    */
   static forRoot(options: MemoryModuleOptions = {}): DynamicModule {
-    const collectionName = options.collection || 'langgraph_store';
-
     return {
       module: MemoryModule,
       imports: [
-        // Import ChromaDBModule to get ChromaDBService
+        // Import ChromaDBModule to get ChromaDBService and CollectionRegistryService
         ChromaDBModule,
+        // Register LangGraphStoreEntity with ChromaDB collection system
+        ChromaDBModule.forFeature([LangGraphStoreEntity]),
       ],
       providers: [
+        // Repository provider with proper DI
         {
-          provide: 'BaseStore',
-          useFactory: (chromaDB: ChromaDBService) => {
-            // Create ChromaDBBaseStore instance with injected dependencies
-            return new ChromaDBBaseStore(chromaDB, collectionName);
+          provide: LangGraphStoreRepository,
+          useFactory: (
+            chromaDB: ChromaDBService,
+            collectionRegistry: CollectionRegistryService
+          ) => {
+            return new LangGraphStoreRepository(chromaDB, collectionRegistry);
           },
-          inject: [ChromaDBService],
+          inject: [ChromaDBService, CollectionRegistryService],
+        },
+        // BaseStore provider using typed token and repository pattern
+        {
+          provide: BASE_STORE_TOKEN,
+          useFactory: (repository: LangGraphStoreRepository) => {
+            // Create ChromaDBBaseStore with repository delegation
+            return new ChromaDBBaseStore(repository);
+          },
+          inject: [LangGraphStoreRepository],
         },
       ],
-      exports: ['BaseStore'],
+      exports: [BASE_STORE_TOKEN, LangGraphStoreRepository],
       global: true, // Make BaseStore available globally
     };
   }
@@ -196,8 +220,10 @@ export class MemoryModule {
     return {
       module: MemoryModule,
       imports: [
-        // Import ChromaDBModule for ChromaDBService
+        // Import ChromaDBModule for ChromaDBService and CollectionRegistryService
         ChromaDBModule,
+        // Register LangGraphStoreEntity with ChromaDB collection system
+        ChromaDBModule.forFeature([LangGraphStoreEntity]),
         // Import user-provided modules for async configuration
         ...(options.imports || []),
       ],
@@ -208,21 +234,28 @@ export class MemoryModule {
           useFactory: options.useFactory,
           inject: options.inject || [],
         },
-        // BaseStore provider with async configuration
+        // Repository provider with proper DI
         {
-          provide: 'BaseStore',
+          provide: LangGraphStoreRepository,
           useFactory: (
             chromaDB: ChromaDBService,
-            moduleOptions: MemoryModuleOptions
+            collectionRegistry: CollectionRegistryService
           ) => {
-            const collectionName =
-              moduleOptions?.collection || 'langgraph_store';
-            return new ChromaDBBaseStore(chromaDB, collectionName);
+            return new LangGraphStoreRepository(chromaDB, collectionRegistry);
           },
-          inject: [ChromaDBService, 'MEMORY_MODULE_OPTIONS'],
+          inject: [ChromaDBService, CollectionRegistryService],
+        },
+        // BaseStore provider using typed token and repository pattern
+        {
+          provide: BASE_STORE_TOKEN,
+          useFactory: (repository: LangGraphStoreRepository) => {
+            // Create ChromaDBBaseStore with repository delegation
+            return new ChromaDBBaseStore(repository);
+          },
+          inject: [LangGraphStoreRepository],
         },
       ],
-      exports: ['BaseStore'],
+      exports: [BASE_STORE_TOKEN, LangGraphStoreRepository],
       global: true, // Make BaseStore available globally
     };
   }

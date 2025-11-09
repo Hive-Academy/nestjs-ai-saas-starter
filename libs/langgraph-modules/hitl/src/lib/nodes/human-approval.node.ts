@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
-import type { BaseStore } from '@langchain/langgraph-checkpoint';
+import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
 import type {
   WorkflowState,
   HumanFeedback,
@@ -187,8 +187,8 @@ export class HumanApprovalNode {
       );
     }
 
-    // Access BaseStore for cross-workflow memory (optional enhancement)
-    const store = config.configurable?.store as BaseStore | undefined;
+    // Access BaseStore for cross-workflow memory (optional enhancement) - using type-safe helper
+    const store = RunnableConfigStoreHelpers.getStore(config);
     if (store) {
       this.logger.debug(
         `BaseStore available for approval context storage in execution ${executionId}`

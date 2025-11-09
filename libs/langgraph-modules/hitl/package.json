@@ -56,7 +56,7 @@
     "@nestjs/config": "*",
     "@langchain/core": "*",
     "@langchain/langgraph": "*",
-    "@langchain/langgraph-checkpoint": "*"
+    "@hive-academy/langgraph-memory": "*"
   },
   "devDependencies": {
     "rollup": "*",

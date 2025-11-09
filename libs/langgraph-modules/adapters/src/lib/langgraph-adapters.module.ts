@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
-import {
-  ChromaDBModule,
-  getRepositoryToken as getChromaRepositoryToken,
-} from '@hive-academy/nestjs-chromadb';
+import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 import { getRepositoryToken, Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
@@ -71,7 +68,7 @@ import {
  */
 @Module({
   imports: [
-    ChromaDBModule,
+    // ChromaDBModule,
     Neo4jModule,
     // Auto-generate Neo4j repositories for all generic entities
     Neo4jModule.forFeature([

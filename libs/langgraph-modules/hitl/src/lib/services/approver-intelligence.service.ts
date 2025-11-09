@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import type { BaseStore } from '@langchain/langgraph-checkpoint';
+
 import type { HumanApprovalRequest } from './approval-workflow.types';
 import type { ApproverRanking } from '../interfaces/approver-intelligence.interface';
+import { BaseStore } from '@hive-academy/langgraph-memory';
 
 /**
  * Approver Intelligence Service
