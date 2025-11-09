@@ -10,6 +10,11 @@ import { ContentCreatorAgent } from '../agents/content-creator/content-creator.a
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
 import type { TypedAgentState, StreamEvent } from '../types';
+import type {
+  Achievement,
+  BrandStrategy,
+  PlatformContent,
+} from '../agents/shared/agent.types';
 
 /**
  * DevBrand workflow input type
@@ -137,9 +142,9 @@ export class DevBrandSupervisorWorkflow {
     githubUsername: string;
     executionId?: string;
   }): Promise<{
-    achievements: any[];
-    strategy: any;
-    content: any;
+    achievements: Achievement[];
+    strategy: BrandStrategy;
+    content: PlatformContent;
     confidence: number;
   }> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
