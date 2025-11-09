@@ -35,11 +35,12 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
  */
 export function getWorkflowEngineConfigWithDefaults(): Omit<
   Required<WorkflowEngineModuleOptions>,
-  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter'
+  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter' | 'tools'
 > & {
   streamingAdapter?: IStreamingService;
   checkpointAdapter?: ICheckpointAdapter;
   memoryAdapter?: IMemoryAdapter;
+  tools?: any[];
 } {
   const config = getWorkflowEngineConfig();
 
@@ -63,5 +64,6 @@ export function getWorkflowEngineConfigWithDefaults(): Omit<
     streamingAdapter: config.streamingAdapter,
     checkpointAdapter: config.checkpointAdapter,
     memoryAdapter: config.memoryAdapter,
+    tools: config.tools,
   };
 }

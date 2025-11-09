@@ -2,6 +2,7 @@ import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MetadataProcessorService } from './core/metadata-processor.service';
 import { WorkflowExecutionService } from './execution/workflow-execution.service';
+import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
   IStreamingService,
@@ -31,6 +32,14 @@ export interface WorkflowEngineModuleOptions {
   streamingAdapter?: IStreamingService;
   checkpointAdapter?: ICheckpointAdapter;
   memoryAdapter?: IMemoryAdapter;
+
+  /**
+   * Tool classes to register with the workflow engine.
+   * These tools will be automatically discovered and made available to agents.
+   * @example
+   * tools: [GithubToolsService, SearchToolsService]
+   */
+  tools?: any[];
 }
 
 @Module({})
@@ -52,13 +61,24 @@ export class WorkflowEngineModule {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useValue: options,
         },
+        {
+          provide: 'WORKFLOW_ENGINE_TOOL_CLASSES',
+          useValue: options.tools || [],
+        },
         // Core services
         MetadataProcessorService,
 
         // Execution services
         WorkflowExecutionService,
+
+        // Tool registry service
+        ToolRegistryService,
       ],
-      exports: [MetadataProcessorService, WorkflowExecutionService],
+      exports: [
+        MetadataProcessorService,
+        WorkflowExecutionService,
+        ToolRegistryService,
+      ],
       global: true,
     };
   }
