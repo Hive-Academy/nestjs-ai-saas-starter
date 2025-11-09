@@ -117,10 +117,11 @@ export class WorkflowExecutionService {
    *
    * @param workflowClass - Decorated workflow class
    * @param input - Initial workflow state
-   * @param config - Optional RunnableConfig with streamMode
+   * @param config - Optional RunnableConfig with streamMode ('updates' by default for tool visibility)
    * @yields Workflow state updates
    *
    * Implementation: Task 3.3
+   * Enhancement: Task 6 - Default to 'updates' mode for tool call visibility
    */
   async *streamWorkflow<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
@@ -146,7 +147,9 @@ export class WorkflowExecutionService {
     });
 
     // 5. Stream using LangGraph's native stream()
-    const streamMode = config?.streamMode || 'values';
+    // Default to 'updates' mode for tool call visibility (Task 6 enhancement)
+    const streamMode = config?.streamMode || 'updates';
+    this.logger.debug(`Streaming mode: ${streamMode}`);
 
     const stream = await compiled.stream(input, {
       ...config,
@@ -351,11 +354,10 @@ export class WorkflowExecutionService {
 
     // Add ToolNode if tools present
     if (hasTools) {
-      const tools = definition.config!.metadata!.tools as unknown[];
+      const tools = definition.config!.metadata!.tools as any[];
       const toolNode = new ToolNode(tools);
       // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      // ToolNode is a valid node handler
-      graph.addNode('tools', toolNode);
+      graph.addNode('tools', toolNode as any);
 
       this.logger.debug(
         `Added ToolNode with ${tools.length} tools to graph ${definition.name}`
@@ -497,9 +499,9 @@ export class WorkflowExecutionService {
    * @param definition - WorkflowDefinition with edge metadata
    * @returns Next node ID or null if no explicit next node
    */
-  private getNextNode(
-    node: WorkflowNode,
-    definition: WorkflowDefinition
+  private getNextNode<TState extends WorkflowState = WorkflowState>(
+    node: WorkflowNode<TState>,
+    definition: WorkflowDefinition<TState>
   ): string | null {
     // Find explicit edge from this node
     const edge = definition.edges.find((e) => e.from === node.id);
