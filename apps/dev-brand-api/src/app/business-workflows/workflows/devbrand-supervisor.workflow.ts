@@ -182,6 +182,32 @@ export class DevBrandSupervisorWorkflow {
       const content = finalState.metadata?.generatedContent || {};
       const confidence = finalState.metadata?.confidence || 0.8;
 
+      // 4. Store achievements in memory (individual failures don't fail workflow)
+      let storedCount = 0;
+      for (const achievement of achievements) {
+        try {
+          await this.brandMemory.storeCodeAchievement(input.userId, {
+            id: achievement.id || `ach-${Date.now()}-${storedCount}`,
+            repository: achievement.repository,
+            description: achievement.description || achievement.achievement,
+            technologies: achievement.technologies || [],
+            impact: achievement.impact || 'medium',
+            date: achievement.date || achievement.timestamp || new Date(),
+          });
+          storedCount++;
+        } catch (error) {
+          this.logger.warn(
+            `Failed to store achievement for ${achievement.repository}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+
+      this.logger.log(
+        `Stored ${storedCount}/${achievements.length} achievements for user ${input.userId}`
+      );
+
       // 5. Return consolidated results
       return {
         achievements,
