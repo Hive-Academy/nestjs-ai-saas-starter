@@ -626,6 +626,360 @@ export class GitHubToolsProvider {
 
 ---
 
+## Tool Integration System
+
+### Overview
+
+The workflow-engine module provides automatic tool discovery and binding for LangGraph agents. Tools decorated with @Tool are automatically:
+
+- **Discovered** from registered tool classes via ToolRegistryService
+- **Bound** to LLM instances using `llm.bindTools()` during graph compilation
+- **Executed** autonomously via LangGraph's ToolNode with conditional routing
+- **Streamed** in real-time using 'updates' mode for complete tool visibility
+
+This zero-config approach eliminates manual tool wiring, enabling agents to use tools with just decorator configuration.
+
+---
+
+### Quick Start
+
+**Step 1: Create Tool Class**
+
+Create a tool provider class with methods decorated with @Tool:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
+import { z } from 'zod';
+
+@Injectable()
+export class CalculatorTools {
+  @Tool({
+    name: 'calculator',
+    description: 'Performs mathematical calculations on two numbers',
+    schema: z.object({
+      operation: z
+        .enum(['add', 'subtract', 'multiply', 'divide'])
+        .describe('Mathematical operation to perform'),
+      a: z.number().describe('First number'),
+      b: z.number().describe('Second number'),
+    }),
+  })
+  async calculate({ operation, a, b }: { operation: string; a: number; b: number }) {
+    switch (operation) {
+      case 'add':
+        return { result: a + b };
+      case 'subtract':
+        return { result: a - b };
+      case 'multiply':
+        return { result: a * b };
+      case 'divide':
+        if (b === 0) return { error: 'Cannot divide by zero' };
+        return { result: a / b };
+      default:
+        return { error: 'Unknown operation' };
+    }
+  }
+}
+```
+
+**Step 2: Register Tools in Module**
+
+Register tool classes in WorkflowEngineModule.forRoot():
+
+```typescript
+import { Module } from '@nestjs/common';
+import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
+import { CalculatorTools } from './tools/calculator.tools';
+import { GitHubTools } from './tools/github.tools';
+import { WebResearchTools } from './tools/web-research.tools';
+
+@Module({
+  imports: [
+    WorkflowEngineModule.forRoot({
+      tools: [CalculatorTools, GitHubTools, WebResearchTools],
+      execution: {
+        streamingEnabled: true,
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+**Step 3: Configure Agent Tools**
+
+Specify tools in @Agent decorator - they're automatically bound to the LLM:
+
+```typescript
+import { Agent, Node, Edge } from '@hive-academy/langgraph-workflow-engine';
+import { Injectable } from '@nestjs/common';
+
+@Agent({
+  description: 'Mathematical assistant that can perform calculations',
+  tools: ['calculator'], // Automatically bound to LLM, zero manual wiring
+  workflow: {
+    type: 'functional-node',
+  },
+})
+@Injectable()
+export class MathAssistantAgent {
+  @Node({ type: 'llm' })
+  async processQuery(state: WorkflowState) {
+    // LLM automatically has calculator tool bound
+    // If user asks "What is 5 + 3?", LLM will call calculator tool
+    return state;
+  }
+
+  @Edge('processQuery', '__end__')
+  finish() {
+    return true;
+  }
+}
+```
+
+**Step 4: Execute Workflow and Stream Tool Events**
+
+Execute the workflow with streaming to see tool execution in real-time:
+
+```typescript
+import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
+
+@Injectable()
+export class WorkflowOrchestrator {
+  constructor(private readonly execution: WorkflowExecutionService) {}
+
+  async runMathAssistant(query: string) {
+    const stream = await this.execution.streamWorkflow(
+      MathAssistantAgent,
+      { messages: [{ role: 'user', content: query }] },
+      { streamMode: 'updates' } // 'updates' mode shows tool execution events
+    );
+
+    for await (const event of stream) {
+      if (event.node === 'tools') {
+        // Tool execution event
+        console.log('Tool executed:', event.data);
+      } else if (event.node === 'processQuery') {
+        // Agent node event
+        console.log('Agent response:', event.data);
+      }
+    }
+  }
+}
+
+// Example usage:
+// User: "What is 15 multiplied by 7?"
+// Output:
+// Tool executed: { operation: 'multiply', a: 15, b: 7, result: 105 }
+// Agent response: { content: "The result is 105" }
+```
+
+---
+
+### Tool Execution Flow
+
+The tool execution flow demonstrates how agents autonomously discover, route to, and execute tools:
+
+```
+┌─────────────────┐
+│   User Query    │
+│ "What is 5+3?"  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  Agent Node (LLM with bound tools)  │
+│  - Receives query                   │
+│  - LLM has access to 'calculator'   │
+└────────┬────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  LLM Decision                       │
+│  - Decides to use calculator tool   │
+│  - Returns tool_calls in message    │
+└────────┬────────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────────────┐
+│  Conditional Routing                 │
+│  shouldExecuteTools() checks for:    │
+│  - tool_calls present? → 'tools'     │
+│  - no tool_calls? → 'continue'       │
+└────────┬─────────────────────────────┘
+         │
+         ├─────────────┐
+         │             │
+    'tools'       'continue'
+         │             │
+         ▼             ▼
+┌─────────────┐  ┌──────────┐
+│  ToolNode   │  │ Next Node│
+│  Executes   │  │ or END   │
+│  calculator │  └──────────┘
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────┐
+│  Tool Result                    │
+│  - Appended to state.messages   │
+│  - Returns to Agent Node        │
+└────────┬────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────┐
+│  Agent Node (with tool result)  │
+│  - Synthesizes final response   │
+└────────┬────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Final Response  │
+│ "The result is 8"│
+└─────────────────┘
+```
+
+**Key Decision Points**:
+
+- **shouldExecuteTools()**: Checks `lastMessage.tool_calls` array length
+- **Routing**: 'tools' → ToolNode execution, 'continue' → next node or END
+- **Tool Loop**: Tools → Agent → (if more tool_calls) → Tools → Agent → ...
+
+---
+
+### Best Practices
+
+**Schema Design**:
+
+- Use `.describe()` on each schema field for better LLM understanding
+- Keep schemas simple - avoid deep nesting (max 2-3 levels)
+- Use enums for constrained choices (e.g., `z.enum(['option1', 'option2'])`)
+- Provide clear, specific descriptions that explain what the field is for
+
+```typescript
+// ✅ GOOD: Clear, simple schema with descriptions
+schema: z.object({
+  username: z.string().describe('GitHub username to analyze'),
+  includePrivate: z.boolean().describe('Whether to include private repos'),
+});
+
+// ❌ BAD: No descriptions, complex nested structure
+schema: z.object({
+  user: z.object({
+    profile: z.object({
+      data: z.object({
+        name: z.string(),
+      }),
+    }),
+  }),
+});
+```
+
+**Tool Naming**:
+
+- Use kebab-case (e.g., 'github-analyzer', not 'GitHubAnalyzer')
+- Be specific about what the tool does (e.g., 'extract-code-snippets' not 'tool1')
+- Keep names concise but descriptive (2-4 words ideal)
+- Tool names must be unique across all registered tools
+
+```typescript
+// ✅ GOOD: Specific, kebab-case names
+@Tool({ name: 'github-profile-analyzer', ... })
+@Tool({ name: 'code-snippet-extractor', ... })
+
+// ❌ BAD: Generic, unclear names
+@Tool({ name: 'tool1', ... })
+@Tool({ name: 'DoStuff', ... })
+```
+
+**Error Handling**:
+
+- Return error objects from tools (don't throw exceptions)
+- Include context in error messages for LLM understanding
+- Let the LLM see errors so it can retry or adjust strategy
+- Use structured error objects with `error` field
+
+```typescript
+// ✅ GOOD: Return error object with context
+@Tool({ name: 'fetch-data', ... })
+async fetchData({ url }: { url: string }) {
+  try {
+    const response = await fetch(url);
+    return { data: await response.json() };
+  } catch (error) {
+    // Return error object - LLM sees this and can adjust
+    return {
+      error: 'Failed to fetch data',
+      reason: error.message,
+      url: url,
+    };
+  }
+}
+
+// ❌ BAD: Throw exception (breaks tool execution flow)
+@Tool({ name: 'fetch-data', ... })
+async fetchData({ url }: { url: string }) {
+  const response = await fetch(url); // Throws if fails
+  return { data: await response.json() };
+}
+```
+
+---
+
+### Troubleshooting
+
+**Error: "Tool Not Found: [tool-name]"**
+
+**Cause**: Tool name mismatch between @Agent configuration and @Tool registration
+
+**Solution**:
+
+1. Verify tool class is registered in `WorkflowEngineModule.forRoot({ tools: [...] })`
+2. Check tool name in @Tool decorator matches name in @Agent tools array
+3. Ensure tool name is kebab-case and unique
+
+```typescript
+// Check tool registration
+@Tool({ name: 'github-analyzer' }) // Must match exactly
+async analyzeGitHub() {}
+
+// Check agent configuration
+@Agent({ tools: ['github-analyzer'] }) // Must match @Tool name
+```
+
+**Error: "Duplicate Tool Name: [tool-name]"**
+
+**Cause**: Multiple tools registered with the same name
+
+**Solution**:
+
+1. Search codebase for all @Tool decorators with the same name
+2. Rename duplicate tools to be unique and descriptive
+3. Update @Agent tools arrays to use new unique names
+
+```typescript
+// ❌ BAD: Duplicate tool names
+// File: calculator.tools.ts
+@Tool({ name: 'calculate' })
+async add() {}
+
+// File: advanced-calculator.tools.ts
+@Tool({ name: 'calculate' }) // Duplicate!
+async scientificCalculate() {}
+
+// ✅ GOOD: Unique tool names
+// File: calculator.tools.ts
+@Tool({ name: 'basic-calculator' })
+async add() {}
+
+// File: advanced-calculator.tools.ts
+@Tool({ name: 'scientific-calculator' })
+async scientificCalculate() {}
+```
+
+---
+
 ### 3. Workflow Engine Core
 
 #### MetadataProcessorService
