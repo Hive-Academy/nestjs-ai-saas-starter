@@ -455,24 +455,6 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
       metricLabel: 'Faster Context Retrieval',
     },
 
-    // 4. Checkpoint
-    {
-      packageName: '@hive-academy/langgraph-checkpoint',
-      businessHeadline: 'State Persistence Without Manual Snapshot Management',
-      painPoint:
-        'Manual state persistence, recovery, branching, and compaction for every workflow error or debugging session',
-      solution:
-        'Auto-fallback checkpoint system with 8 specialized services for seamless state management from memory to production databases',
-      capabilities: [
-        'Auto-fallback from MemorySaver to Redis/PostgreSQL',
-        'Checkpoint compaction and migration',
-        'Recovery strategies for automatic error recovery',
-        'Point-in-time state snapshots',
-      ],
-      metricValue: '80%',
-      metricLabel: 'Less State Management Code',
-    },
-
     // 5. Functional API
     {
       packageName: '@hive-academy/langgraph-functional-api',
