@@ -9,7 +9,7 @@ import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-c
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
-import type { TypedAgentState } from '../types';
+import type { TypedAgentState, StreamEvent } from '../types';
 
 /**
  * DevBrand workflow input type
@@ -228,52 +228,53 @@ export class DevBrandSupervisorWorkflow {
   /**
    * Execute with streaming support
    *
-   * Returns an async iterator for real-time streaming of agent events
-   * Implements StreamableWorkflow interface
+   * Returns an async iterator for real-time streaming of agent events.
+   * Uses WorkflowExecutionService.streamWorkflow() for LangGraph native streaming.
    *
-   * TODO: Implement with LangGraph native streaming after base class removal
+   * @param input - Workflow input with user ID and GitHub username
+   * @yields StreamEvent objects with workflow state updates
    */
   async *executeWithStreaming(
     input: DevBrandWorkflowInput
-  ): AsyncGenerator<any, void, unknown> {
-    // TODO: Implement streaming with LangGraph native API
-    throw new Error(
-      'Multi-agent streaming execution not yet implemented after base class removal. ' +
-        'Requires LangGraph native streaming API integration. See TASK_2025_039.'
+  ): AsyncGenerator<StreamEvent, void, unknown> {
+    const executionId = input.executionId || `devbrand-${Date.now()}`;
+
+    this.logger.log(
+      `Starting streaming execution for user ${input.userId}, execution ${executionId}`
     );
 
-    // ORIGINAL CODE (requires base class methods):
-    // const executionId = input.executionId || `devbrand-${Date.now()}`;
-    //
-    // const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
-    //
-    // User Context:
-    // - User ID: ${input.userId}
-    // - GitHub Username: ${input.githubUsername}
-    // - Execution ID: ${executionId}
-    //
-    // Task Sequence:
-    // 1. Analyze GitHub profile to extract achievements and technical skills
-    // 2. Develop personal brand strategy based on the analysis
-    // 3. Create platform-specific content (LinkedIn, Dev.to) for the brand`;
-    //
-    // const stream = await this.executeCoordination(
-    //   {
-    //     messages: [supervisorMessage],
-    //     config: {
-    //       metadata: {
-    //         userId: input.userId,
-    //         githubUsername: input.githubUsername,
-    //         executionId,
-    //         workflowType: 'personal-branding',
-    //       },
-    //     },
-    //   },
-    //   { stream: true, streamMode: 'values' }
-    // );
-    //
-    // for await (const event of stream) {
-    //   yield event;
-    // }
+    // 1. Build initial state
+    const initialState: TypedAgentState<Record<string, unknown>> = {
+      messages: [],
+      metadata: {
+        userId: input.userId,
+        githubUsername: input.githubUsername,
+        executionId,
+        workflowType: 'personal-brand-analysis',
+      },
+    };
+
+    // 2. Stream via WorkflowExecutionService
+    // Note: DevBrandSupervisorWorkflow already has agents configured via @MultiAgent decorator
+    const stream = this.workflowExecution.streamWorkflow(
+      DevBrandSupervisorWorkflow,
+      initialState,
+      {
+        configurable: { thread_id: executionId },
+        streamMode: 'values', // Full state snapshots
+      }
+    );
+
+    // 3. Yield events to caller
+    for await (const stateUpdate of stream) {
+      yield {
+        type: 'workflow-update',
+        executionId,
+        state: stateUpdate,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    this.logger.log(`Streaming execution completed for ${executionId}`);
   }
 }

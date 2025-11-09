@@ -277,6 +277,18 @@ export interface StreamingResponse<T> {
   streamUrl?: string;
 }
 
+/**
+ * Stream event for workflow execution updates
+ * Yielded by executeWithStreaming() methods
+ */
+export interface StreamEvent {
+  type: 'workflow-update' | 'agent-update' | 'error';
+  executionId: string;
+  state: unknown;
+  timestamp: string;
+  error?: string;
+}
+
 export interface WorkflowMetadata {
   workflowId: string;
   workflowName: string;
