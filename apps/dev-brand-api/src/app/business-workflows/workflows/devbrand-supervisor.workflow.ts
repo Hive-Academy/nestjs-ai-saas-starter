@@ -3,6 +3,7 @@ import {
   MultiAgent,
   MultiAgentTopology,
   SupervisorConfig,
+  WorkflowExecutionService,
 } from '@hive-academy/langgraph-workflow-engine';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
@@ -120,9 +121,8 @@ export class DevBrandSupervisorWorkflow {
   private readonly logger = new Logger(DevBrandSupervisorWorkflow.name);
 
   constructor(
-    // Preserved for future implementation after base class restoration
-    // @ts-expect-error - Intentionally unused until multi-agent execution is restored (TASK_2025_039)
-    private readonly _brandMemory: PersonalBrandMemoryService
+    private readonly workflowExecution: WorkflowExecutionService,
+    private readonly brandMemory: PersonalBrandMemoryService
   ) {}
 
   /**
