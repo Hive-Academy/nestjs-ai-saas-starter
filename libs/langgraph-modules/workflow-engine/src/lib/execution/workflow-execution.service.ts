@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { StateGraph } from '@langchain/langgraph';
 import type {
@@ -12,6 +13,10 @@ import type {
   WorkflowState,
   ConditionalRouting,
 } from '../interfaces/workflow-engine.interface';
+import { AGENT_METADATA_KEY } from '../decorators/multi-agent/agent.decorator';
+import { ToolRegistryService } from '../services/tool-registry.service';
+import { LlmProviderService } from '../services/llm/llm-provider.service';
+import type { LLMWithTools } from '../types/internal-types';
 
 /**
  * WorkflowExecutionService
@@ -35,6 +40,8 @@ export class WorkflowExecutionService {
   constructor(
     private readonly metadataProcessor: MetadataProcessorService,
     private readonly checkpointAdapter: ICheckpointAdapter,
+    private readonly moduleRef: ModuleRef,
+    private readonly toolRegistry: ToolRegistryService,
 
     // NEW: Inject BaseStore from MemoryModule (optional enhancement)
     @Optional()
@@ -246,19 +253,59 @@ export class WorkflowExecutionService {
     const agentDefinition =
       this.metadataProcessor.extractWorkflowDefinition(AgentClass);
 
-    // 2. Validate agent metadata
+    // 2. Extract agent configuration from @Agent decorator
+    const agentConfig = Reflect.getMetadata(AGENT_METADATA_KEY, AgentClass);
+
+    // 3. Get tools for this agent
+    const toolNames = agentConfig?.tools || [];
+    const tools = this.toolRegistry.getTools(toolNames);
+
+    // 4. Bind tools to LLM (if agent has tools)
+    if (tools.length > 0) {
+      this.logger.debug(
+        `Binding ${tools.length} tools to agent ${
+          agentConfig?.id || agentDefinition.name
+        }: ${toolNames.join(', ')}`
+      );
+
+      // Inject LlmProviderService to get LLM instance
+      const llmProvider = this.moduleRef.get(LlmProviderService, {
+        strict: false,
+      });
+      const llm = (await llmProvider.getLLM()) as unknown as LLMWithTools;
+
+      // Bind tools to LLM
+      const llmWithTools = llm.bindTools(tools);
+
+      // Store bound LLM and tools in agent definition config metadata
+      agentDefinition.config = {
+        ...agentDefinition.config,
+        metadata: {
+          ...(agentDefinition.config?.metadata || {}),
+          llmWithTools: llmWithTools,
+          tools: tools,
+          toolNames: toolNames,
+        },
+      };
+
+      this.logger.debug(
+        `Tools bound to agent ${agentConfig?.id || agentDefinition.name}`
+      );
+    }
+
+    // 5. Validate agent metadata
     this.metadataProcessor.validateWorkflowDefinition(agentDefinition);
 
-    // 3. Build StateGraph (reuse buildStateGraph pattern from Task 3.2)
+    // 6. Build StateGraph (reuse buildStateGraph pattern from Task 3.2)
     const graph = this.buildStateGraph(agentDefinition);
 
-    // 4. Compile the agent graph with BOTH checkpointer and store
+    // 7. Compile the agent graph with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointAdapter as unknown as BaseCheckpointSaver,
       store: this.store, // NEW: Pass store to agent graph (optional)
     });
 
-    // 5. Return with agent id for subgraph coordination
+    // 8. Return with agent id for subgraph coordination
     const result = {
       id: agentDefinition.name,
       graph: compiled,
