@@ -1,7 +1,8 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { StateGraph } from '@langchain/langgraph';
+import { StateGraph, END } from '@langchain/langgraph';
+import { ToolNode } from '@langchain/langgraph/prebuilt';
 import type {
   BaseCheckpointSaver,
   BaseStore,
@@ -12,6 +13,7 @@ import type {
   WorkflowDefinition,
   WorkflowState,
   ConditionalRouting,
+  WorkflowNode,
 } from '../interfaces/workflow-engine.interface';
 import { AGENT_METADATA_KEY } from '../decorators/multi-agent/agent.decorator';
 import { ToolRegistryService } from '../services/tool-registry.service';
@@ -334,6 +336,11 @@ export class WorkflowExecutionService {
     // Create StateGraph with channels from definition
     const graph = new StateGraph<TState>(definition.channels);
 
+    // Check if agent has tools
+    const hasTools =
+      definition.config?.metadata?.tools &&
+      (definition.config.metadata.tools as unknown[]).length > 0;
+
     // Add all nodes
     definition.nodes.forEach((node) => {
       this.logger.debug(`Adding node: ${node.id}`);
@@ -342,8 +349,21 @@ export class WorkflowExecutionService {
       graph.addNode(node.id, node.handler);
     });
 
-    // Add edges from metadata
-    this.addEdgesFromMetadata(graph, definition);
+    // Add ToolNode if tools present
+    if (hasTools) {
+      const tools = definition.config!.metadata!.tools as unknown[];
+      const toolNode = new ToolNode(tools);
+      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
+      // ToolNode is a valid node handler
+      graph.addNode('tools', toolNode);
+
+      this.logger.debug(
+        `Added ToolNode with ${tools.length} tools to graph ${definition.name}`
+      );
+    }
+
+    // Add edges from metadata (with tool routing if tools exist)
+    this.addEdgesFromMetadata(graph, definition, hasTools);
 
     // Set entry point (cast to any for type compatibility)
     graph.setEntryPoint(definition.entryPoint as any);
@@ -360,10 +380,12 @@ export class WorkflowExecutionService {
    *
    * @param graph - StateGraph to add edges to
    * @param definition - WorkflowDefinition with edge and task metadata
+   * @param hasTools - Whether the agent has tools (enables conditional tool routing)
    */
   private addEdgesFromMetadata<TState extends WorkflowState = WorkflowState>(
     graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+    definition: WorkflowDefinition<TState>,
+    hasTools: boolean
   ): void {
     // 1. Add explicit edges from @Edge decorators
     definition.edges.forEach((edge) => {
@@ -412,5 +434,80 @@ export class WorkflowExecutionService {
         }
       }
     }
+
+    // 3. Add conditional tool routing if tools present
+    if (hasTools) {
+      definition.nodes.forEach((node) => {
+        // Add conditional edge: node → tools (if tool_calls) OR next node
+        const nextNode = this.getNextNode(node, definition);
+
+        this.logger.debug(
+          `Adding tool routing for node ${node.id}: tools or ${
+            nextNode || 'END'
+          }`
+        );
+
+        graph.addConditionalEdges(
+          node.id as any,
+          this.shouldExecuteTools.bind(this),
+          {
+            tools: 'tools' as any,
+            continue: (nextNode || END) as any,
+          }
+        );
+      });
+
+      // Tools always return to the entry point (agent node)
+      // This creates the execution loop: agent → tools → agent
+      graph.addEdge('tools' as any, definition.entryPoint as any);
+    }
+  }
+
+  /**
+   * Determines whether to execute tools based on the last message in state
+   * Routes to 'tools' if tool_calls present, otherwise continues to next node
+   *
+   * @param state - Current workflow state
+   * @returns 'tools' if tool calls detected, 'continue' otherwise
+   */
+  private shouldExecuteTools(state: WorkflowState): 'tools' | 'continue' {
+    if (!state.messages || state.messages.length === 0) {
+      return 'continue';
+    }
+
+    const lastMessage = state.messages[state.messages.length - 1];
+
+    // Check if last message has tool_calls (LangChain message structure)
+    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+      this.logger.debug(
+        `Tool calls detected: ${lastMessage.tool_calls
+          .map((tc: any) => tc.name)
+          .join(', ')}`
+      );
+      return 'tools';
+    }
+
+    return 'continue';
+  }
+
+  /**
+   * Get the next node for a given node from the workflow definition
+   *
+   * @param node - Current workflow node
+   * @param definition - WorkflowDefinition with edge metadata
+   * @returns Next node ID or null if no explicit next node
+   */
+  private getNextNode(
+    node: WorkflowNode,
+    definition: WorkflowDefinition
+  ): string | null {
+    // Find explicit edge from this node
+    const edge = definition.edges.find((e) => e.from === node.id);
+    if (edge && typeof edge.to === 'string') {
+      return edge.to;
+    }
+
+    // No explicit next node
+    return null;
   }
 }
