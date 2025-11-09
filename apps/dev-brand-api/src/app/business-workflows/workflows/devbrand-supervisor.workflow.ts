@@ -9,6 +9,7 @@ import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-c
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
+import type { TypedAgentState } from '../types';
 
 /**
  * DevBrand workflow input type
@@ -148,77 +149,46 @@ export class DevBrandSupervisorWorkflow {
     );
 
     try {
-      // Build supervisor message (unused until implementation restored)
-      const _supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
+      // 1. Build LangGraph state from input
+      const initialState: TypedAgentState<Record<string, unknown>> = {
+        messages: [],
+        metadata: {
+          userId: input.userId,
+          githubUsername: input.githubUsername,
+          executionId,
+          workflowType: 'personal-brand-analysis',
+        },
+      };
 
-User Context:
-- User ID: ${input.userId}
-- GitHub Username: ${input.githubUsername}
-- Execution ID: ${executionId}
-
-Task Sequence:
-1. Analyze GitHub profile to extract achievements and technical skills
-2. Develop personal brand strategy based on the analysis
-3. Create platform-specific content (LinkedIn, Dev.to) for the brand
-
-Please coordinate the three agents to complete this workflow.`;
-
-      // Explicitly mark as intentionally unused (preserved for future implementation)
-      void _supervisorMessage;
-
-      // TODO: Implement multi-agent coordination with LangGraph native API
-      // The @MultiAgent decorator should provide coordination, but we need to
-      // wire up the proper execution method without the base class
-      throw new Error(
-        'Multi-agent execution not yet implemented after base class removal. ' +
-          'Requires LangGraph native API integration. See TASK_2025_039.'
+      // 2. Execute via WorkflowExecutionService (automatic checkpoint + memory)
+      const finalState = await this.workflowExecution.executeMultiAgentWorkflow(
+        DevBrandSupervisorWorkflow,
+        [
+          GitHubCodeAnalyzerAgent,
+          PersonalBrandStrategistAgent,
+          ContentCreatorAgent,
+        ],
+        initialState,
+        { configurable: { thread_id: executionId } }
       );
 
-      // ORIGINAL CODE (requires base class methods):
-      // const result = await this.executeSimple(supervisorMessage, {
-      //   userId: input.userId,
-      //   githubUsername: input.githubUsername,
-      //   executionId,
-      //   workflowType: 'personal-branding',
-      // });
-      //
-      // this.logger.log(
-      //   `✅ Multi-agent coordination completed. Execution path: ${result.executionPath?.join(' → ')}`
-      // );
-      //
-      // // Extract results from agent coordination
-      // const agentResults = {
-      //   githubAnalysis: result.finalState.metadata?.githubData || {},
-      //   brandStrategy: result.finalState.metadata?.brandStrategy || {},
-      //   contentCreation: result.finalState.metadata?.generatedContent || {},
-      // };
-      //
-      // // Store achievements in personal brand memory
-      // const achievements = agentResults.githubAnalysis?.achievements ||
-      //   agentResults.githubAnalysis?.data?.achievements || [];
-      //
-      // if (achievements.length > 0) {
-      //   this.logger.log(`Storing ${achievements.length} achievements in memory`);
-      //   for (const achievement of achievements) {
-      //     await this.brandMemory.storeCodeAchievement(input.userId, {
-      //       id: achievement.id || `achievement-${Date.now()}`,
-      //       description: achievement.description,
-      //       technologies: achievement.technologies || [],
-      //       impact: achievement.impact || 'medium',
-      //       date: new Date().toISOString(),
-      //       repository: achievement.repository || 'unknown',
-      //       userId: input.userId,
-      //     });
-      //   }
-      // }
-      //
-      // // Return consolidated results
-      // return {
-      //   achievements,
-      //   strategy: agentResults.brandStrategy,
-      //   content: agentResults.contentCreation,
-      //   confidence: result.finalState.metadata?.confidence || 0.8,
-      // };
+      this.logger.log(
+        '✅ Multi-agent coordination completed via WorkflowExecutionService'
+      );
+
+      // 3. Extract results from finalState.metadata (inline extraction for Task 2)
+      const achievements = finalState.metadata?.githubData?.achievements || [];
+      const strategy = finalState.metadata?.brandStrategy || {};
+      const content = finalState.metadata?.generatedContent || {};
+      const confidence = finalState.metadata?.confidence || 0.8;
+
+      // 5. Return consolidated results
+      return {
+        achievements,
+        strategy,
+        content,
+        confidence,
+      };
     } catch (error) {
       this.logger.error('Multi-agent coordination failed:', error);
       throw new Error(
