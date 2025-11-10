@@ -174,12 +174,18 @@ export class PersonalBrandStrategistAgent {
         brandData
       );
 
+      // Enable optional memory-analysis tool for enhanced context retrieval
+      const enhancedPrompt = `${analysisPrompt}
+
+You may optionally use the memory-analysis tool to retrieve and analyze additional developer context, brand evolution patterns, or historical positioning data if you need more detailed memory insights to improve the analysis.`;
+
       const model = await this.llm.getLLM({
         temperature: 0.3,
         maxTokens: 1000,
       });
       const response = await model.invoke([
-        { role: 'user', content: analysisPrompt },
+        ...state.messages,
+        { role: 'user', content: enhancedPrompt },
       ]);
 
       let analysis: BrandAnalysis;
@@ -196,6 +202,7 @@ export class PersonalBrandStrategistAgent {
       }
 
       return {
+        messages: [...state.messages, response],
         metadata: {
           ...state.metadata,
           currentStep: 'positioning-analyzed',
