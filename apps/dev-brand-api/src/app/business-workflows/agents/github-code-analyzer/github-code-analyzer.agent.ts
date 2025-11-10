@@ -66,10 +66,12 @@ import {
     'ai-synthesis',
   ],
   tools: [
-    'github-analyzer',
-    'achievement-extractor',
-    'developer-insights',
-    'ai-synthesis',
+    // ✅ VERIFIED: All tool names match @Tool decorators in GitHubIntegrationTools
+    // Registered in WorkflowEngineModule.forRoot() (Task 33)
+    'github-analyzer', // GitHubIntegrationTools:111
+    'achievement-extractor', // GitHubIntegrationTools:199
+    'developer-insights', // GitHubIntegrationTools:343
+    'ai-synthesis', // GitHubIntegrationTools:383
   ],
   priority: 'high',
   executionTime: 'fast',
