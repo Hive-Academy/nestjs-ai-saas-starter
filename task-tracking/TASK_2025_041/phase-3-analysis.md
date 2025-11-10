@@ -178,17 +178,34 @@ const memoryAnalysis = this.extractMemoryAnalysisFromMessages(state.messages);
 - 3 tools verified: memory-analysis, brand-optimization, strategy-generation
 - All have @Tool decorators in brand-strategist.tools.ts
 
-### Task 3.2: Enable Optional Memory-Analysis Tool in analyzeBrandPositioning
+### Task 3.2: Enable Optional Memory-Analysis Tool in analyzeBrandPositioning ✅ COMPLETE
 
-- Update LLM invocation to include tool prompt
-- Tool becomes OPTIONAL fallback if memory service fails
-- Preserves existing memory service pattern
+**Git Commit**: d6d1c5d
+**Status**: VERIFIED ✅
 
-### Task 3.3: Enable brand-optimization Tool in optimizeBrand
+**Implementation**:
 
-- Update LLM invocation to trigger brand-optimization tool
+- ✅ Enhanced prompt added suggesting optional memory-analysis tool
+- ✅ Message-based flow: `[...state.messages, { role: 'user', content: enhancedPrompt }]`
+- ✅ LLM can autonomously decide to invoke tool
+- ✅ Backward compatible - memory service preserved
+- ✅ Application compiles without errors
+
+### Task 3.3: Enable brand-optimization Tool in optimizeBrand 🔄 IN PROGRESS
+
+**Assigned To**: backend-developer
+**Status**: Assigned - awaiting implementation
+
+**Implementation Requirements**:
+
+- Update optimizeBrand node (lines 248-287) to include enhanced prompt
+- Suggest brand-optimization tool as OPTIONAL enhancement
+- Update to message-based flow pattern: `[...state.messages, { role: 'user', content: enhancedPrompt }]`
 - LLM autonomously generates optimization strategies
-- Replace or augment existing prompt with tool results
+- Preserve existing optimization prompt logic
+- Tool invocation is OPTIONAL (LLM decides if needed)
+
+**Expected Commit**: `feat(langgraph): enable optional brand-optimization tool in brand strategist`
 
 ### Task 3.4: Enable strategy-generation Tool in rebuildStrategy
 
