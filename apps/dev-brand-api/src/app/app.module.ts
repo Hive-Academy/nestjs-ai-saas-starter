@@ -60,6 +60,12 @@ import { CompetitiveIntelligenceService } from './services/competitive-intellige
 // Business modules
 import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
 
+// Tool classes for WorkflowEngineModule
+import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
+import { BrandStrategistTools } from './business-workflows/core/tools/brand-strategist.tools';
+import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
+import { ContentCreatorTools } from './business-workflows/core/tools/content-creator.tools';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -144,15 +150,27 @@ import { BusinessWorkflowsModule } from './business-workflows/business-workflows
 
     // Workflow engine with LangGraph native checkpoint (RedisSaver for production)
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (): Promise<WorkflowEngineModuleOptions> => {
+      useFactory: async (
+        githubTools: GitHubIntegrationTools,
+        brandTools: BrandStrategistTools,
+        webTools: WebResearchTools,
+        contentTools: ContentCreatorTools
+      ): Promise<WorkflowEngineModuleOptions> => {
         // Create LangGraph native checkpointer (RedisSaver/SqliteSaver/MemorySaver)
         const checkpointer = await getCheckpointSaver();
 
         return {
           ...getWorkflowEngineConfig(),
           checkpointer, // LangGraph BaseCheckpointSaver (not ICheckpointAdapter)
+          tools: [githubTools, brandTools, webTools, contentTools], // Register 4 tool classes
         };
       },
+      inject: [
+        GitHubIntegrationTools,
+        BrandStrategistTools,
+        WebResearchTools,
+        ContentCreatorTools,
+      ],
     }),
 
     // Monitoring module
