@@ -30,13 +30,7 @@ import {
   buildDevToPrompt,
   buildLinkedInPrompt,
 } from './content-creator.prompts';
-import {
-  buildFinalContentMessage,
-  calculateQualityScore,
-  optimizeDevToContent,
-  optimizeLinkedInContent,
-  predictEngagement,
-} from './content-creator.utils';
+import { buildFinalContentMessage } from './content-creator.utils';
 
 /**
  * Enhanced Content Creator Agent - Workflow Agent Type
@@ -177,7 +171,7 @@ export class ContentCreatorAgent {
 
   /**
    * Generate platform-specific content using LLM
-   * REAL BUSINESS LOGIC: AI-powered content generation with brand consistency
+   * ENHANCED: Optional linkedin-formatter and devto-formatter tool suggestions
    */
   @Node({ type: 'standard' })
   @Validate
@@ -224,13 +218,35 @@ export class ContentCreatorAgent {
         brandStrategy
       );
 
+      // Enhanced prompts with optional tool suggestions
+      const linkedinEnhanced = `${linkedinPrompt}
+
+You may optionally use the linkedin-formatter tool to ensure professional LinkedIn formatting, proper hashtag usage, and platform-specific best practices if you need structured formatting guidance.`;
+
+      const devtoEnhanced = `${devtoPrompt}
+
+You may optionally use the devto-formatter tool to apply Dev.to markdown conventions, code block formatting, and community engagement patterns if you need technical blogging best practices.`;
+
       const [linkedinResponse, devtoResponse] = await Promise.all([
-        model.invoke([{ role: 'user', content: linkedinPrompt }]),
-        model.invoke([{ role: 'user', content: devtoPrompt }]),
+        model.invoke([
+          ...state.messages,
+          { role: 'user', content: linkedinEnhanced },
+        ]),
+        model.invoke([
+          ...state.messages,
+          { role: 'user', content: devtoEnhanced },
+        ]),
       ]);
 
-      const linkedinContent = linkedinResponse.content.toString();
-      const devtoContent = devtoResponse.content.toString();
+      // Extract formatted content (with fallback to direct LLM response)
+      const linkedinContent = this.extractFormattedContentOrFallback(
+        linkedinResponse,
+        'linkedin-formatter'
+      );
+      const devtoContent = this.extractFormattedContentOrFallback(
+        devtoResponse,
+        'devto-formatter'
+      );
 
       // Validate generated content quality
       if (!linkedinContent || linkedinContent.length < 50) {
@@ -252,6 +268,7 @@ export class ContentCreatorAgent {
       }
 
       return {
+        messages: [...state.messages, linkedinResponse, devtoResponse],
         metadata: {
           ...state.metadata,
           currentStep: 'content-generated',
@@ -284,7 +301,7 @@ export class ContentCreatorAgent {
 
   /**
    * Optimize content for engagement and platform best practices
-   * REAL BUSINESS LOGIC: Platform-specific optimization and enhancement
+   * MIGRATED: LLM-autonomous tool selection for content-optimizer and engagement-predictor
    */
   @Node({ type: 'standard' })
   async optimizeContent(
@@ -299,22 +316,62 @@ export class ContentCreatorAgent {
         throw new Error('Raw content is required for optimization');
       }
 
-      const optimizedLinkedin = optimizeLinkedInContent(
-        rawLinkedinContent,
-        achievements
-      );
-      const optimizedDevto = optimizeDevToContent(
-        rawDevtoContent,
-        achievements
-      );
+      // LLM with bound tools decides autonomously to call content-optimizer and engagement-predictor
+      const optimizationPrompt = `Optimize the following content for LinkedIn and Dev.to platforms:
 
-      const linkedinEngagement = predictEngagement(
-        'linkedin',
-        optimizedLinkedin
+**LinkedIn Content:**
+${rawLinkedinContent}
+
+**Dev.to Content:**
+${rawDevtoContent}
+
+**Achievements Context:**
+${JSON.stringify(achievements, null, 2)}
+
+Use the content-optimizer tool to enhance both pieces of content for:
+- Platform-specific best practices (hashtags, formatting, tone)
+- Engagement optimization (hooks, calls-to-action, readability)
+- SEO and discoverability improvements
+
+Then use the engagement-predictor tool to forecast expected engagement metrics (likes, comments, shares) for both optimized versions.
+
+Return the optimized content and engagement predictions.`;
+
+      const model = await this.llm.getLLM({
+        temperature: 0.5,
+        maxTokens: 2500,
+      });
+
+      const response = await model.invoke([
+        ...state.messages,
+        { role: 'user', content: optimizationPrompt },
+      ]);
+
+      // Extract tool results from messages
+      const toolMessages = this.extractToolMessages([
+        ...state.messages,
+        response,
+      ]);
+
+      // Parse optimized content from tool results (with fallback to raw content)
+      const optimizedLinkedin =
+        this.extractOptimizedContent(toolMessages, 'linkedin') ||
+        rawLinkedinContent;
+      const optimizedDevto =
+        this.extractOptimizedContent(toolMessages, 'devto') || rawDevtoContent;
+
+      // Parse engagement predictions from tool results (with fallback to defaults)
+      const linkedinEngagement = this.extractEngagementPrediction(
+        toolMessages,
+        'linkedin'
       );
-      const devtoEngagement = predictEngagement('devto', optimizedDevto);
+      const devtoEngagement = this.extractEngagementPrediction(
+        toolMessages,
+        'devto'
+      );
 
       return {
+        messages: [...state.messages, response],
         metadata: {
           ...state.metadata,
           currentStep: 'content-optimized',
@@ -343,6 +400,7 @@ export class ContentCreatorAgent {
 
   /**
    * Assess content quality - decision point in workflow
+   * MIGRATED: Uses quality scores from quality-scorer tool (via extractQualityScore helper)
    */
   @Node({ type: 'condition' })
   async assessContentQuality(
@@ -350,25 +408,24 @@ export class ContentCreatorAgent {
   ): Promise<{ route: string }> {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
-    const achievements = state.metadata.achievements || [];
 
+    // Extract quality scores from tool results in message history
+    const toolMessages = this.extractToolMessages(state.messages);
+    const linkedinQuality = this.extractQualityScore(toolMessages, 'linkedin');
+    const devtoQuality = this.extractQualityScore(toolMessages, 'devto');
+
+    // Average quality score across both platforms
+    const overallQuality = (linkedinQuality + devtoQuality) / 2;
+
+    // Basic validation: ensure substantial content exists
     const hasSubstantialContent =
       linkedinContent &&
       devtoContent &&
       linkedinContent.length > 100 &&
       devtoContent.length > 100;
-    const hasAchievements = achievements.length > 0;
-    const linkedinEngagement = state.metadata.linkedinEngagement || 0;
-    const devtoEngagement = state.metadata.devtoEngagement || 0;
 
-    const qualityScore = calculateQualityScore({
-      hasSubstantialContent: !!hasSubstantialContent,
-      hasAchievements,
-      linkedinEngagement,
-      devtoEngagement,
-      contentLength:
-        (linkedinContent?.length || 0) + (devtoContent?.length || 0),
-    });
+    // Route based on quality score and content validation
+    const qualityScore = hasSubstantialContent ? overallQuality : 0.5;
 
     return {
       route: qualityScore > 0.7 ? 'high-quality' : 'standard',
@@ -464,6 +521,112 @@ export class ContentCreatorAgent {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // MESSAGE PARSING HELPERS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Extract tool messages from messages array
+   */
+  private extractToolMessages(messages: any[]): any[] {
+    return messages.filter((msg) => msg.type === 'tool' || msg.tool_calls);
+  }
+
+  /**
+   * Extract optimized content from tool results
+   */
+  private extractOptimizedContent(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): string {
+    const optimizerMsg = toolMessages.find(
+      (msg) =>
+        msg.name === 'content-optimizer' && msg.content?.includes(platform)
+    );
+
+    if (!optimizerMsg) {
+      return ''; // Fallback handled by caller
+    }
+
+    try {
+      const result = JSON.parse(optimizerMsg.content);
+      return result.optimizedContent || '';
+    } catch {
+      return optimizerMsg.content || '';
+    }
+  }
+
+  /**
+   * Extract engagement prediction from tool results
+   */
+  private extractEngagementPrediction(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): number {
+    const engagementMsg = toolMessages.find(
+      (msg) =>
+        msg.name === 'engagement-predictor' && msg.content?.includes(platform)
+    );
+
+    if (!engagementMsg) {
+      return 0.5; // Default engagement score
+    }
+
+    try {
+      const result = JSON.parse(engagementMsg.content);
+      return result.predictions?.likes?.estimate || 0.5;
+    } catch {
+      return 0.5;
+    }
+  }
+
+  /**
+   * Extract quality score from tool results
+   */
+  private extractQualityScore(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): number {
+    const qualityMsg = toolMessages.find(
+      (msg) => msg.name === 'quality-scorer' && msg.content?.includes(platform)
+    );
+
+    if (!qualityMsg) {
+      return 0.75; // Default quality score
+    }
+
+    try {
+      const result = JSON.parse(qualityMsg.content);
+      return result.overallScore || 0.75;
+    } catch {
+      return 0.75;
+    }
+  }
+
+  /**
+   * Extract formatted content from tool result or fallback to LLM response
+   */
+  private extractFormattedContentOrFallback(
+    response: any,
+    toolName: string
+  ): string {
+    // Check if LLM used the tool
+    const toolMessage = response.tool_calls?.find(
+      (tc: any) => tc.name === toolName
+    );
+    if (toolMessage) {
+      try {
+        const result = JSON.parse(toolMessage.output || '{}');
+        return result.formattedContent || response.content.toString();
+      } catch {
+        return response.content.toString();
+      }
+    }
+
+    // Fallback to direct LLM response
+    return response.content.toString();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // EXPLICIT EDGE DEFINITIONS
   // ═══════════════════════════════════════════════════════════════
 
@@ -500,20 +663,18 @@ export class ContentCreatorAgent {
   ): boolean {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
-    const achievements = state.metadata.achievements || [];
-    const linkedinEngagement = state.metadata.linkedinEngagement || 0;
-    const devtoEngagement = state.metadata.devtoEngagement || 0;
 
-    const qualityScore = calculateQualityScore({
-      hasSubstantialContent:
-        (linkedinContent?.length || 0) > 100 &&
-        (devtoContent?.length || 0) > 100,
-      hasAchievements: achievements.length > 0,
-      linkedinEngagement,
-      devtoEngagement,
-      contentLength:
-        (linkedinContent?.length || 0) + (devtoContent?.length || 0),
-    });
+    // Extract quality scores from tool results
+    const toolMessages = this.extractToolMessages(state.messages);
+    const linkedinQuality = this.extractQualityScore(toolMessages, 'linkedin');
+    const devtoQuality = this.extractQualityScore(toolMessages, 'devto');
+    const overallQuality = (linkedinQuality + devtoQuality) / 2;
+
+    // Basic validation
+    const hasSubstantialContent =
+      (linkedinContent?.length || 0) > 100 && (devtoContent?.length || 0) > 100;
+
+    const qualityScore = hasSubstantialContent ? overallQuality : 0.5;
 
     return qualityScore > 0.0; // Always proceed to finalize
   }
