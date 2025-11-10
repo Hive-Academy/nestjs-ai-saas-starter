@@ -1105,6 +1105,193 @@ export function validateDecoratorPattern(
 
 ---
 
+## State Management
+
+### Standard Pattern: AgentStateAnnotation + Metadata
+
+All agents use the default `AgentStateAnnotation` with metadata nesting for custom state fields.
+
+**AgentStateAnnotation Fields** (provided by @hive-academy/langgraph-core):
+
+- `messages: BaseMessage[]` - LangGraph message history (concatenates)
+- `metadata: Record<string, unknown>` - **Extensible custom state** (shallow merge)
+- `next: string | undefined` - Multi-agent routing target
+- `current: string | undefined` - Current agent identifier
+- `scratchpad: string` - Collaboration notes (append)
+- `task: string | undefined` - Task description
+- `threadId: string | undefined` - Memory context
+- `userId: string | undefined` - User identifier
+
+### How to Add Custom State
+
+**Step 1: Define Metadata Interface**
+
+Create a metadata interface in `apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts`:
+
+```typescript
+export interface MyAgentMetadata extends WorkflowAgentMetadata {
+  /**
+   * User's research query
+   */
+  query: string;
+
+  /**
+   * Search results from web research
+   */
+  searchResults?: any[];
+
+  /**
+   * Generated report draft
+   */
+  reportDraft?: string;
+
+  /**
+   * User approval status
+   */
+  userApproval?: 'pending' | 'approved' | 'rejected';
+}
+```
+
+**Step 2: Use TypedAgentState in Methods**
+
+```typescript
+import {
+  TypedAgentState,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-workflow-engine';
+import type { MyAgentMetadata } from './shared/metadata.types';
+
+@Agent({
+  description: 'My workflow agent',
+  workflow: {
+    type: 'functional-task',
+    // NO channels field - always uses default AgentStateAnnotation
+  },
+})
+@Injectable()
+export class MyAgent {
+  @Entrypoint()
+  async startTask(
+    context: TaskExecutionContext<TypedAgentState<MyAgentMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<MyAgentMetadata>>> {
+    const state = context.state;
+
+    // ✅ Access custom state via state.metadata
+    this.logger.log(`Processing query: ${state.metadata.query}`);
+
+    // ✅ Return partial state update
+    return {
+      state: {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          searchResults: fetchedResults,
+          reportDraft: generatedDraft,
+        },
+      },
+    };
+  }
+
+  @Task({ dependsOn: ['startTask'] })
+  async processResults(
+    context: TaskExecutionContext<TypedAgentState<MyAgentMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<MyAgentMetadata>>> {
+    const state = context.state;
+
+    // ✅ Access results from previous task
+    const results = state.metadata.searchResults;
+
+    return {
+      state: {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          userApproval: 'pending',
+        },
+      },
+    };
+  }
+}
+```
+
+**Step 3: Initialize State When Executing**
+
+```typescript
+import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
+
+@Injectable()
+export class MyService {
+  constructor(private readonly execution: WorkflowExecutionService) {}
+
+  async runWorkflow(userId: string, query: string) {
+    const initialState: TypedAgentState<MyAgentMetadata> = {
+      messages: [],
+      metadata: {
+        userId,
+        query,
+        userApproval: 'pending',
+        // Initialize other metadata fields as needed
+      },
+    };
+
+    const result = await this.execution.execute(MyAgent, initialState, {
+      threadId: `workflow-${Date.now()}`,
+    });
+
+    return result;
+  }
+}
+```
+
+### Why This Pattern?
+
+✅ **Consistency**: All agents use the same pattern
+✅ **Type Safety**: Compile-time type checking via metadata interfaces
+✅ **Compatible**: Works seamlessly with multi-agent supervisor workflows
+✅ **Extensible**: Add custom fields via metadata interfaces
+✅ **No Schema Mismatches**: State access pattern matches StateGraph schema
+
+### ❌ What NOT to Do
+
+**Don't specify custom `channels` in workflow config:**
+
+```typescript
+❌ @Agent({
+     workflow: {
+       channels: CustomStateAnnotation, // REMOVED - causes schema mismatches
+     },
+   })
+```
+
+**Don't access state at root level:**
+
+```typescript
+❌ const value = state.customField; // Wrong - field doesn't exist at root
+✅ const value = state.metadata.customField; // Correct - access via metadata
+```
+
+**Don't create root-level state fields:**
+
+```typescript
+❌ const StateAnnotation = Annotation.Root({
+     customField: Annotation<string>(), // Creates state.customField
+   });
+
+✅ interface MyMetadata {
+     customField: string; // Creates state.metadata.customField
+   }
+```
+
+### Reference Documentation
+
+- **AgentStateAnnotation**: `libs/langgraph-modules/core/src/lib/annotations/agent-state.annotation.ts`
+- **TypedAgentState**: `libs/langgraph-modules/core/src/lib/types/agent.types.ts`
+- **Metadata Examples**: `apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts`
+- **Architectural Decision**: `LANGGRAPH_CHANNELS_DECISION.md`
+
+---
+
 ## Configuration System
 
 ### Configuration Hierarchy (Priority Order)

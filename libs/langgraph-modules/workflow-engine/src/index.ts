@@ -137,6 +137,3 @@ export * from './lib/constants';
 // Configuration utilities
 export * from './lib/utils/workflow-engine-config.accessor';
 export * from './lib/utils/type-guards';
-
-// State Annotation Builder (standardized state creation)
-export * from './lib/utils/state-annotation-builder';

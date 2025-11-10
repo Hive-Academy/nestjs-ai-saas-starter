@@ -7,6 +7,7 @@ import {
   WorkflowState,
   Command,
 } from '../interfaces';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 // Local decorator imports (functional-api library was deleted, decorators now local)
 import { getWorkflowMetadata } from '../decorators/functional/workflow.decorator';
 import {
@@ -252,7 +253,7 @@ export class MetadataProcessorService {
     const definition: WorkflowDefinition<TState> = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
-      channels: workflowOptions.channels,
+      channels: AgentStateAnnotation, // 🔑 Always use default AgentStateAnnotation
       nodes: this.convertNodesToDefinition<TState>(nodes),
       edges: [], // Empty - WorkflowExecutionService builds edges from taskDependencies metadata
       entryPoint: entrypointId || nodes[0]?.id || 'start',
@@ -299,7 +300,7 @@ export class MetadataProcessorService {
     const definition: WorkflowDefinition<TState> = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
-      channels: workflowOptions.channels,
+      channels: AgentStateAnnotation, // 🔑 Always use default AgentStateAnnotation
       nodes: this.convertNodesToDefinition<TState>(nodeMetadata),
       edges: this.convertEdgesToDefinition<TState>(edgeMetadata, nodeMetadata),
       entryPoint: this.determineEntryPoint(nodeMetadata, edgeMetadata),
@@ -526,6 +527,8 @@ export class MetadataProcessorService {
 
     // Check for unreachable nodes (nodes with no incoming edges except entry point)
     const reachableNodes = new Set([definition.entryPoint]);
+
+    // Add nodes from explicit edges (@Edge decorators)
     definition.edges.forEach((edge) => {
       if (typeof edge.to === 'string') {
         reachableNodes.add(edge.to);
@@ -538,6 +541,17 @@ export class MetadataProcessorService {
         reachableNodes.add(edge.to.default);
       }
     });
+
+    // Add nodes from taskDependencies metadata (functional-task pattern)
+    const taskDeps = definition.config?.metadata?.taskDependencies as
+      | Record<string, readonly string[]>
+      | undefined;
+    if (taskDeps) {
+      // All tasks with dependencies are reachable
+      Object.keys(taskDeps).forEach((taskId) => {
+        reachableNodes.add(taskId);
+      });
+    }
 
     const unreachableNodes = definition.nodes.filter(
       (node) =>

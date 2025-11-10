@@ -19,11 +19,16 @@ import { ApprovalModalComponent } from './components/approval-modal.component';
  */
 
 interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
-  type?: 'text' | 'status' | 'success' | 'error' | 'draft';
+  type?: 'text' | 'status' | 'success' | 'error' | 'draft' | 'tool-execution';
   timestamp: Date;
   metadata?: any;
+  toolData?: {
+    toolName?: string;
+    toolInput?: any;
+    toolOutput?: any;
+  };
 }
 
 @Component({
@@ -137,17 +142,30 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
         break;
 
       case 'state_update':
-        // Optional: Show progress updates
-        if (event.state?.totalSources) {
+        // Show node execution progress
+        if (event.nodeName) {
           this.addStatusMessage(
-            `📊 Found ${event.state.totalSources} research sources`
+            `▶️ ${this.formatTaskName(event.nodeName)} running...`
+          );
+        }
+
+        // Show research progress updates
+        if (event.state?.metadata?.totalSources) {
+          this.addStatusMessage(
+            `📊 Found ${event.state.metadata.totalSources} research sources`
           );
         }
         break;
 
+      case 'tool_execution':
+        // NEW: Show tool execution details
+        this.handleToolExecution(event);
+        break;
+
       case 'interrupt':
         // Workflow paused for approval
-        this.reportDraft = event.state?.reportDraft || 'No draft available';
+        this.reportDraft =
+          event.state?.metadata?.reportDraft || 'No draft available';
         this.showApprovalModal = true;
         this.isResearching = false;
         this.addStatusMessage('🛑 Report draft ready for review');
@@ -165,6 +183,115 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
 
       default:
         console.log('Unknown event type:', event.type);
+    }
+  }
+
+  /**
+   * Handle tool execution events
+   * Shows which tools are being called and their results
+   */
+  private handleToolExecution(event: ResearchWorkflowEvent): void {
+    const toolData = event.toolData;
+    if (!toolData) return;
+
+    const toolName = toolData.toolName || 'unknown-tool';
+    const toolInput = toolData.toolInput;
+    const toolOutput = toolData.toolOutput;
+
+    // Format tool call message
+    let content = `🔧 Tool: ${this.formatToolName(toolName)}`;
+
+    if (toolInput) {
+      const inputSummary = this.formatToolInput(toolName, toolInput);
+      if (inputSummary) {
+        content += `\n   Input: ${inputSummary}`;
+      }
+    }
+
+    if (toolOutput) {
+      const outputSummary = this.formatToolOutput(toolName, toolOutput);
+      if (outputSummary) {
+        content += `\n   Result: ${outputSummary}`;
+      }
+    }
+
+    this.addMessage({
+      role: 'tool',
+      content,
+      type: 'tool-execution',
+      timestamp: new Date(),
+      toolData: {
+        toolName,
+        toolInput,
+        toolOutput,
+      },
+    });
+  }
+
+  /**
+   * Format tool name for display
+   */
+  private formatToolName(toolName: string): string {
+    return toolName
+      .replace(/-/g, ' ')
+      .replace(/^./, (str) => str.toUpperCase());
+  }
+
+  /**
+   * Format tool input for display (tool-specific formatting)
+   */
+  private formatToolInput(toolName: string, input: any): string {
+    if (!input) return '';
+
+    switch (toolName) {
+      case 'web-search':
+      case 'research-search':
+        return `"${input.query || input.search_query || ''}"`;
+
+      case 'create-report':
+      case 'save-report':
+        return `"${input.title || input.filename || ''}"`;
+
+      default:
+        // Generic formatting
+        if (typeof input === 'string') return input;
+        if (input.query) return `"${input.query}"`;
+        return JSON.stringify(input).substring(0, 100);
+    }
+  }
+
+  /**
+   * Format tool output for display (tool-specific formatting)
+   */
+  private formatToolOutput(toolName: string, output: any): string {
+    if (!output) return '';
+
+    // If output is a string, show it directly
+    if (typeof output === 'string') {
+      return output.length > 150 ? output.substring(0, 150) + '...' : output;
+    }
+
+    // Tool-specific output formatting
+    switch (toolName) {
+      case 'web-search':
+      case 'research-search': {
+        const resultCount = output.results?.length || output.length || 0;
+        return `Found ${resultCount} result(s)`;
+      }
+
+      case 'create-report': {
+        return 'Report created successfully';
+      }
+
+      case 'save-report': {
+        return `Saved to ${output.filename || output.filepath || 'file'}`;
+      }
+
+      default: {
+        // Generic formatting
+        const summary = JSON.stringify(output).substring(0, 100);
+        return summary + (summary.length >= 100 ? '...' : '');
+      }
     }
   }
 

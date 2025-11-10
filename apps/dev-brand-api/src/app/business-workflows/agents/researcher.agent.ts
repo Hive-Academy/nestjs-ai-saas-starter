@@ -455,12 +455,19 @@ ${error.message}
     researchDepth?: 'summary' | 'detailed' | 'comprehensive';
     executionId?: string;
   }): AsyncGenerator<
-    {
-      type: 'workflow-update';
-      executionId: string;
-      state: TypedAgentState<ResearcherMetadata>;
-      timestamp: string;
-    },
+    | {
+        type: 'workflow-update';
+        executionId: string;
+        nodeName: string;
+        state: TypedAgentState<ResearcherMetadata>;
+        timestamp: string;
+      }
+    | {
+        type: 'tool-execution';
+        executionId: string;
+        toolData: any;
+        timestamp: string;
+      },
     void,
     unknown
   > {
@@ -484,23 +491,41 @@ ${error.message}
     };
 
     // Stream via WorkflowExecutionService
+    // 🔑 Use 'updates' mode to see individual node and tool execution events
     const stream = this.workflowExecutionService.streamWorkflow(
       ResearcherAgent,
       initialState,
       {
         configurable: { thread_id: executionId },
-        streamMode: 'values', // Full state snapshots
+        streamMode: 'updates', // Shows tool execution events + node updates
       }
     );
 
-    // Yield events to caller
-    for await (const stateUpdate of stream) {
-      yield {
-        type: 'workflow-update',
-        executionId,
-        state: stateUpdate as any as TypedAgentState<ResearcherMetadata>,
-        timestamp: new Date().toISOString(),
-      };
+    // Yield events to caller with enhanced typing for tool events
+    for await (const update of stream) {
+      // LangGraph 'updates' mode returns: { nodeName: stateUpdate }
+      // Example: { 'parseQuery': { metadata: {...} } } or { 'tools': { messages: [...] } }
+      const nodeName = Object.keys(update)[0];
+      const nodeData = update[nodeName];
+
+      if (nodeName === 'tools') {
+        // Tool execution event
+        yield {
+          type: 'tool-execution',
+          executionId,
+          toolData: nodeData,
+          timestamp: new Date().toISOString(),
+        } as any;
+      } else {
+        // Regular workflow node update
+        yield {
+          type: 'workflow-update',
+          executionId,
+          nodeName,
+          state: nodeData as any as TypedAgentState<ResearcherMetadata>,
+          timestamp: new Date().toISOString(),
+        } as any;
+      }
     }
 
     this.logger.log(`Streaming research completed for ${executionId}`);

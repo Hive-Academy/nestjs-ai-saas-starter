@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+// import { ModuleRef } from '@nestjs/core';
 import { StateGraph, END } from '@langchain/langgraph';
 import type {
   MultiAgentConfig,
@@ -85,7 +85,7 @@ export class SequentialGraphBuilder implements IMultiAgentGraphBuilder {
   private readonly logger = new Logger(SequentialGraphBuilder.name);
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    // private readonly moduleRef: ModuleRef,
     private readonly metadataProcessor: MetadataProcessorService
   ) {}
 

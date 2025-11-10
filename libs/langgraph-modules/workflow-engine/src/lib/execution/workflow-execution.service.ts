@@ -15,11 +15,8 @@ import type {
   ConditionalRouting,
   WorkflowNode,
 } from '../interfaces/workflow-engine.interface';
-import { AGENT_METADATA_KEY } from '../decorators/multi-agent/agent.decorator';
-import { ToolRegistryService } from '../services/tool-registry.service';
-import { LlmProviderService } from '../services/llm/llm-provider.service';
-import type { LLMWithTools } from '../types/internal-types';
 import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
+import { MultiAgentGraphBuilderService } from '../services/multi-agent/multi-agent-graph-builder.service';
 
 /**
  * WorkflowExecutionService
@@ -50,7 +47,7 @@ export class WorkflowExecutionService {
   constructor(
     private readonly metadataProcessor: MetadataProcessorService,
     private readonly moduleRef: ModuleRef,
-    private readonly toolRegistry: ToolRegistryService,
+    private readonly multiAgentGraphBuilder: MultiAgentGraphBuilderService,
     @Inject('WORKFLOW_ENGINE_MODULE_OPTIONS')
     options: WorkflowEngineModuleOptions,
 
@@ -113,23 +110,36 @@ export class WorkflowExecutionService {
   ): Promise<TState> {
     this.logger.debug(`Executing workflow from class ${workflowClass.name}`);
 
-    // 1. Extract metadata using MetadataProcessorService
+    // 1. Get workflow instance from NestJS DI (required for bound handlers)
+    const workflowInstance = this.moduleRef.get(workflowClass, {
+      strict: false,
+    });
+
+    // 2. Extract metadata using MetadataProcessorService
     const definition =
       this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
 
-    // 2. Validate metadata
+    // 3. Bind all handlers to instance (fixes 'this' context)
+    definition.nodes.forEach((node) => {
+      if (node.handler && workflowInstance) {
+        // Bind handler to instance so 'this' works inside methods
+        node.handler = node.handler.bind(workflowInstance);
+      }
+    });
+
+    // 4. Validate metadata
     this.metadataProcessor.validateWorkflowDefinition(definition);
 
-    // 3. Build StateGraph from metadata
+    // 5. Build StateGraph from metadata
     const graph = this.buildStateGraph(definition);
 
-    // 4. Compile with BOTH checkpointer and store
+    // 6. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to graph (optional)
     });
 
-    // 5. Execute with LangGraph's native invoke()
+    // 7. Execute with LangGraph's native invoke()
     const result = await compiled.invoke(input, config);
 
     this.logger.log(`Workflow ${definition.name} executed successfully`);
@@ -154,23 +164,36 @@ export class WorkflowExecutionService {
   ): AsyncIterable<TState> {
     this.logger.debug(`Streaming workflow from class ${workflowClass.name}`);
 
-    // 1. Extract metadata using MetadataProcessorService
+    // 1. Get workflow instance from NestJS DI (required for bound handlers)
+    const workflowInstance = this.moduleRef.get(workflowClass, {
+      strict: false,
+    });
+
+    // 2. Extract metadata using MetadataProcessorService
     const definition =
       this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
 
-    // 2. Validate metadata
+    // 3. Bind all handlers to instance (fixes 'this' context)
+    definition.nodes.forEach((node) => {
+      if (node.handler && workflowInstance) {
+        // Bind handler to instance so 'this' works inside methods
+        node.handler = node.handler.bind(workflowInstance);
+      }
+    });
+
+    // 4. Validate metadata
     this.metadataProcessor.validateWorkflowDefinition(definition);
 
-    // 3. Build StateGraph from metadata (reuse helper from Task 3.2)
+    // 5. Build StateGraph from metadata (reuse helper from Task 3.2)
     const graph = this.buildStateGraph(definition);
 
-    // 4. Compile with BOTH checkpointer and store
+    // 6. Compile with BOTH checkpointer and store
     const compiled = graph.compile({
       checkpointer: this.checkpointer,
       store: this.store, // NEW: Pass store to graph (optional)
     });
 
-    // 5. Stream using LangGraph's native stream()
+    // 7. Stream using LangGraph's native stream()
     // Default to 'updates' mode for tool call visibility (Task 6 enhancement)
     const streamMode = config?.streamMode || 'updates';
     this.logger.debug(`Streaming mode: ${streamMode}`);
@@ -188,26 +211,24 @@ export class WorkflowExecutionService {
   }
 
   /**
-   * Execute multi-agent workflow using LangGraph subgraphs
+   * Execute multi-agent workflow using MultiAgentGraphBuilderService
    *
-   * Coordinates multiple agents as subgraphs within a supervisor workflow.
-   * Each agent is compiled as an independent StateGraph and added as a node
-   * to the supervisor graph for orchestrated execution.
+   * Delegates graph construction to MultiAgentGraphBuilderService which handles
+   * topology-specific patterns (supervisor, sequential, etc.) via Strategy Pattern.
    *
-   * @param supervisorClass - Decorated supervisor workflow class
-   * @param agentClasses - Array of decorated agent classes
+   * @param supervisorClass - Decorated supervisor workflow class with @MultiAgent
+   * @param agentClasses - Array of decorated agent classes (deprecated - extracted from config)
    * @param input - Initial workflow state
    * @param config - Optional RunnableConfig (thread_id, etc.)
    * @returns Final workflow state
    *
-   * Implementation: Task 3.4
+   * REFACTORED: Task 7 - Integration with MultiAgentGraphBuilderService
+   * REPLACES: Manual metadata extraction + buildAgentGraph() pattern
    *
    * Pattern:
-   * 1. Extract supervisor metadata
-   * 2. Build agent subgraphs using buildAgentGraph() helper
-   * 3. Add agent subgraphs as nodes to supervisor graph
-   * 4. Compile supervisor with checkpoint adapter
-   * 5. Execute via LangGraph's native invoke()
+   * 1. Delegate graph building to MultiAgentGraphBuilderService
+   * 2. Compile graph with checkpointer and store
+   * 3. Execute via LangGraph's native invoke()
    */
   async executeMultiAgentWorkflow<TState extends WorkflowState = WorkflowState>(
     supervisorClass: any,
@@ -215,135 +236,37 @@ export class WorkflowExecutionService {
     input: TState,
     config?: RunnableConfig
   ): Promise<TState> {
-    this.logger.debug(
-      `Executing multi-agent workflow with supervisor ${supervisorClass.name} and ${agentClasses.length} agents`
-    );
-
-    // 1. Extract supervisor metadata using MetadataProcessorService
-    const supervisorDef =
-      this.metadataProcessor.extractWorkflowDefinition<TState>(supervisorClass);
-
-    // 2. Validate supervisor metadata
-    this.metadataProcessor.validateWorkflowDefinition(supervisorDef);
-
-    // 3. Build agent subgraphs using buildAgentGraph() helper (Task 3.5)
-    this.logger.debug(`Building ${agentClasses.length} agent subgraphs`);
-    const agentGraphs = await Promise.all(
-      agentClasses.map((AgentClass) => this.buildAgentGraph(AgentClass))
-    );
-
-    // 4. Build supervisor StateGraph from metadata (reuse helper from Task 3.2)
-    const supervisorGraph = this.buildStateGraph(supervisorDef);
-
-    // 5. Add agent subgraphs as nodes to supervisor graph
-    agentGraphs.forEach(({ id, graph }) => {
-      this.logger.debug(`Adding agent subgraph as node: ${id}`);
-      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      // The compiled graph is a valid node handler: (state: TState) => Promise<TState>
-      supervisorGraph.addNode(id, graph);
-    });
-
-    // 6. Compile supervisor graph with BOTH checkpointer and store
-    const compiled = supervisorGraph.compile({
-      checkpointer: this.checkpointer,
-      store: this.store, // NEW: Pass store to supervisor graph (optional)
-    });
-
-    // 7. Execute using LangGraph's native invoke()
-    const result = await compiled.invoke(input, config);
-
     this.logger.log(
-      `Multi-agent workflow ${supervisorDef.name} completed successfully with ${agentGraphs.length} agents`
-    );
-    return result as TState;
-  }
-
-  /**
-   * Build agent graph for subgraph usage in multi-agent workflows
-   *
-   * @param AgentClass - Decorated agent class with @Agent decorator
-   * @returns Compiled graph with agent id for subgraph coordination
-   *
-   * Implementation: Task 3.5
-   *
-   * Pattern: Agents use same decorators as workflows (@Workflow, @Node, @Edge, @Task).
-   * This method extracts agent metadata, builds StateGraph using buildStateGraph(),
-   * compiles the graph, and returns { id, graph } for use as subgraph node.
-   */
-  private async buildAgentGraph(AgentClass: any): Promise<{
-    id: string;
-    graph: any; // CompiledGraph type from LangGraph
-  }> {
-    this.logger.debug(
-      `Building agent graph for subgraph usage from class ${AgentClass.name}`
+      `Executing multi-agent workflow: ${supervisorClass.name} with ${agentClasses.length} agents`
     );
 
-    // 1. Extract agent metadata (agents use same decorators as workflows)
-    const agentDefinition =
-      this.metadataProcessor.extractWorkflowDefinition(AgentClass);
-
-    // 2. Extract agent configuration from @Agent decorator
-    const agentConfig = Reflect.getMetadata(AGENT_METADATA_KEY, AgentClass);
-
-    // 3. Get tools for this agent
-    const toolNames = agentConfig?.tools || [];
-    const tools = this.toolRegistry.getTools(toolNames);
-
-    // 4. Bind tools to LLM (if agent has tools)
-    if (tools.length > 0) {
-      this.logger.debug(
-        `Binding ${tools.length} tools to agent ${
-          agentConfig?.id || agentDefinition.name
-        }: ${toolNames.join(', ')}`
+    try {
+      // 1. Delegate graph building to MultiAgentGraphBuilderService
+      // Type assertion needed due to LangGraph's complex generic constraints
+      const graph = await this.multiAgentGraphBuilder.buildGraph(
+        supervisorClass
       );
 
-      // Inject LlmProviderService to get LLM instance
-      const llmProvider = this.moduleRef.get(LlmProviderService, {
-        strict: false,
+      // 2. Compile graph with checkpointer and store
+      const compiled = graph.compile({
+        checkpointer: this.checkpointer,
+        store: this.store,
       });
-      const llm = (await llmProvider.getLLM()) as unknown as LLMWithTools;
 
-      // Bind tools to LLM
-      const llmWithTools = llm.bindTools(tools);
+      // 3. Execute using LangGraph's native invoke()
+      const result = await compiled.invoke(input, config);
 
-      // Store bound LLM and tools in agent definition config metadata
-      agentDefinition.config = {
-        ...agentDefinition.config,
-        metadata: {
-          ...(agentDefinition.config?.metadata || {}),
-          llmWithTools: llmWithTools,
-          tools: tools,
-          toolNames: toolNames,
-        },
-      };
-
-      this.logger.debug(
-        `Tools bound to agent ${agentConfig?.id || agentDefinition.name}`
+      this.logger.log(
+        `Multi-agent workflow ${supervisorClass.name} completed successfully`
       );
+      return result as TState;
+    } catch (error) {
+      this.logger.error(
+        `Multi-agent workflow ${supervisorClass.name} failed:`,
+        error instanceof Error ? error.message : String(error)
+      );
+      throw error;
     }
-
-    // 5. Validate agent metadata
-    this.metadataProcessor.validateWorkflowDefinition(agentDefinition);
-
-    // 6. Build StateGraph (reuse buildStateGraph pattern from Task 3.2)
-    const graph = this.buildStateGraph(agentDefinition);
-
-    // 7. Compile the agent graph with BOTH checkpointer and store
-    const compiled = graph.compile({
-      checkpointer: this.checkpointer,
-      store: this.store, // NEW: Pass store to agent graph (optional)
-    });
-
-    // 8. Return with agent id for subgraph coordination
-    const result = {
-      id: agentDefinition.name,
-      graph: compiled,
-    };
-
-    this.logger.log(
-      `Agent graph built successfully for ${result.id} - ready for subgraph coordination`
-    );
-    return result;
   }
 
   /**

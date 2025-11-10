@@ -21,11 +21,20 @@ export interface ResearchWorkflowEvent {
     | 'task_start'
     | 'interrupt'
     | 'workflow_complete'
+    | 'tool_execution' // NEW: Tool execution event
     | 'error';
   timestamp: string;
   workflowId: string;
   taskName?: string;
+  nodeName?: string; // NEW: Node that emitted the event
   state?: any;
+  toolData?: {
+    // NEW: Tool execution data
+    toolName?: string;
+    toolInput?: any;
+    toolOutput?: any;
+    messages?: any[];
+  };
   error?: string;
 }
 
@@ -81,7 +90,7 @@ export class ResearchService {
         `${this.apiUrl}/stream/${executionId}`
       );
 
-      // Listen for workflow-update events
+      // Listen for workflow-update events (node execution)
       eventSource.addEventListener('workflow-update', (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
@@ -89,10 +98,36 @@ export class ResearchService {
             type: 'state_update',
             timestamp: data.timestamp,
             workflowId: executionId,
+            nodeName: data.nodeName, // Track which node emitted the event
             state: data.state,
           } as ResearchWorkflowEvent);
         } catch (error) {
           console.error('Failed to parse workflow-update event:', error);
+        }
+      });
+
+      // Listen for tool-execution events (NEW)
+      eventSource.addEventListener('tool-execution', (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Extract tool information from LangGraph message structure
+          const messages = data.toolData?.messages || [];
+          const lastMessage = messages[messages.length - 1];
+
+          observer.next({
+            type: 'tool_execution',
+            timestamp: data.timestamp,
+            workflowId: executionId,
+            toolData: {
+              toolName: lastMessage?.name || 'unknown-tool',
+              toolInput: lastMessage?.tool_calls?.[0]?.args,
+              toolOutput: lastMessage?.content,
+              messages: messages,
+            },
+          } as ResearchWorkflowEvent);
+        } catch (error) {
+          console.error('Failed to parse tool-execution event:', error);
         }
       });
 
