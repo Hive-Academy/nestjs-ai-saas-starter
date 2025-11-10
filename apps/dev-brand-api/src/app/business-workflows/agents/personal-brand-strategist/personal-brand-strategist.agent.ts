@@ -260,14 +260,21 @@ You may optionally use the memory-analysis tool to retrieve and analyze addition
       brandAnalysis
     );
 
+    // Enable optional brand-optimization tool for enhanced strategies
+    const enhancedPrompt = `${optimizationPrompt}
+
+You may optionally use the brand-optimization tool to generate data-driven optimization strategies, competitive positioning insights, or structured improvement recommendations if you need more analytical capabilities.`;
+
     try {
       const model = await this.llm.getLLM({ temperature: 0.5, maxTokens: 800 });
       const response = await model.invoke([
-        { role: 'user', content: optimizationPrompt },
+        ...state.messages,
+        { role: 'user', content: enhancedPrompt },
       ]);
       const strategy = response.content.toString();
 
       return {
+        messages: [...state.messages, response],
         metadata: {
           ...state.metadata,
           currentStep: 'optimization-complete',
