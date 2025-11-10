@@ -46,9 +46,6 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
 
         // Refresh TTL on read (extend checkpoint lifetime when accessed)
         refreshOnRead: process.env.CHECKPOINT_REFRESH_ON_READ !== 'false',
-
-        // Redis key prefix for checkpoint namespacing
-        keyPrefix: process.env.CHECKPOINT_KEY_PREFIX || 'langgraph:checkpoint:',
       });
 
       console.log('✅ Checkpoint: RedisSaver initialized (production)');
@@ -143,7 +140,6 @@ export async function validateCheckpointConfig(): Promise<void> {
     // Validate SQLite path
     const dbPath =
       process.env.CHECKPOINT_SQLITE_PATH || './data/checkpoints.db';
-    const dbDir = path.dirname(dbPath);
 
     if (!path.isAbsolute(dbPath) && !dbPath.startsWith('./')) {
       console.warn(`⚠️  Checkpoint path is relative: ${dbPath}`);

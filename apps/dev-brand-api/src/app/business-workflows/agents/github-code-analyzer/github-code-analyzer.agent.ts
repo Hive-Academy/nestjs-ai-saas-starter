@@ -21,13 +21,8 @@ import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
 // - MetadataProcessorService (not needed without base class)
 // - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
-import { GitHubIntegrationError } from '../../core/errors/business-workflow.errors';
 import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
-import {
-  buildDeveloperAnalysisPrompt,
-  generateFallbackAnalysis,
-} from './github-code-analyzer.prompts';
 import {
   extractGitHubUsername,
   buildSuccessMessage,
@@ -137,8 +132,8 @@ export class GitHubCodeAnalyzerAgent {
   }
 
   /**
-   * Analyze GitHub activity via real API integration
-   * REAL BUSINESS LOGIC: Comprehensive repository and commit analysis
+   * Analyze GitHub activity via LLM-autonomous tool selection
+   * MIGRATED: LLM decides when to call github-analyzer tool based on prompt
    */
   @Task({ dependsOn: ['initializeGitHubAnalysis'] })
   @Validate
@@ -156,99 +151,82 @@ export class GitHubCodeAnalyzerAgent {
     const githubUsername = state.metadata.githubUsername;
     const timeframe = state.metadata.timeframe;
 
-    try {
-      console.log(`💻 Analyzing GitHub activity for ${githubUsername}...`);
-      const githubAnalysis = await this.githubTools.analyzeGitHubActivity({
-        username: githubUsername,
-        timeframe: timeframe as 'week' | 'month' | 'quarter',
-        includePrivate: false,
-      });
+    console.log(`💻 Analyzing GitHub activity for ${githubUsername}...`);
 
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'github-activity-analyzed',
-            githubData: githubAnalysis,
-            repositoriesAnalyzed: githubAnalysis.summary.totalRepositories,
-            commitsAnalyzed: githubAnalysis.summary.totalCommits,
-            productivityScore: githubAnalysis.summary.productivityScore,
-          },
+    // LLM with bound tools decides autonomously to call github-analyzer
+    const prompt = `Analyze GitHub activity for user "${githubUsername}" over the last ${timeframe}.
+Use the github-analyzer tool to fetch comprehensive repository data, commits, pull requests, and code contributions.
+The tool should return structured data with summary metrics including total repositories, commits, and productivity score.
+Format: Call github-analyzer with username="${githubUsername}", timeframe="${timeframe}", includePrivate=false.`;
+
+    const llm = await this.llmProvider.getLLM({
+      temperature: 0.3,
+      maxTokens: 2000,
+    });
+
+    const response = await llm.invoke([
+      ...state.messages,
+      { role: 'user', content: prompt },
+    ]);
+
+    return {
+      state: {
+        ...state,
+        messages: [...state.messages, response],
+        metadata: {
+          ...state.metadata,
+          currentStep: 'github-activity-analyzed',
         },
-      };
-    } catch (error: unknown) {
-      console.error('❌ GitHub analysis failed:', error);
-
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      const statusCode =
-        (error as { status?: number; statusCode?: number }).status ||
-        (error as { status?: number; statusCode?: number }).statusCode;
-
-      const githubError = new GitHubIntegrationError(
-        'analyzeGitHubActivity',
-        githubUsername,
-        errorMessage,
-        statusCode,
-        { timeframe, originalError: errorMessage }
-      );
-
-      throw githubError;
-    }
+      },
+    };
   }
 
   /**
-   * Extract meaningful achievements from GitHub data
-   * REAL BUSINESS LOGIC: Transform code contributions into achievements
+   * Extract meaningful achievements from GitHub data via LLM-autonomous tool selection
+   * MIGRATED: LLM decides when to call achievement-extractor tool based on prompt
    */
   @Task({ dependsOn: ['analyzeGitHubActivity'] })
   async extractAchievements(
     context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
-    const githubData = state.metadata.githubData;
 
-    try {
-      console.log('🎯 Extracting meaningful achievements...');
-      const achievements = await this.githubTools.extractAchievements({
-        commits: githubData?.commits || [],
-        repositories: githubData?.repositories || [],
-        analysisDepth: 'detailed',
-      });
+    console.log('🎯 Extracting meaningful achievements...');
 
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'achievements-extracted',
-            achievements,
-            achievementCount: achievements.length,
-          },
+    // LLM with bound tools decides autonomously to call achievement-extractor
+    const prompt = `Extract meaningful achievements from the GitHub data in the previous messages.
+Use the achievement-extractor tool to analyze commits and repositories, identifying:
+- Technical accomplishments (new features, major refactors, performance improvements)
+- Code quality improvements (test coverage, documentation, CI/CD)
+- Collaboration metrics (PR reviews, issue resolution, mentoring)
+- Technology adoption (new languages/frameworks/tools)
+Provide detailed achievements with context and impact. Analysis depth: detailed.`;
+
+    const llm = await this.llmProvider.getLLM({
+      temperature: 0.4,
+      maxTokens: 2000,
+    });
+
+    const response = await llm.invoke([
+      ...state.messages,
+      { role: 'user', content: prompt },
+    ]);
+
+    return {
+      state: {
+        ...state,
+        messages: [...state.messages, response],
+        metadata: {
+          ...state.metadata,
+          currentStep: 'achievements-extracted',
         },
-      };
-    } catch (error: unknown) {
-      console.error('❌ Achievement extraction failed:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'achievement-extraction-error',
-            achievements: [],
-            error: errorMessage,
-          },
-        },
-      };
-    }
+      },
+    };
   }
 
   /**
-   * Generate professional developer insights
-   * REAL BUSINESS LOGIC: Professional insights about work patterns
+   * Generate professional developer insights via LLM-autonomous tool selection
+   * MIGRATED: LLM decides when to call developer-insights tool based on prompt
    */
   @Task({ dependsOn: ['extractAchievements'] })
   async generateDeveloperInsights(
@@ -256,51 +234,44 @@ export class GitHubCodeAnalyzerAgent {
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
-    const githubData = state.metadata.githubData;
 
-    try {
-      console.log('🔍 Generating developer insights...');
-      const developerInsights =
-        await this.githubTools.generateDeveloperInsights({
-          username: githubUsername,
-          commits: githubData?.commits || [],
-          repositories: githubData?.repositories || [],
-        });
+    console.log('🔍 Generating developer insights...');
 
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'insights-generated',
-            developerInsights,
-            technicalExpertise: developerInsights.technicalExpertise,
-          },
+    // LLM with bound tools decides autonomously to call developer-insights
+    const prompt = `Generate professional developer insights for "${githubUsername}" based on the GitHub data and achievements in previous messages.
+Use the developer-insights tool to analyze:
+- Technical expertise (breadth: frontend/backend/full-stack, complexity: junior/mid/senior/expert)
+- Work patterns (commit frequency, code review activity, collaboration style)
+- Technology proficiency (languages, frameworks, tools with skill levels)
+- Career trajectory (growth indicators, specialization trends)
+- Professional strengths (code quality, architectural decisions, mentorship)
+Provide actionable insights for personal branding and career development.`;
+
+    const llm = await this.llmProvider.getLLM({
+      temperature: 0.4,
+      maxTokens: 2000,
+    });
+
+    const response = await llm.invoke([
+      ...state.messages,
+      { role: 'user', content: prompt },
+    ]);
+
+    return {
+      state: {
+        ...state,
+        messages: [...state.messages, response],
+        metadata: {
+          ...state.metadata,
+          currentStep: 'insights-generated',
         },
-      };
-    } catch (error: unknown) {
-      console.error('❌ Developer insights generation failed:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'insights-error',
-            developerInsights: {
-              technicalExpertise: { breadth: 'Full-stack', complexity: 'High' },
-            },
-            error: errorMessage,
-          },
-        },
-      };
-    }
+      },
+    };
   }
 
   /**
    * AI-powered synthesis of technical data into compelling narrative
-   * REAL BUSINESS LOGIC: LLM-powered professional narrative generation
+   * MIGRATED: Uses message-based flow - all tool results available in conversation history
    */
   @Task({ dependsOn: ['generateDeveloperInsights'] })
   async synthesizeWithAI(
@@ -308,69 +279,46 @@ export class GitHubCodeAnalyzerAgent {
   ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const { state } = context;
     const githubUsername = state.metadata.githubUsername;
-    const githubData = state.metadata.githubData;
-    const achievements = state.metadata.achievements || [];
-    const developerInsights = state.metadata.developerInsights;
+    const timeframe = state.metadata.timeframe;
 
-    // Validate required data
-    if (!githubData) {
-      throw new Error('GitHub data is required for AI synthesis');
-    }
+    console.log('🚀 Synthesizing analysis with AI...');
 
-    if (!developerInsights) {
-      throw new Error('Developer insights are required for AI synthesis');
-    }
+    // LLM has access to all previous tool results via messages array
+    const synthesisPrompt = `Synthesize a comprehensive professional analysis for "${githubUsername}" based on all the GitHub data, achievements, and developer insights gathered in our conversation.
 
-    try {
-      console.log('🚀 Synthesizing analysis with AI...');
-      const analysisPrompt = buildDeveloperAnalysisPrompt(
-        githubUsername,
-        githubData,
-        achievements,
-        developerInsights
-      );
+Create a compelling narrative that:
+1. Highlights their strongest technical accomplishments and expertise
+2. Identifies unique value propositions for personal branding
+3. Suggests strategic positioning for career growth
+4. Provides actionable recommendations for skill development
 
-      const llm = await this.llmProvider.getLLM({
-        temperature: 0.4,
-        maxTokens: 2500,
-      });
-      const aiAnalysisResponse = await llm.invoke([
-        { role: 'user', content: analysisPrompt },
-      ]);
-      const aiAnalysis = aiAnalysisResponse.content.toString();
+Format the analysis as a professional developer profile suitable for LinkedIn, portfolio sites, or job applications.
+Focus on impact, technical depth, and career trajectory over the ${timeframe}.`;
 
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'ai-synthesis-complete',
-            aiAnalysis,
-            narrativeGenerated: true,
-          },
+    const llm = await this.llmProvider.getLLM({
+      temperature: 0.4,
+      maxTokens: 2500,
+    });
+
+    const aiAnalysisResponse = await llm.invoke([
+      ...state.messages,
+      { role: 'user', content: synthesisPrompt },
+    ]);
+
+    const aiAnalysis = aiAnalysisResponse.content.toString();
+
+    return {
+      state: {
+        ...state,
+        messages: [...state.messages, aiAnalysisResponse],
+        metadata: {
+          ...state.metadata,
+          currentStep: 'ai-synthesis-complete',
+          aiAnalysis,
+          narrativeGenerated: true,
         },
-      };
-    } catch (error: unknown) {
-      console.error('❌ AI synthesis failed:', error);
-      const fallbackAnalysis = generateFallbackAnalysis(
-        githubUsername,
-        state.metadata.timeframe
-      );
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            currentStep: 'ai-synthesis-fallback',
-            aiAnalysis: fallbackAnalysis,
-            mode: 'fallback',
-            error: errorMessage,
-          },
-        },
-      };
-    }
+      },
+    };
   }
 
   /**
@@ -457,6 +405,3 @@ export class GitHubCodeAnalyzerAgent {
     };
   }
 }
-
-// Export alias for config compatibility
-export { GitHubCodeAnalyzerAgent as ResearchShowcaseAgent };
