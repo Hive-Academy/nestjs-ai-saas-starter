@@ -22,6 +22,14 @@ export const routes: Routes = [
       ),
     title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
   },
+  {
+    path: 'research-chat',
+    loadComponent: () =>
+      import('./features/research-chat/research-chat.component').then(
+        (m) => m.ResearchChatComponent
+      ),
+    title: 'Research Chat - Autonomous AI Research Agent',
+  },
 
   {
     path: '**',

@@ -294,6 +294,12 @@ export class ShowcaseNavigationComponent {
       icon: '🚀',
       description: 'Real-time LangGraph demo',
     },
+    {
+      path: '/research-chat',
+      title: 'Research Chat',
+      icon: '🔬',
+      description: 'Autonomous AI research agent',
+    },
   ];
 
   constructor() {

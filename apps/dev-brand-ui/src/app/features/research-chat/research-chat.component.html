@@ -1,0 +1,76 @@
+<div class="research-chat-container">
+  <!-- Header -->
+  <div class="chat-header">
+    <h2>🔬 Research Chat</h2>
+    <p class="subtitle">Autonomous web research with AI-powered analysis</p>
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="chat-messages">
+    @for (message of messages; track message.timestamp) {
+    <div [class]="getMessageClass(message)">
+      <div class="message-header">
+        <span class="message-role">
+          @switch (message.role) { @case ('user') { 👤 You } @case ('assistant')
+          { 🤖 ResearcherAgent } @case ('system') { ℹ️ System } }
+        </span>
+        <span class="message-time">{{
+          formatTimestamp(message.timestamp)
+        }}</span>
+      </div>
+
+      <div class="message-content">
+        {{ message.content }}
+      </div>
+
+      @if (message.metadata?.filename) {
+      <div class="message-metadata">
+        <span class="file-icon">📄</span>
+        <span>{{ message.metadata.filename }}</span>
+      </div>
+      }
+    </div>
+    } @if (isResearching) {
+    <div class="message message-assistant message-status">
+      <div class="loading-indicator">
+        <span class="loading-dots"></span>
+        <span>Researching...</span>
+      </div>
+    </div>
+    }
+  </div>
+
+  <!-- Input Area -->
+  <div class="chat-input-container">
+    <form (submit)="sendMessage()" class="chat-input-form">
+      <input
+        type="text"
+        [(ngModel)]="currentQuery"
+        name="query"
+        placeholder="Ask me to research any topic... (e.g., 'Research AI agent frameworks in 2025')"
+        [disabled]="isResearching"
+        class="chat-input"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        [disabled]="!currentQuery.trim() || isResearching"
+        class="send-button"
+      >
+        @if (isResearching) {
+        <span>⏳</span>
+        } @else {
+        <span>📤</span>
+        }
+      </button>
+    </form>
+  </div>
+
+  <!-- Approval Modal -->
+  <app-approval-modal
+    [visible]="showApprovalModal"
+    [reportDraft]="reportDraft"
+    (approve)="onApprovalDecision(true)"
+    (reject)="onApprovalDecision(false)"
+  />
+</div>

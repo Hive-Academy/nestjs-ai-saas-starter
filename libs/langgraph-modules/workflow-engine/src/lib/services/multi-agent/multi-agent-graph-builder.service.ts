@@ -99,10 +99,8 @@ export class MultiAgentGraphBuilderService {
    * @param supervisorBuilder - Supervisor topology builder (Task 4)
    * @param sequentialBuilder - Sequential topology builder (Task 5)
    */
-  constructor() // private readonly supervisorBuilder: SupervisorGraphBuilder, // TODO: Task 4 - Inject SupervisorGraphBuilder when created
-  // TODO: Task 5 - Inject SequentialGraphBuilder when created
-  // private readonly sequentialBuilder: SequentialGraphBuilder
-  {
+  constructor() {
+    // private readonly sequentialBuilder: SequentialGraphBuilder // TODO: Task 5 - Inject SequentialGraphBuilder when created // private readonly supervisorBuilder: SupervisorGraphBuilder, // TODO: Task 4 - Inject SupervisorGraphBuilder when created
     // TODO: Task 4 & 5 - Register builders when they exist
     // Initialize empty registry for now
     this.builders = new Map<MultiAgentTopology, IMultiAgentGraphBuilder>([
