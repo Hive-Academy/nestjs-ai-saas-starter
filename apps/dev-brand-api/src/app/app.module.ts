@@ -57,9 +57,6 @@ import { ContentStrategyEngine } from './services/content-strategy-engine.servic
 // Competitive Intelligence
 import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
-// Business modules
-import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
-
 // Tool classes for WorkflowEngineModule
 import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
 import { BrandStrategistTools } from './business-workflows/core/tools/brand-strategist.tools';
@@ -150,27 +147,22 @@ import { ContentCreatorTools } from './business-workflows/core/tools/content-cre
 
     // Workflow engine with LangGraph native checkpoint (RedisSaver for production)
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (
-        githubTools: GitHubIntegrationTools,
-        brandTools: BrandStrategistTools,
-        webTools: WebResearchTools,
-        contentTools: ContentCreatorTools
-      ): Promise<WorkflowEngineModuleOptions> => {
+      useFactory: async (): Promise<WorkflowEngineModuleOptions> => {
         // Create LangGraph native checkpointer (RedisSaver/SqliteSaver/MemorySaver)
         const checkpointer = await getCheckpointSaver();
 
         return {
-          ...getWorkflowEngineConfig(),
+          ...getWorkflowEngineConfig(), // Includes LLM config from .env.llm
           checkpointer, // LangGraph BaseCheckpointSaver (not ICheckpointAdapter)
-          tools: [githubTools, brandTools, webTools, contentTools], // Register 4 tool classes
+          tools: [
+            GitHubIntegrationTools,
+            BrandStrategistTools,
+            WebResearchTools,
+            ContentCreatorTools,
+          ], // Register 4 tool class TYPES (not instances)
         };
       },
-      inject: [
-        GitHubIntegrationTools,
-        BrandStrategistTools,
-        WebResearchTools,
-        ContentCreatorTools,
-      ],
+      inject: [], // No injection needed - we're passing class types directly
     }),
 
     // Monitoring module
@@ -184,9 +176,6 @@ import { ContentCreatorTools } from './business-workflows/core/tools/content-cre
       logger: false,
       errorLogStyle: 'pretty',
     }),
-
-    // Business modules
-    BusinessWorkflowsModule,
   ],
   controllers: [HealthController, PerformanceController, DevBrandController],
   providers: [

@@ -6,6 +6,8 @@ import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import { IStreamingService } from '@hive-academy/langgraph-core';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import { LlmProviderService } from './services/llm/llm-provider.service';
+import type { LlmModuleOptions } from './interfaces/llm-config.interface';
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -51,6 +53,12 @@ export interface WorkflowEngineModuleOptions {
    * tools: [GithubToolsService, SearchToolsService]
    */
   tools?: any[];
+
+  /**
+   * LLM configuration for LlmProviderService
+   * Required for agents that use LLM functionality
+   */
+  llm?: LlmModuleOptions;
 }
 
 @Module({})
@@ -76,6 +84,10 @@ export class WorkflowEngineModule {
           provide: 'WORKFLOW_ENGINE_TOOL_CLASSES',
           useValue: options.tools || [],
         },
+        {
+          provide: 'LLM_MODULE_OPTIONS',
+          useValue: options.llm || {}, // Provide LLM config or empty object
+        },
         // Core services
         MetadataProcessorService,
 
@@ -84,11 +96,13 @@ export class WorkflowEngineModule {
 
         // Tool registry service
         ToolRegistryService,
+        LlmProviderService,
       ],
       exports: [
         MetadataProcessorService,
         WorkflowExecutionService,
         ToolRegistryService,
+        LlmProviderService,
       ],
       global: true,
     };
@@ -112,13 +126,31 @@ export class WorkflowEngineModule {
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
+        {
+          provide: 'WORKFLOW_ENGINE_TOOL_CLASSES',
+          useFactory: (opts: WorkflowEngineModuleOptions) => opts.tools || [],
+          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
+        },
+        {
+          provide: 'LLM_MODULE_OPTIONS',
+          useFactory: (opts: WorkflowEngineModuleOptions) => opts.llm || {}, // Extract LLM config from options
+          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
+        },
         // Core services
         MetadataProcessorService,
 
         // Execution services
         WorkflowExecutionService,
+
+        ToolRegistryService,
+        LlmProviderService,
       ],
-      exports: [MetadataProcessorService, WorkflowExecutionService],
+      exports: [
+        MetadataProcessorService,
+        WorkflowExecutionService,
+        ToolRegistryService,
+        LlmProviderService,
+      ],
       global: true,
     };
   }

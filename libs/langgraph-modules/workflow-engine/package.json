@@ -60,7 +60,8 @@
     "@nestjs/core": "*",
     "@langchain/langgraph-checkpoint": "*",
     "@langchain/openai": "*",
-    "@langchain/anthropic": "*"
+    "@langchain/anthropic": "*",
+    "@hive-academy/langgraph-memory": "*"
   },
   "devDependencies": {
     "rollup": "*",

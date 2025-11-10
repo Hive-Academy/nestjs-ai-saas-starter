@@ -1,18 +1,29 @@
 import type { WorkflowEngineModuleOptions } from '@hive-academy/langgraph-workflow-engine';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load LLM configuration from .env.llm file
+const llmEnvPath = path.resolve(process.cwd(), '.env.llm');
+dotenv.config({ path: llmEnvPath });
 
 /**
  * Workflow Engine Module Configuration for dev-brand-api
  *
- * ARCHITECTURE: Minimal orchestration configuration
+ * ARCHITECTURE: Minimal orchestration configuration + LLM provider
  * - Previously: functional-api.config.ts + multi-agent.config.ts + workflow-engine.config.ts
- * - Now: workflow-engine.config.ts provides only WorkflowEngineModule settings
- * - NOTE: LLM configuration moved to business-workflows.module.ts (belongs with agents/workflows)
+ * - Now: workflow-engine.config.ts provides WorkflowEngineModule settings + LLM config
+ * - LLM configuration loaded from .env.llm file
  * - NOTE: Multi-agent specific config removed (consolidated packages deleted)
  */
 export function getWorkflowEngineConfig(): Omit<
   WorkflowEngineModuleOptions,
-  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter'
-> {
+  | 'streamingAdapter'
+  | 'checkpointAdapter'
+  | 'memoryAdapter'
+  | 'checkpointer'
+  | 'tools'
+  | 'llm'
+> & { llm?: any } {
   return {
     // ============================================
     // COMPILATION SETTINGS
@@ -44,7 +55,28 @@ export function getWorkflowEngineConfig(): Omit<
       traceExecution: process.env.WORKFLOW_TRACE_EXECUTION === 'true',
     },
 
-    // NOTE: Adapters (streamingAdapter, checkpointAdapter, memoryAdapter)
+    // ============================================
+    // LLM CONFIGURATION (from .env.llm)
+    // ============================================
+    llm: {
+      defaultLlm: {
+        provider: (process.env.LLM_PROVIDER as any) || 'openai',
+        model: process.env.LLM_MODEL || 'gpt-4o-mini',
+        temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
+        maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '4000'),
+        openaiApiKey: process.env.OPENAI_API_KEY,
+        anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+        openrouterApiKey: process.env.OPENROUTER_API_KEY,
+        googleApiKey: process.env.GOOGLE_API_KEY,
+        azureOpenaiApiKey: process.env.AZURE_OPENAI_API_KEY,
+        cohereApiKey: process.env.COHERE_API_KEY,
+      },
+      streaming: {
+        enabled: process.env.LLM_STREAMING_ENABLED !== 'false',
+      },
+    },
+
+    // NOTE: Adapters (streamingAdapter, checkpointer, tools)
     // are injected by app.module.ts - not configured here
   };
 }

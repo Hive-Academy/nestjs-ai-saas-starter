@@ -51,8 +51,10 @@
     "*.md",
     "!*.tsbuildinfo"
   ],
+  "dependencies": {
+    "tslib": "*"
+  },
   "peerDependencies": {
-    "tslib": "*",
     "@nestjs/common": "*",
     "@hive-academy/nestjs-neo4j": "*",
     "@hive-academy/nestjs-chromadb": "*",
