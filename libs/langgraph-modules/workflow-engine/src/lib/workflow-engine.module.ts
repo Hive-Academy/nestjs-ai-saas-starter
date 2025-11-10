@@ -1,13 +1,12 @@
-import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import { DynamicModule, InjectionToken, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MetadataProcessorService } from './core/metadata-processor.service';
 import { WorkflowExecutionService } from './execution/workflow-execution.service';
+import type { LlmModuleOptions } from './interfaces/llm-config.interface';
+import { LlmProviderService } from './services/llm/llm-provider.service';
 import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
-import { IStreamingService } from '@hive-academy/langgraph-core';
-import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
-import { LlmProviderService } from './services/llm/llm-provider.service';
-import type { LlmModuleOptions } from './interfaces/llm-config.interface';
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -26,9 +25,6 @@ export interface WorkflowEngineModuleOptions {
     logLevel?: string;
     traceExecution?: boolean;
   };
-
-  // Optional adapters for external services
-  streamingAdapter?: IStreamingService;
 
   /**
    * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)

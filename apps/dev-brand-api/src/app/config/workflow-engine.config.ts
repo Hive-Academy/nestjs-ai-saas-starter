@@ -75,8 +75,5 @@ export function getWorkflowEngineConfig(): Omit<
         enabled: process.env.LLM_STREAMING_ENABLED !== 'false',
       },
     },
-
-    // NOTE: Adapters (streamingAdapter, checkpointer, tools)
-    // are injected by app.module.ts - not configured here
   };
 }

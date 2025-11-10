@@ -1,5 +1,7 @@
 // Module
 
+import type { Command } from './lib/interfaces/workflow.interface';
+
 // Constants (runtime exports)
 export * from './lib/constants';
 
@@ -27,12 +29,17 @@ export type {
   WorkflowState,
 } from './lib/interfaces/state-management.interface';
 
-export type {
-  LangGraphModuleOptions,
-  LangGraphModuleAsyncOptions,
-  LangGraphOptionsFactory,
-  AsyncModuleFactory,
-} from './lib/interfaces/module-options.interface';
+export enum CommandType {
+  GOTO = 'GOTO',
+  UPDATE = 'UPDATE',
+  END = 'END',
+  RETRY = 'RETRY',
+  ERROR = 'ERROR',
+}
+
+export type NodeHandler<TState = any> = (
+  state: TState
+) => Promise<Partial<TState> | Command<TState>>;
 
 // Export workflow interfaces with explicit naming to avoid conflicts
 export type {
@@ -70,10 +77,6 @@ export type { IToolProvider } from './lib/interfaces/tool.interface';
 // Workflow config interface (both type and runtime export for WorkflowExecutionConfig)
 export type { WorkflowExecutionConfig } from './lib/interfaces/workflow-config.interface';
 
-// Enums and runtime values from interfaces
-export { CommandType } from './lib/interfaces';
-export type { NodeHandler } from './lib/interfaces';
-
 // Annotations (runtime exports)
 export * from './lib/annotations';
 export {
@@ -84,32 +87,9 @@ export {
   AgentStateAnnotation,
   createCustomAgentStateAnnotation,
 } from './lib/annotations/agent-state.annotation';
-// Note: AgentState type is NOT exported here to avoid conflict with memory-adapter AgentState
-// Import directly from './lib/annotations/agent-state.annotation' if needed
 
 // Utils (runtime exports)
 export * from './lib/utils/workflow-metadata.utils';
 export { isWorkflow } from './lib/utils/workflow-metadata.utils';
 export * from './lib/utils/node-id';
 export * from './lib/utils/id-generation.utils';
-
-// Streaming integration exports for consumer libraries
-export {
-  NoOpStreamingService,
-  NoOpTokenStreamingService,
-  NoOpEventStreamProcessorService,
-  NoOpWebSocketBridgeService,
-} from './lib/interfaces/streaming.interface';
-
-export { StreamEventType } from './lib/interfaces/streaming.interface';
-
-export type {
-  IStreamingService,
-  ITokenStreamingService,
-  IEventStreamProcessorService,
-  IWebSocketBridgeService,
-  TokenStreamOptions,
-} from './lib/interfaces/streaming.interface';
-
-// Memory adapter types removed - replaced by BaseStore pattern (Task 7.6)
-// AgentState, Store, and related types are now part of LangGraph native patterns

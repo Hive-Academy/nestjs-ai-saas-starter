@@ -1,5 +1,4 @@
 import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
-import type { IStreamingService } from '@hive-academy/langgraph-core';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 /**
@@ -32,9 +31,8 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
  */
 export function getWorkflowEngineConfigWithDefaults(): Omit<
   Required<WorkflowEngineModuleOptions>,
-  'streamingAdapter' | 'checkpointer' | 'tools' | 'llm'
+  'checkpointer' | 'tools' | 'llm'
 > & {
-  streamingAdapter?: IStreamingService;
   checkpointer?: BaseCheckpointSaver;
   tools?: any[];
   llm?: any;
@@ -58,7 +56,6 @@ export function getWorkflowEngineConfigWithDefaults(): Omit<
       logLevel: config.debugging?.logLevel ?? 'info',
       traceExecution: config.debugging?.traceExecution ?? false,
     },
-    streamingAdapter: config.streamingAdapter,
     checkpointer: config.checkpointer,
     tools: config.tools,
     llm: config.llm,

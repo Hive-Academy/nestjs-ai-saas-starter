@@ -1,6 +1,5 @@
 import type { MultiAgentModuleOptions } from '../../interfaces/multi-agent/multi-agent.interface';
 import { DEFAULT_MULTI_AGENT_OPTIONS } from '../../constants/multi-agent/multi-agent.constants';
-import type { IStreamingService } from '@hive-academy/langgraph-core';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 
 /**
@@ -31,10 +30,9 @@ export function getMultiAgentModuleConfig(): MultiAgentModuleOptions {
  */
 export function getMultiAgentConfigWithDefaults(): Omit<
   Required<MultiAgentModuleOptions>,
-  'checkpointer' | 'streamingAdapter'
+  'checkpointer'
 > & {
   checkpointer?: BaseCheckpointSaver;
-  streamingAdapter?: IStreamingService;
 } {
   const config = getMultiAgentModuleConfig();
 
@@ -67,6 +65,5 @@ export function getMultiAgentConfigWithDefaults(): Omit<
     agents: config.agents || [],
     workflows: config.workflows || [],
     checkpointer: config.checkpointer,
-    streamingAdapter: config.streamingAdapter,
   };
 }

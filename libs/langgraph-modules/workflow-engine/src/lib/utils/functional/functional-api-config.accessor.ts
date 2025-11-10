@@ -29,9 +29,9 @@ export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
  * Used by decorators to inherit module configuration
  */
 export function getFunctionalApiConfigWithDefaults(): Required<
-  Omit<FunctionalApiModuleOptions, 'checkpointer' | 'streamingAdapter'>
+  Omit<FunctionalApiModuleOptions, 'checkpointer'>
 > &
-  Pick<FunctionalApiModuleOptions, 'checkpointer' | 'streamingAdapter'> {
+  Pick<FunctionalApiModuleOptions, 'checkpointer'> {
   const config = getFunctionalApiConfig();
 
   return {
@@ -45,6 +45,5 @@ export function getFunctionalApiConfigWithDefaults(): Required<
     enableCycleDetection: config.enableCycleDetection ?? true,
     globalMetadata: config.globalMetadata ?? {},
     checkpointer: config.checkpointer,
-    streamingAdapter: config.streamingAdapter,
   };
 }

@@ -1,4 +1,3 @@
-import type { IStreamingService } from '@hive-academy/langgraph-core';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import type { CheckpointingConfig } from './network.types';
 import type {
@@ -156,12 +155,6 @@ export interface MultiAgentModuleOptions {
    * checkpointer: new MemorySaver()
    */
   checkpointer?: BaseCheckpointSaver;
-
-  /**
-   * Optional streaming adapter for dependency injection
-   * If provided, enables real-time streaming features
-   */
-  streamingAdapter?: IStreamingService;
 }
 
 /**

@@ -19,11 +19,11 @@ import { RepositoryModule } from './repositories/repository.module';
 import {
   HitlModule,
   HitlModuleOptions,
-  IHitlStorageService,
-  IUserInterruptionStorageService,
+  IApprovalChainStorageService,
   IConfidenceStorageService,
   IFeedbackStorageService,
-  IApprovalChainStorageService,
+  IHitlStorageService,
+  IUserInterruptionStorageService,
 } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
 import {
@@ -41,9 +41,9 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
+import { DevBrandController } from './controllers/devbrand.controller';
 import { HealthController } from './controllers/health.controller';
 import { PerformanceController } from './controllers/performance.controller';
-import { DevBrandController } from './controllers/devbrand.controller';
 
 // Performance monitoring
 import { PerformanceDashboardService } from './services/performance-dashboard.service';
@@ -58,10 +58,16 @@ import { ContentStrategyEngine } from './services/content-strategy-engine.servic
 import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
 // Tool classes for WorkflowEngineModule
-import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
+import { ContentCreatorAgent } from './business-workflows/agents/content-creator/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from './business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
+import { PersonalBrandMemoryService } from './business-workflows/core';
 import { BrandStrategistTools } from './business-workflows/core/tools/brand-strategist.tools';
-import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
 import { ContentCreatorTools } from './business-workflows/core/tools/content-creator.tools';
+import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
+import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
+import { DevBrandChatWorkflow } from './business-workflows/workflows/devbrand-chat.workflow';
+import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbrand-supervisor.workflow';
 
 @Module({
   imports: [
@@ -183,7 +189,24 @@ import { ContentCreatorTools } from './business-workflows/core/tools/content-cre
     BrandMonitoringService,
     ContentStrategyEngine,
     CompetitiveIntelligenceService,
-    // All adapters are now provided by AdaptersModule
+
+    // MVP Core Agents - Using new decorator architecture
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent, // Reference implementation with workflow-agent type
+    ContentCreatorAgent,
+
+    // MVP Functional-API Workflows
+    DevBrandSupervisorWorkflow, // Multi-agent coordination
+    DevBrandChatWorkflow, // Chat interface workflow
+
+    // Core Business Services
+    PersonalBrandMemoryService, // ChromaDB + Neo4j integration (repositories injected from RepositoryModule)
+
+    // MVP Tools - Kept per user request
+    WebResearchTools, // Social media profile searching
+    GitHubIntegrationTools, // GitHub API integration
+    BrandStrategistTools, // Brand strategy and optimization tools
+    ContentCreatorTools,
   ],
 })
 export class AppModule {}

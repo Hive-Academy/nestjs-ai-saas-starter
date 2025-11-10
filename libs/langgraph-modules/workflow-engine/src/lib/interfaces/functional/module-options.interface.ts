@@ -1,9 +1,10 @@
 import type { ModuleMetadata, Type } from '@nestjs/common';
-import type {
-  AsyncModuleFactory,
-  IStreamingService,
-} from '@hive-academy/langgraph-core';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+
+/**
+ * Async module factory type (moved from langgraph-core)
+ */
+export type AsyncModuleFactory<T> = (...args: any[]) => Promise<T> | T;
 
 /**
  * Workflow provider type for explicit registration
@@ -83,12 +84,6 @@ export interface FunctionalApiModuleOptions {
    * checkpointer: new MemorySaver()
    */
   readonly checkpointer?: BaseCheckpointSaver;
-
-  /**
-   * Optional streaming service adapter for real-time events
-   * If not provided, streaming will be disabled (uses NoOpStreamingService)
-   */
-  readonly streamingAdapter?: IStreamingService;
 }
 
 /**
