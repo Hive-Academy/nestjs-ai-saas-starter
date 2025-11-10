@@ -321,17 +321,24 @@ You may optionally use the brand-optimization tool to generate data-driven optim
       brandAnalysis
     );
 
+    // Enable optional strategy-generation tool for comprehensive rebuild strategies
+    const enhancedPrompt = `${rebuildPrompt}
+
+You may optionally use the strategy-generation tool to create comprehensive brand rebuild strategies, repositioning frameworks, or multi-phase improvement roadmaps if you need structured strategic planning capabilities.`;
+
     try {
       const model = await this.llm.getLLM({
         temperature: 0.6,
         maxTokens: 1200,
       });
       const response = await model.invoke([
-        { role: 'user', content: rebuildPrompt },
+        ...state.messages,
+        { role: 'user', content: enhancedPrompt },
       ]);
       const strategy = response.content.toString();
 
       return {
+        messages: [...state.messages, response],
         metadata: {
           ...state.metadata,
           currentStep: 'rebuild-complete',
