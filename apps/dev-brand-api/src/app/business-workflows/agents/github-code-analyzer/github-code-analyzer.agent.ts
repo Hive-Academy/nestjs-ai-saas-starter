@@ -21,7 +21,6 @@ import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
 // - MetadataProcessorService (not needed without base class)
 // - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
-import { GitHubIntegrationTools } from '../../core/tools/github-integration.tools';
 import { GitHubIntegrationError } from '../../core/errors/business-workflow.errors';
 import { Validate, Required } from '../../core/validation/workflow.validators';
 import { Optimize } from '../../core/performance/optimization.decorators';
@@ -95,10 +94,7 @@ import {
 })
 @Injectable()
 export class GitHubCodeAnalyzerAgent {
-  constructor(
-    private readonly llmProvider: LlmProviderService,
-    private readonly githubTools: GitHubIntegrationTools
-  ) {
+  constructor(private readonly llmProvider: LlmProviderService) {
     // No super() call - no base class
     // Agents use @Agent decorator for orchestration (decorator-driven, not inheritance-driven)
   }

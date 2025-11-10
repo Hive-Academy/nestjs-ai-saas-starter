@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-
 import { getRepositoryToken, Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 // Entities
