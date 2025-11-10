@@ -1,14 +1,5 @@
 import { SetMetadata, type Type } from '@nestjs/common';
-import {
-  WORKFLOW_METADATA_KEY,
-  WORKFLOW_NODES_KEY,
-  WORKFLOW_EDGES_KEY,
-} from '@hive-academy/langgraph-core';
 import { getMultiAgentConfigWithDefaults } from '../../utils/multi-agent/multi-agent-config.accessor';
-import {
-  WorkflowType,
-  type WorkflowOptions,
-} from '../functional/workflow.decorator';
 
 /**
  * Multi-agent topology types based on LangGraph patterns
@@ -267,29 +258,6 @@ export function MultiAgent(config: MultiAgentConfig): ClassDecorator {
       target
     );
     SetMetadata(MULTI_AGENT_METADATA_KEY, configWithDefaults)(target);
-
-    // ✨ CRITICAL FIX: Apply @Workflow metadata internally
-    // Multi-agent workflows need workflow metadata for MetadataProcessorService.extractWorkflowDefinition()
-    // This creates the necessary workflow structure that executeMultiAgentWorkflow() expects
-    const workflowOptions: WorkflowOptions = {
-      name: config.networkId,
-      description: `Multi-agent ${config.topology} workflow`,
-      type: WorkflowType.FUNCTIONAL_NODE, // Multi-agent uses node-based workflow pattern
-      streaming: configWithDefaults.streaming,
-      cache: true,
-    };
-
-    // Apply workflow metadata (same as @FunctionalWorkflow decorator)
-    Reflect.defineMetadata(WORKFLOW_METADATA_KEY, workflowOptions, target);
-    SetMetadata(WORKFLOW_METADATA_KEY, workflowOptions)(target);
-
-    // Initialize node and edge collectors (required by MetadataProcessorService)
-    if (!Reflect.hasMetadata(WORKFLOW_NODES_KEY, target)) {
-      Reflect.defineMetadata(WORKFLOW_NODES_KEY, [], target);
-    }
-    if (!Reflect.hasMetadata(WORKFLOW_EDGES_KEY, target)) {
-      Reflect.defineMetadata(WORKFLOW_EDGES_KEY, [], target);
-    }
 
     // Mark class as multi-agent workflow
     SetMetadata('multi-agent:marker', true)(target);
