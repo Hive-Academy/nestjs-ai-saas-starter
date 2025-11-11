@@ -35,7 +35,8 @@
       "Bash(cloc:*)",
       "Bash(xargs:*)",
       "Bash(npx nx run:*)",
-      "Bash(npx nx test:*)"
+      "Bash(npx nx test:*)",
+      "Bash(npx nx run-many:*)"
     ],
     "deny": [],
     "ask": [],

@@ -1,8 +1,6 @@
-import type {
-  EntrypointMetadata,
-  TaskMetadata,
-  NodeMetadata,
-} from '@hive-academy/langgraph-functional-api';
+import type { EntrypointMetadata } from '../decorators/functional/entrypoint.decorator';
+import type { NodeMetadata } from '../decorators/functional/node.decorator';
+import type { TaskMetadata } from '../decorators/functional/task.decorator';
 
 /**
  * Type guard to check if metadata has an id property

@@ -19,7 +19,10 @@
         }}</span>
       </div>
 
-      <div class="message-content" [innerHTML]="message.content | markdown"></div>
+      <div
+        class="message-content"
+        [innerHTML]="message.content | markdown"
+      ></div>
 
       @if (message.metadata?.filename) {
       <div class="message-metadata">

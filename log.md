@@ -1,76 +1,169 @@
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/performance/summary, GET} route +1ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RoutesResolver] DevBrandController {/api/devbrand}: +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/devbrand/execute, POST} route +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RoutesResolver] ResearchChatController {/api/research}: +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/research/chat, POST} route +1ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/research/stream/:executionId, GET} route +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/research/approve/:executionId, POST} route +1ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/research/reports, GET} route +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [RouterExplorer] Mapped {/api/research/reports/:filename, GET} route +0ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ChromaDBConnectionService] Connected to ChromaDB in 40ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ChromaDBConnectionService] ChromaDB connection initialized successfully
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [UserInterruptionService] ✅ UserInterruptionService initialized (lazy-loading enabled - state loads when workflows resume)
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ApprovalChainService] ✅ ApprovalChainService initialized (lazy-loading enabled - chains load on-demand)
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [FeedbackProcessorService] ✅ FeedbackProcessorService initialized (lazy-loading enabled - feedback loads on-demand)
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [HumanApprovalService] Human Approval Service initializing with specialized services
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [HumanApprovalService] ✅ Human Approval Service initialized
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ConfidenceEvaluatorService] ✅ ConfidenceEvaluatorService initialized (lazy-loading enabled - patterns load on-demand)
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ToolRegistryService] Registering 5 tool classes
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Processing 4 tools from GitHubIntegrationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: github-analyzer from GitHubIntegrationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: achievement-extractor from GitHubIntegrationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: developer-insights from GitHubIntegrationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: ai-synthesis from GitHubIntegrationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Processing 3 tools from BrandStrategistTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: memory-analysis from BrandStrategistTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: brand-optimization from BrandStrategistTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: strategy-generation from BrandStrategistTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Processing 4 tools from WebResearchTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: web-search from WebResearchTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: news-search from WebResearchTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: social-profile-search from WebResearchTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: research-search from WebResearchTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Processing 5 tools from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: linkedin-formatter from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: devto-formatter from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: content-optimizer from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: quality-scorer from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: engagement-predictor from ContentCreatorTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Processing 4 tools from FileOperationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: create-report from FileOperationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: save-report from FileOperationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: list-reports from FileOperationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM DEBUG [ToolRegistryService] Registered tool: read-report from FileOperationTools
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [ToolRegistryService] Tool registration completed in 7.6ms - Total tools: 20
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG [NestApplication] Nest application successfully started +7ms
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG 🚀 Application is running on: <http://localhost:3000/api>
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG 📚 API Documentation available at: <http://localhost:3000/docs>
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG 🔧 Health check available at: <http://localhost:3000/api/health>
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG 🔌 WebSocket streaming available at: ws://localhost:8080/streaming
-[Nest] 5340 - 11/11/2025, 1:23:35 AM LOG 🌊 Frontend should connect to: ws://localhost:8080/streaming
-[Nest] 5340 - 11/11/2025, 1:24:05 AM DEBUG [AlertingService] Evaluating 0 active alert rules
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [ResearchChatController] 🚀 Starting research for query: "research angular signal forms advanced usage"
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [ResearchChatController] ✅ Research workflow started: research-1762817050670 - Connect to /api/research/stream/research-1762817050670  
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [ResearchChatController] 📡 SSE stream connected for research-1762817050670
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [ResearcherAgent] Starting streaming research for query: "research angular signal forms advanced usage" (execution: research-1762817050670)
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Streaming workflow from class ResearcherAgent
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [MetadataProcessorService] Extracting workflow definition from ResearcherAgent
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [MetadataProcessorService] Detected workflow pattern: functional-task for ResearcherAgent
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [MetadataProcessorService] Found 4 task-based nodes for workflow researcher-workflow
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [MetadataProcessorService] Extracted task-based workflow metadata for researcher-workflow (edges will be built by WorkflowExecutionService)
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [MetadataProcessorService] Validating workflow definition: researcher-workflow
-[Nest] 5340 - 11/11/2025, 1:24:10 AM WARN [MetadataProcessorService] Unreachable nodes found: conductResearch, generateReportDraft, saveReport
-[Nest] 5340 - 11/11/2025, 1:24:10 AM LOG [MetadataProcessorService] Workflow definition validation completed for researcher-workflow
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Building StateGraph for workflow researcher-workflow with 4 nodes
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding node: parseQuery
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding node: conductResearch
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding node: generateReportDraft
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding node: saveReport
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Building edges from taskDependencies for 4 tasks
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding dependency edge: parseQuery -> conductResearch
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding dependency edge: conductResearch -> generateReportDraft
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Adding dependency edge: generateReportDraft -> saveReport
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] StateGraph built successfully for researcher-workflow with entry point parseQuery
-[Nest] 5340 - 11/11/2025, 1:24:10 AM DEBUG [WorkflowExecutionService] Streaming mode: values
-[Nest] 5340 - 11/11/2025, 1:24:10 AM ERROR [ResearchChatController] ❌ Stream error for research-1762817050670:
-Cannot read properties of undefined (reading 'log')
+ized +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RoutesResolver] HealthController {/api/health}: +40ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/health, GET} route +2ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/health/detailed, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/health/libraries, GET} route +1ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RoutesResolver] PerformanceController {/api/performance}: +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/performance/dashboard, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/performance/repositories, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/performance/recommendations, GET} route +1ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/performance/summary, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RoutesResolver] DevBrandController {/api/devbrand}: +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/devbrand/execute, POST} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RoutesResolver] ResearchChatController {/api/research}: +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/research/chat, POST} route +1ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/research/stream/:executionId, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/research/approve/:executionId, POST} route +1ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/research/reports, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [RouterExplorer] Mapped {/api/research/reports/:filename, GET} route +0ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ChromaDBConnectionService] Connected to ChromaDB in 18ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ChromaDBConnectionService] ChromaDB connection initialized successfully
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [UserInterruptionService] ✅ UserInterruptionService initialized (lazy-loading enabled - state loads when workflows resume)
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ApprovalChainService] ✅ ApprovalChainService initialized (lazy-loading enabled - chains load on-demand)
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [FeedbackProcessorService] ✅ FeedbackProcessorService initialized (lazy-loading enabled - feedback loads on-demand)
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [HumanApprovalService] Human Approval Service initializing with specialized services
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [HumanApprovalService] ✅ Human Approval Service initialized
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ConfidenceEvaluatorService] ✅ ConfidenceEvaluatorService initialized (lazy-loading enabled - patterns load on-demand)
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ToolRegistryService] Registering 5 tool classes
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Processing 4 tools from GitHubIntegrationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: github-analyzer from GitHubIntegrationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: achievement-extractor from GitHubIntegrationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: developer-insights from GitHubIntegrationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: ai-synthesis from GitHubIntegrationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Processing 3 tools from BrandStrategistTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: memory-analysis from BrandStrategistTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: brand-optimization from BrandStrategistTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: strategy-generation from BrandStrategistTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Processing 4 tools from WebResearchTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: web-search from WebResearchTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: news-search from WebResearchTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: social-profile-search from WebResearchTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: research-search from WebResearchTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Processing 5 tools from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: linkedin-formatter from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: devto-formatter from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: content-optimizer from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: quality-scorer from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: engagement-predictor from ContentCreatorTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Processing 4 tools from FileOperationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: create-report from FileOperationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: save-report from FileOperationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: list-reports from FileOperationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM DEBUG [ToolRegistryService] Registered tool: read-report from FileOperationTools
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [ToolRegistryService] Tool registration completed in 5.9ms - Total tools: 20
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG [NestApplication] Nest application successfully started +6ms
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG 🚀 Application is running on: <http://localhost:3000/api>
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG 📚 API Documentation available at: <http://localhost:3000/docs>
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG 🔧 Health check available at: <http://localhost:3000/api/health>
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG 🔌 WebSocket streaming available at: ws://localhost:8080/streaming
+[Nest] 23268 - 11/11/2025, 9:56:45 PM LOG 🌊 Frontend should connect to: ws://localhost:8080/streaming
+[Nest] 23268 - 11/11/2025, 9:57:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 9:57:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 9:57:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 9:57:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 9:57:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 9:58:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 9:58:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 9:58:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 9:58:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 9:58:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 9:59:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 9:59:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 9:59:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 9:59:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 9:59:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:00:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:00:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 10:00:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 10:00:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 10:00:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:01:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:01:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 10:01:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 10:01:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 10:01:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:02:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:02:45 PM DEBUG [HealthCheckService] Performing scheduled health check...
+[Nest] 23268 - 11/11/2025, 10:02:45 PM WARN [HealthCheckService] System health degraded:
+[Nest] 23268 - 11/11/2025, 10:02:45 PM WARN [HealthCheckService] Object(2) {
+overall: 'unhealthy',
+unhealthyServices: [
+{
+name: 'memory',
+state: 'unhealthy',
+error: undefined
+}
+]
+}
+[Nest] 23268 - 11/11/2025, 10:02:45 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:03:15 PM DEBUG [AlertingService] Evaluating 0 active alert rules
+[Nest] 23268 - 11/11/2025, 10:03:17 PM LOG [DevBrandController] 🚀 Starting DevBrand workflow for GitHub user: abdallah-khalil (executionId: devbrand-1762891397092)
+[Nest] 23268 - 11/11/2025, 10:03:17 PM LOG [DevBrandSupervisorWorkflow] 🚀 Starting DevBrand workflow for user: anonymous, GitHub: abdallah-khalil
+[Nest] 23268 - 11/11/2025, 10:03:17 PM LOG [WorkflowExecutionService] Executing multi-agent workflow: DevBrandSupervisorWorkflow with 3 agents
+[Nest] 23268 - 11/11/2025, 10:03:17 PM DEBUG [MultiAgentGraphBuilderService] Building multi-agent graph for DevBrandSupervisorWorkflow
+[Nest] 23268 - 11/11/2025, 10:03:17 PM DEBUG [MultiAgentGraphBuilderService] Extracted config: topology=supervisor, agents=3
+[Nest] 23268 - 11/11/2025, 10:03:17 PM ERROR [WorkflowExecutionService] Multi-agent workflow DevBrandSupervisorWorkflow failed:
+No builder registered for topology: supervisor. Available topologies: none. Ensure the corresponding builder is created and registered in the builders Map.
+[Nest] 23268 - 11/11/2025, 10:03:17 PM ERROR [DevBrandSupervisorWorkflow] Multi-agent coordination failed:
+[Nest] 23268 - 11/11/2025, 10:03:17 PM ERROR [DevBrandSupervisorWorkflow] MultiAgentGraphBuilderError: No builder registered for topology: supervisor. Available topologies: none. Ensure the corresponding builder is created and registered in the builders Map.
+at MultiAgentGraphBuilderService.buildGraph (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-workflow-engine\index.cjs.js:2144:13)
+at WorkflowExecutionService.executeMultiAgentWorkflow (D:\projects\nestjs-ai-saas-starter\node_modules\@hive-academy\langgraph-workflow-engine\index.cjs.js:2382:55)
+at DevBrandSupervisorWorkflow.execute (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:101873)
+at DevBrandController.startWorkflowInBackground (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:99380)
+at DevBrandController.executeDevBrand (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:98597)
+at D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\router\router-execution-context.js:38:29
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+at async D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+at async D:\projects\nestjs-ai-saas-starter\node_modules\@nestjs\core\router\router-proxy.js:9:17 {
+cause: undefined
+}
+[Nest] 23268 - 11/11/2025, 10:03:17 PM ERROR [DevBrandController] Workflow devbrand-1762891397092 failed:
+[Nest] 23268 - 11/11/2025, 10:03:17 PM ERROR [DevBrandController] Error: DevBrand workflow failed: No builder registered for topology: supervisor. Available topologies: none. Ensure the corresponding builder is created and registered in the builders Map.
+at DevBrandSupervisorWorkflow.execute (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:102876)
+at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+at async DevBrandController.startWorkflowInBackground (D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\dist\main.js:1:99352)
