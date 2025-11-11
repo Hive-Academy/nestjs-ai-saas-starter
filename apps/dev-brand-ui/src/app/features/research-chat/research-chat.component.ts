@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   ResearchService,
@@ -35,7 +35,13 @@ interface ChatMessage {
 @Component({
   selector: 'app-research-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, ApprovalModalComponent, MarkdownModule],
+  imports: [
+    CommonModule,
+    AsyncPipe,
+    FormsModule,
+    ApprovalModalComponent,
+    MarkdownModule,
+  ],
   templateUrl: './research-chat.component.html',
   styleUrls: ['./research-chat.component.scss'],
 })

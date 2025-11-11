@@ -6,7 +6,7 @@
       <!-- NO message-header per reference - just content -->
       <div
         class="message-content"
-        [innerHTML]="message.content | markdown"
+        [innerHTML]="message.content | markdown | async"
       ></div>
 
       @if (message.metadata?.filename) {
