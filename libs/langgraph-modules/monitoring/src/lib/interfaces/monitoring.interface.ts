@@ -414,6 +414,10 @@ export interface HealthCheckConfig {
   readonly timeout: number;
   readonly retries: number;
   readonly gracefulShutdownTimeout: number;
+  readonly memory?: {
+    readonly unhealthyThreshold?: number;
+    readonly degradedThreshold?: number;
+  };
 }
 
 export interface PerformanceConfig {

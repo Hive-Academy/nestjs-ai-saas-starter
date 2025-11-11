@@ -5,6 +5,8 @@ import type { MonitoringConfig } from '@hive-academy/langgraph-monitoring';
  * Provides observability for LangGraph workflows and agents
  */
 export function getMonitoringConfig(): MonitoringConfig {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return {
     // Overall monitoring enabled flag
     enabled: process.env.MONITORING_ENABLED !== 'false',
@@ -70,6 +72,16 @@ export function getMonitoringConfig(): MonitoringConfig {
       gracefulShutdownTimeout: parseInt(
         process.env.MONITORING_SHUTDOWN_TIMEOUT || '30000'
       ), // 30 seconds
+      memory: {
+        unhealthyThreshold: parseInt(
+          process.env.MEMORY_HEALTH_THRESHOLD_UNHEALTHY ||
+            (isDevelopment ? '95' : '90')
+        ),
+        degradedThreshold: parseInt(
+          process.env.MEMORY_HEALTH_THRESHOLD_DEGRADED ||
+            (isDevelopment ? '90' : '80')
+        ),
+      },
     },
 
     // Performance monitoring settings
