@@ -370,3 +370,249 @@
     font-size: 1.25rem;
   }
 }
+
+/* ========================================
+   MARKDOWN RENDERING STYLES
+   ======================================== */
+
+.message-content {
+  /* Headings */
+  ::ng-deep h1,
+  ::ng-deep h2,
+  ::ng-deep h3,
+  ::ng-deep h4,
+  ::ng-deep h5,
+  ::ng-deep h6 {
+    font-weight: 700;
+    line-height: 1.3;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    color: #23272f;
+  }
+
+  ::ng-deep h1 {
+    font-size: 2em;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.3em;
+  }
+
+  ::ng-deep h2 {
+    font-size: 1.75em;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.3em;
+  }
+
+  ::ng-deep h3 {
+    font-size: 1.5em;
+  }
+
+  ::ng-deep h4 {
+    font-size: 1.25em;
+  }
+
+  ::ng-deep h5 {
+    font-size: 1.125em;
+  }
+
+  ::ng-deep h6 {
+    font-size: 1em;
+    color: #71717a;
+  }
+
+  /* Paragraphs */
+  ::ng-deep p {
+    margin-top: 0;
+    margin-bottom: 1em;
+    line-height: 1.6;
+  }
+
+  /* Lists */
+  ::ng-deep ul,
+  ::ng-deep ol {
+    margin-top: 0;
+    margin-bottom: 1em;
+    padding-left: 2em;
+    line-height: 1.6;
+  }
+
+  ::ng-deep li {
+    margin-bottom: 0.5em;
+  }
+
+  ::ng-deep li > p {
+    margin-bottom: 0.5em;
+  }
+
+  ::ng-deep ul ul,
+  ::ng-deep ul ol,
+  ::ng-deep ol ul,
+  ::ng-deep ol ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  /* Links */
+  ::ng-deep a {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s, text-decoration 0.2s;
+
+    &:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
+    &:visited {
+      color: #7c3aed;
+    }
+  }
+
+  /* Code blocks */
+  ::ng-deep pre {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 1em;
+    overflow-x: auto;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.875em;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    code {
+      background: transparent;
+      padding: 0;
+      border: none;
+      color: #e2e8f0;
+      font-size: 1em;
+    }
+  }
+
+  /* Inline code */
+  ::ng-deep code {
+    background: #f9fafb;
+    color: #e11d48;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 0.875em;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Blockquotes */
+  ::ng-deep blockquote {
+    margin: 1em 0;
+    padding: 0.75em 1.25em;
+    border-left: 4px solid #6366f1;
+    background: #f9fafb;
+    color: #71717a;
+    font-style: italic;
+    border-radius: 0 8px 8px 0;
+
+    p {
+      margin: 0;
+    }
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* Tables */
+  ::ng-deep table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    font-size: 0.875em;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  ::ng-deep thead {
+    background: #f9fafb;
+  }
+
+  ::ng-deep th {
+    padding: 0.75em 1em;
+    text-align: left;
+    font-weight: 600;
+    color: #23272f;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  ::ng-deep td {
+    padding: 0.75em 1em;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  ::ng-deep tbody tr {
+    transition: background 0.2s;
+
+    &:hover {
+      background: #f9fafb;
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  /* Horizontal rules */
+  ::ng-deep hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 2em 0;
+  }
+
+  /* Images */
+  ::ng-deep img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1em 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Strong/Bold */
+  ::ng-deep strong,
+  ::ng-deep b {
+    font-weight: 700;
+    color: #23272f;
+  }
+
+  /* Emphasis/Italic */
+  ::ng-deep em,
+  ::ng-deep i {
+    font-style: italic;
+  }
+
+  /* Strikethrough */
+  ::ng-deep del,
+  ::ng-deep s {
+    text-decoration: line-through;
+    color: #71717a;
+  }
+
+  /* Task lists */
+  ::ng-deep input[type='checkbox'] {
+    margin-right: 0.5em;
+  }
+
+  /* First/Last child margin cleanup */
+  ::ng-deep > *:first-child {
+    margin-top: 0;
+  }
+
+  ::ng-deep > *:last-child {
+    margin-bottom: 0;
+  }
+}

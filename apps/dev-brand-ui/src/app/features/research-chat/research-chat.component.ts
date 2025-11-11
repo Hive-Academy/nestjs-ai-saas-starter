@@ -7,6 +7,7 @@ import {
 } from './services/research.service';
 import { Subscription } from 'rxjs';
 import { ApprovalModalComponent } from './components/approval-modal.component';
+import { MarkdownModule } from 'ngx-markdown';
 
 /**
  * 🔬 RESEARCH CHAT COMPONENT
@@ -34,7 +35,7 @@ interface ChatMessage {
 @Component({
   selector: 'app-research-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, ApprovalModalComponent],
+  imports: [CommonModule, FormsModule, ApprovalModalComponent, MarkdownModule],
   templateUrl: './research-chat.component.html',
   styleUrls: ['./research-chat.component.scss'],
 })

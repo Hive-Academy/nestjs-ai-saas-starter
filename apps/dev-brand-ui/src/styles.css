@@ -4,6 +4,9 @@
 
 /* You can add global styles to this file, and also import other style files */
 
+/* Prism.js Syntax Highlighting */
+@import 'prismjs/themes/prism-okaidia.css';
+
 @layer utilities {
   /* 3D Text Effects - Reusable classes for section titles */
 
