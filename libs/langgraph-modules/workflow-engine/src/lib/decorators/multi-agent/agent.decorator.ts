@@ -9,38 +9,21 @@ export type AgentType = 'simple-agent' | 'workflow-agent';
 
 /**
  * Workflow configuration for workflow-agent types
+ *
+ * @deprecated Use AgentWorkflowConfig via 'workflow' property instead
+ *
+ * BREAKING CHANGE (TASK_2025_045):
+ * Non-functional options removed (were stored but never read by workflow-engine):
+ * ❌ enableInternalStreaming
+ * ❌ enableInternalCheckpointing
+ * ❌ internalTimeout
+ * ❌ enableErrorRecovery
+ * ❌ maxInternalRetries
+ * ❌ enableStepProgress
+ *
+ * Only stateKey remains as a functional option.
  */
 export interface WorkflowAgentConfig {
-  /**
-   * Enable internal streaming for workflow steps
-   */
-  enableInternalStreaming?: boolean;
-
-  /**
-   * Enable internal checkpointing for workflow persistence
-   */
-  enableInternalCheckpointing?: boolean;
-
-  /**
-   * Internal workflow timeout in milliseconds
-   */
-  internalTimeout?: number;
-
-  /**
-   * Enable internal workflow error recovery
-   */
-  enableErrorRecovery?: boolean;
-
-  /**
-   * Maximum number of internal workflow retries
-   */
-  maxInternalRetries?: number;
-
-  /**
-   * Enable workflow step progress tracking
-   */
-  enableStepProgress?: boolean;
-
   /**
    * Internal workflow state persistence key
    */
@@ -98,6 +81,27 @@ export interface MultiAgentInterruptionConfig {
 /**
  * 🆕 ENHANCED: Agent-specific workflow configuration interface
  * Combines workflow metadata with agent-specific workflow settings
+ *
+ * FUNCTIONAL OPTIONS (actively used by workflow-engine):
+ * - name: Workflow identifier
+ * - description: Human-readable workflow description
+ * - type: Workflow execution type (functional-task | functional-node)
+ * - streaming: Enable streaming output
+ * - confidenceThreshold: Minimum confidence for auto-execution
+ * - metrics: Enable metrics collection
+ * - stateKey: Internal workflow state persistence key
+ * - multiAgentStreaming: Graph streaming configuration (FUNCTIONAL)
+ * - multiAgentInterruption: Graph interruption configuration (FUNCTIONAL)
+ *
+ * NON-FUNCTIONAL OPTIONS REMOVED (were stored but never read):
+ * ❌ enableInternalStreaming - Stored in metadata but never used
+ * ❌ enableInternalCheckpointing - Stored in metadata but never used
+ * ❌ internalTimeout - Stored in metadata but never used
+ * ❌ enableErrorRecovery - Stored in metadata but never used
+ * ❌ maxInternalRetries - Stored in metadata but never used
+ * ❌ enableStepProgress - Stored in metadata but never used
+ *
+ * See DECORATOR_CHECKPOINT_INVESTIGATION_REPORT.md for investigation details.
  */
 export interface AgentWorkflowConfig {
   /**
@@ -135,36 +139,6 @@ export interface AgentWorkflowConfig {
    * Enable workflow metrics collection
    */
   metrics?: boolean;
-
-  /**
-   * Enable internal streaming for workflow steps
-   */
-  enableInternalStreaming?: boolean;
-
-  /**
-   * Enable internal checkpointing for workflow persistence
-   */
-  enableInternalCheckpointing?: boolean;
-
-  /**
-   * Internal workflow timeout in milliseconds
-   */
-  internalTimeout?: number;
-
-  /**
-   * Enable internal workflow error recovery
-   */
-  enableErrorRecovery?: boolean;
-
-  /**
-   * Maximum number of internal workflow retries
-   */
-  maxInternalRetries?: number;
-
-  /**
-   * Enable workflow step progress tracking
-   */
-  enableStepProgress?: boolean;
 
   /**
    * Internal workflow state persistence key
@@ -334,12 +308,6 @@ function createDefaultWorkflowConfig(
     streaming: moduleConfig.streaming.enabled ?? true,
     confidenceThreshold: 0.7,
     metrics: true,
-    enableInternalStreaming: moduleConfig.streaming.enabled ?? true,
-    enableInternalCheckpointing: moduleConfig.checkpointing.enabled ?? true,
-    internalTimeout: 60000, // 1 minute
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-    enableStepProgress: true,
     stateKey: `${agentId}-state`,
     // Apply multi-agent streaming defaults from module config
     multiAgentStreaming: {
@@ -485,15 +453,8 @@ export function Agent(config: Partial<AgentConfig> = {}): ClassDecorator {
       SetMetadata('workflow:marker', true)(target);
 
       // Store internal workflow configuration for agent runtime
+      // Note: Only stateKey remains as a functional option
       const internalWorkflowConfig = {
-        enableInternalStreaming:
-          agentConfig.workflow.enableInternalStreaming ?? true,
-        enableInternalCheckpointing:
-          agentConfig.workflow.enableInternalCheckpointing ?? true,
-        internalTimeout: agentConfig.workflow.internalTimeout ?? 60000,
-        enableErrorRecovery: agentConfig.workflow.enableErrorRecovery ?? true,
-        maxInternalRetries: agentConfig.workflow.maxInternalRetries ?? 2,
-        enableStepProgress: agentConfig.workflow.enableStepProgress ?? true,
         stateKey: agentConfig.workflow.stateKey || `${agentConfig.id}-state`,
       };
 
