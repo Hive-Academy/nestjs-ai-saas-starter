@@ -52,6 +52,10 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   private totalChecks = 0;
   private failedChecks = 0;
 
+  // State tracking for change-only logging
+  private previousOverallState: HealthState | null = null;
+  private previousServiceStates = new Map<string, HealthState>();
+
   constructor() {
     // Start periodic health monitoring (every minute)
     this.monitoringInterval = setInterval(() => {
@@ -334,19 +338,46 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     try {
       const health = await this.getSystemHealth();
+      const stateChanged = this.previousOverallState !== health.overall;
 
-      if (health.overall !== 'healthy') {
+      // Log only on state changes
+      if (health.overall !== 'healthy' && stateChanged) {
         this.logger.warn('System health degraded:', {
           overall: health.overall,
+          previousState: this.previousOverallState || 'unknown',
           unhealthyServices: Object.entries(health.services)
             .filter(([_, service]) => service.state !== 'healthy')
             .map(([name, service]) => ({
               name,
               state: service.state,
               error: service.error,
+              metadata: service.metadata, // Include actual memory values
             })),
         });
+      } else if (stateChanged && health.overall === 'healthy') {
+        this.logger.log('System health restored:', {
+          overall: health.overall,
+          previousState: this.previousOverallState || 'unknown',
+        });
       }
+
+      this.previousOverallState = health.overall;
+
+      // Track individual service state changes
+      Object.entries(health.services).forEach(([name, service]) => {
+        const prevState = this.previousServiceStates.get(name);
+        if (prevState !== service.state) {
+          this.logger.log(
+            `Service '${name}' state changed: ${prevState || 'unknown'} -> ${
+              service.state
+            }`,
+            {
+              metadata: service.metadata,
+            }
+          );
+          this.previousServiceStates.set(name, service.state);
+        }
+      });
     } catch (error) {
       this.logger.error(
         'Scheduled health check failed:',
