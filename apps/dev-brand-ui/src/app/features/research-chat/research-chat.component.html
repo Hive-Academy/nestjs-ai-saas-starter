@@ -1,24 +1,9 @@
 <div class="research-chat-container">
-  <!-- Header -->
-  <div class="chat-header">
-    <h2>🔬 Research Chat</h2>
-    <p class="subtitle">Autonomous web research with AI-powered analysis</p>
-  </div>
-
-  <!-- Chat Messages -->
+  <!-- Chat Messages (NO HEADER per reference) -->
   <div class="chat-messages">
     @for (message of messages; track message.timestamp) {
     <div [class]="getMessageClass(message)">
-      <div class="message-header">
-        <span class="message-role">
-          @switch (message.role) { @case ('user') { 👤 You } @case ('assistant')
-          { 🤖 ResearcherAgent } @case ('system') { ℹ️ System } }
-        </span>
-        <span class="message-time">{{
-          formatTimestamp(message.timestamp)
-        }}</span>
-      </div>
-
+      <!-- NO message-header per reference - just content -->
       <div
         class="message-content"
         [innerHTML]="message.content | markdown"
@@ -34,36 +19,67 @@
     } @if (isResearching) {
     <div class="message message-assistant message-status">
       <div class="loading-indicator">
+        <span>Researching</span>
         <span class="loading-dots"></span>
-        <span>Researching...</span>
       </div>
     </div>
     }
   </div>
 
-  <!-- Input Area -->
+  <!-- Input Area with Icon Buttons (per reference) -->
   <div class="chat-input-container">
     <form (submit)="sendMessage()" class="chat-input-form">
+      <!-- Left icons -->
+      <div class="input-icons input-icons-left">
+        <button type="button" class="icon-button" title="Search">
+          <span>🔍</span>
+        </button>
+        <button type="button" class="icon-button" title="Cancel">
+          <span>❌</span>
+        </button>
+        <button type="button" class="icon-button" title="Location">
+          <span>📍</span>
+        </button>
+      </div>
+
+      <!-- Input field -->
       <input
         type="text"
         [(ngModel)]="currentQuery"
         name="query"
-        placeholder="Ask me to research any topic... (e.g., 'Research AI agent frameworks in 2025')"
+        placeholder="Ask anything. Type @ for mentions and / for shortcuts."
         [disabled]="isResearching"
         class="chat-input"
         autocomplete="off"
       />
-      <button
-        type="submit"
-        [disabled]="!currentQuery.trim() || isResearching"
-        class="send-button"
-      >
-        @if (isResearching) {
-        <span>⏳</span>
-        } @else {
-        <span>📤</span>
-        }
-      </button>
+
+      <!-- Right icons -->
+      <div class="input-icons input-icons-right">
+        <button type="button" class="icon-button" title="Web search">
+          <span>🌐</span>
+        </button>
+        <button type="button" class="icon-button" title="Emoji">
+          <span>😊</span>
+        </button>
+        <button type="button" class="icon-button" title="Attach file">
+          <span>📎</span>
+        </button>
+        <button type="button" class="icon-button" title="Voice input">
+          <span>🎤</span>
+        </button>
+        <button
+          type="submit"
+          [disabled]="!currentQuery.trim() || isResearching"
+          class="send-button"
+          title="Send message"
+        >
+          @if (isResearching) {
+          <span>⏳</span>
+          } @else {
+          <span>➜</span>
+          }
+        </button>
+      </div>
     </form>
   </div>
 
