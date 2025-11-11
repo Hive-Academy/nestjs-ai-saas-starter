@@ -74,30 +74,30 @@ import { FormsModule } from '@angular/forms';
         max-height: 90vh;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.04);
         animation: slideUp 0.3s ease-out;
       }
 
       .modal-header {
         padding: 1.5rem 2rem;
-        border-bottom: 2px solid #e2e8f0;
+        border-bottom: 1px solid #e5e7eb;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #ffffff;
         border-radius: 16px 16px 0 0;
 
         h2 {
           margin: 0;
           font-size: 1.5rem;
           font-weight: 700;
-          color: white;
+          color: #23272f;
         }
 
         .close-button {
-          background: rgba(255, 255, 255, 0.2);
+          background: #f9fafb;
           border: none;
-          color: white;
+          color: #23272f;
           font-size: 1.5rem;
           width: 40px;
           height: 40px;
@@ -106,7 +106,7 @@ import { FormsModule } from '@angular/forms';
           transition: all 0.2s ease;
 
           &:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #e5e7eb;
             transform: rotate(90deg);
           }
         }
@@ -193,20 +193,20 @@ import { FormsModule } from '@angular/forms';
       }
 
       .btn-reject {
-        background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+        background: #ef4444;
         color: white;
 
         &:hover {
-          background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+          background: #dc2626;
         }
       }
 
       .btn-approve {
-        background: linear-gradient(135deg, #68d391 0%, #48bb78 100%);
+        background: #6366f1;
         color: white;
 
         &:hover {
-          background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+          background: #4f46e5;
         }
       }
 
