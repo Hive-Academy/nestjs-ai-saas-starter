@@ -1,28 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import {
-  Agent,
-  LlmProviderService,
-} from '@hive-academy/langgraph-workflow-engine';
+import { Agent, Node, Edge } from '@hive-academy/langgraph-workflow-engine';
 import type { TypedAgentState } from '../../types';
-// Removed deleted streaming package imports (StreamToken, StreamProgress)
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import { Entrypoint, Task } from '@hive-academy/langgraph-workflow-engine';
-import type {
-  TaskExecutionContext,
-  TaskExecutionResult,
-} from '@hive-academy/langgraph-workflow-engine';
 import type { GitHubAnalyzerMetadata } from '../shared/metadata.types';
-// Removed deleted services and base class (no longer needed):
-// - DeclarativeWorkflowBase (not exported, decorator-driven architecture)
-// - WorkflowGraphBuilderService (deleted in consolidation)
-// - SubgraphManagerService (deleted in consolidation)
-// - WorkflowStreamService (deleted with streaming package)
-// - EventStreamProcessorService (deleted)
-// - MetadataProcessorService (not needed without base class)
-// - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
-import { Validate, Required } from '../../core/validation/workflow.validators';
-import { Optimize } from '../../core/performance/optimization.decorators';
 import {
   extractGitHubUsername,
   buildSuccessMessage,
@@ -30,83 +11,102 @@ import {
 } from './github-code-analyzer.utils';
 
 /**
- * 💻 ENHANCED GITHUB CODE ANALYZER AGENT - AI-POWERED DEVELOPMENT INSIGHTS (Workflow Agent)
+ * 💻 GITHUB CODE ANALYZER AGENT - LLM-DRIVEN AUTONOMOUS CODE ANALYSIS
  *
- * Analyzes GitHub repositories using sophisticated multi-step workflow architecture:
- * ✅ Real-time GitHub API integration with comprehensive code analysis
- * ✅ Achievement extraction from commit patterns and repository data
- * ✅ Developer expertise assessment and productivity metrics
- * ✅ Technology stack analysis and skill mapping
- * ✅ AI-powered synthesis and professional narrative generation
- * ✅ Quality assessment with confidence scoring
+ * Demonstrates LLM-DRIVEN TOOL CALLING pattern for GitHub analysis:
+ * ✅ Tools automatically bound to LLM via @Agent decorator
+ * ✅ LLM autonomously orchestrates multi-tool analysis workflow
+ * ✅ Single intelligent node handles entire analysis pipeline
+ * ✅ Framework manages tool execution loop automatically
+ * ✅ HITL approval before passing results to next agent
  *
- * Internal workflow steps:
- * 1. Initialize GitHub analysis and extract username
- * 2. Analyze GitHub activity via API integration
- * 3. Extract meaningful achievements from code data
- * 4. Generate professional developer insights
- * 5. Synthesize analysis with AI-powered narrative
- * 6. Assess analysis quality (decision point)
- * 7. Finalize comprehensive analysis results
+ * Workflow Flow (LLM-Driven):
+ * 1. analyzeGitHubProfile - Single @Node with type: 'llm'
+ *    - LLM receives GitHub username + tool definitions
+ *    - LLM autonomously calls tools in optimal sequence:
+ *      a) github-analyzer → fetch repository data
+ *      b) achievement-extractor → identify accomplishments
+ *      c) developer-insights → assess expertise & patterns
+ *      d) ai-synthesis → generate professional narrative
+ *    - Framework executes each tool and returns results to LLM
+ *    - LLM synthesizes final comprehensive analysis
+ * 2. 🛑 INTERRUPT - Workflow pauses for user approval via @RequiresApproval
+ * 3. finalizeAnalysis - Package results for next agent
  *
- * BUSINESS VALUE: Transforms raw code contributions into meaningful career achievements
- * Externally appears as single node to other workflows.
+ * HITL Integration:
+ * - @RequiresApproval decorator on finalizeAnalysis node
+ * - User reviews GitHub analysis, achievements, insights
+ * - Approves/rejects via WebSocket/API
+ * - Workflow continues to personal-brand-strategist if approved
+ *
+ * KEY PATTERN DIFFERENCE:
+ * ❌ OLD: Manual LLM prompting for each tool (still calling LLM manually)
+ * ✅ NEW: LLM-driven tool orchestration via @Node({ type: 'llm' }) - fully autonomous
  */
+
 @Agent({
   id: 'github-code-analyzer',
   name: 'GitHub Code Analyzer',
   description:
-    'AI-powered GitHub repository analysis and achievement extraction',
+    'AI-powered GitHub repository analysis with autonomous tool orchestration for achievement extraction and developer insights',
   type: 'workflow-agent',
-  // 🆕 DEFAULTS APPLIED: tools, capabilities, metadata, outputFormat now use defaults
+  tools: [
+    'github-analyzer', // Fetch comprehensive repository data
+    'achievement-extractor', // Extract meaningful accomplishments
+    'developer-insights', // Assess technical expertise & patterns
+    'ai-synthesis', // Generate professional narrative (optional - LLM can synthesize directly)
+  ],
   capabilities: [
     'code-analysis',
     'achievement-extraction',
     'developer-insights',
     'ai-synthesis',
-  ],
-  tools: [
-    // ✅ VERIFIED: All tool names match @Tool decorators in GitHubIntegrationTools
-    // Registered in WorkflowEngineModule.forRoot() (Task 33)
-    'github-analyzer', // GitHubIntegrationTools:111
-    'achievement-extractor', // GitHubIntegrationTools:199
-    'developer-insights', // GitHubIntegrationTools:343
-    'ai-synthesis', // GitHubIntegrationTools:383
+    'autonomous-tool-orchestration',
   ],
   priority: 'high',
   executionTime: 'fast',
   workflow: {
     name: 'github-analyzer-workflow',
-    type: 'functional-task', // 🔑 Explicit workflow type: uses @Entrypoint + @Task
-    // 🆕 DEFAULTS APPLIED: streaming, metrics, checkpointing now inherit from module config
-    confidenceThreshold: 0.8, // Override default 0.7
-    internalTimeout: 90000, // Override default 60000 (1.5 minutes for GitHub API calls)
-    // 🆕 enableInternalStreaming, enableInternalCheckpointing, enableErrorRecovery,
-    // maxInternalRetries, enableStepProgress now use module defaults
-    // 🆕 multiAgentStreaming and multiAgentInterruption now use module defaults
-    multiAgentInterruption: {
-      enabled: true, // Enable HITL approval at end of agent execution
-    },
+    description:
+      'LLM-driven autonomous GitHub analysis with multi-tool orchestration',
+    type: 'functional-node',
+    streaming: true,
+    confidenceThreshold: 0.8,
+    metrics: true,
   },
 })
 @Injectable()
 export class GitHubCodeAnalyzerAgent {
-  constructor(private readonly llmProvider: LlmProviderService) {
-    // No super() call - no base class
-    // Agents use @Agent decorator for orchestration (decorator-driven, not inheritance-driven)
-  }
-
   /**
-   * Entry point for the internal GitHub analysis workflow
-   * Initializes analysis and extracts GitHub username from input
+   * 💻 AUTONOMOUS GITHUB ANALYSIS NODE - LLM-DRIVEN TOOL ORCHESTRATION
+   *
+   * This node demonstrates advanced LLM-driven tool orchestration:
+   * - @Node({ type: 'llm' }) automatically binds ALL 4 tools to LLM
+   * - LLM receives intelligent prompt guiding tool usage sequence
+   * - LLM autonomously decides tool call order and parameters
+   * - Framework handles execution loop (node → tools → node)
+   * - LLM synthesizes final analysis from all tool results
+   *
+   * TOOL ORCHESTRATION INTELLIGENCE:
+   * - github-analyzer FIRST → get raw repository data
+   * - achievement-extractor → analyze commits for accomplishments
+   * - developer-insights → assess expertise from patterns
+   * - ai-synthesis (optional) → LLM can synthesize directly or use tool
+   *
+   * FRAMEWORK BEHAVIOR:
+   * 1. LLM analyzes username, decides to call github-analyzer
+   * 2. Framework detects tool_calls → routes to ToolNode
+   * 3. ToolNode executes github-analyzer, returns repo data
+   * 4. Framework routes back with results
+   * 5. LLM processes data, decides to call achievement-extractor
+   * 6. Loop continues through all tools
+   * 7. LLM generates final comprehensive analysis
+   * 8. No more tool_calls → node completes
    */
-  @Entrypoint({ timeout: 15000 })
-  async initializeGitHubAnalysis(
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-    console.log('💻 GitHub Code Analyzer: Starting developer analysis...');
-
+  @Node({ type: 'llm' }) // 🔑 This triggers automatic tool binding!
+  async analyzeGitHubProfile(
+    state: TypedAgentState<GitHubAnalyzerMetadata>
+  ): Promise<Partial<TypedAgentState<GitHubAnalyzerMetadata>>> {
     const lastMessage = state.messages?.[state.messages.length - 1];
     const messageContent = lastMessage?.content?.toString() || '';
 
@@ -117,256 +117,230 @@ export class GitHubCodeAnalyzerAgent {
 
     const timeframe = state.metadata.timeframe || 'month';
 
+    console.log(
+      `💻 Starting autonomous GitHub analysis for: ${githubUsername}`
+    );
+
+    // Build intelligent system prompt that guides LLM through tool orchestration
+    const analysisSystemPrompt = `You are an AI-powered GitHub code analyzer with autonomous tool orchestration capabilities.
+
+TARGET: GitHub user "${githubUsername}"
+TIMEFRAME: ${timeframe}
+GOAL: Generate comprehensive professional developer analysis
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AVAILABLE TOOLS & ORCHESTRATION STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. **github-analyzer** - Fetch comprehensive GitHub data
+   ✅ CALL FIRST - This is your data source
+   📊 Returns: repositories, commits, PRs, languages, activity metrics
+   📌 Parameters:
+   - username: "${githubUsername}"
+   - timeframe: "${timeframe}"
+   - includePrivate: false
+   - detailed: true
+
+2. **achievement-extractor** - Extract meaningful accomplishments
+   ✅ CALL SECOND - After you have GitHub data
+   🏆 Analyzes: commits, repos, contributions for achievements
+   📌 Parameters:
+   - commits: <array from github-analyzer>
+   - repositories: <array from github-analyzer>
+   - analysisDepth: "detailed"
+   - focusAreas: ["technical", "collaboration", "innovation"]
+
+3. **developer-insights** - Assess technical expertise & patterns
+   ✅ CALL THIRD - After you have achievements
+   🔍 Analyzes: expertise breadth/depth, work patterns, tech proficiency
+   📌 Parameters:
+   - githubData: <object from github-analyzer>
+   - achievements: <array from achievement-extractor>
+   - profileDepth: "comprehensive"
+
+4. **ai-synthesis** - Generate professional narrative (OPTIONAL)
+   💡 You can use this tool OR synthesize directly yourself
+   📝 Generates: compelling professional developer profile
+   📌 Parameters:
+   - developerData: <combined data from all tools>
+   - targetAudience: "professional" (LinkedIn, portfolio, recruiters)
+   - tone: "confident and achievement-focused"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTELLIGENT ORCHESTRATION WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: FETCH GITHUB DATA
+- Call github-analyzer with username and timeframe
+- Wait for comprehensive repository data
+- Verify data quality (check for errors, empty results)
+
+STEP 2: EXTRACT ACHIEVEMENTS
+- Use results from github-analyzer
+- Call achievement-extractor with commits and repositories
+- Identify technical accomplishments, code quality, collaboration
+
+STEP 3: GENERATE INSIGHTS
+- Use GitHub data + achievements
+- Call developer-insights for expertise assessment
+- Analyze technical breadth, work patterns, career trajectory
+
+STEP 4: SYNTHESIZE FINAL ANALYSIS
+- Option A: Call ai-synthesis tool for professional narrative
+- Option B: Synthesize directly using all gathered data
+- Create comprehensive professional developer profile
+
+STEP 5: FINALIZE
+- Package results with confidence score
+- Include: GitHub data, achievements, insights, narrative
+- Return complete analysis ready for personal brand strategist
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your final response must include:
+
+**1. PROFESSIONAL SUMMARY** (2-3 paragraphs)
+- Highlight strongest technical accomplishments
+- Emphasize unique value propositions
+- Focus on impact and expertise
+
+**2. TECHNICAL EXPERTISE** (categorized)
+- Primary languages/frameworks (with proficiency levels)
+- Technical breadth (frontend/backend/full-stack)
+- Complexity level (junior/mid/senior/expert)
+
+**3. KEY ACHIEVEMENTS** (5-10 items)
+- Specific accomplishments with context
+- Technical innovations and contributions
+- Code quality and collaboration highlights
+
+**4. WORK PATTERNS & INSIGHTS**
+- Commit frequency and consistency
+- Collaboration style (PR reviews, mentoring)
+- Growth trajectory and specialization
+
+**5. CAREER POSITIONING**
+- Strategic recommendations for personal branding
+- Suggested positioning for target roles
+- Actionable next steps for skill development
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Now analyze "${githubUsername}" by autonomously orchestrating the tools in the recommended sequence.
+Begin with github-analyzer to fetch comprehensive data!`;
+
+    // For @Node({ type: 'llm' }), the framework handles everything
+    // We just store metadata for tracking
     return {
-      state: {
-        ...state,
-        metadata: {
-          ...state.metadata,
-          workflowStartTime: new Date(),
-          currentStep: 'initialization',
-          githubUsername,
-          timeframe,
-          analysisStartTime: new Date(),
-          workflowInstanceId: `github-${githubUsername}-${Date.now()}`,
-        },
+      metadata: {
+        ...state.metadata,
+        workflowStartTime: new Date(),
+        currentStep: 'initialization', // Use existing type instead of new 'autonomous-analysis'
+        githubUsername,
+        timeframe,
+        analysisStartTime: new Date(),
+        workflowInstanceId: `github-${githubUsername}-${Date.now()}`,
+        systemPrompt: analysisSystemPrompt, // Store for reference
       },
     };
   }
 
   /**
-   * Analyze GitHub activity via LLM-autonomous tool selection
-   * MIGRATED: LLM decides when to call github-analyzer tool based on prompt
-   */
-  @Task({ dependsOn: ['initializeGitHubAnalysis'] })
-  @Validate
-  @Optimize({
-    cache: { ttl: 900000, maxSize: 100 },
-    circuitBreaker: { failureThreshold: 3, resetTimeout: 30000 },
-    timeout: 90000,
-    metrics: { trackExecutionTime: true, trackErrorRate: true },
-  })
-  async analyzeGitHubActivity(
-    @Required()
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-    const githubUsername = state.metadata.githubUsername;
-    const timeframe = state.metadata.timeframe;
-
-    console.log(`💻 Analyzing GitHub activity for ${githubUsername}...`);
-
-    // LLM with bound tools decides autonomously to call github-analyzer
-    const prompt = `Analyze GitHub activity for user "${githubUsername}" over the last ${timeframe}.
-Use the github-analyzer tool to fetch comprehensive repository data, commits, pull requests, and code contributions.
-The tool should return structured data with summary metrics including total repositories, commits, and productivity score.
-Format: Call github-analyzer with username="${githubUsername}", timeframe="${timeframe}", includePrivate=false.`;
-
-    const llm = await this.llmProvider.getLLM({
-      temperature: 0.3,
-      maxTokens: 2000,
-    });
-
-    const response = await llm.invoke([
-      ...state.messages,
-      { role: 'user', content: prompt },
-    ]);
-
-    return {
-      state: {
-        ...state,
-        messages: [...state.messages, response],
-        metadata: {
-          ...state.metadata,
-          currentStep: 'github-activity-analyzed',
-        },
-      },
-    };
-  }
-
-  /**
-   * Extract meaningful achievements from GitHub data via LLM-autonomous tool selection
-   * MIGRATED: LLM decides when to call achievement-extractor tool based on prompt
-   */
-  @Task({ dependsOn: ['analyzeGitHubActivity'] })
-  async extractAchievements(
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-
-    console.log('🎯 Extracting meaningful achievements...');
-
-    // LLM with bound tools decides autonomously to call achievement-extractor
-    const prompt = `Extract meaningful achievements from the GitHub data in the previous messages.
-Use the achievement-extractor tool to analyze commits and repositories, identifying:
-- Technical accomplishments (new features, major refactors, performance improvements)
-- Code quality improvements (test coverage, documentation, CI/CD)
-- Collaboration metrics (PR reviews, issue resolution, mentoring)
-- Technology adoption (new languages/frameworks/tools)
-Provide detailed achievements with context and impact. Analysis depth: detailed.`;
-
-    const llm = await this.llmProvider.getLLM({
-      temperature: 0.4,
-      maxTokens: 2000,
-    });
-
-    const response = await llm.invoke([
-      ...state.messages,
-      { role: 'user', content: prompt },
-    ]);
-
-    return {
-      state: {
-        ...state,
-        messages: [...state.messages, response],
-        metadata: {
-          ...state.metadata,
-          currentStep: 'achievements-extracted',
-        },
-      },
-    };
-  }
-
-  /**
-   * Generate professional developer insights via LLM-autonomous tool selection
-   * MIGRATED: LLM decides when to call developer-insights tool based on prompt
-   */
-  @Task({ dependsOn: ['extractAchievements'] })
-  async generateDeveloperInsights(
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-    const githubUsername = state.metadata.githubUsername;
-
-    console.log('🔍 Generating developer insights...');
-
-    // LLM with bound tools decides autonomously to call developer-insights
-    const prompt = `Generate professional developer insights for "${githubUsername}" based on the GitHub data and achievements in previous messages.
-Use the developer-insights tool to analyze:
-- Technical expertise (breadth: frontend/backend/full-stack, complexity: junior/mid/senior/expert)
-- Work patterns (commit frequency, code review activity, collaboration style)
-- Technology proficiency (languages, frameworks, tools with skill levels)
-- Career trajectory (growth indicators, specialization trends)
-- Professional strengths (code quality, architectural decisions, mentorship)
-Provide actionable insights for personal branding and career development.`;
-
-    const llm = await this.llmProvider.getLLM({
-      temperature: 0.4,
-      maxTokens: 2000,
-    });
-
-    const response = await llm.invoke([
-      ...state.messages,
-      { role: 'user', content: prompt },
-    ]);
-
-    return {
-      state: {
-        ...state,
-        messages: [...state.messages, response],
-        metadata: {
-          ...state.metadata,
-          currentStep: 'insights-generated',
-        },
-      },
-    };
-  }
-
-  /**
-   * AI-powered synthesis of technical data into compelling narrative
-   * MIGRATED: Uses message-based flow - all tool results available in conversation history
-   */
-  @Task({ dependsOn: ['generateDeveloperInsights'] })
-  async synthesizeWithAI(
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-    const githubUsername = state.metadata.githubUsername;
-    const timeframe = state.metadata.timeframe;
-
-    console.log('🚀 Synthesizing analysis with AI...');
-
-    // LLM has access to all previous tool results via messages array
-    const synthesisPrompt = `Synthesize a comprehensive professional analysis for "${githubUsername}" based on all the GitHub data, achievements, and developer insights gathered in our conversation.
-
-Create a compelling narrative that:
-1. Highlights their strongest technical accomplishments and expertise
-2. Identifies unique value propositions for personal branding
-3. Suggests strategic positioning for career growth
-4. Provides actionable recommendations for skill development
-
-Format the analysis as a professional developer profile suitable for LinkedIn, portfolio sites, or job applications.
-Focus on impact, technical depth, and career trajectory over the ${timeframe}.`;
-
-    const llm = await this.llmProvider.getLLM({
-      temperature: 0.4,
-      maxTokens: 2500,
-    });
-
-    const aiAnalysisResponse = await llm.invoke([
-      ...state.messages,
-      { role: 'user', content: synthesisPrompt },
-    ]);
-
-    const aiAnalysis = aiAnalysisResponse.content.toString();
-
-    return {
-      state: {
-        ...state,
-        messages: [...state.messages, aiAnalysisResponse],
-        metadata: {
-          ...state.metadata,
-          currentStep: 'ai-synthesis-complete',
-          aiAnalysis,
-          narrativeGenerated: true,
-        },
-      },
-    };
-  }
-
-  /**
-   * Finalize comprehensive analysis results
-   * Note: Confidence assessment integrated directly (removed separate assessAnalysisQuality node)
+   * FINALIZE ANALYSIS - Package results and trigger HITL approval
    *
-   * HITL Integration: Requires user approval before proceeding to next agent
-   * - Users can validate achievements, request changes, or provide feedback
-   * - Approval timeout: 2 minutes (escalates if no response)
-   * - WebSocket events: interruption_request, interruption_resolved
+   * After LLM completes tool orchestration, this node:
+   * - Extracts analysis from messages
+   * - Calculates confidence score
+   * - Packages results for next agent
+   * - Triggers HITL approval (@RequiresApproval)
    */
-  @Task({ dependsOn: ['synthesizeWithAI'] })
+  @Node({ type: 'standard' })
   @RequiresApproval({
     confidenceThreshold: 0.8,
     timeoutMs: 120000, // 2 minutes
     message: (state) => {
-      const achievementCount = state.metadata?.achievementCount || 0;
       const githubUsername = state.metadata?.githubUsername || 'user';
-      return `GitHub analysis complete for ${githubUsername}. Found ${achievementCount} achievements. Please review and approve to continue.`;
+      return `GitHub analysis complete for ${githubUsername}. Please review achievements and insights before continuing to brand strategy.`;
     },
-    onTimeout: 'escalate', // Escalate if user doesn't respond
+    onTimeout: 'escalate',
     metadata: (state) => ({
       agentId: 'github-code-analyzer',
-      achievementCount: state.metadata?.achievementCount,
-      repositoriesAnalyzed: state.metadata?.repositoriesAnalyzed,
+      githubUsername: state.metadata?.githubUsername,
       confidenceScore: state.metadata?.confidenceScore,
     }),
   })
   async finalizeAnalysis(
-    context: TaskExecutionContext<TypedAgentState<GitHubAnalyzerMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<GitHubAnalyzerMetadata>>> {
-    const { state } = context;
-    const githubUsername = state.metadata.githubUsername;
-    const timeframe = state.metadata.timeframe;
-    const githubData = state.metadata.githubData;
-    const achievements = state.metadata.achievements || [];
-    const aiAnalysis = state.metadata.aiAnalysis || '';
+    state: TypedAgentState<GitHubAnalyzerMetadata>
+  ): Promise<Partial<TypedAgentState<GitHubAnalyzerMetadata>>> {
+    const githubUsername = state.metadata.githubUsername || 'demo-user';
+    const timeframe = state.metadata.timeframe || 'month';
     let mode = state.metadata.mode || 'real';
+
+    console.log(`✅ Finalizing GitHub analysis for ${githubUsername}`);
+
+    // Extract analysis from messages
+    // The LLM's final synthesis should be in the last message
+    let aiAnalysis = '';
+    let githubData = state.metadata.githubData;
+    let achievements = state.metadata.achievements || [];
+
+    if (state.messages && state.messages.length > 0) {
+      // Find tool messages to extract data
+      const toolMessages = state.messages.filter(
+        (msg: any) => msg.role === 'tool'
+      );
+
+      // Extract GitHub data from github-analyzer tool result
+      const githubAnalyzerMsg = toolMessages.find(
+        (msg: any) =>
+          msg.name === 'github-analyzer' || msg.content?.includes('summary')
+      );
+      if (githubAnalyzerMsg && !githubData) {
+        try {
+          const toolResult =
+            typeof githubAnalyzerMsg.content === 'string'
+              ? JSON.parse(githubAnalyzerMsg.content)
+              : githubAnalyzerMsg.content;
+          githubData = toolResult;
+        } catch (parseError) {
+          console.warn('Could not parse github-analyzer result');
+        }
+      }
+
+      // Extract achievements from achievement-extractor tool result
+      const achievementMsg = toolMessages.find(
+        (msg: any) => msg.name === 'achievement-extractor'
+      );
+      if (achievementMsg && achievements.length === 0) {
+        try {
+          const toolResult =
+            typeof achievementMsg.content === 'string'
+              ? JSON.parse(achievementMsg.content)
+              : achievementMsg.content;
+          achievements = toolResult.achievements || toolResult.items || [];
+        } catch (parseError) {
+          console.warn('Could not parse achievement-extractor result');
+        }
+      }
+
+      // Get final LLM analysis from last assistant message
+      const assistantMessages = state.messages.filter(
+        (msg: any) => msg.role === 'assistant'
+      );
+      if (assistantMessages.length > 0) {
+        const lastAssistantMsg =
+          assistantMessages[assistantMessages.length - 1];
+        aiAnalysis = lastAssistantMsg.content?.toString() || '';
+      }
+    }
 
     // If in real mode but no GitHub data, force fallback mode
     if (mode !== 'fallback' && !githubData) {
       console.warn('⚠️ No GitHub data available, switching to fallback mode');
       mode = 'fallback';
     }
-
-    console.log('✅ GitHub Code Analyzer: Analysis completed with AI insights');
 
     const analysisMessage =
       mode === 'fallback'
@@ -375,35 +349,58 @@ Focus on impact, technical depth, and career trajectory over the ${timeframe}.`;
             githubUsername,
             timeframe,
             aiAnalysis,
-            githubData!, // Non-null assertion: guaranteed by fallback mode check above
+            githubData!,
             achievements
           );
 
+    const confidenceScore = mode === 'fallback' ? 0.7 : 0.95;
+
     return {
-      state: {
-        ...state,
-        messages: [new AIMessage(analysisMessage)],
-        scratchpad: `GitHub analysis completed for: ${githubUsername}\nAchievements found: ${achievements.length}\nMode: ${mode}`,
-        metadata: {
-          ...state.metadata,
-          currentStep: 'completed',
-          githubAnalysisCompleted: true,
-          workflowCompleted: true,
-          analysisEndTime: new Date(),
-          totalProcessingTime:
-            Date.now() -
-            (state.metadata.analysisStartTime?.getTime() || Date.now()),
-          toolsUsed: [
-            'github-analyzer',
-            'achievement-extractor',
-            'developer-insights',
-            'ai-synthesis',
-          ],
-          confidenceScore: mode === 'fallback' ? 0.7 : 0.95,
-        },
-        next: 'personal-brand-strategist',
-        task: 'Develop personal brand strategy from code analysis',
+      messages: [new AIMessage(analysisMessage)],
+      scratchpad: `GitHub analysis completed for: ${githubUsername}\nAchievements found: ${achievements.length}\nMode: ${mode}\nConfidence: ${confidenceScore}`,
+      metadata: {
+        ...state.metadata,
+        currentStep: 'completed',
+        githubAnalysisCompleted: true,
+        workflowCompleted: true,
+        analysisEndTime: new Date(),
+        totalProcessingTime:
+          Date.now() -
+          (state.metadata.analysisStartTime?.getTime() || Date.now()),
+        githubData,
+        achievements,
+        aiAnalysis,
+        mode,
+        confidenceScore,
+        toolsUsed: [
+          'github-analyzer',
+          'achievement-extractor',
+          'developer-insights',
+          'ai-synthesis',
+        ],
       },
+      next: 'personal-brand-strategist',
+      task: 'Develop personal brand strategy from code analysis',
     };
+  }
+
+  /**
+   * EDGES - Define workflow flow
+   */
+
+  /**
+   * After analysis completes, finalize results (with HITL approval)
+   */
+  @Edge('analyzeGitHubProfile', 'finalizeAnalysis')
+  analysisToFinalize(): boolean {
+    return true;
+  }
+
+  /**
+   * After finalization (and approval), end workflow
+   */
+  @Edge('finalizeAnalysis', '__end__')
+  complete(): boolean {
+    return true;
   }
 }
