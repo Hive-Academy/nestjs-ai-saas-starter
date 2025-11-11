@@ -5,6 +5,9 @@ import { MetadataProcessorService } from './core/metadata-processor.service';
 import { WorkflowExecutionService } from './execution/workflow-execution.service';
 import type { LlmModuleOptions } from './interfaces/llm-config.interface';
 import { LlmProviderService } from './services/llm/llm-provider.service';
+import { MultiAgentGraphBuilderService } from './services/multi-agent/multi-agent-graph-builder.service';
+import { SupervisorGraphBuilder } from './services/multi-agent/builders/supervisor-graph-builder';
+import { SequentialGraphBuilder } from './services/multi-agent/builders/sequential-graph-builder';
 import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 
@@ -90,6 +93,11 @@ export class WorkflowEngineModule {
         // Execution services
         WorkflowExecutionService,
 
+        // Multi-Agent Graph Builders (Strategy Pattern)
+        MultiAgentGraphBuilderService,
+        SupervisorGraphBuilder,
+        SequentialGraphBuilder,
+
         // Tool registry service
         ToolRegistryService,
         LlmProviderService,
@@ -97,6 +105,7 @@ export class WorkflowEngineModule {
       exports: [
         MetadataProcessorService,
         WorkflowExecutionService,
+        MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
       ],
@@ -138,12 +147,18 @@ export class WorkflowEngineModule {
         // Execution services
         WorkflowExecutionService,
 
+        // Multi-Agent Graph Builders (Strategy Pattern)
+        MultiAgentGraphBuilderService,
+        SupervisorGraphBuilder,
+        SequentialGraphBuilder,
+
         ToolRegistryService,
         LlmProviderService,
       ],
       exports: [
         MetadataProcessorService,
         WorkflowExecutionService,
+        MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
       ],
