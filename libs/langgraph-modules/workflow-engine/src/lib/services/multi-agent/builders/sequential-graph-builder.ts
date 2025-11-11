@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-// import { ModuleRef } from '@nestjs/core';
+import { ModuleRef } from '@nestjs/core';
 import { StateGraph, END } from '@langchain/langgraph';
 import type {
   MultiAgentConfig,
@@ -85,7 +85,7 @@ export class SequentialGraphBuilder implements IMultiAgentGraphBuilder {
   private readonly logger = new Logger(SequentialGraphBuilder.name);
 
   constructor(
-    // private readonly moduleRef: ModuleRef,
+    private readonly moduleRef: ModuleRef,
     private readonly metadataProcessor: MetadataProcessorService
   ) {}
 
@@ -328,9 +328,22 @@ export class SequentialGraphBuilder implements IMultiAgentGraphBuilder {
 
         this.logger.debug(`Processing agent: ${agentConfig.id}`);
 
-        // 2. Extract workflow definition from @Node/@Edge decorators
+        // 2a. Get agent instance from NestJS DI (required for bound handlers)
+        const agentInstance = this.moduleRef.get(AgentClass, {
+          strict: false,
+        });
+
+        // 2b. Extract workflow definition from @Node/@Edge decorators
         const agentDefinition =
           this.metadataProcessor.extractWorkflowDefinition(AgentClass);
+
+        // 2c. ✅ FIX: Bind all node handlers to agent instance (fixes 'this' context)
+        agentDefinition.nodes.forEach((node: any) => {
+          if (node.handler && agentInstance) {
+            // Bind handler to instance so 'this' works inside agent methods
+            node.handler = node.handler.bind(agentInstance);
+          }
+        });
 
         // 3. Validate agent has nodes (not empty workflow)
         if (!agentDefinition.nodes || agentDefinition.nodes.length === 0) {
@@ -340,7 +353,7 @@ export class SequentialGraphBuilder implements IMultiAgentGraphBuilder {
           );
         }
 
-        // 4. Build and compile agent subgraph
+        // 4. Build and compile agent subgraph with bound handlers
         const agentGraph = this.buildAgentSubgraph(agentDefinition);
         const compiledGraph = agentGraph.compile();
 

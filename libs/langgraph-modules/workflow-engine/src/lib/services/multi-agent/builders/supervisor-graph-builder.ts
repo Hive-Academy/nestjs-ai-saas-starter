@@ -1,4 +1,5 @@
 import { Injectable, Logger, Type } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { StateGraph, END } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import { DynamicStructuredTool } from '@langchain/core/tools';
@@ -84,6 +85,7 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
   private readonly logger = new Logger(SupervisorGraphBuilder.name);
 
   constructor(
+    private readonly moduleRef: ModuleRef,
     private readonly llmProvider: LlmProviderService,
     private readonly metadataProcessor: MetadataProcessorService
   ) {}
@@ -297,15 +299,17 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
    * - name: Agent ID (from @Agent decorator)
    * - description: Agent description + capabilities
    * - schema: Input schema for tool (task description)
-   * - func: Executes agent's internal workflow
+   * - func: Executes agent's internal workflow with bound handlers
    *
    * WORKER EXECUTION FLOW:
    * 1. Supervisor LLM decides to call worker tool
    * 2. ToolNode executes worker tool's func()
-   * 3. func() gets agent instance from DI
-   * 4. func() builds agent's internal workflow graph
-   * 5. func() executes agent graph with task input
-   * 6. func() returns result as string (tool output)
+   * 3. func() gets agent instance from NestJS DI container
+   * 4. func() extracts agent's workflow definition
+   * 5. func() binds node handlers to agent instance (fixes 'this' context)
+   * 6. func() builds agent's internal workflow graph with bound handlers
+   * 7. func() executes agent graph with task input
+   * 8. func() returns result as string (tool output)
    *
    * @param agentClasses - Worker agent classes decorated with @Agent
    * @returns Array of LangChain DynamicStructuredTool instances
@@ -354,13 +358,28 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
             );
 
             try {
-              // 4. Build agent graph (agent has @Node/@Edge internal workflow)
+              // 4a. Get agent instance from NestJS DI (required for bound handlers)
+              const agentInstance = this.moduleRef.get(AgentClass, {
+                strict: false,
+              });
+
+              // 4b. Extract workflow definition from @Node/@Edge decorators
               const agentDefinition =
                 this.metadataProcessor.extractWorkflowDefinition(AgentClass);
+
+              // 4c. ✅ FIX: Bind all node handlers to agent instance (fixes 'this' context)
+              agentDefinition.nodes.forEach((node: any) => {
+                if (node.handler && agentInstance) {
+                  // Bind handler to instance so 'this' works inside agent methods
+                  node.handler = node.handler.bind(agentInstance);
+                }
+              });
+
+              // 4d. Build agent subgraph with bound handlers
               const agentGraph = this.buildAgentSubgraph(agentDefinition);
               const compiledAgent = agentGraph.compile();
 
-              // 6. Execute agent with task input
+              // 5. Execute agent with task input
               const initialState = {
                 messages: [{ role: 'user', content: input.task }],
                 metadata: { ...(input.context || {}) },
@@ -368,7 +387,7 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
 
               const result = await compiledAgent.invoke(initialState);
 
-              // 7. Extract result from agent state
+              // 6. Extract result from agent state
               const lastMessage = result.messages?.[result.messages.length - 1];
               const toolOutput =
                 lastMessage?.content || JSON.stringify(result.metadata);
