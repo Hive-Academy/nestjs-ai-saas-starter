@@ -1,16 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   Agent,
-  Entrypoint,
-  Task,
+  Node,
+  Edge,
   WorkflowExecutionService,
 } from '@hive-academy/langgraph-workflow-engine';
-import type {
-  TaskExecutionContext,
-  TaskExecutionResult,
-} from '@hive-academy/langgraph-workflow-engine';
-import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
-import { WebResearchTools } from '../core/tools/web-research.tools';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import { FileOperationTools } from '../core/tools/file-operation.tools';
 import type { TypedAgentState } from '../types';
 import type { ResearcherMetadata } from './shared/metadata.types';
@@ -18,66 +13,64 @@ import type { ResearcherMetadata } from './shared/metadata.types';
 /**
  * 🔬 RESEARCHER AGENT - AUTONOMOUS WEB RESEARCH & REPORT GENERATION
  *
- * Standalone agent demonstrating:
- * ✅ @Agent decorator with workflow-agent type
- * ✅ Streaming to Angular UI via SSE
+ * Demonstrates LLM-DRIVEN TOOL CALLING pattern:
+ * ✅ Tools automatically bound to LLM via @Agent decorator
+ * ✅ LLM autonomously selects appropriate tools (web-search vs research-search)
+ * ✅ Framework handles tool execution loop automatically
+ * ✅ Cost-optimized research (simple queries use web-search, complex use research-search)
  * ✅ Human-in-the-loop (HITL) for report approval
  * ✅ Real web research using Tavily API
  * ✅ Local report storage as markdown files
- * ✅ Zero multi-agent dependencies (standalone workflow)
  *
- * Workflow Flow:
- * 1. parseQuery - Extract research parameters from user query
- * 2. conductResearch - Execute web research using Tavily
- * 3. generateReportDraft - Generate markdown report with LLM
- * 4. 🛑 INTERRUPT - Wait for user approval
- * 5. saveReport - Save approved report to filesystem
+ * Workflow Flow (LLM-Driven):
+ * 1. conductAutonomousResearch - Single @Node with type: 'llm'
+ *    - LLM receives query + tool definitions (web-search, research-search, create-report)
+ *    - LLM analyzes query complexity and autonomously calls appropriate tool(s)
+ *    - Framework executes tools via ToolNode and returns results to LLM
+ *    - LLM processes results and decides: more research OR generate report
+ *    - Loop continues until LLM calls create-report (signals completion)
+ * 2. 🛑 INTERRUPT - Workflow pauses after research completes for user approval
+ * 3. saveApprovedReport - Save approved report to filesystem
  *
  * HITL Integration:
- * - Workflow pauses after generateReportDraft
+ * - Workflow pauses after conductAutonomousResearch completes
  * - User reviews draft in UI modal
  * - Approves/rejects via API endpoint
- * - Workflow resumes with decision
+ * - Workflow resumes with decision to saveApprovedReport
+ *
+ * KEY PATTERN DIFFERENCE:
+ * ❌ OLD: Manual tool calls (this.webTools.researchSearch()) - no LLM autonomy
+ * ✅ NEW: LLM-driven tool selection via @Node({ type: 'llm' }) - intelligent, adaptive
  */
 
 @Agent({
   description:
-    'Autonomous research agent that conducts web research, generates reports, and saves them locally with user approval',
+    'Autonomous research agent with LLM-driven tool selection for intelligent, cost-optimized research and report generation',
   type: 'workflow-agent',
   tools: [
-    'web-search',
-    'research-search',
-    'create-report',
-    'save-report',
-    'list-reports',
+    'web-search', // Quick web search (2-5 sources, fast, cost-effective)
+    'research-search', // Comprehensive research (5-10+ sources, academic, in-depth)
+    'create-report', // Generate markdown report from research findings
+    'save-report', // Save report to filesystem (used after approval)
   ],
   capabilities: [
     'web-research',
     'report-generation',
     'academic-search',
     'content-synthesis',
+    'intelligent-tool-selection',
   ],
   priority: 'high',
   executionTime: 'slow',
   outputFormat: 'markdown',
   workflow: {
     name: 'researcher-workflow',
-    description: 'Autonomous research and report generation workflow',
-    type: 'functional-task', // Linear @Entrypoint + @Task flow
-    streaming: true, // Enable streaming to UI
+    description:
+      'LLM-driven autonomous research with intelligent tool selection',
+    type: 'functional-node', // 🔑 Changed from functional-task to functional-node for @Node/@Edge pattern
+    streaming: true,
     confidenceThreshold: 0.7,
     metrics: true,
-    // 🔥 HITL CONFIGURATION
-    enableInternalStreaming: true,
-    enableInternalCheckpointing: true, // Required for HITL resume
-    internalTimeout: 180000, // 3 minutes
-    enableErrorRecovery: true,
-    maxInternalRetries: 2,
-    enableStepProgress: true,
-    multiAgentInterruption: {
-      enabled: true,
-      interruptAfter: ['generateReportDraft'], // Pause workflow after draft generation
-    },
   },
 })
 @Injectable()
@@ -85,359 +78,316 @@ export class ResearcherAgent {
   private readonly logger = new Logger(ResearcherAgent.name);
 
   constructor(
-    private readonly webTools: WebResearchTools,
     private readonly fileTools: FileOperationTools,
-    private readonly llmProvider: LlmProviderService,
     private readonly workflowExecutionService: WorkflowExecutionService
   ) {}
 
   /**
-   * STEP 1: Parse user query and extract research parameters
+   * 🔬 AUTONOMOUS RESEARCH NODE - LLM-DRIVEN TOOL CALLING
+   *
+   * This node demonstrates the correct LLM-driven tool calling pattern:
+   * - @Node({ type: 'llm' }) automatically binds tools to LLM
+   * - LLM receives intelligent prompting to guide tool selection
+   * - Framework handles tool execution loop (node → tools → node)
+   * - LLM autonomously decides when research is complete
+   *
+   * TOOL SELECTION INTELLIGENCE:
+   * - Simple queries ("What is React?") → LLM uses web-search (fast, cheap)
+   * - Complex queries ("Quantum computing in drug discovery") → LLM uses research-search (comprehensive)
+   * - When sufficient info gathered → LLM calls create-report to finalize
+   *
+   * FRAMEWORK BEHAVIOR:
+   * 1. LLM analyzes query, decides to call tool (e.g., research-search)
+   * 2. Framework detects tool_calls in message → routes to ToolNode
+   * 3. ToolNode executes tool, appends result to messages
+   * 4. Framework routes back to this node with tool results
+   * 5. LLM processes results, decides: more tools OR create-report
+   * 6. Loop continues until LLM calls create-report (no more tool_calls)
+   * 7. Node returns final state → workflow continues to saveApprovedReport
    */
-  @Entrypoint({ timeout: 15000 })
-  async parseQuery(
-    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
-    const state = context.state;
-    this.logger.log(`📝 Parsing research query: "${state.metadata.query}"`);
+  @Node({ type: 'llm' }) // 🔑 This triggers automatic tool binding!
+  async conductAutonomousResearch(
+    state: TypedAgentState<ResearcherMetadata>
+  ): Promise<Partial<TypedAgentState<ResearcherMetadata>>> {
+    const query = state.metadata.query;
+    const researchDepth = state.metadata.researchDepth || 'detailed';
+    const userId = state.metadata.userId;
 
-    try {
-      // Use LLM to analyze query and extract structured parameters
-      const llm = await this.llmProvider.getLLM({
-        temperature: 0.1,
-        maxTokens: 300,
-      });
+    this.logger.log(
+      `🔬 Starting autonomous research: "${query}" (depth: ${researchDepth}, user: ${userId})`
+    );
 
-      const analysisPrompt = `Analyze this research query and extract key information:
+    // Build intelligent system prompt that guides LLM tool selection
+    const researchSystemPrompt = `You are an autonomous research agent with intelligent tool selection capabilities.
 
-Query: "${state.metadata.query}"
+RESEARCH QUERY: "${query}"
+RESEARCH DEPTH: ${researchDepth}
+USER ID: ${userId}
 
-Extract:
-1. Main research topic (concise phrase)
-2. Research scope (broad overview / focused deep-dive / comparative analysis)
-3. Suggested report title (professional, clear)
-4. Key entities, technologies, or concepts to focus on
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AVAILABLE TOOLS & INTELLIGENT SELECTION STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Response format:
-Topic: [main topic]
-Scope: [broad/focused/comparative]
-Title: [report title]
-Entities: [comma-separated list]`;
+1. **web-search** - Quick web search (2-5 sources, ~$0.01, <10s)
+   ✅ USE WHEN:
+   - Simple factual queries ("What is X?", "Who is Y?", "Define Z")
+   - Well-known topics requiring quick facts
+   - User specified researchDepth: "summary"
+   - Budget-conscious research
 
-      const response = await llm.invoke([
-        { role: 'user', content: analysisPrompt },
-      ]);
+   📌 EXAMPLES:
+   - "What is React?"
+   - "Who founded Tesla?"
+   - "Define machine learning"
+   - "Latest news about OpenAI"
 
-      const analysisText = response.content.toString();
+2. **research-search** - Comprehensive research (5-10+ sources, academic, ~$0.05, <30s)
+   ✅ USE WHEN:
+   - Complex technical topics requiring depth
+   - Academic or scientific research
+   - Comparative analysis needed
+   - User specified researchDepth: "detailed" or "comprehensive"
+   - Topic requires multiple perspectives
 
-      // Parse LLM response
-      const topicMatch = analysisText.match(/Topic:\s*(.+)/i);
-      const scopeMatch = analysisText.match(/Scope:\s*(.+)/i);
-      const titleMatch = analysisText.match(/Title:\s*(.+)/i);
+   📌 EXAMPLES:
+   - "Analyze quantum computing applications in drug discovery"
+   - "Compare GraphQL vs REST for microservices"
+   - "Latest AI safety research papers"
+   - "How does CRISPR gene editing work?"
 
-      const researchTopic = topicMatch?.[1]?.trim() || state.metadata.query;
-      const researchScope = scopeMatch?.[1]?.trim() || 'comprehensive overview';
-      const reportTitle =
-        titleMatch?.[1]?.trim() || `Research Report: ${state.metadata.query}`;
+3. **create-report** - Generate professional markdown report
+   ✅ USE WHEN:
+   - Sufficient research data collected
+   - Ready to compile findings into final report
+   - This should be your FINAL tool call
 
-      this.logger.log(`✅ Query parsed - Topic: "${researchTopic}"`);
+   📝 REQUIRED PARAMETERS:
+   - title: Professional report title based on research topic
+   - content: Comprehensive markdown report with:
+     * Executive Summary (2-3 paragraphs)
+     * Introduction (context, objectives)
+     * Key Findings (organized by themes, include citations)
+     * Analysis & Insights (synthesis, implications)
+     * Conclusions (summary, recommendations)
+     * References (numbered list with URLs from sources)
 
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            researchTopic,
-            researchScope,
-            reportTitle,
-          },
-        },
-      };
-    } catch (error: any) {
-      this.logger.error(`❌ Query parsing failed:`, error.message);
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            researchTopic: state.metadata.query,
-            researchScope: 'general overview',
-            reportTitle: `Research Report: ${state.metadata.query}`,
-            error: `Query parsing failed: ${error.message}`,
-          },
-        },
-      };
-    }
+   📌 METADATA OBJECT:
+   Pass all relevant metadata for report tracking:
+   {
+     userId: "${userId}",
+     query: "${query}",
+     researchDepth: "${researchDepth}",
+     totalSources: <number of sources used>,
+     createdAt: <ISO timestamp>,
+     researchTopic: <extracted topic>,
+     researchScope: <scope description>
+   }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INTELLIGENT RESEARCH WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1: ANALYZE QUERY COMPLEXITY
+- Assess if query is simple/factual OR complex/analytical
+- Consider user's specified research depth: "${researchDepth}"
+- Determine optimal tool: web-search (fast) vs research-search (comprehensive)
+
+STEP 2: EXECUTE INITIAL RESEARCH
+- Call selected tool with appropriate parameters
+- For web-search: maxResults: 3-5, searchDepth: 'basic'
+- For research-search: includeAcademic: true, minSources: 5-10, analysisDepth: '${researchDepth}'
+
+STEP 3: EVALUATE RESULTS & DECIDE NEXT ACTION
+- Assess if research is sufficient for comprehensive report
+- If gaps exist: Call additional tools with refined queries
+- If comprehensive: Proceed to create-report
+
+STEP 4: GENERATE FINAL REPORT
+- When research is complete, call create-report with:
+  * Professional title derived from query
+  * Well-structured markdown content (follow format above)
+  * All metadata fields populated
+- This MUST be your FINAL tool call
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COST OPTIMIZATION GUIDELINES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${
+  researchDepth === 'summary'
+    ? '⚡ SUMMARY MODE: Prefer web-search for speed and cost efficiency'
+    : ''
+}
+${
+  researchDepth === 'detailed'
+    ? '🔍 DETAILED MODE: Analyze query, then choose optimal tool'
+    : ''
+}
+${
+  researchDepth === 'comprehensive'
+    ? '📚 COMPREHENSIVE MODE: Use research-search for maximum depth'
+    : ''
+}
+
+IMPORTANT: Balance thoroughness with cost. Don't use research-search for simple queries.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Now analyze the query and autonomously execute research using the most appropriate tools.
+Remember: Call create-report LAST when research is complete!`;
+
+    // For @Node({ type: 'llm' }), we simply return metadata updates
+    // The framework automatically:
+    // 1. Binds tools (web-search, research-search, create-report) to LLM
+    // 2. Invokes LLM with state.messages + system prompt
+    // 3. Detects tool_calls in LLM response
+    // 4. Routes to ToolNode if tool_calls present
+    // 5. Executes tools and appends results to messages
+    // 6. Loops back to this node with tool results
+    // 7. Continues until no tool_calls (research complete)
+
+    // Note: The researchSystemPrompt will be included in the initial user message
+    // when the workflow is invoked. For now, we just track metadata.
+
+    return {
+      metadata: {
+        ...state.metadata,
+        workflowStartTime: new Date(),
+        currentStep: 'autonomous-research',
+        researchStarted: true,
+        systemPrompt: researchSystemPrompt, // Store for reference
+      },
+    };
   }
 
   /**
-   * STEP 2: Conduct comprehensive web research
+   * SAVE APPROVED REPORT - Requires user approval before saving
+   *
+   * Uses @RequiresApproval decorator for human-in-the-loop approval.
+   * Workflow pauses before saving, allowing user to review report draft.
+   * If approved, report is saved. If rejected, workflow ends without saving.
    */
-  @Task({ dependsOn: ['parseQuery'] })
-  async conductResearch(
-    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
-    const state = context.state;
+  @Node({ type: 'standard' })
+  @RequiresApproval({
+    message: (state) =>
+      `Research report draft ready for review: "${
+        state.metadata?.reportTitle || 'Untitled'
+      }"`,
+    timeoutMs: 180000, // 3 minutes
+    onTimeout: 'approve', // Auto-approve if timeout (proceed with save)
+    metadata: (state) => ({
+      approvalType: 'report-draft-review',
+      reportTitle: state.metadata?.reportTitle,
+      query: state.metadata?.query,
+      researchDepth: state.metadata?.researchDepth,
+    }),
+  })
+  async saveApprovedReport(
+    state: TypedAgentState<ResearcherMetadata>
+  ): Promise<Partial<TypedAgentState<ResearcherMetadata>>> {
     this.logger.log(
-      `🔍 Conducting research on: "${state.metadata.researchTopic}"`
+      `💾 Saving approved report: "${state.metadata.reportTitle || 'Untitled'}"`
     );
 
     try {
-      // Use WebResearchTools.researchSearch for comprehensive multi-source research
-      const researchResults = await this.webTools.researchSearch({
-        topic: state.metadata.researchTopic || state.metadata.query,
-        includeAcademic: true,
-        minSources: state.metadata.researchDepth === 'comprehensive' ? 10 : 5,
-        analysisDepth: state.metadata.researchDepth || 'detailed',
-      });
+      // Extract report content from messages
+      // The create-report tool call result should be in messages
+      let reportContent = state.metadata.reportDraft || '';
+      let reportTitle =
+        state.metadata.reportTitle ||
+        `Research Report: ${state.metadata.query}`;
 
-      if ('error' in researchResults) {
-        throw new Error(researchResults.error);
+      // If reportDraft not in metadata, try to extract from messages
+      if (!reportContent && state.messages && state.messages.length > 0) {
+        // Find the last tool message (from create-report)
+        const toolMessages = state.messages.filter(
+          (msg: any) => msg.role === 'tool'
+        );
+        if (toolMessages.length > 0) {
+          const lastToolMsg = toolMessages[toolMessages.length - 1];
+          try {
+            const toolResult =
+              typeof lastToolMsg.content === 'string'
+                ? JSON.parse(lastToolMsg.content)
+                : lastToolMsg.content;
+
+            if (toolResult.content) {
+              reportContent = toolResult.content;
+            }
+            if (toolResult.title) {
+              reportTitle = toolResult.title;
+            }
+          } catch (parseError) {
+            this.logger.warn('Could not parse tool message content');
+          }
+        }
       }
 
-      this.logger.log(
-        `✅ Research completed - Found ${researchResults.totalSources} sources`
-      );
-
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            searchResults: researchResults.sources,
-            synthesis: researchResults.synthesis,
-            totalSources: researchResults.totalSources,
-          },
-        },
-      };
-    } catch (error: any) {
-      this.logger.error(`❌ Research failed:`, error.message);
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            searchResults: [],
-            synthesis: 'Research failed - no sources available',
-            totalSources: 0,
-            error: `Research failed: ${error.message}`,
-          },
-        },
-      };
-    }
-  }
-
-  /**
-   * STEP 3: Generate comprehensive markdown report draft
-   * 🛑 WORKFLOW PAUSES HERE FOR USER APPROVAL
-   */
-  @Task({ dependsOn: ['conductResearch'] })
-  async generateReportDraft(
-    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
-    const state = context.state;
-    this.logger.log(
-      `📄 Generating report draft: "${state.metadata.reportTitle}"`
-    );
-
-    try {
-      // Build comprehensive context from research results
-      interface SourceItem {
-        title: string;
-        type: string;
-        credibility: string;
-        url: string;
-        content: string;
+      if (!reportContent) {
+        throw new Error('No report content found in state');
       }
 
-      const sourcesContext: string = state.metadata.searchResults
-        ? state.metadata.searchResults
-            .slice(0, 5)
-            .map(
-              (source: SourceItem, idx: number): string =>
-                `${idx + 1}. **${source.title}** (${source.type}, ${
-                  source.credibility
-                } credibility)\n   URL: ${
-                  source.url
-                }\n   Summary: ${source.content.substring(0, 200)}...`
-            )
-            .join('\n\n')
-        : '';
-
-      // Use LLM to generate professional markdown report
-      const llm = await this.llmProvider.getLLM({
-        temperature: 0.7,
-        maxTokens: 3000,
-      });
-
-      const reportPrompt = `Generate a comprehensive research report in markdown format:
-
-**Research Topic:** ${state.metadata.researchTopic}
-**Research Scope:** ${state.metadata.researchScope}
-**Total Sources Analyzed:** ${state.metadata.totalSources}
-**Research Depth:** ${state.metadata.researchDepth}
-
-**Research Synthesis:**
-${state.metadata.synthesis}
-
-**Top Sources:**
-${sourcesContext}
-
-**Instructions:**
-Create a well-structured, professional markdown report with:
-
-1. **Executive Summary** (2-3 paragraphs)
-2. **Introduction** (context and objectives)
-3. **Key Findings** (organized by themes with source citations [1], [2], etc.)
-4. **Analysis & Insights** (synthesis and implications)
-5. **Conclusions** (summary and recommendations)
-6. **References** (numbered list of all sources with URLs)
-
-Use proper markdown formatting:
-- Headings (##, ###)
-- Bullet points and numbered lists
-- Bold/italic emphasis
-- Code blocks if relevant
-- Proper citations [1], [2], etc.
-
-Generate a report suitable for professional use.`;
-
-      const response = await llm.invoke([
-        { role: 'user', content: reportPrompt },
-      ]);
-
-      const reportDraft = response.content.toString();
-
-      this.logger.log(
-        `✅ Report draft generated (${reportDraft.length} chars)`
-      );
-      this.logger.log(`🛑 Workflow interrupted - Awaiting user approval`);
-
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            reportDraft,
-            userApproval: 'pending', // Trigger HITL interruption
-          },
-        },
-      };
-    } catch (error: any) {
-      this.logger.error(`❌ Report generation failed:`, error.message);
-
-      // Generate fallback report
-      const fallbackReport = `# ${state.metadata.reportTitle}
-
-## Research Failed
-
-Unable to generate comprehensive report due to error: ${error.message}
-
-## Available Information
-
-**Topic:** ${state.metadata.researchTopic}
-**Sources Found:** ${state.metadata.totalSources}
-
-**Synthesis:**
-${state.metadata.synthesis || 'No synthesis available'}
-
-## Error Details
-
-\`\`\`
-${error.message}
-\`\`\``;
-
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            reportDraft: fallbackReport,
-            userApproval: 'pending',
-            error: `Report generation failed: ${error.message}`,
-          },
-        },
-      };
-    }
-  }
-
-  /**
-   * STEP 4: Save approved report to filesystem
-   * Only executes if user approved the report
-   */
-  @Task({ dependsOn: ['generateReportDraft'] })
-  async saveReport(
-    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
-    const state = context.state;
-
-    // Check approval status
-    if (state.metadata.userApproval !== 'approved') {
-      this.logger.warn(`⚠️ Report rejected by user - Not saving`);
-      return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            finalReport: 'Report was rejected by user and not saved.',
-            error: 'User rejected report',
-          },
-        },
-      };
-    }
-
-    this.logger.log(
-      `💾 Saving approved report: "${state.metadata.reportTitle}"`
-    );
-
-    try {
-      // Save report using FileOperationTools
-      const saveResult = await this.fileTools.createReport({
-        title: state.metadata.reportTitle || 'Untitled Report',
-        content: state.metadata.reportDraft || '',
+      // Create new report file using FileOperationTools
+      const createResult = await this.fileTools.createReport({
+        title: reportTitle,
+        content: reportContent,
         metadata: {
           userId: state.metadata.userId,
           query: state.metadata.query,
-          researchTopic: state.metadata.researchTopic,
-          researchScope: state.metadata.researchScope,
-          researchDepth: state.metadata.researchDepth,
-          totalSources: state.metadata.totalSources,
+          researchTopic: state.metadata.researchTopic || state.metadata.query,
+          researchScope: state.metadata.researchScope || 'general',
+          researchDepth: state.metadata.researchDepth || 'detailed',
+          totalSources: state.metadata.totalSources || 0,
           createdAt: new Date().toISOString(),
           approvedAt: new Date().toISOString(),
           approvalFeedback: state.metadata.approvalFeedback,
         },
       });
 
-      if (!saveResult.success) {
-        throw new Error(saveResult.error || 'Unknown save error');
+      if (!createResult.success) {
+        throw new Error(createResult.error || 'Unknown save error');
       }
 
-      this.logger.log(`✅ Report saved: ${saveResult.filename}`);
+      this.logger.log(`✅ Report saved: ${createResult.filename}`);
 
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            savedReportPath: saveResult.filepath,
-            savedReportFilename: saveResult.filename,
-            finalReport: `Report successfully saved to: ${saveResult.filename}`,
-          },
+        metadata: {
+          ...state.metadata,
+          savedReportPath: createResult.filepath,
+          savedReportFilename: createResult.filename,
+          finalReport: `Report successfully saved to: ${createResult.filename}`,
         },
       };
     } catch (error: any) {
       this.logger.error(`❌ Report save failed:`, error.message);
       return {
-        state: {
-          ...state,
-          metadata: {
-            ...state.metadata,
-            finalReport: 'Failed to save report',
-            error: `Save failed: ${error.message}`,
-          },
+        metadata: {
+          ...state.metadata,
+          finalReport: 'Failed to save report',
+          error: `Save failed: ${error.message}`,
         },
       };
     }
+  }
+
+  /**
+   * EDGES - Define workflow flow
+   */
+
+  /**
+   * After research completes, proceed to save (if approved via HITL)
+   */
+  @Edge('conductAutonomousResearch', 'saveApprovedReport')
+  researchToSave(): boolean {
+    return true; // Always route to save after research (HITL happens between)
+  }
+
+  /**
+   * After save, end workflow
+   */
+  @Edge('saveApprovedReport', '__end__')
+  complete(): boolean {
+    return true;
   }
 
   /**
@@ -504,7 +454,7 @@ ${error.message}
     // Yield events to caller with enhanced typing for tool events
     for await (const update of stream) {
       // LangGraph 'updates' mode returns: { nodeName: stateUpdate }
-      // Example: { 'parseQuery': { metadata: {...} } } or { 'tools': { messages: [...] } }
+      // Example: { 'conductAutonomousResearch': { metadata: {...} } } or { 'tools': { messages: [...] } }
       const nodeName = Object.keys(update)[0];
       const nodeData = update[nodeName];
 

@@ -171,16 +171,29 @@ export class ResearchChatController {
             } as MessageEvent);
 
             // Check if workflow interrupted (HITL)
-            if (event.state?.userApproval === 'pending') {
+            // @RequiresApproval decorator sets waitingForApproval: true
+            if (
+              event.state?.waitingForApproval === true ||
+              event.state?.userApproval === 'pending'
+            ) {
               this.logger.log(
                 `🛑 Workflow interrupted for approval: ${executionId}`
               );
+
+              // Extract approval message from approvalRequest if available
+              const approvalMessage =
+                event.state?.approvalRequest?.message ||
+                'Report draft ready for review';
+              const reportDraft =
+                event.state?.reportDraft || event.state?.metadata?.reportDraft;
+
               subscriber.next({
                 data: {
                   type: 'interruption_request',
                   executionId,
-                  message: 'Report draft ready for review',
-                  reportDraft: event.state.reportDraft,
+                  message: approvalMessage,
+                  reportDraft,
+                  approvalRequest: event.state?.approvalRequest,
                   timestamp: new Date().toISOString(),
                 },
                 type: 'interruption_request',
