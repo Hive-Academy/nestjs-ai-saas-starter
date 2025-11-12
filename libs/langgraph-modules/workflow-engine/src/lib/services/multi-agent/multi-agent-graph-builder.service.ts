@@ -43,12 +43,8 @@ import {
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import type { IMultiAgentGraphBuilder } from './builders/i-multi-agent-graph-builder.interface';
 import { MultiAgentGraphBuilderError } from './errors';
-
-// TODO: Task 4 - SupervisorGraphBuilder will be created
-// import { SupervisorGraphBuilder } from './builders/supervisor-graph-builder';
-
-// TODO: Task 5 - SequentialGraphBuilder will be created
-// import { SequentialGraphBuilder } from './builders/sequential-graph-builder';
+import { SupervisorGraphBuilder } from './builders/supervisor-graph-builder';
+import { SequentialGraphBuilder } from './builders/sequential-graph-builder';
 
 /**
  * Strategy Pattern context service for multi-agent graph construction
@@ -91,31 +87,37 @@ export class MultiAgentGraphBuilderService {
    * Initialize service and register topology-specific builders
    *
    * ARCHITECTURE NOTE:
-   * - SupervisorGraphBuilder and SequentialGraphBuilder don't exist yet
-   * - Task 4 will create SupervisorGraphBuilder
-   * - Task 5 will create SequentialGraphBuilder
-   * - Constructor injection prepared for future builder registration
+   * - SupervisorGraphBuilder and SequentialGraphBuilder are injected via DI
+   * - Builders are registered in the Map for Strategy Pattern lookup
+   * - Additional topologies (swarm, hierarchical, network) can be added following same pattern
    *
-   * @param supervisorBuilder - Supervisor topology builder (Task 4)
-   * @param sequentialBuilder - Sequential topology builder (Task 5)
+   * @param supervisorBuilder - Supervisor topology builder
+   * @param sequentialBuilder - Sequential topology builder
    */
-  constructor() {
-    // private readonly sequentialBuilder: SequentialGraphBuilder // TODO: Task 5 - Inject SequentialGraphBuilder when created // private readonly supervisorBuilder: SupervisorGraphBuilder, // TODO: Task 4 - Inject SupervisorGraphBuilder when created
-    // TODO: Task 4 & 5 - Register builders when they exist
-    // Initialize empty registry for now
+  constructor(
+    private readonly supervisorBuilder: SupervisorGraphBuilder,
+    private readonly sequentialBuilder: SequentialGraphBuilder
+  ) {
+    // Register topology-specific builders for Strategy Pattern lookup
+    // Type cast needed due to LangGraph's complex generic types in StateGraph
     this.builders = new Map<MultiAgentTopology, IMultiAgentGraphBuilder>([
-      // Future: [MultiAgentTopology.SUPERVISOR, this.supervisorBuilder],
-      // Future: [MultiAgentTopology.SEQUENTIAL, this.sequentialBuilder],
-      // Future: [MultiAgentTopology.SWARM, this.swarmBuilder],
-      // Future: [MultiAgentTopology.HIERARCHICAL, this.hierarchicalBuilder],
-      // Future: [MultiAgentTopology.NETWORK, this.networkBuilder],
+      [
+        MultiAgentTopology.SUPERVISOR,
+        this.supervisorBuilder as IMultiAgentGraphBuilder,
+      ],
+      [
+        MultiAgentTopology.SEQUENTIAL,
+        this.sequentialBuilder as IMultiAgentGraphBuilder,
+      ],
+      // Future topologies can be added here:
+      // [MultiAgentTopology.SWARM, this.swarmBuilder],
+      // [MultiAgentTopology.HIERARCHICAL, this.hierarchicalBuilder],
+      // [MultiAgentTopology.NETWORK, this.networkBuilder],
     ]);
 
     this.logger.log('MultiAgentGraphBuilderService initialized');
     this.logger.log(
-      `Registered builders: ${
-        this.getRegisteredTopologies().join(', ') || 'none (builders pending)'
-      }`
+      `Registered builders: ${this.getRegisteredTopologies().join(', ')}`
     );
   }
 

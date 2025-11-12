@@ -1,9 +1,14 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Param,
   Logger,
   BadRequestException,
+  HttpException,
+  HttpStatus,
+  Sse,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -12,42 +17,40 @@ import {
   ApiProperty,
 } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
+import { Observable } from 'rxjs';
+import type { MessageEvent } from '@nestjs/common';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
-// Streaming service will be added by Agent 1 during consolidation
 
 /**
- * DevBrand Workflow Controller - Simplified Architecture
+ * 🎯 DEVBRAND WORKFLOW CONTROLLER - SSE STREAMING PATTERN
  *
- * This controller exposes a single endpoint to start the DevBrand workflow.
- * All streaming, progress updates, HITL interruptions, and token streaming
- * are handled AUTOMATICALLY by the existing infrastructure:
+ * REST API endpoints for DevBrandSupervisorWorkflow with Server-Sent Events (SSE) streaming
  *
- * Architecture Flow:
+ * Architecture Pattern (Following ResearchChatController):
  * ┌──────────────────────────────────────────────────────────────────┐
- * │ 1. POST /devbrand/execute → Returns executionId immediately      │
- * │ 2. WorkflowStreamingOrchestrator.startWorkflowWithStreaming()    │
- * │ 3. Workflow.executeWithStreaming() → LangGraph.stream()          │
- * │ 4. Events auto-emit via EventEmitter2:                           │
- * │    - workflow.stream.${executionId}                              │
- * │    - workflow.token.${executionId}                               │
- * │    - workflow.progress.${executionId}                            │
- * │ 5. WebSocketBridgeService listens via @OnEvent decorators        │
- * │ 6. StreamingWebSocketService broadcasts to subscribed clients    │
- * │ 7. Clients receive events on ws://localhost:8080/streaming       │
+ * │ 1. POST /api/devbrand/execute → Returns executionId immediately  │
+ * │ 2. GET /api/devbrand/stream/:id → SSE stream (EventSource)       │
+ * │ 3. DevBrandWorkflow.executeWithStreaming() → LangGraph.stream()  │
+ * │ 4. Stream yields workflow state updates in real-time             │
+ * │ 5. HITL interruption pauses workflow when needed                 │
  * └──────────────────────────────────────────────────────────────────┘
  *
- * NO manual SSE transformation! NO custom event mapping!
- * NO duplicate infrastructure! Everything is already built.
+ * Endpoints:
+ * - POST /api/devbrand/execute - Start workflow (returns executionId)
+ * - GET /api/devbrand/stream/:executionId - SSE streaming endpoint
  *
- * Key Services (Already Running):
- * - WorkflowStreamingOrchestrator: Consumer facade for workflow lifecycle (streaming module)
- * - StreamingWebSocketService: Port 8080, Socket.io server
- * - WebSocketBridgeService: Event routing with @OnEvent('workflow.stream.*')
- * - WorkflowStreamService: Low-level streaming implementation (workflow-engine)
- * - TokenStreamingService: Character-by-character LLM streaming
- * - HumanApprovalService: HITL interruptions with Neo4j storage
+ * SSE Streaming Format:
+ * - event: workflow-update
+ * - data: { executionId, nodeName, state, timestamp }
  *
- * See: libs/langgraph-modules/streaming/CLAUDE.md for full architecture
+ * Frontend Integration (Angular):
+ * ```typescript
+ * const eventSource = new EventSource(`/api/devbrand/stream/${executionId}`);
+ * eventSource.addEventListener('workflow-update', (event) => {
+ *   const data = JSON.parse(event.data);
+ *   // Handle state updates
+ * });
+ * ```
  */
 
 export class ExecuteDevBrandDto {
@@ -84,34 +87,15 @@ export class ExecuteDevBrandResponseDto {
   @ApiProperty({
     description: 'Human-readable message',
     example:
-      'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
+      'Workflow started successfully. Connect to SSE stream for real-time updates.',
   })
   message!: string;
 
   @ApiProperty({
-    description: 'WebSocket URL for real-time updates',
-    example: 'ws://localhost:8080/streaming',
+    description: 'SSE stream URL for real-time updates',
+    example: '/api/devbrand/stream/devbrand-1697456789',
   })
-  websocketUrl!: string;
-
-  @ApiProperty({
-    description: 'WebSocket integration instructions',
-    example: {
-      connect: 'io("ws://localhost:8080/streaming")',
-      subscribe:
-        'socket.emit("subscribe_execution", { executionId: "devbrand-123" })',
-      events: [
-        'stream_update - Workflow events',
-        'token_update - LLM token streaming',
-        'interruption_request - HITL requests',
-      ],
-    },
-  })
-  websocketInstructions!: {
-    connect: string;
-    subscribe: string;
-    events: string[];
-  };
+  streamUrl!: string;
 }
 
 @ApiTags('DevBrand Workflow')
@@ -119,52 +103,39 @@ export class ExecuteDevBrandResponseDto {
 export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
 
+  // Store active workflow streams (executionId → async generator)
+  private readonly activeStreams = new Map<
+    string,
+    AsyncGenerator<any, void, unknown>
+  >();
+
   constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow) {}
 
   /**
-   * Start DevBrand Workflow
-   *
-   * Starts the DevBrand personal branding workflow for a GitHub user.
-   * Returns executionId immediately for WebSocket subscription.
-   *
-   * The workflow includes:
-   * 1. GitHubCodeAnalyzerAgent - Analyzes repositories, extracts achievements
-   * 2. PersonalBrandStrategistAgent - Develops brand strategy and positioning
-   * 3. ContentCreatorAgent - Generates platform-specific content (LinkedIn, Dev.to)
-   *
-   * All agents have @StreamToken and @StreamProgress decorators enabled.
-   * HITL interruptions are configured via @MultiAgent decorator metadata.
-   *
-   * Real-time Updates:
-   * - Connect to: ws://localhost:8080/streaming
-   * - Subscribe with: socket.emit('subscribe_execution', { executionId })
-   * - Receive events: stream_update, token_update, interruption_request, etc.
-   *
-   * @param dto ExecuteDevBrandDto with githubUsername and optional userId
-   * @returns ExecuteDevBrandResponseDto with executionId and WebSocket instructions
+   * Start DevBrand workflow (non-blocking)
+   * Returns executionId immediately for SSE subscription
    */
   @Post('execute')
   @ApiOperation({
     summary: 'Start DevBrand workflow',
     description: `
       Starts the DevBrand personal branding workflow for a GitHub user.
-      Returns executionId immediately. Use the executionId to subscribe to
-      real-time updates via WebSocket (ws://localhost:8080/streaming).
+      Returns executionId immediately. Use the executionId to connect to
+      SSE stream endpoint for real-time updates.
 
       Workflow includes:
       - GitHub code analysis (repositories, technologies, achievements)
       - Personal brand strategy development (positioning, target audience)
       - Multi-platform content creation (LinkedIn, Dev.to)
 
-      All streaming, progress updates, and HITL interruptions are automatically
-      broadcast via the existing WebSocket infrastructure. No polling required.
+      All streaming and HITL interruptions are delivered via SSE.
     `,
   })
   @ApiResponse({
     status: 201,
     type: ExecuteDevBrandResponseDto,
     description:
-      'Workflow started successfully. Use executionId to subscribe via WebSocket.',
+      'Workflow started successfully. Connect to SSE stream endpoint.',
   })
   @ApiResponse({
     status: 400,
@@ -173,63 +144,119 @@ export class DevBrandController {
   async executeDevBrand(
     @Body() dto: ExecuteDevBrandDto
   ): Promise<ExecuteDevBrandResponseDto> {
-    if (!dto.githubUsername) {
-      throw new BadRequestException('githubUsername is required');
+    this.logger.log(`🚀 Starting DevBrand workflow for: ${dto.githubUsername}`);
+
+    try {
+      // Validate input
+      if (!dto.githubUsername || dto.githubUsername.trim().length === 0) {
+        throw new BadRequestException('GitHub username cannot be empty');
+      }
+
+      if (!dto.userId) {
+        throw new BadRequestException('User ID is required');
+      }
+
+      const executionId = `devbrand-${Date.now()}`;
+
+      // Create async generator for streaming
+      const stream = this.devBrandWorkflow.executeWithStreaming({
+        userId: dto.userId,
+        githubUsername: dto.githubUsername.trim(),
+        executionId,
+      });
+
+      // Store stream for SSE endpoint
+      this.activeStreams.set(executionId, stream);
+
+      // Auto-cleanup after 30 minutes
+      setTimeout(() => {
+        this.activeStreams.delete(executionId);
+        this.logger.log(`🧹 Cleaned up stream for ${executionId}`);
+      }, 30 * 60 * 1000);
+
+      this.logger.log(
+        `✅ DevBrand workflow started: ${executionId} - Connect to /api/devbrand/stream/${executionId}`
+      );
+
+      return {
+        executionId,
+        status: 'started',
+        message:
+          'Workflow started successfully. Connect to stream URL for real-time updates.',
+        streamUrl: `/api/devbrand/stream/${executionId}`,
+      };
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to start workflow:`, error.message);
+      throw new HttpException(
+        error.message || 'Failed to start DevBrand workflow',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    const executionId = `devbrand-${Date.now()}`;
-    const userId = dto.userId || 'anonymous';
-
-    this.logger.log(
-      `🚀 Starting DevBrand workflow for GitHub user: ${dto.githubUsername} (executionId: ${executionId})`
-    );
-
-    // Start workflow with native streaming
-    const input = {
-      userId,
-      githubUsername: dto.githubUsername,
-      executionId,
-    };
-
-    // Execute in background using native LangGraph streaming
-    this.startWorkflowInBackground(executionId, input);
-
-    // Return execution info immediately
-    return {
-      executionId,
-      status: 'started' as const,
-      message:
-        'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
-      websocketUrl: 'ws://localhost:8080/streaming',
-      websocketInstructions: {
-        connect:
-          'io("ws://localhost:8080/streaming", { transports: ["websocket", "polling"] })',
-        subscribe: `socket.emit("subscribe_execution", { executionId: "${executionId}" })`,
-        events: [
-          'stream_update - Workflow state changes (agent started, completed, routing)',
-          'token_update - Real-time LLM token streaming (character-by-character)',
-          'interruption_request - HITL approval requests from agents',
-          'interruption_resolved - HITL responses processed, workflow continuing',
-          'error - Workflow errors and failures',
-        ],
-      },
-    };
   }
 
   /**
-   * Start workflow in background with native LangGraph streaming
+   * Server-Sent Events (SSE) streaming endpoint
+   * Streams workflow state updates in real-time
    */
-  private async startWorkflowInBackground(
-    executionId: string,
-    input: any
-  ): Promise<void> {
-    try {
-      // TODO: Agent 1 will add native LangGraph streaming via WorkflowStreamService
-      // For now, execute workflow directly (streaming infrastructure being consolidated)
-      await this.devBrandWorkflow.execute(input);
-      this.logger.log(`Workflow ${executionId} completed successfully`);
-    } catch (error) {
-      this.logger.error(`Workflow ${executionId} failed:`, error);
-    }
+  @Get('stream/:executionId')
+  @Sse()
+  streamWorkflow(
+    @Param('executionId') executionId: string
+  ): Observable<MessageEvent> {
+    this.logger.log(`📡 SSE stream connected for ${executionId}`);
+
+    return new Observable((subscriber) => {
+      const stream = this.activeStreams.get(executionId);
+
+      if (!stream) {
+        subscriber.error(
+          new HttpException(
+            `Stream not found for ${executionId}. Make sure to call POST /api/devbrand/execute first.`,
+            HttpStatus.NOT_FOUND
+          )
+        );
+        return;
+      }
+
+      // Consume async generator and emit SSE events
+      (async () => {
+        try {
+          for await (const event of stream) {
+            // Format as SSE MessageEvent
+            subscriber.next({
+              data: event,
+              type: 'workflow-update',
+            } as MessageEvent);
+
+            // Check if workflow completed
+            if (
+              event.state?.status === 'completed' ||
+              event.state?.metadata?.workflowCompleted
+            ) {
+              this.logger.log(`✅ Workflow completed: ${executionId}`);
+              subscriber.next({
+                data: {
+                  type: 'workflow_complete',
+                  executionId,
+                  finalState: event.state,
+                  timestamp: new Date().toISOString(),
+                },
+                type: 'workflow_complete',
+              } as MessageEvent);
+              subscriber.complete();
+              this.activeStreams.delete(executionId);
+              break;
+            }
+          }
+        } catch (error: any) {
+          this.logger.error(
+            `❌ Stream error for ${executionId}:`,
+            error.message
+          );
+          subscriber.error(error);
+          this.activeStreams.delete(executionId);
+        }
+      })();
+    });
   }
 }

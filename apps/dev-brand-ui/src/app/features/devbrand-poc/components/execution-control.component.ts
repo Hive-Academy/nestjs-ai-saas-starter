@@ -296,7 +296,6 @@ export class ExecutionControlComponent {
    */
   readonly executionStarted = output<{
     executionId: string;
-    websocketUrl: string;
   }>();
 
   /**
@@ -371,11 +370,9 @@ export class ExecutionControlComponent {
           // Emit full response for parent coordination (includes websocketUrl)
           this.executionStarted.emit({
             executionId: response.executionId,
-            websocketUrl: response.websocketUrl,
           });
 
           console.log('Workflow execution started:', response.executionId);
-          console.log('WebSocket URL:', response.websocketUrl);
         },
         error: (errorMessage: string) => {
           // Store error message (already user-friendly from ApiService)
