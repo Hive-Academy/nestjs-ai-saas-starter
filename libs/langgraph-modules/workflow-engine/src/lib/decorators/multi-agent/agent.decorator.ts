@@ -58,22 +58,49 @@ export interface MultiAgentStreamingConfig {
 /**
  * Human-in-the-loop (HITL) interruption configuration for multi-agent workflows
  * Controls when multi-agent execution pauses for human approval
+ *
+ * @deprecated Use @RequiresApproval decorator instead of multiAgentInterruption config
+ * This interface will be removed in v2.0.0 (TASK_2025_045)
+ *
+ * Migration example:
+ * ```typescript
+ * // ❌ OLD: Config-based interruption
+ * @Agent({
+ *   workflow: {
+ *     multiAgentInterruption: {
+ *       enabled: true,
+ *       interruptAfter: ['generateReport'],
+ *     },
+ *   },
+ * })
+ *
+ * // ✅ NEW: Decorator-based interruption
+ * @Agent({ workflow: { type: 'functional-task' } })
+ * class MyAgent {
+ *   @Task()
+ *   @RequiresApproval({ message: 'Review report', timeoutMs: 180000 })
+ *   async generateReport() { }
+ * }
+ * ```
  */
 export interface MultiAgentInterruptionConfig {
   /**
    * Enable interruption/HITL for this multi-agent workflow
+   * @deprecated Use @RequiresApproval decorator instead
    */
   enabled: boolean;
 
   /**
    * Worker names to interrupt BEFORE execution
    * Workflow pauses before these workers execute
+   * @deprecated Use @RequiresApproval decorator instead
    */
   interruptBefore?: readonly string[];
 
   /**
    * Worker names to interrupt AFTER execution
    * Workflow pauses after these workers complete
+   * @deprecated Use @RequiresApproval decorator instead
    */
   interruptAfter?: readonly string[];
 }
