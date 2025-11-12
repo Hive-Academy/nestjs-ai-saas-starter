@@ -53,14 +53,10 @@ import {
   executionTime: 'medium',
   workflow: {
     name: 'brand-strategist-workflow',
-    type: 'functional-node', // 🔑 Explicit node-based workflow type
-    // 🆕 DEFAULTS APPLIED: streaming, confidenceThreshold, metrics, checkpointing,
-    // enableInternalStreaming, enableInternalCheckpointing, internalTimeout,
-    // enableErrorRecovery, maxInternalRetries, enableStepProgress, stateKey,
-    // multiAgentStreaming, multiAgentInterruption now use module defaults
-    multiAgentInterruption: {
-      enabled: true, // Enable HITL approval at end of agent execution
-    },
+    type: 'functional-node',
+    streaming: true,
+    confidenceThreshold: 0.8,
+    metrics: true,
   },
 })
 @Injectable()
