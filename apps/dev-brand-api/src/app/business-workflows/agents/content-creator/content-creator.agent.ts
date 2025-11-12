@@ -77,19 +77,10 @@ import { buildFinalContentMessage } from './content-creator.utils';
   executionTime: 'medium',
   workflow: {
     name: 'content-creator-workflow',
-    type: 'functional-node', // 🔑 Explicit node-based workflow type
-    // 🆕 DEFAULTS APPLIED: streaming, confidenceThreshold, metrics now inherit from module config
-    enableInternalCheckpointing: false, // Override default true (no checkpointing needed)
-    internalTimeout: 45000, // Override default 60000 (45 seconds for content generation)
-    // 🆕 enableInternalStreaming, enableErrorRecovery, maxInternalRetries,
-    // enableStepProgress, stateKey now use module defaults
-    // 🆕 multiAgentStreaming uses module defaults
-
-    // Multi-agent interruption configuration - HITL for content approval
-    multiAgentInterruption: {
-      enabled: true, // Override default false - Enable approval for content before publishing
-      interruptBefore: ['content-creator'], // Pause before content creation for review
-    },
+    type: 'functional-node',
+    streaming: true,
+    confidenceThreshold: 0.8,
+    metrics: true,
   },
 })
 @Injectable()
