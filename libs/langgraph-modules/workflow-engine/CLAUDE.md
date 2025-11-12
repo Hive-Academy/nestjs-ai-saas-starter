@@ -1748,6 +1748,94 @@ export class MyWorkflow {
 }
 ```
 
+### Decorator Cleanup (TASK_2025_045)
+
+**Removed Non-Functional Options** (v1.5.0):
+
+The following options have been removed from `@Agent` workflow configuration as they were non-functional (stored but never used by workflow-engine):
+
+- ❌ `enableInternalStreaming` - Never read by workflow engine
+- ❌ `enableInternalCheckpointing` - Checkpointing configured at graph.compile() level
+- ❌ `internalTimeout` - Timeouts configured per-task or at module level
+- ❌ `enableErrorRecovery` - Error recovery is graph-level configuration
+- ❌ `maxInternalRetries` - Retry logic implemented per-task
+- ❌ `enableStepProgress` - Progress tracking handled by LangGraph runtime
+
+**HITL Pattern Migration** (config → decorator):
+
+**Before** (config-based interruption):
+
+```typescript
+@Agent({
+  description: 'Research agent with approval workflow',
+  workflow: {
+    type: 'functional-task',
+    // ❌ DEPRECATED: Config-based HITL (will be removed in v2.0.0)
+    multiAgentInterruption: {
+      enabled: true,
+      interruptAfter: ['generateReport'],
+    },
+  },
+})
+export class ResearcherAgent {
+  @Task()
+  async generateReport() {
+    // Implementation
+  }
+}
+```
+
+**After** (decorator-based interruption):
+
+```typescript
+@Agent({
+  description: 'Research agent with approval workflow',
+  workflow: {
+    type: 'functional-task',
+    streaming: true,
+    confidenceThreshold: 0.7,
+    metrics: true,
+    // ✅ No multiAgentInterruption config - use @RequiresApproval instead
+  },
+})
+export class ResearcherAgent {
+  @Task()
+  @RequiresApproval({
+    message: (state) => `Research report ready: "${state.metadata?.reportTitle}"`,
+    timeoutMs: 180000, // 3 minutes
+    onTimeout: 'approve', // Auto-approve on timeout
+    metadata: (state) => ({
+      approvalType: 'report-draft-review',
+      reportTitle: state.metadata?.reportTitle,
+    }),
+  })
+  async generateReport() {
+    // Implementation
+  }
+}
+```
+
+**Benefits of @RequiresApproval**:
+
+- ✅ **Clearer Intent**: Decorator at point of use (better discoverability)
+- ✅ **No Config Bloat**: No task names duplicated in workflow config
+- ✅ **Automatic State Management**: Decorator sets `waitingForApproval` property
+- ✅ **Rich Metadata**: Custom approval messages and metadata per task
+- ✅ **Timeout Handling**: Built-in timeout with configurable actions
+- ✅ **Consistent Pattern**: Aligns with HITL best practices
+
+**Migration Steps**:
+
+1. Remove `multiAgentInterruption` block from agent workflow config
+2. Add `@RequiresApproval` decorator to task methods requiring approval
+3. Update SSE controllers to detect both `userApproval === 'pending'` and `waitingForApproval === true` (for backward compatibility during transition)
+4. Test workflow interruption and resume functionality
+
+**Deprecation Timeline**:
+
+- **v1.5.0** (current): `multiAgentInterruption` marked as deprecated with warnings
+- **v2.0.0** (future): `multiAgentInterruption` interface will be removed entirely
+
 ---
 
 ## Related Documentation
