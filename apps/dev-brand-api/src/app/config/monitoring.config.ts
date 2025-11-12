@@ -7,6 +7,18 @@ import type { MonitoringConfig } from '@hive-academy/langgraph-monitoring';
 export function getMonitoringConfig(): MonitoringConfig {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
+  /**
+   * Parse and validate memory threshold percentage (0-100)
+   */
+  const parseThreshold = (
+    envVar: string | undefined,
+    defaultValue: string
+  ): number => {
+    const parsed = parseInt(envVar || defaultValue);
+    // Clamp to valid range 0-100
+    return Math.min(100, Math.max(0, parsed));
+  };
+
   return {
     // Overall monitoring enabled flag
     enabled: process.env.MONITORING_ENABLED !== 'false',
@@ -73,13 +85,13 @@ export function getMonitoringConfig(): MonitoringConfig {
         process.env.MONITORING_SHUTDOWN_TIMEOUT || '30000'
       ), // 30 seconds
       memory: {
-        unhealthyThreshold: parseInt(
-          process.env.MEMORY_HEALTH_THRESHOLD_UNHEALTHY ||
-            (isDevelopment ? '95' : '90')
+        unhealthyThreshold: parseThreshold(
+          process.env.MEMORY_HEALTH_THRESHOLD_UNHEALTHY,
+          isDevelopment ? '95' : '90'
         ),
-        degradedThreshold: parseInt(
-          process.env.MEMORY_HEALTH_THRESHOLD_DEGRADED ||
-            (isDevelopment ? '90' : '80')
+        degradedThreshold: parseThreshold(
+          process.env.MEMORY_HEALTH_THRESHOLD_DEGRADED,
+          isDevelopment ? '90' : '80'
         ),
       },
     },
