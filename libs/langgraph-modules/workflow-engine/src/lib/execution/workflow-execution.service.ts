@@ -327,4 +327,227 @@ export class WorkflowExecutionService {
     // Delegate graph building to strategy
     return strategy.buildStateGraph(definition);
   }
+
+  /**
+   * Get current state snapshot for a specific thread using LangGraph's native getState() API
+   *
+   * This method compiles the workflow graph on-demand and retrieves the latest checkpoint
+   * state for a given thread_id using LangGraph's built-in checkpoint retrieval.
+   *
+   * @param threadId - Unique thread identifier for checkpoint isolation
+   * @returns StateSnapshot containing current state values, next nodes to execute, config, and metadata
+   * @throws Error if checkpointer is not configured or thread state not found
+   *
+   * @example
+   * ```typescript
+   * const snapshot = await workflowExecutionService.getStateSnapshot('thread-123');
+   * console.log('Current state:', snapshot.values);
+   * console.log('Next nodes:', snapshot.next);
+   * console.log('Checkpoint config:', snapshot.config);
+   * ```
+   *
+   * Implementation: TASK_2025_048 - BATCH 1, Task 2
+   */
+  async getStateSnapshot(threadId: string): Promise<any> {
+    this.logger.debug(`Retrieving state snapshot for thread: ${threadId}`);
+
+    if (!this.checkpointer) {
+      const error =
+        'Checkpointer not configured - cannot retrieve thread state';
+      this.logger.error(error);
+      throw new Error(error);
+    }
+
+    try {
+      // Use checkpointer's getTuple() method to retrieve CheckpointTuple (includes metadata and parent config)
+      // CheckpointTuple: { config, checkpoint, metadata, parentConfig, pendingWrites }
+      const checkpointTuple = await this.checkpointer.getTuple({
+        configurable: { thread_id: threadId },
+      });
+
+      if (!checkpointTuple) {
+        throw new Error(`No checkpoint found for thread: ${threadId}`);
+      }
+
+      // Extract from CheckpointTuple structure
+      const { checkpoint, config, metadata, parentConfig } = checkpointTuple;
+
+      // Convert to StateSnapshot format
+      // Checkpoint structure: { v, id, ts, channel_values, channel_versions, versions_seen }
+      const snapshot = {
+        values: checkpoint.channel_values || {},
+        next: [], // Next nodes determined by graph execution, not stored in checkpoint
+        config: config,
+        metadata: metadata || {},
+        createdAt: checkpoint.ts,
+        parentConfig: parentConfig,
+        tasks: [], // Pending tasks not stored in checkpoint
+      };
+
+      this.logger.log(`✅ State snapshot retrieved for thread: ${threadId}`);
+      return snapshot;
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Failed to retrieve state snapshot for thread ${threadId}:`,
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * List state snapshots for multiple threads in parallel
+   *
+   * Efficiently retrieves current state snapshots for multiple threads using Promise.allSettled()
+   * to handle partial failures gracefully. Failed retrievals are logged but don't block successful ones.
+   *
+   * @param threadIds - Array of thread identifiers to retrieve snapshots for
+   * @returns Map of threadId → StateSnapshot for successfully retrieved threads
+   *
+   * @example
+   * ```typescript
+   * const snapshots = await workflowExecutionService.listThreadStates(['thread-1', 'thread-2', 'thread-3']);
+   * for (const [threadId, snapshot] of snapshots) {
+   *   console.log(`Thread ${threadId} state:`, snapshot.values);
+   * }
+   * ```
+   *
+   * Implementation: TASK_2025_048 - BATCH 1, Task 3
+   */
+  async listThreadStates(threadIds: string[]): Promise<Map<string, any>> {
+    this.logger.debug(
+      `Listing state snapshots for ${threadIds.length} threads`
+    );
+
+    if (!this.checkpointer) {
+      const error = 'Checkpointer not configured - cannot list thread states';
+      this.logger.error(error);
+      throw new Error(error);
+    }
+
+    try {
+      // Fetch all snapshots in parallel using Promise.allSettled for graceful error handling
+      const results = await Promise.allSettled(
+        threadIds.map((threadId) => this.getStateSnapshot(threadId))
+      );
+
+      // Filter successful results and build map
+      const stateMap = new Map<string, any>();
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          stateMap.set(threadIds[index], result.value);
+        } else {
+          this.logger.warn(
+            `Failed to retrieve state for thread ${threadIds[index]}: ${result.reason.message}`
+          );
+        }
+      });
+
+      this.logger.log(
+        `✅ Retrieved ${stateMap.size}/${threadIds.length} thread state snapshots`
+      );
+      return stateMap;
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to list thread states:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Resume workflow execution from interruption (Human-in-the-Loop pattern)
+   *
+   * This method handles HITL workflow resumption by:
+   * 1. Updating the thread state with user input/approval decision
+   * 2. Resuming workflow execution using LangGraph's invoke() with the updated state
+   *
+   * Supports @RequiresApproval decorator pattern where workflows interrupt for user decisions,
+   * then resume after receiving approval/rejection.
+   *
+   * @param threadId - Thread identifier for the interrupted workflow
+   * @param userInput - Command containing user decision (approval/rejection) and optional state updates
+   * @returns Void - workflow resumes asynchronously
+   * @throws Error if checkpointer not configured or thread not found
+   *
+   * @example
+   * ```typescript
+   * // Resume with approval
+   * await workflowExecutionService.resumeFromInterruption('thread-123', {
+   *   type: 'update',
+   *   update: {
+   *     metadata: {
+   *       userApproval: 'approved',
+   *       approvalFeedback: 'Looks good!',
+   *       approvalTimestamp: new Date().toISOString(),
+   *     }
+   *   }
+   * });
+   * ```
+   *
+   * Implementation: TASK_2025_048 - BATCH 1, Task 4
+   */
+  async resumeFromInterruption(
+    threadId: string,
+    userInput: any
+  ): Promise<void> {
+    this.logger.log(
+      `▶️  Resuming workflow from interruption for thread: ${threadId}`
+    );
+
+    if (!this.checkpointer) {
+      const error = 'Checkpointer not configured - cannot resume workflow';
+      this.logger.error(error);
+      throw new Error(error);
+    }
+
+    try {
+      // Step 1: Retrieve current checkpoint tuple
+      const checkpointTuple = await this.checkpointer.getTuple({
+        configurable: { thread_id: threadId },
+      });
+
+      if (!checkpointTuple) {
+        throw new Error(`No checkpoint found for thread: ${threadId}`);
+      }
+
+      const { checkpoint, config, metadata } = checkpointTuple;
+
+      // Step 2: Merge user input with current state
+      // Handle Command interface: { type, update, goto, error, ... }
+      const stateUpdate = {
+        ...checkpoint.channel_values,
+        ...(userInput.update || {}),
+      };
+
+      // Step 3: Update checkpoint with new state
+      // checkpointer.put() signature: (config, checkpoint, metadata, newVersions)
+      await this.checkpointer.put(
+        config,
+        {
+          v: checkpoint.v,
+          id: checkpoint.id,
+          ts: new Date().toISOString(),
+          channel_values: stateUpdate,
+          channel_versions: checkpoint.channel_versions,
+          versions_seen: checkpoint.versions_seen,
+        },
+        {
+          ...(metadata || {}),
+          source: 'update' as const,
+          step: -1, // Indicates external update (not from graph execution)
+          parents: metadata?.parents || {},
+        },
+        {} // newVersions - empty for HITL resume (LangGraph manages versions)
+      );
+
+      this.logger.log(
+        `✅ Workflow resumed for thread ${threadId} - state updated with user input`
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Failed to resume workflow for thread ${threadId}:`,
+        error.message
+      );
+      throw error;
+    }
+  }
 }

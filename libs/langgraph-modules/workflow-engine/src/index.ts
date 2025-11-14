@@ -127,6 +127,9 @@ export type {
   WorkflowExecutionConfig,
 } from './lib/interfaces/workflow-engine.interface';
 
+// LangGraph native types for checkpoint state retrieval
+export type { StateSnapshot } from '@langchain/langgraph';
+
 // ============================================================================
 // DEBUGGING UTILITIES
 // ============================================================================
