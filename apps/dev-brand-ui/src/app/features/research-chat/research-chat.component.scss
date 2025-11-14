@@ -1,12 +1,36 @@
 .research-chat-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100vh;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
   background: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
+  gap: 16px;
+  padding: 16px;
+}
+
+// Phase 3: Sidebar for agent status panel
+.sidebar {
+  width: 320px;
+  min-width: 280px;
+  max-width: 400px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 8px;
+}
+
+// Phase 3: Main chat area
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; // Allow flex item to shrink below content size
+  background: #ffffff;
+  border-radius: 12px;
 }
 
 // Header removed for cleaner design per Phase 1 specifications
@@ -145,6 +169,27 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
+  position: relative;
+
+  // Phase 3: Streaming state indicator
+  &.streaming {
+    display: inline-block;
+  }
+}
+
+// Phase 3: Streaming cursor (typewriter effect)
+.streaming-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: #6366f1;
+  font-weight: bold;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .message-metadata {
@@ -351,12 +396,24 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .chat-messages {
-    padding: 60px 16px 100px;
-  }
-
   .research-chat-container {
     max-width: 100%;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  // Phase 3: Hide sidebar on mobile, show collapsible version
+  .sidebar {
+    display: none;
+  }
+
+  .chat-area {
+    border-radius: 0;
+  }
+
+  .chat-messages {
+    padding: 60px 16px 100px;
   }
 
   .message-user,

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -8,6 +8,15 @@ import {
 import { Subscription } from 'rxjs';
 import { ApprovalModalComponent } from './components/approval-modal.component';
 import { MarkdownModule } from 'ngx-markdown';
+import { AgentStatusPanelComponent } from '../../shared/components';
+import {
+  isMessageStreamEvent,
+  isCustomStreamEvent,
+  isDebugStreamEvent,
+  type MessageStreamEvent,
+  type CustomStreamEvent,
+  type DebugStreamEvent,
+} from '../devbrand-poc/models/stream-events.model';
 
 /**
  * 🔬 RESEARCH CHAT COMPONENT
@@ -41,6 +50,7 @@ interface ChatMessage {
     FormsModule,
     ApprovalModalComponent,
     MarkdownModule,
+    AgentStatusPanelComponent,
   ],
   templateUrl: './research-chat.component.html',
   styleUrls: ['./research-chat.component.scss'],
@@ -53,6 +63,13 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
   reportDraft = '';
   currentExecutionId = '';
   userId = 'demo-user-123'; // In production, get from auth service
+
+  // Phase 3: Token streaming state
+  private currentStreamingMessage = '';
+
+  // ViewChild references for new components
+  @ViewChild(AgentStatusPanelComponent)
+  agentStatusPanel?: AgentStatusPanelComponent;
 
   private streamSubscription?: Subscription;
 
@@ -78,6 +95,9 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
 
     const query = this.currentQuery.trim();
     this.currentQuery = '';
+
+    // Reset streaming state for new message
+    this.currentStreamingMessage = '';
 
     // Add user message to chat
     this.addMessage({
@@ -134,62 +154,155 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
   /**
    * Handle streaming events from workflow
    */
-  private handleStreamEvent(event: ResearchWorkflowEvent): void {
+  private handleStreamEvent(
+    event:
+      | ResearchWorkflowEvent
+      | MessageStreamEvent
+      | CustomStreamEvent
+      | DebugStreamEvent
+  ): void {
     console.log('Stream event:', event);
 
-    switch (event.type) {
+    // Phase 3: Handle new LangGraph streaming events
+    // Use any to satisfy type guards (they check the discriminant property)
+    const streamEvent = event as any;
+
+    if (isMessageStreamEvent(streamEvent)) {
+      this.handleMessageStream(streamEvent);
+      return;
+    }
+
+    if (isCustomStreamEvent(streamEvent)) {
+      this.handleCustomProgress(streamEvent);
+      return;
+    }
+
+    if (isDebugStreamEvent(streamEvent)) {
+      this.handleDebugTrace(streamEvent);
+      return;
+    }
+
+    // Existing event handlers (backward compatibility)
+    const workflowEvent = event as ResearchWorkflowEvent;
+    switch (workflowEvent.type) {
       case 'task_start':
-        this.addStatusMessage(`🔄 ${this.formatTaskName(event.taskName)}`);
+        this.addStatusMessage(
+          `🔄 ${this.formatTaskName(workflowEvent.taskName)}`
+        );
         break;
 
       case 'task_complete':
         this.addStatusMessage(
-          `✅ ${this.formatTaskName(event.taskName)} completed`
+          `✅ ${this.formatTaskName(workflowEvent.taskName)} completed`
         );
         break;
 
       case 'state_update':
         // Show node execution progress
-        if (event.nodeName) {
+        if (workflowEvent.nodeName) {
           this.addStatusMessage(
-            `▶️ ${this.formatTaskName(event.nodeName)} running...`
+            `▶️ ${this.formatTaskName(workflowEvent.nodeName)} running...`
           );
         }
 
         // Show research progress updates
-        if (event.state?.metadata?.totalSources) {
+        if (workflowEvent.state?.metadata?.totalSources) {
           this.addStatusMessage(
-            `📊 Found ${event.state.metadata.totalSources} research sources`
+            `📊 Found ${workflowEvent.state.metadata.totalSources} research sources`
           );
         }
         break;
 
       case 'tool_execution':
-        // NEW: Show tool execution details
-        this.handleToolExecution(event);
+        // Show tool execution details
+        this.handleToolExecution(workflowEvent);
         break;
 
       case 'interrupt':
         // Workflow paused for approval
         this.reportDraft =
-          event.state?.metadata?.reportDraft || 'No draft available';
+          workflowEvent.state?.metadata?.reportDraft || 'No draft available';
         this.showApprovalModal = true;
         this.isResearching = false;
         this.addStatusMessage('🛑 Report draft ready for review');
         break;
 
       case 'workflow_complete':
-        this.handleWorkflowComplete(event);
+        this.handleWorkflowComplete(workflowEvent);
         this.isResearching = false;
         break;
 
       case 'error':
-        this.addErrorMessage(`Error: ${event.error}`);
+        this.addErrorMessage(`Error: ${workflowEvent.error}`);
         this.isResearching = false;
         break;
 
       default:
-        console.log('Unknown event type:', event.type);
+        console.log('Unknown event type:', workflowEvent.type);
+    }
+  }
+
+  /**
+   * Phase 3: Handle LLM token streaming events
+   */
+  private handleMessageStream(event: MessageStreamEvent): void {
+    this.currentStreamingMessage += event.content;
+
+    // Update the last message in chat with accumulated tokens
+    const lastMessage = this.messages[this.messages.length - 1];
+    if (
+      lastMessage &&
+      lastMessage.role === 'assistant' &&
+      lastMessage.type === 'text'
+    ) {
+      lastMessage.content = this.currentStreamingMessage;
+    } else {
+      // Create new streaming message
+      this.addMessage({
+        role: 'assistant',
+        content: this.currentStreamingMessage,
+        type: 'text',
+        timestamp: new Date(),
+      });
+    }
+
+    this.scrollToBottom();
+  }
+
+  /**
+   * Phase 3: Handle custom progress events
+   */
+  private handleCustomProgress(event: CustomStreamEvent): void {
+    // Update agent status panel
+    if (this.agentStatusPanel) {
+      this.agentStatusPanel.updateAgentStatus(event);
+    }
+
+    // Also show as status message in chat
+    if (event.data.message) {
+      const agent = event.data.agent || 'Agent';
+      const percentage = event.data.percentage ?? 0;
+      this.addStatusMessage(
+        `📊 ${agent}: ${event.data.message} (${percentage}%)`
+      );
+    }
+  }
+
+  /**
+   * Phase 3: Handle debug trace events (dev mode only)
+   */
+  private handleDebugTrace(event: DebugStreamEvent): void {
+    // Only log in development mode
+    if (
+      typeof window !== 'undefined' &&
+      (window as any).location?.hostname === 'localhost'
+    ) {
+      console.log('🐛 Debug Trace:', {
+        eventType: event.eventType,
+        taskName: event.taskName,
+        step: event.step,
+        payload: event.payload,
+      });
     }
   }
 

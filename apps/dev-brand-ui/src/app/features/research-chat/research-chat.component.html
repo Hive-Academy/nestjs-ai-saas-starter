@@ -1,4 +1,11 @@
 <div class="research-chat-container">
+  <!-- Phase 3: Agent Status Panel Sidebar -->
+  <div class="sidebar">
+    <app-agent-status-panel></app-agent-status-panel>
+  </div>
+
+  <!-- Main Chat Area -->
+  <div class="chat-area">
   <!-- Chat Messages (NO HEADER per reference) -->
   <div class="chat-messages">
     @for (message of messages; track message.timestamp) {
@@ -6,8 +13,14 @@
       <!-- NO message-header per reference - just content -->
       <div
         class="message-content"
+        [class.streaming]="message.role === 'assistant' && message.type === 'text' && isResearching"
         [innerHTML]="message.content | markdown | async"
-      ></div>
+      >
+      </div>
+      <!-- Phase 3: Streaming cursor indicator -->
+      @if (message.role === 'assistant' && message.type === 'text' && isResearching) {
+        <span class="streaming-cursor" aria-hidden="true">|</span>
+      }
 
       @if (message.metadata?.filename) {
       <div class="message-metadata">
@@ -90,4 +103,7 @@
     (approve)="onApprovalDecision(true)"
     (reject)="onApprovalDecision(false)"
   />
+  </div>
+  <!-- End Chat Area -->
 </div>
+<!-- End Research Chat Container -->

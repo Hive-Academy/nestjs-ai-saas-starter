@@ -23,3 +23,15 @@ export {
   ScrollingCodeTimelineComponent,
   type TimelineStep,
 } from './scrolling-code-timeline.component';
+
+// Phase 3: Streaming UI Components
+export { TokenStreamDisplayComponent } from './token-stream-display.component';
+export {
+  ProgressIndicatorComponent,
+  type ProgressData,
+} from './progress-indicator.component';
+export {
+  AgentStatusPanelComponent,
+  type AgentStatus,
+  type AgentStatusType,
+} from './agent-status-panel.component';

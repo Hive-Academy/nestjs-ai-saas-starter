@@ -86,6 +86,13 @@ export class PersonalBrandStrategistAgent {
         currentStep: 'initialization',
         githubUsername,
         brandAnalysisId: `brand-${githubUsername}-${Date.now()}`,
+        // ✅ NEW: Emit custom progress at start
+        customProgress: {
+          agent: 'personal-brand-strategist',
+          stage: 'initialization',
+          message: `Initializing brand analysis for ${githubUsername}...`,
+          percentage: 10,
+        },
       },
     };
   }
@@ -419,6 +426,13 @@ You may optionally use the strategy-generation tool to create comprehensive bran
         brandStrategyCompleted: true,
         brandStrategy: consolidatedStrategy,
         currentStep: 'workflow-complete',
+        // ✅ NEW: Emit completion progress
+        customProgress: {
+          agent: 'personal-brand-strategist',
+          stage: 'completed',
+          message: `Brand strategy generated for ${githubUsername}`,
+          percentage: 100,
+        },
       },
       next: 'content-creator',
       task: 'Create content from brand strategy',

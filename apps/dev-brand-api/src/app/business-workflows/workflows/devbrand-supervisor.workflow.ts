@@ -291,16 +291,19 @@ export class DevBrandSupervisorWorkflow {
       },
     };
 
-    // 2. Stream via WorkflowExecutionService with subgraph support
+    // 2. Stream via WorkflowExecutionService with comprehensive streaming modes
+    // - 'updates': Node-level state changes (supervisor + workers via subgraphs)
+    // - 'messages': LLM token streaming from ALL agents (supervisor + workers)
+    // - 'custom': Custom progress events from worker agents
     // Note: DevBrandSupervisorWorkflow already has agents configured via @MultiAgent decorator
     const stream = this.workflowExecution.streamWorkflow(
       DevBrandSupervisorWorkflow,
       initialState,
       {
         configurable: { thread_id: executionId },
-        streamMode: 'updates', // Node-level events (RECOMMENDED for multi-agent)
+        streamMode: ['updates', 'messages', 'custom'], // ✅ Add messages + custom modes
         subgraphs: true, // Enable worker agent streaming
-      } as any // Temporary bypass - streamMode types will be updated in workflow-engine
+      } as any // Type assertion needed for array streamMode (LangGraph types not updated yet)
     );
 
     // 3. Parse and transform stream events using defensive utilities

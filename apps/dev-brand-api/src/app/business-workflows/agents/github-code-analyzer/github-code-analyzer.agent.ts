@@ -243,6 +243,13 @@ Begin with github-analyzer to fetch comprehensive data!`;
         analysisStartTime: new Date(),
         workflowInstanceId: `github-${githubUsername}-${Date.now()}`,
         systemPrompt: analysisSystemPrompt, // Store for reference
+        // ✅ NEW: Emit custom progress at start
+        customProgress: {
+          agent: 'github-code-analyzer',
+          stage: 'fetching-repos',
+          message: `Fetching repositories for ${githubUsername}...`,
+          percentage: 10,
+        },
       },
     };
   }
@@ -378,6 +385,13 @@ Begin with github-analyzer to fetch comprehensive data!`;
           'developer-insights',
           'ai-synthesis',
         ],
+        // ✅ NEW: Emit completion progress
+        customProgress: {
+          agent: 'github-code-analyzer',
+          stage: 'completed',
+          message: `Analysis complete for ${githubUsername}: ${achievements.length} achievements found`,
+          percentage: 100,
+        },
       },
       next: 'personal-brand-strategist',
       task: 'Develop personal brand strategy from code analysis',

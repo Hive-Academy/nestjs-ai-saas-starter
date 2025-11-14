@@ -302,12 +302,21 @@ Remember: Call create-report LAST when research is complete!`;
 
     this.logger.log('LLM will autonomously select and call research tools');
 
+    // ✅ NEW: Return state with custom progress
     return {
       state: {
         ...state,
         metadata: {
           ...state.metadata,
           currentStep: 'autonomous-research',
+          customProgress: {
+            agent: 'researcher-agent',
+            stage: 'llm-tool-selection',
+            message: `Analyzing query: "${query.substring(0, 50)}${
+              query.length > 50 ? '...' : ''
+            }"`,
+            percentage: 25,
+          },
         },
         messages: [
           ...state.messages,
@@ -358,6 +367,20 @@ Remember: Call create-report LAST when research is complete!`;
       `💾 Saving approved report: "${state.metadata.reportTitle || 'Untitled'}"`
     );
 
+    // ✅ NEW: Emit custom progress at start
+    const stateWithProgress = {
+      ...state,
+      metadata: {
+        ...state.metadata,
+        customProgress: {
+          agent: 'researcher-agent',
+          stage: 'saving-report',
+          message: 'Saving approved research report...',
+          percentage: 90,
+        },
+      },
+    };
+
     try {
       // Extract report content from messages
       // The create-report tool call result should be in messages
@@ -367,9 +390,13 @@ Remember: Call create-report LAST when research is complete!`;
         `Research Report: ${state.metadata.query}`;
 
       // If reportDraft not in metadata, try to extract from messages
-      if (!reportContent && state.messages && state.messages.length > 0) {
+      if (
+        !reportContent &&
+        stateWithProgress.messages &&
+        stateWithProgress.messages.length > 0
+      ) {
         // Find the last tool message (from create-report)
-        const toolMessages = state.messages.filter(
+        const toolMessages = stateWithProgress.messages.filter(
           (msg: any) => msg.role === 'tool'
         );
         if (toolMessages.length > 0) {
@@ -401,15 +428,17 @@ Remember: Call create-report LAST when research is complete!`;
         title: reportTitle,
         content: reportContent,
         metadata: {
-          userId: state.metadata.userId,
-          query: state.metadata.query,
-          researchTopic: state.metadata.researchTopic || state.metadata.query,
-          researchScope: state.metadata.researchScope || 'general',
-          researchDepth: state.metadata.researchDepth || 'detailed',
-          totalSources: state.metadata.totalSources || 0,
+          userId: stateWithProgress.metadata.userId,
+          query: stateWithProgress.metadata.query,
+          researchTopic:
+            stateWithProgress.metadata.researchTopic ||
+            stateWithProgress.metadata.query,
+          researchScope: stateWithProgress.metadata.researchScope || 'general',
+          researchDepth: stateWithProgress.metadata.researchDepth || 'detailed',
+          totalSources: stateWithProgress.metadata.totalSources || 0,
           createdAt: new Date().toISOString(),
           approvedAt: new Date().toISOString(),
-          approvalFeedback: state.metadata.approvalFeedback,
+          approvalFeedback: stateWithProgress.metadata.approvalFeedback,
         },
       });
 
@@ -419,14 +448,21 @@ Remember: Call create-report LAST when research is complete!`;
 
       this.logger.log(`✅ Report saved: ${createResult.filename}`);
 
+      // ✅ NEW: Return with completion progress
       return {
         state: {
-          ...state,
+          ...stateWithProgress,
           metadata: {
-            ...state.metadata,
+            ...stateWithProgress.metadata,
             savedReportPath: createResult.filepath,
             savedReportFilename: createResult.filename,
             finalReport: `Report successfully saved to: ${createResult.filename}`,
+            customProgress: {
+              agent: 'researcher-agent',
+              stage: 'completed',
+              message: `Report saved: ${createResult.filename}`,
+              percentage: 100,
+            },
           },
         },
       };
@@ -434,11 +470,17 @@ Remember: Call create-report LAST when research is complete!`;
       this.logger.error(`❌ Report save failed:`, error.message);
       return {
         state: {
-          ...state,
+          ...stateWithProgress,
           metadata: {
-            ...state.metadata,
+            ...stateWithProgress.metadata,
             finalReport: 'Failed to save report',
             error: `Save failed: ${error.message}`,
+            customProgress: {
+              agent: 'researcher-agent',
+              stage: 'error',
+              message: `Save failed: ${error.message}`,
+              percentage: 0,
+            },
           },
         },
         error: error as Error,
@@ -499,13 +541,16 @@ Remember: Call create-report LAST when research is complete!`;
     };
 
     // Stream via WorkflowExecutionService
-    // 🔑 Use 'updates' mode to see individual node and tool execution events
+    // 🔑 Use multiple modes for comprehensive streaming:
+    // - 'updates': Node-level state changes + tool execution events
+    // - 'messages': LLM token streaming for real-time response display
+    // - 'custom': Custom progress events from tasks
     const stream = this.workflowExecutionService.streamWorkflow(
       ResearcherAgent,
       initialState,
       {
         configurable: { thread_id: executionId },
-        streamMode: 'updates', // Shows tool execution events + node updates
+        streamMode: ['updates', 'messages', 'custom'], // ✅ Add messages + custom modes
       }
     );
 

@@ -114,6 +114,13 @@ export class ContentCreatorAgent {
         contentStartTime: new Date(),
         workflowInstanceId: generateId('content'),
         targetPlatforms: ['linkedin', 'devto'],
+        // ✅ NEW: Emit custom progress at start
+        customProgress: {
+          agent: 'content-creator',
+          stage: 'gathering-context',
+          message: `Initializing content creation for ${githubUsername}...`,
+          percentage: 10,
+        },
       },
     };
   }
@@ -506,6 +513,13 @@ Return the optimized content and engagement predictions.`;
           Date.now() -
           (state.metadata.contentStartTime?.getTime() || Date.now()),
         finalStage: true,
+        // ✅ NEW: Emit completion progress
+        customProgress: {
+          agent: 'content-creator',
+          stage: 'completed',
+          message: `Content created for ${githubUsername}: LinkedIn (${linkedinContent.length} chars), Dev.to (${devtoContent.length} chars)`,
+          percentage: 100,
+        },
       },
       next: undefined,
     };

@@ -13,6 +13,11 @@ import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
 import { ResearcherAgent } from '../agents/researcher.agent';
 import { FileOperationTools } from '../core/tools/file-operation.tools';
+import {
+  MessageStreamEvent,
+  CustomStreamEvent,
+  DebugStreamEvent,
+} from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * 🔬 RESEARCH CHAT CONTROLLER - WITH NATIVE SSE STREAMING
@@ -166,62 +171,115 @@ export class ResearchChatController {
       (async () => {
         try {
           for await (const event of stream) {
-            // Format as SSE MessageEvent
-            subscriber.next({
-              data: event,
-              type: 'workflow-update',
-            } as MessageEvent);
-
-            // Check if workflow interrupted (HITL)
-            // @RequiresApproval decorator sets waitingForApproval: true
-            if (
-              event.state?.waitingForApproval === true ||
-              event.state?.userApproval === 'pending'
-            ) {
-              this.logger.log(
-                `🛑 Workflow interrupted for approval: ${executionId}`
-              );
-
-              // Extract approval message from approvalRequest if available
-              const approvalMessage =
-                event.state?.approvalRequest?.message ||
-                'Report draft ready for review';
-              const reportDraft =
-                event.state?.reportDraft || event.state?.metadata?.reportDraft;
-
+            // ✅ NEW: Handle different event types with type discrimination
+            if (event.type === 'workflow-update') {
+              // Existing workflow update handling
               subscriber.next({
-                data: {
+                data: event,
+                type: 'workflow-update',
+              } as MessageEvent);
+
+              // Check if workflow interrupted (HITL)
+              // @RequiresApproval decorator sets waitingForApproval: true
+              if (
+                event.state?.waitingForApproval === true ||
+                event.state?.userApproval === 'pending'
+              ) {
+                this.logger.log(
+                  `🛑 Workflow interrupted for approval: ${executionId}`
+                );
+
+                // Extract approval message from approvalRequest if available
+                const approvalMessage =
+                  event.state?.approvalRequest?.message ||
+                  'Report draft ready for review';
+                const reportDraft =
+                  event.state?.reportDraft ||
+                  event.state?.metadata?.reportDraft;
+
+                subscriber.next({
+                  data: {
+                    type: 'interruption_request',
+                    executionId,
+                    message: approvalMessage,
+                    reportDraft,
+                    approvalRequest: event.state?.approvalRequest,
+                    timestamp: new Date().toISOString(),
+                  },
                   type: 'interruption_request',
-                  executionId,
-                  message: approvalMessage,
-                  reportDraft,
-                  approvalRequest: event.state?.approvalRequest,
-                  timestamp: new Date().toISOString(),
-                },
-                type: 'interruption_request',
-              } as MessageEvent);
-              // Don't complete - wait for approval
-              break;
-            }
+                } as MessageEvent);
+                // Don't complete - wait for approval
+                break;
+              }
 
-            // Check if workflow completed
-            if (
-              event.state?.status === 'completed' ||
-              event.state?.savedReportFilename
-            ) {
-              this.logger.log(`✅ Workflow completed: ${executionId}`);
+              // Check if workflow completed
+              if (
+                event.state?.status === 'completed' ||
+                event.state?.savedReportFilename
+              ) {
+                this.logger.log(`✅ Workflow completed: ${executionId}`);
+                subscriber.next({
+                  data: {
+                    type: 'workflow_complete',
+                    executionId,
+                    finalState: event.state,
+                    timestamp: new Date().toISOString(),
+                  },
+                  type: 'workflow_complete',
+                } as MessageEvent);
+                subscriber.complete();
+                this.activeStreams.delete(executionId);
+                break;
+              }
+            } else if (event.type === 'tool-execution') {
+              // Existing tool execution handling
+              subscriber.next({
+                data: event,
+                type: 'tool-execution',
+              } as MessageEvent);
+            } else if (event.type === 'message-stream') {
+              // ✅ NEW: LLM token streaming
+              const messageEvent = event as MessageStreamEvent;
               subscriber.next({
                 data: {
-                  type: 'workflow_complete',
+                  type: 'llm-token',
                   executionId,
-                  finalState: event.state,
-                  timestamp: new Date().toISOString(),
+                  nodeName: messageEvent.nodeName,
+                  token: messageEvent.content,
+                  step: messageEvent.step,
+                  messageChunk: messageEvent.messageChunk,
+                  timestamp: messageEvent.timestamp,
                 },
-                type: 'workflow_complete',
+                type: 'llm-token',
               } as MessageEvent);
-              subscriber.complete();
-              this.activeStreams.delete(executionId);
-              break;
+            } else if (event.type === 'custom-stream') {
+              // ✅ NEW: Custom progress events
+              const customEvent = event as CustomStreamEvent;
+              subscriber.next({
+                data: {
+                  type: 'custom-progress',
+                  executionId,
+                  progress: customEvent.data,
+                  timestamp: customEvent.timestamp,
+                },
+                type: 'custom-progress',
+              } as MessageEvent);
+            } else if (event.type === 'debug-stream') {
+              // ✅ NEW: Debug traces (only in dev mode)
+              if (process.env.NODE_ENV === 'development') {
+                const debugEvent = event as DebugStreamEvent;
+                subscriber.next({
+                  data: {
+                    type: 'debug-trace',
+                    executionId,
+                    eventType: debugEvent.eventType,
+                    taskName: debugEvent.taskName,
+                    payload: debugEvent.payload,
+                    timestamp: debugEvent.timestamp,
+                  },
+                  type: 'debug-trace',
+                } as MessageEvent);
+              }
             }
           }
         } catch (error: any) {
