@@ -2,12 +2,16 @@ import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 import { DynamicModule, InjectionToken, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MetadataProcessorService } from './core/metadata-processor.service';
+import {
+  FunctionalNodeGraphStrategy,
+  FunctionalTaskGraphStrategy,
+} from './execution/strategies';
 import { WorkflowExecutionService } from './execution/workflow-execution.service';
 import type { LlmModuleOptions } from './interfaces/llm-config.interface';
 import { LlmProviderService } from './services/llm/llm-provider.service';
-import { MultiAgentGraphBuilderService } from './services/multi-agent/multi-agent-graph-builder.service';
-import { SupervisorGraphBuilder } from './services/multi-agent/builders/supervisor-graph-builder';
 import { SequentialGraphBuilder } from './services/multi-agent/builders/sequential-graph-builder';
+import { SupervisorGraphBuilder } from './services/multi-agent/builders/supervisor-graph-builder';
+import { MultiAgentGraphBuilderService } from './services/multi-agent/multi-agent-graph-builder.service';
 import { ToolRegistryService } from './services/tool-registry.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 
@@ -90,6 +94,10 @@ export class WorkflowEngineModule {
         // Core services
         MetadataProcessorService,
 
+        // Graph Building Strategies (Strategy Pattern - NEW!)
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
+
         // Execution services
         WorkflowExecutionService,
 
@@ -108,6 +116,9 @@ export class WorkflowEngineModule {
         MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
+        // Export strategies for potential external use
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
       ],
       global: true,
     };
@@ -152,6 +163,9 @@ export class WorkflowEngineModule {
         SupervisorGraphBuilder,
         SequentialGraphBuilder,
 
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
+
         ToolRegistryService,
         LlmProviderService,
       ],
@@ -161,6 +175,8 @@ export class WorkflowEngineModule {
         MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
       ],
       global: true,
     };

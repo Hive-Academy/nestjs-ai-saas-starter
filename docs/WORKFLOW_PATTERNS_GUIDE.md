@@ -310,6 +310,146 @@ routeAfterApproval() { }
 
 ## Tool Calling Patterns
 
+### ✅ NEW: @LLMTask Decorator for Functional-Task Workflows
+
+**GAME CHANGER**: The @LLMTask decorator enables LLM-driven tool calling in functional-task workflows by creating task-specific tool routing loops.
+
+**Architecture**:
+
+- Each @LLMTask gets its own ToolNode: `tools_${taskId}`
+- Tools route back to the ORIGINATING TASK, not the entrypoint
+- Prevents infinite loops while enabling autonomous tool calling
+- Max iteration limits prevent runaway tool execution
+
+**Pattern**:
+
+```
+LLMTask → (has tool_calls?) → tools_LLMTask → back to LLMTask
+  ↓ (no tool_calls)
+NextTask
+```
+
+**Example Usage**:
+
+```typescript
+import { Agent, Entrypoint, LLMTask, Task } from '@hive-academy/langgraph-workflow-engine';
+
+@Agent({
+  description: 'Research assistant with autonomous tool calling',
+  workflow: {
+    type: 'functional-task', // ✅ Now supports LLM tool calling via @LLMTask
+    streaming: true,
+  },
+})
+export class ResearchWorkflowAgent {
+  @Entrypoint()
+  async initializeResearch(context: TaskExecutionContext) {
+    return { state: { ...context.state, initialized: true } };
+  }
+
+  // 🔑 @LLMTask enables autonomous tool calling
+  @LLMTask({
+    description: 'Search the web for information',
+    tools: ['web-search', 'extract-content'], // LLM chooses which to use
+    maxToolIterations: 5, // Max 5 tool execution loops
+    toolTimeout: 30000, // 30s per tool call
+    dependsOn: ['initializeResearch'],
+  })
+  async gatherInformation(context: TaskExecutionContext) {
+    // LLM autonomously calls web-search and extract-content
+    // Loops: gatherInformation ↔ tools_gatherInformation
+    // Continues to analyzeFindings when no more tool_calls
+    return { state: context.state };
+  }
+
+  @LLMTask({
+    description: 'Analyze research findings',
+    tools: ['summarize-content', 'extract-citations'],
+    maxToolIterations: 3,
+    dependsOn: ['gatherInformation'],
+  })
+  async analyzeFindings(context: TaskExecutionContext) {
+    // LLM autonomously calls analysis tools
+    // Loops: analyzeFindings ↔ tools_analyzeFindings
+    return { state: context.state };
+  }
+
+  @Task({ dependsOn: ['analyzeFindings'] })
+  async generateReport(context: TaskExecutionContext) {
+    // Standard task - no tool calling
+    return { state: context.state };
+  }
+}
+```
+
+**Graph Structure Generated**:
+
+```
+initializeResearch → gatherInformation ↔ tools_gatherInformation
+                            ↓
+                     analyzeFindings ↔ tools_analyzeFindings
+                            ↓
+                     generateReport → END
+```
+
+**Key Features**:
+
+- ✅ Task-specific tool sets: Each @LLMTask can have different tools
+- ✅ Automatic tool binding: Tools bound to LLM at graph compilation
+- ✅ Max iteration limits: Prevents infinite loops (default: 10)
+- ✅ Tool timeout: Individual tool call timeout (default: 30s)
+- ✅ Tool validation: Tool names validated against ToolRegistry
+- ✅ Auto-applies @Task: DRY principle - no need for separate @Task decorator
+
+**When to Use @LLMTask**:
+
+1. LLM needs to autonomously choose between tools
+2. Workflow is sequential but requires tool calling
+3. Different tasks need different tool sets
+4. Want to avoid functional-node complexity
+
+**Complete Example**: See `apps/dev-brand-api/src/app/business-workflows/agents/examples/research-workflow.agent.ts`
+
+---
+
+### 🚨 Legacy Note: Functional-Task Without @LLMTask
+
+**Prior Architectural Limitation**: Before @LLMTask, functional-task workflows could NOT support dynamic LLM tool calling.
+
+**Why It Doesn't Work**:
+
+Looking at `workflow-execution.service.ts` lines 409-411:
+
+```typescript
+// Tools always return to the entry point (agent node)
+graph.addEdge('tools' as any, definition.entryPoint as any);
+```
+
+After tools execute, the flow ALWAYS routes back to the **entrypoint** (first task), not the originating task. This creates:
+
+```
+❌ BROKEN FLOW:
+Entrypoint → Task2 (LLM calls tools) → ToolNode executes
+  → Routes back to Entrypoint (not Task2!) → Task2 again → Tools again → INFINITE LOOP
+```
+
+```
+✅ CORRECT FLOW (functional-node):
+LLM Node (calls tool) → ToolNode executes → Back to LLM Node (calls tool again)
+  → ToolNode → Back to LLM Node (no more tools) → Next node
+```
+
+**Summary**:
+
+- ❌ **Functional-Task**: NO dynamic LLM tool calling (architectural constraint)
+- ✅ **Functional-Task**: YES HITL interruption via @RequiresApproval (works perfectly)
+- ✅ **Functional-Node**: YES dynamic LLM tool calling (designed for this)
+- ✅ **Functional-Node**: YES HITL interruption (works perfectly)
+
+**If you need dynamic LLM tool calling, you MUST use functional-node pattern.**
+
+---
+
 ### ❌ WRONG: Manual Tool Calling (Old Pattern)
 
 ```typescript
@@ -1040,17 +1180,20 @@ export class PersonalBrandStrategistAgent {
 
 ## Summary Decision Matrix
 
-| Requirement              | Functional-Task  | Functional-Node   |
-| ------------------------ | ---------------- | ----------------- |
-| **Sequential workflow**  | ✅ Perfect fit   | ⚠️ Overkill       |
-| **LLM tool calling**     | ❌ Not supported | ✅ Perfect fit    |
-| **Conditional routing**  | ❌ Not supported | ✅ Perfect fit    |
-| **Simple HITL**          | ✅ Supported     | ✅ Better support |
-| **Complex HITL routing** | ❌ Not supported | ✅ Perfect fit    |
-| **Cost optimization**    | ❌ Manual only   | ✅ LLM-driven     |
-| **Visualization**        | ❌ Not supported | ✅ Supported      |
-| **Parallel execution**   | ❌ Not supported | ✅ Supported      |
-| **Code simplicity**      | ✅ Very simple   | ⚠️ More complex   |
+| Requirement                         | Functional-Task               | Functional-Node      |
+| ----------------------------------- | ----------------------------- | -------------------- |
+| **Sequential workflow**             | ✅ Perfect fit                | ⚠️ Overkill          |
+| **Dynamic LLM tool calling**        | ❌ **Architecturally broken** | ✅ Perfect fit       |
+| **Manual tool calls in tasks**      | ✅ Supported (not autonomous) | ⚠️ Use @Node instead |
+| **Conditional routing**             | ❌ Not supported              | ✅ Perfect fit       |
+| **Simple HITL (@RequiresApproval)** | ✅ Supported                  | ✅ Better support    |
+| **Complex HITL routing**            | ❌ Not supported              | ✅ Perfect fit       |
+| **Cost optimization**               | ❌ Manual only                | ✅ LLM-driven        |
+| **Visualization**                   | ❌ Not supported              | ✅ Supported         |
+| **Parallel execution**              | ❌ Not supported              | ✅ Supported         |
+| **Code simplicity**                 | ✅ Very simple                | ⚠️ More complex      |
+
+**Key Insight**: If you need dynamic LLM tool calling (LLM decides which tools to use), you **MUST** use functional-node pattern. Functional-task has an architectural constraint where tools always route back to the entrypoint, causing infinite loops.
 
 ---
 

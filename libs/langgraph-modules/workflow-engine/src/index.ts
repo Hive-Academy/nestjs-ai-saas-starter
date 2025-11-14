@@ -19,6 +19,7 @@ export * from './lib/workflow-engine.module';
 export * from './lib/decorators/functional/workflow.decorator';
 export * from './lib/decorators/functional/entrypoint.decorator';
 export * from './lib/decorators/functional/task.decorator';
+export * from './lib/decorators/functional/llm-task.decorator';
 export * from './lib/decorators/functional/node.decorator';
 export * from './lib/decorators/functional/edge.decorator';
 
@@ -96,6 +97,9 @@ export * from './lib/core/metadata-processor.service';
 
 // Execution Services
 export * from './lib/execution/workflow-execution.service';
+
+// Graph Building Strategies (Strategy Pattern)
+export * from './lib/execution/strategies';
 
 // Base Classes (DI containers)
 // export * from './lib/base/unified-workflow.base'; // TODO: Add missing core service dependencies

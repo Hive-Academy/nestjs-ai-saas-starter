@@ -27,6 +27,10 @@ import {
   getTaskMetadata,
   type TaskMetadata,
 } from '../decorators/functional/task.decorator';
+import {
+  getLLMTaskMetadata,
+  type LLMTaskMetadata,
+} from '../decorators/functional/llm-task.decorator';
 
 // Placeholder types for streaming metadata
 interface StreamTokenMetadata {
@@ -212,7 +216,41 @@ export class MetadataProcessorService {
           continue;
         }
 
-        // Check for @Task
+        // Check for @LLMTask first (takes precedence over @Task)
+        const llmTaskMeta: LLMTaskMetadata = getLLMTaskMetadata(
+          prototype,
+          methodName
+        ) as LLMTaskMetadata;
+        if (llmTaskMeta) {
+          // Get the corresponding @Task metadata (auto-applied by @LLMTask)
+          const taskMeta: TaskMetadata = getTaskMetadata(
+            prototype,
+            methodName
+          ) as TaskMetadata;
+          const nodeId = taskMeta.name || methodName;
+          // Store LLM task metadata as an extended node object
+          const llmTaskNode: any = {
+            id: nodeId,
+            methodName,
+            name: taskMeta.name || methodName,
+            handler: prototype[methodName],
+            type: 'llm' as const, // LLM task uses 'llm' type
+            timeout: taskMeta.timeout,
+            maxRetries: taskMeta.retryCount,
+            // 🔑 NEW: Include LLM task metadata for tool routing
+            llmTaskMetadata: {
+              tools: llmTaskMeta.tools,
+              maxToolIterations: llmTaskMeta.maxToolIterations,
+              toolTimeout: llmTaskMeta.toolTimeout,
+              description: llmTaskMeta.description,
+            },
+          };
+          nodes.push(llmTaskNode);
+          taskDependencies.set(nodeId, taskMeta.dependsOn || []);
+          continue;
+        }
+
+        // Check for @Task (standard task without tool calling)
         const taskMeta: TaskMetadata = getTaskMetadata(
           prototype,
           methodName
@@ -345,32 +383,50 @@ export class MetadataProcessorService {
   private convertNodesToDefinition<TState extends WorkflowState>(
     nodeMetadata: NodeMetadata[]
   ): Array<WorkflowNode<TState>> {
-    return nodeMetadata.map((node) => ({
-      id: node.id,
-      name: node.name || node.id,
-      description: node.description,
-      handler: node.handler as (
-        state: TState
-      ) => Promise<Partial<TState> | Command<TState>>,
-      requiresApproval: node.requiresApproval,
-      config: {
+    return nodeMetadata.map((node: any) => {
+      // Check if this is an LLM task node
+      const isLLMTask = node.type === 'llm' && node.llmTaskMetadata;
+
+      return {
+        id: node.id,
+        name: node.name || node.id,
+        description: node.description,
+        handler: node.handler as (
+          state: TState
+        ) => Promise<Partial<TState> | Command<TState>>,
         requiresApproval: node.requiresApproval,
-        timeout: node.timeout,
-        streaming: node.type === 'stream',
-        tools: [], // Tools will be populated by tool autodiscovery
-        metadata: {
-          type: node.type,
-          tags: node.tags,
-          methodName: node.methodName,
-          confidenceThreshold: node.confidenceThreshold,
-          maxRetries: node.maxRetries,
-          streaming: this.extractStreamingMetadata(
-            nodeMetadata,
-            node.methodName
-          ),
+        // 🔑 NEW: Include LLM task flags in node
+        isLLMTask,
+        llmTaskOptions: isLLMTask
+          ? {
+              tools: node.llmTaskMetadata.tools,
+              maxToolIterations: node.llmTaskMetadata.maxToolIterations,
+              toolTimeout: node.llmTaskMetadata.toolTimeout,
+            }
+          : undefined,
+        config: {
+          requiresApproval: node.requiresApproval,
+          timeout: node.timeout,
+          streaming: node.type === 'stream',
+          tools: [], // Tools will be populated by tool autodiscovery
+          metadata: {
+            type: node.type,
+            tags: node.tags,
+            methodName: node.methodName,
+            confidenceThreshold: node.confidenceThreshold,
+            maxRetries: node.maxRetries,
+            streaming: this.extractStreamingMetadata(
+              nodeMetadata,
+              node.methodName
+            ),
+            // 🔑 NEW: Include LLM task description in metadata
+            llmTaskDescription: isLLMTask
+              ? node.llmTaskMetadata.description
+              : undefined,
+          },
         },
-      },
-    }));
+      };
+    });
   }
 
   /**

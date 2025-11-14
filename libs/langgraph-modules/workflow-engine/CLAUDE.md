@@ -371,6 +371,168 @@ export class DataPipelineWorkflow {
 
 ---
 
+#### @LLMTask
+
+**Purpose**: Enable LLM-driven tool calling in functional-task workflows
+
+**Pattern**: Task-specific tool routing loops that prevent infinite loops in sequential workflows
+
+**Key Innovation**: Tools route back to the ORIGINATING TASK, not the entrypoint
+
+**Registration**:
+
+- Automatically applies `@Task` decorator (DRY principle)
+- Stores LLM-specific metadata via `LLM_TASK_METADATA_KEY`
+- Validates tool names, enforces task-based pattern
+- Creates task-specific ToolNode at graph compilation
+
+**Consumption**:
+
+```typescript
+import { Agent, Entrypoint, LLMTask, Task } from '@hive-academy/langgraph-workflow-engine';
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
+
+@Agent({
+  description: 'Research assistant with autonomous tool calling',
+  workflow: {
+    type: 'functional-task', // ✅ Now supports LLM tool calling via @LLMTask
+    streaming: true,
+  },
+})
+@Injectable()
+export class ResearchWorkflowAgent {
+  @Entrypoint()
+  async initializeResearch(context: TaskExecutionContext) {
+    return { state: { ...context.state, initialized: true } };
+  }
+
+  // 🔑 @LLMTask enables autonomous tool calling
+  @LLMTask({
+    description: 'Search the web for information',
+    tools: ['web-search', 'extract-content'], // LLM chooses which to use
+    maxToolIterations: 5, // Max 5 tool execution loops (default: 10)
+    toolTimeout: 30000, // 30s per tool call (default: 30000)
+    dependsOn: ['initializeResearch'], // Same as @Task
+  })
+  async gatherInformation(context: TaskExecutionContext) {
+    // LLM autonomously calls web-search and extract-content
+    // Framework creates: gatherInformation ↔ tools_gatherInformation loop
+    // Continues to next task when no more tool_calls
+    return { state: context.state };
+  }
+
+  @LLMTask({
+    description: 'Analyze research findings',
+    tools: ['summarize-content', 'extract-citations'],
+    maxToolIterations: 3,
+    dependsOn: ['gatherInformation'],
+  })
+  async analyzeFindings(context: TaskExecutionContext) {
+    // LLM autonomously calls analysis tools
+    // Framework creates: analyzeFindings ↔ tools_analyzeFindings loop
+    return { state: context.state };
+  }
+
+  @Task({ dependsOn: ['analyzeFindings'] })
+  async generateReport(context: TaskExecutionContext) {
+    // Standard task - no tool calling
+    return { state: context.state };
+  }
+
+  @Task({ dependsOn: ['generateReport'] })
+  @RequiresApproval({
+    message: (state) => `Research report ready. Please review and approve.`,
+    timeoutMs: 180000,
+  })
+  async approveReport(context: TaskExecutionContext) {
+    // HITL approval gate works with @LLMTask workflows
+    return { state: context.state };
+  }
+
+  @Task({ dependsOn: ['approveReport'] })
+  async saveReport(context: TaskExecutionContext) {
+    return { state: context.state };
+  }
+}
+```
+
+**Graph Structure Generated**:
+
+```
+initializeResearch → gatherInformation ↔ tools_gatherInformation
+                            ↓
+                     analyzeFindings ↔ tools_analyzeFindings
+                            ↓
+                     generateReport → approveReport (HITL) → saveReport → END
+```
+
+**Options Interface**:
+
+```typescript
+interface LLMTaskOptions {
+  /**
+   * Tool names to bind to this task's LLM
+   * Must be registered in WorkflowEngineModule.forRoot({ tools: [...] })
+   */
+  readonly tools: readonly string[];
+
+  /**
+   * Maximum number of tool execution loops before forcing continuation
+   * Prevents infinite loops if LLM continuously generates tool_calls
+   * @default 10
+   */
+  readonly maxToolIterations?: number;
+
+  /**
+   * Timeout for each tool execution in milliseconds
+   * @default 30000 (30 seconds)
+   */
+  readonly toolTimeout?: number;
+
+  /**
+   * Description of the LLM task (shown in logs and debugging)
+   */
+  readonly description?: string;
+
+  /**
+   * Standard task options (dependsOn, timeout, retryCount, etc.)
+   */
+  readonly dependsOn?: readonly string[];
+  readonly timeout?: number;
+  readonly retryCount?: number;
+  readonly errorHandler?: string;
+  readonly metadata?: Record<string, unknown>;
+}
+```
+
+**Key Features**:
+
+- ✅ Task-specific tool sets: Each @LLMTask can have different tools
+- ✅ Automatic tool binding: Tools resolved from ToolRegistry and bound at compilation
+- ✅ Max iteration limits: Prevents infinite loops (default: 10)
+- ✅ Tool timeout: Individual tool call timeout (default: 30s)
+- ✅ Tool validation: Tool names validated against ToolRegistry at compilation
+- ✅ Auto-applies @Task: No need for separate @Task decorator
+- ✅ Compatible with HITL: Works seamlessly with @RequiresApproval
+
+**When to Use @LLMTask**:
+
+1. LLM needs to autonomously choose between tools
+2. Workflow is sequential but requires tool calling
+3. Different tasks need different tool sets
+4. Want to avoid functional-node complexity
+
+**Pattern Validation**:
+
+- Enforces `task-based` pattern via `validateDecoratorPattern()`
+- Mutually exclusive with `@Node` and `@Edge` decorators
+- Validates tool names exist in ToolRegistry
+- Requires at least one tool in `tools` array
+
+**Complete Example**: See `apps/dev-brand-api/src/app/business-workflows/agents/examples/research-workflow.agent.ts`
+
+---
+
 ### 2. Multi-Agent Decorators
 
 #### @Agent

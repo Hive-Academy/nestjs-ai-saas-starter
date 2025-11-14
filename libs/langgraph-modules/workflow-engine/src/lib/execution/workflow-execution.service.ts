@@ -1,8 +1,7 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { StateGraph, END } from '@langchain/langgraph';
-import { ToolNode } from '@langchain/langgraph/prebuilt';
+import { StateGraph } from '@langchain/langgraph';
 import type {
   BaseCheckpointSaver,
   BaseStore,
@@ -12,11 +11,13 @@ import { MetadataProcessorService } from '../core/metadata-processor.service';
 import type {
   WorkflowDefinition,
   WorkflowState,
-  ConditionalRouting,
-  WorkflowNode,
 } from '../interfaces/workflow-engine.interface';
 import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 import { MultiAgentGraphBuilderService } from '../services/multi-agent/multi-agent-graph-builder.service';
+import {
+  FunctionalTaskGraphStrategy,
+  FunctionalNodeGraphStrategy,
+} from './strategies';
 
 /**
  * WorkflowExecutionService
@@ -48,6 +49,8 @@ export class WorkflowExecutionService {
     private readonly metadataProcessor: MetadataProcessorService,
     private readonly moduleRef: ModuleRef,
     private readonly multiAgentGraphBuilder: MultiAgentGraphBuilderService,
+    private readonly functionalTaskStrategy: FunctionalTaskGraphStrategy,
+    private readonly functionalNodeStrategy: FunctionalNodeGraphStrategy,
     @Inject('WORKFLOW_ENGINE_MODULE_OPTIONS')
     options: WorkflowEngineModuleOptions,
 
@@ -59,7 +62,9 @@ export class WorkflowExecutionService {
     // Get checkpointer from module options (LangGraph native)
     this.checkpointer = options.checkpointer;
 
-    this.logger.log('WorkflowExecutionService initialized');
+    this.logger.log(
+      'WorkflowExecutionService initialized with strategy pattern'
+    );
 
     if (this.checkpointer) {
       const saverType = this.checkpointer.constructor.name;
@@ -271,7 +276,11 @@ export class WorkflowExecutionService {
 
   /**
    * Build LangGraph StateGraph from WorkflowDefinition metadata
-   * This is where we convert metadata to actual graph structure
+   * Delegates to pattern-specific strategy based on workflow type
+   *
+   * **Strategy Pattern**:
+   * - functional-task → FunctionalTaskGraphStrategy
+   * - functional-node → FunctionalNodeGraphStrategy
    *
    * @param definition - WorkflowDefinition extracted from decorators
    * @returns StateGraph instance ready for compilation
@@ -279,184 +288,21 @@ export class WorkflowExecutionService {
   private buildStateGraph<TState extends WorkflowState = WorkflowState>(
     definition: WorkflowDefinition<TState>
   ): StateGraph<TState> {
-    this.logger.debug(
-      `Building StateGraph for workflow ${definition.name} with ${definition.nodes.length} nodes`
-    );
-
-    // Create StateGraph with channels from definition
-    const graph = new StateGraph<TState>(definition.channels);
-
-    // Check if agent has tools
-    const hasTools =
-      definition.config?.metadata?.tools &&
-      (definition.config.metadata.tools as unknown[]).length > 0;
-
-    // Add all nodes
-    definition.nodes.forEach((node) => {
-      this.logger.debug(`Adding node: ${node.id}`);
-      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      // Handler signature is correct: (state: TState) => Promise<Partial<TState> | Command>
-      graph.addNode(node.id, node.handler);
-    });
-
-    // Add ToolNode if tools present
-    if (hasTools) {
-      const tools = definition.config!.metadata!.tools as any[];
-      const toolNode = new ToolNode(tools);
-      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      graph.addNode('tools', toolNode as any);
-
-      this.logger.debug(
-        `Added ToolNode with ${tools.length} tools to graph ${definition.name}`
-      );
-    }
-
-    // Add edges from metadata (with tool routing if tools exist)
-    this.addEdgesFromMetadata(graph, definition, hasTools);
-
-    // Set entry point (cast to any for type compatibility)
-    graph.setEntryPoint(definition.entryPoint as any);
+    const workflowType = definition.config?.metadata?.pattern as string;
 
     this.logger.debug(
-      `StateGraph built successfully for ${definition.name} with entry point ${definition.entryPoint}`
+      `Building StateGraph for ${definition.name} using ${
+        workflowType || 'node'
+      }-based strategy`
     );
-    return graph;
-  }
 
-  /**
-   * Add edges to StateGraph from WorkflowDefinition metadata
-   * Handles both explicit edges and taskDependencies metadata
-   *
-   * @param graph - StateGraph to add edges to
-   * @param definition - WorkflowDefinition with edge and task metadata
-   * @param hasTools - Whether the agent has tools (enables conditional tool routing)
-   */
-  private addEdgesFromMetadata<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>,
-    hasTools: boolean
-  ): void {
-    // 1. Add explicit edges from @Edge decorators
-    definition.edges.forEach((edge) => {
-      if (typeof edge.to === 'string') {
-        // Simple edge: from -> to
-        this.logger.debug(`Adding edge: ${edge.from} -> ${edge.to}`);
-        graph.addEdge(edge.from as any, edge.to as any);
-      } else {
-        // Conditional edge with routing
-        const conditionalTo = edge.to as ConditionalRouting<TState>;
-        this.logger.debug(
-          `Adding conditional edge from ${edge.from} with routes: ${Object.keys(
-            conditionalTo.routes
-          ).join(', ')}`
-        );
-        graph.addConditionalEdges(
-          edge.from as any,
-          conditionalTo.condition as any,
-          conditionalTo.routes as any
-        );
-      }
-    });
+    // Select strategy based on workflow pattern
+    const strategy =
+      workflowType === 'functional-task'
+        ? this.functionalTaskStrategy
+        : this.functionalNodeStrategy;
 
-    // 2. Add edges from taskDependencies metadata (functional-task pattern)
-    const taskDeps = definition.config?.metadata?.taskDependencies as
-      | Record<string, readonly string[]>
-      | undefined;
-
-    if (taskDeps) {
-      this.logger.debug(
-        `Building edges from taskDependencies for ${
-          Object.keys(taskDeps).length
-        } tasks`
-      );
-
-      // For each task, add edge from dependency -> task
-      for (const [taskId, dependencies] of Object.entries(taskDeps)) {
-        if (dependencies.length === 0) {
-          // Task with no dependencies - already handled by entryPoint
-          continue;
-        }
-
-        for (const depId of dependencies) {
-          this.logger.debug(`Adding dependency edge: ${depId} -> ${taskId}`);
-          graph.addEdge(depId as any, taskId as any);
-        }
-      }
-    }
-
-    // 3. Add conditional tool routing if tools present
-    if (hasTools) {
-      definition.nodes.forEach((node) => {
-        // Add conditional edge: node → tools (if tool_calls) OR next node
-        const nextNode = this.getNextNode(node, definition);
-
-        this.logger.debug(
-          `Adding tool routing for node ${node.id}: tools or ${
-            nextNode || 'END'
-          }`
-        );
-
-        graph.addConditionalEdges(
-          node.id as any,
-          this.shouldExecuteTools.bind(this),
-          {
-            tools: 'tools' as any,
-            continue: (nextNode || END) as any,
-          }
-        );
-      });
-
-      // Tools always return to the entry point (agent node)
-      // This creates the execution loop: agent → tools → agent
-      graph.addEdge('tools' as any, definition.entryPoint as any);
-    }
-  }
-
-  /**
-   * Determines whether to execute tools based on the last message in state
-   * Routes to 'tools' if tool_calls present, otherwise continues to next node
-   *
-   * @param state - Current workflow state
-   * @returns 'tools' if tool calls detected, 'continue' otherwise
-   */
-  private shouldExecuteTools(state: WorkflowState): 'tools' | 'continue' {
-    if (!state.messages || state.messages.length === 0) {
-      return 'continue';
-    }
-
-    const lastMessage = state.messages[state.messages.length - 1];
-
-    // Check if last message has tool_calls (LangChain message structure)
-    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-      this.logger.debug(
-        `Tool calls detected: ${lastMessage.tool_calls
-          .map((tc: any) => tc.name)
-          .join(', ')}`
-      );
-      return 'tools';
-    }
-
-    return 'continue';
-  }
-
-  /**
-   * Get the next node for a given node from the workflow definition
-   *
-   * @param node - Current workflow node
-   * @param definition - WorkflowDefinition with edge metadata
-   * @returns Next node ID or null if no explicit next node
-   */
-  private getNextNode<TState extends WorkflowState = WorkflowState>(
-    node: WorkflowNode<TState>,
-    definition: WorkflowDefinition<TState>
-  ): string | null {
-    // Find explicit edge from this node
-    const edge = definition.edges.find((e) => e.from === node.id);
-    if (edge && typeof edge.to === 'string') {
-      return edge.to;
-    }
-
-    // No explicit next node
-    return null;
+    // Delegate graph building to strategy
+    return strategy.buildStateGraph(definition);
   }
 }

@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   Agent,
-  Node,
-  Edge,
+  Entrypoint,
+  LLMTask,
+  Task,
   WorkflowExecutionService,
+  type TaskExecutionContext,
+  type TaskExecutionResult,
 } from '@hive-academy/langgraph-workflow-engine';
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
+import { AIMessage } from '@langchain/core/messages';
 import { FileOperationTools } from '../core/tools/file-operation.tools';
 import type { TypedAgentState } from '../types';
 import type { ResearcherMetadata } from './shared/metadata.types';
@@ -13,46 +17,50 @@ import type { ResearcherMetadata } from './shared/metadata.types';
 /**
  * 🔬 RESEARCHER AGENT - AUTONOMOUS WEB RESEARCH & REPORT GENERATION
  *
- * Demonstrates LLM-DRIVEN TOOL CALLING pattern:
- * ✅ Tools automatically bound to LLM via @Agent decorator
- * ✅ LLM autonomously selects appropriate tools (web-search vs research-search)
+ * **Pattern**: Functional-Task with @LLMTask Decorator
+ *
+ * Demonstrates modern @LLMTask pattern for LLM-driven autonomous tool calling:
+ * ✅ @LLMTask enables LLM autonomous tool selection (web-search vs research-search)
+ * ✅ Task-specific tool routing (tools_conductAutonomousResearch loops back to task)
  * ✅ Framework handles tool execution loop automatically
  * ✅ Cost-optimized research (simple queries use web-search, complex use research-search)
- * ✅ Human-in-the-loop (HITL) for report approval
+ * ✅ Human-in-the-loop (HITL) for report approval via @RequiresApproval
  * ✅ Real web research using Tavily API
  * ✅ Local report storage as markdown files
  *
- * Workflow Flow (LLM-Driven):
- * 1. conductAutonomousResearch - Single @Node with type: 'llm'
- *    - LLM receives query + tool definitions (web-search, research-search, create-report)
- *    - LLM analyzes query complexity and autonomously calls appropriate tool(s)
- *    - Framework executes tools via ToolNode and returns results to LLM
- *    - LLM processes results and decides: more research OR generate report
- *    - Loop continues until LLM calls create-report (signals completion)
- * 2. 🛑 INTERRUPT - Workflow pauses after research completes for user approval
- * 3. saveApprovedReport - Save approved report to filesystem
+ * **Workflow Flow** (Task-Based Pattern):
+ * ```
+ * initializeResearch (Entrypoint)
+ *         ↓
+ * conductAutonomousResearch (@LLMTask)
+ *         ↔ tools_conductAutonomousResearch (automatic tool loop)
+ *         ↓
+ * saveApprovedReport (@Task + @RequiresApproval)
+ *         ↓
+ *       END
+ * ```
  *
- * HITL Integration:
- * - Workflow pauses after conductAutonomousResearch completes
+ * **LLM Tool Selection Intelligence**:
+ * - Simple queries ("What is React?") → LLM uses web-search (fast, cheap)
+ * - Complex queries ("Quantum computing in drug discovery") → LLM uses research-search (comprehensive)
+ * - When sufficient info gathered → LLM calls create-report to finalize
+ *
+ * **HITL Integration**:
+ * - @RequiresApproval decorator on saveApprovedReport
+ * - Workflow pauses after research completes for user approval
  * - User reviews draft in UI modal
  * - Approves/rejects via API endpoint
- * - Workflow resumes with decision to saveApprovedReport
+ * - Workflow resumes with decision to save or reject
  *
- * KEY PATTERN DIFFERENCE:
- * ❌ OLD: Manual tool calls (this.webTools.researchSearch()) - no LLM autonomy
- * ✅ NEW: LLM-driven tool selection via @Node({ type: 'llm' }) - intelligent, adaptive
+ * **Key Pattern Difference**:
+ * ❌ OLD (@Node/@Edge): Manual edge definitions, explicit routing logic
+ * ✅ NEW (@LLMTask): Automatic task dependencies, task-specific tool loops
  */
 
 @Agent({
   description:
     'Autonomous research agent with LLM-driven tool selection for intelligent, cost-optimized research and report generation',
   type: 'workflow-agent',
-  tools: [
-    'web-search', // Quick web search (2-5 sources, fast, cost-effective)
-    'research-search', // Comprehensive research (5-10+ sources, academic, in-depth)
-    'create-report', // Generate markdown report from research findings
-    'save-report', // Save report to filesystem (used after approval)
-  ],
   capabilities: [
     'web-research',
     'report-generation',
@@ -67,7 +75,7 @@ import type { ResearcherMetadata } from './shared/metadata.types';
     name: 'researcher-workflow',
     description:
       'LLM-driven autonomous research with intelligent tool selection',
-    type: 'functional-node', // 🔑 Changed from functional-task to functional-node for @Node/@Edge pattern
+    type: 'functional-task', // 🔑 Changed from functional-node to functional-task for @LLMTask pattern
     streaming: true,
     confidenceThreshold: 0.7,
     metrics: true,
@@ -83,12 +91,44 @@ export class ResearcherAgent {
   ) {}
 
   /**
-   * 🔬 AUTONOMOUS RESEARCH NODE - LLM-DRIVEN TOOL CALLING
+   * TASK 1: Initialize Research Context
+   * - Sets up initial state
+   * - Logs research query
+   * - Prepares metadata for research workflow
+   */
+  @Entrypoint({ timeout: 5000 })
+  async initializeResearch(
+    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
+    const state = context.state;
+    const query = state.metadata.query;
+    const researchDepth = state.metadata.researchDepth || 'detailed';
+    const userId = state.metadata.userId;
+
+    this.logger.log(
+      `🔬 Initializing research: "${query}" (depth: ${researchDepth}, user: ${userId})`
+    );
+
+    return {
+      state: {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          workflowStartTime: new Date(),
+          currentStep: 'initialized',
+          researchStarted: true,
+        },
+      },
+    };
+  }
+
+  /**
+   * TASK 2: AUTONOMOUS RESEARCH - LLM-DRIVEN TOOL CALLING
    *
-   * This node demonstrates the correct LLM-driven tool calling pattern:
-   * - @Node({ type: 'llm' }) automatically binds tools to LLM
+   * This task demonstrates the @LLMTask pattern for autonomous tool calling:
+   * - @LLMTask automatically binds tools to LLM
    * - LLM receives intelligent prompting to guide tool selection
-   * - Framework handles tool execution loop (node → tools → node)
+   * - Framework handles tool execution loop (task → tools_conductAutonomousResearch → task)
    * - LLM autonomously decides when research is complete
    *
    * TOOL SELECTION INTELLIGENCE:
@@ -98,23 +138,35 @@ export class ResearcherAgent {
    *
    * FRAMEWORK BEHAVIOR:
    * 1. LLM analyzes query, decides to call tool (e.g., research-search)
-   * 2. Framework detects tool_calls in message → routes to ToolNode
+   * 2. Framework detects tool_calls in message → routes to tools_conductAutonomousResearch
    * 3. ToolNode executes tool, appends result to messages
-   * 4. Framework routes back to this node with tool results
+   * 4. Framework routes back to this task with tool results
    * 5. LLM processes results, decides: more tools OR create-report
    * 6. Loop continues until LLM calls create-report (no more tool_calls)
-   * 7. Node returns final state → workflow continues to saveApprovedReport
+   * 7. Task completes → workflow continues to saveApprovedReport
+   *
+   * **Tools Available**:
+   * - web-search: Quick search for 2-5 sources (fast, cost-effective)
+   * - research-search: Comprehensive search for 5-10+ sources (academic, in-depth)
+   * - create-report: Generate markdown report from research findings
    */
-  @Node({ type: 'llm' }) // 🔑 This triggers automatic tool binding!
+  @LLMTask({
+    description: 'Conduct autonomous research with LLM tool selection',
+    tools: ['web-search', 'research-search', 'create-report'],
+    maxToolIterations: 10,
+    toolTimeout: 30000,
+    dependsOn: ['initializeResearch'],
+  })
   async conductAutonomousResearch(
-    state: TypedAgentState<ResearcherMetadata>
-  ): Promise<Partial<TypedAgentState<ResearcherMetadata>>> {
+    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
+    const state = context.state;
     const query = state.metadata.query;
     const researchDepth = state.metadata.researchDepth || 'detailed';
     const userId = state.metadata.userId;
 
     this.logger.log(
-      `🔬 Starting autonomous research: "${query}" (depth: ${researchDepth}, user: ${userId})`
+      `🔬 Conducting autonomous research with LLM tool calling: "${query}"`
     );
 
     // Build intelligent system prompt that guides LLM tool selection
@@ -236,38 +288,52 @@ IMPORTANT: Balance thoroughness with cost. Don't use research-search for simple 
 Now analyze the query and autonomously execute research using the most appropriate tools.
 Remember: Call create-report LAST when research is complete!`;
 
-    // For @Node({ type: 'llm' }), we simply return metadata updates
-    // The framework automatically:
+    // For @LLMTask, the framework automatically:
     // 1. Binds tools (web-search, research-search, create-report) to LLM
     // 2. Invokes LLM with state.messages + system prompt
     // 3. Detects tool_calls in LLM response
-    // 4. Routes to ToolNode if tool_calls present
+    // 4. Routes to tools_conductAutonomousResearch if tool_calls present
     // 5. Executes tools and appends results to messages
-    // 6. Loops back to this node with tool results
+    // 6. Loops back to this task with tool results
     // 7. Continues until no tool_calls (research complete)
+    // 8. Proceeds to next task (saveApprovedReport)
 
-    // Note: The researchSystemPrompt will be included in the initial user message
-    // when the workflow is invoked. For now, we just track metadata.
+    this.logger.log('LLM will autonomously select and call research tools');
 
     return {
-      metadata: {
-        ...state.metadata,
-        workflowStartTime: new Date(),
-        currentStep: 'autonomous-research',
-        researchStarted: true,
-        systemPrompt: researchSystemPrompt, // Store for reference
+      state: {
+        ...state,
+        metadata: {
+          ...state.metadata,
+          currentStep: 'autonomous-research',
+        },
+        messages: [
+          ...state.messages,
+          new AIMessage({
+            content: researchSystemPrompt,
+            additional_kwargs: {
+              llmTaskId: 'conductAutonomousResearch',
+            },
+          }),
+        ],
       },
     };
   }
 
   /**
-   * SAVE APPROVED REPORT - Requires user approval before saving
+   * TASK 3: SAVE APPROVED REPORT - Human-in-the-Loop Approval Gate
    *
    * Uses @RequiresApproval decorator for human-in-the-loop approval.
    * Workflow pauses before saving, allowing user to review report draft.
    * If approved, report is saved. If rejected, workflow ends without saving.
+   *
+   * @RequiresApproval integration:
+   * - Workflow automatically pauses before this task executes
+   * - User sees approval modal with report draft
+   * - User approves/rejects via API endpoint
+   * - Workflow resumes with user's decision
    */
-  @Node({ type: 'standard' })
+  @Task({ dependsOn: ['conductAutonomousResearch'] })
   @RequiresApproval({
     message: (state) =>
       `Research report draft ready for review: "${
@@ -283,8 +349,9 @@ Remember: Call create-report LAST when research is complete!`;
     }),
   })
   async saveApprovedReport(
-    state: TypedAgentState<ResearcherMetadata>
-  ): Promise<Partial<TypedAgentState<ResearcherMetadata>>> {
+    context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
+  ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
+    const state = context.state;
     this.logger.log(
       `💾 Saving approved report: "${state.metadata.reportTitle || 'Untitled'}"`
     );
@@ -351,43 +418,30 @@ Remember: Call create-report LAST when research is complete!`;
       this.logger.log(`✅ Report saved: ${createResult.filename}`);
 
       return {
-        metadata: {
-          ...state.metadata,
-          savedReportPath: createResult.filepath,
-          savedReportFilename: createResult.filename,
-          finalReport: `Report successfully saved to: ${createResult.filename}`,
+        state: {
+          ...state,
+          metadata: {
+            ...state.metadata,
+            savedReportPath: createResult.filepath,
+            savedReportFilename: createResult.filename,
+            finalReport: `Report successfully saved to: ${createResult.filename}`,
+          },
         },
       };
     } catch (error: any) {
       this.logger.error(`❌ Report save failed:`, error.message);
       return {
-        metadata: {
-          ...state.metadata,
-          finalReport: 'Failed to save report',
-          error: `Save failed: ${error.message}`,
+        state: {
+          ...state,
+          metadata: {
+            ...state.metadata,
+            finalReport: 'Failed to save report',
+            error: `Save failed: ${error.message}`,
+          },
         },
+        error: error as Error,
       };
     }
-  }
-
-  /**
-   * EDGES - Define workflow flow
-   */
-
-  /**
-   * After research completes, proceed to save (if approved via HITL)
-   */
-  @Edge('conductAutonomousResearch', 'saveApprovedReport')
-  researchToSave(): boolean {
-    return true; // Always route to save after research (HITL happens between)
-  }
-
-  /**
-   * After save, end workflow
-   */
-  @Edge('saveApprovedReport', '__end__')
-  complete(): boolean {
-    return true;
   }
 
   /**
