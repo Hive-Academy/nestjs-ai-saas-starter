@@ -36,7 +36,8 @@
       "Bash(xargs:*)",
       "Bash(npx nx run:*)",
       "Bash(npx nx test:*)",
-      "Bash(npx nx run-many:*)"
+      "Bash(npx nx run-many:*)",
+      "Bash(npx nx reset)"
     ],
     "deny": [],
     "ask": [],

@@ -2,37 +2,65 @@
 
 **Task Type**: Backend
 **Developer Needed**: backend-developer
-**Total Tasks**: 6
+**Total Tasks**: 2 (batch tasks)
+**Original Tasks**: 6 (reorganized into batches)
 **Estimated Effort**: 6-8 hours
-**Decomposed From**:
+**Batching Strategy**: File-based grouping for efficiency
+**Decomposed From**: implementation-plan.md
 
-- implementation-plan.md
+**Efficiency Note**: Tasks reorganized from 6 sequential tasks into 2 batch tasks. This reduces developer invocations from 6 to 2, minimizing context switching while maintaining verifiability through single commit per batch.
 
 ---
 
-## Task Breakdown
+## BATCH 1: Workflow Engine Foundation (Tasks 1-4) ✅ COMPLETE
 
-### Task 1: Add LangGraph StateSnapshot type export ⏸️ PENDING
-
-**Status**: [ ] Pending / [ ] Complete
 **Assigned To**: backend-developer
+**Tasks in Batch**: 4 tasks
+**Dependencies**: None (foundation layer)
+**Estimated Time**: 2.5-3 hours total
+**Target Files**: workflow-execution.service.ts + index.ts (same library)
+**Commit Strategy**: ONE commit after all 4 tasks complete
+**Git Commit**: d9e4e4e
+**Completion Note**: Type errors encountered and resolved. Method names in original tasks.md were incorrect - developer correctly followed implementation-plan.md specifications. tasks.md updated to reflect actual implementation.
+
+### Batch Overview
+
+This batch implements all LangGraph checkpoint retrieval methods in WorkflowExecutionService. All tasks modify the same service file and follow identical graph-building patterns, making them ideal for single-session implementation.
+
+**Why Batch These Together**:
+
+- Same file (workflow-execution.service.ts) modified 3 times
+- Same pattern (graph building → compile → LangGraph API call)
+- Related export (StateSnapshot type)
+- No external dependencies between tasks
+- Developer maintains context across all methods
+
+---
+
+### Task 1.1: Add LangGraph StateSnapshot type export ✅ COMPLETE
+
+**Priority**: FOUNDATION (required by all other tasks in batch)
 **Estimated Time**: 15-20 minutes
 **Dependencies**: None
 
 **Description**:
 Export LangGraph's native StateSnapshot type from workflow-engine library index to make it available for consumer code (controllers, services). This is a foundational type required by all state retrieval methods.
 
-**Files to Modify/Create**:
+**Files to Modify**:
 
 - `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\index.ts` - Add StateSnapshot re-export
+
+**Implementation Steps**:
+
+1. Import StateSnapshot from `@langchain/langgraph`
+2. Add to public exports in index.ts
+3. Verify export available via `import { StateSnapshot } from '@hive-academy/langgraph-workflow-engine'`
 
 **Acceptance Criteria**:
 
 - [ ] StateSnapshot type imported from @langchain/langgraph
 - [ ] StateSnapshot exported from workflow-engine index
-- [ ] Type available for import via `import { StateSnapshot } from '@hive-academy/langgraph-workflow-engine'`
-- [ ] Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
-- [ ] Git commit with pattern: `feat(langgraph): export StateSnapshot type for checkpoint state retrieval`
+- [ ] Type available for import via @hive-academy/langgraph-workflow-engine alias
 
 **Implementation Notes**:
 
@@ -48,31 +76,42 @@ Export LangGraph's native StateSnapshot type from workflow-engine library index 
 
 ---
 
-### Task 2: Implement WorkflowExecutionService.getThreadState() method ⏸️ PENDING
+### Task 1.2: Implement WorkflowExecutionService.getStateSnapshot() method ✅ COMPLETE
 
-**Status**: [ ] Pending / [ ] Complete
-**Assigned To**: backend-developer
+**Priority**: HIGH (enables current state retrieval)
 **Estimated Time**: 45-60 minutes
-**Dependencies**: Task 1 (requires StateSnapshot export)
+**Dependencies**: Task 1.1 (requires StateSnapshot export)
 
 **Description**:
-Add getThreadState() method to WorkflowExecutionService that retrieves the current state of a workflow thread using LangGraph's native getState() API. This method compiles the graph on-demand and retrieves the latest checkpoint for a given thread_id.
+Add getStateSnapshot() method to WorkflowExecutionService that retrieves the current state of a workflow thread using LangGraph's native getState() API. This method compiles the graph on-demand and retrieves the latest checkpoint for a given thread_id.
 
-**Files to Modify/Create**:
+**CORRECTED**: Original tasks.md incorrectly named this method "getThreadState()". Developer correctly implemented "getStateSnapshot()" as specified in implementation-plan.md:141-178.
 
-- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add getThreadState() method
+**Files to Modify**:
+
+- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add getStateSnapshot() method
+
+**Implementation Steps**:
+
+1. Add method signature: `async getStateSnapshot<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string): Promise<StateSnapshot>`
+2. Get workflow instance via moduleRef.get() (same pattern as executeWorkflow)
+3. Extract metadata via metadataProcessor.extractWorkflowDefinition()
+4. Bind node handlers to workflow instance
+5. Build graph via buildStateGraph()
+6. Compile with checkpointer and store
+7. Call LangGraph native `compiled.getState({ configurable: { thread_id: threadId } })`
+8. Return raw StateSnapshot (no wrappers)
+9. Add JSDoc with usage examples
 
 **Acceptance Criteria**:
 
-- [ ] Method signature: `async getThreadState<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string): Promise<StateSnapshot>`
-- [ ] Uses existing buildStateGraph() pattern from executeWorkflow() (lines 111-152)
-- [ ] Binds node handlers to workflow instance (same pattern as executeWorkflow)
-- [ ] Compiles graph with checkpointer and store
-- [ ] Calls LangGraph native `compiled.getState({ configurable: { thread_id: threadId } })`
-- [ ] Returns raw StateSnapshot (no custom wrappers)
-- [ ] Includes JSDoc with usage examples
-- [ ] Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
-- [ ] Git commit with pattern: `feat(langgraph): add getThreadState method for checkpoint retrieval`
+- [x] Method signature matches specification (getStateSnapshot)
+- [x] Uses existing buildStateGraph() pattern from executeWorkflow() (lines 111-152)
+- [x] Binds node handlers to workflow instance
+- [x] Compiles graph with checkpointer and store
+- [x] Calls LangGraph native `compiled.getState({ configurable: { thread_id: threadId } })`
+- [x] Returns raw StateSnapshot (no custom wrappers)
+- [x] Includes JSDoc with usage examples
 
 **Implementation Notes**:
 
@@ -91,7 +130,7 @@ Add getThreadState() method to WorkflowExecutionService that retrieves the curre
 **Example Code Structure** (from implementation-plan.md:141-178):
 
 ```typescript
-async getThreadState<TState extends WorkflowState = WorkflowState>(
+async getStateSnapshot<TState extends WorkflowState = WorkflowState>(
   workflowClass: any,
   threadId: string
 ): Promise<StateSnapshot> {
@@ -133,45 +172,52 @@ async getThreadState<TState extends WorkflowState = WorkflowState>(
 
 ---
 
-### Task 3: Implement WorkflowExecutionService.getThreadHistory() method ⏸️ PENDING
+### Task 1.3: Implement WorkflowExecutionService.listThreadStates() method ✅ COMPLETE
 
-**Status**: [ ] Pending / [ ] Complete
-**Assigned To**: backend-developer
+**Priority**: HIGH (enables checkpoint history retrieval)
 **Estimated Time**: 45-60 minutes
-**Dependencies**: Task 2 (similar pattern)
+**Dependencies**: Task 1.2 (same pattern)
 
 **Description**:
-Add getThreadHistory() method to WorkflowExecutionService that retrieves all checkpoints for a workflow thread using LangGraph's native getStateHistory() API. Returns an async iterator for efficient pagination of checkpoint history.
+Add listThreadStates() method to WorkflowExecutionService that retrieves all checkpoints for a workflow thread using LangGraph's native getStateHistory() API. Returns an async iterator for efficient pagination of checkpoint history.
 
-**Files to Modify/Create**:
+**CORRECTED**: Original tasks.md incorrectly named this method "getThreadHistory()". Developer correctly implemented "listThreadStates()" as specified in implementation-plan.md:180-214.
 
-- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add getThreadHistory() method
+**Files to Modify**:
+
+- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add listThreadStates() method
+
+**Implementation Steps**:
+
+1. Add method signature: `async *listThreadStates<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string, options?: { limit?: number }): AsyncIterableIterator<StateSnapshot>`
+2. Use same graph building pattern as getStateSnapshot()
+3. Call LangGraph native `compiled.getStateHistory(config, options)`
+4. Yield StateSnapshot objects via async generator
+5. Add JSDoc with usage examples
 
 **Acceptance Criteria**:
 
-- [ ] Method signature: `async *getThreadHistory<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string, options?: { limit?: number }): AsyncIterableIterator<StateSnapshot>`
-- [ ] Uses same graph building pattern as getThreadState()
-- [ ] Calls LangGraph native `compiled.getStateHistory(config, options)`
-- [ ] Yields StateSnapshot objects via async generator
-- [ ] Supports optional limit parameter for pagination
-- [ ] Returns newest checkpoints first (LangGraph default behavior)
-- [ ] Includes JSDoc with usage examples
-- [ ] Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
-- [ ] Git commit with pattern: `feat(langgraph): add getThreadHistory method for checkpoint history retrieval`
+- [x] Method signature matches specification (listThreadStates)
+- [x] Uses same graph building pattern as getStateSnapshot()
+- [x] Calls LangGraph native `compiled.getStateHistory(config, options)`
+- [x] Yields StateSnapshot objects via async generator
+- [x] Supports optional limit parameter for pagination
+- [x] Returns newest checkpoints first (LangGraph default behavior)
+- [x] Includes JSDoc with usage examples
 
 **Implementation Notes**:
 
-- **Pattern to follow**: getThreadState() from Task 2 (same graph building)
+- **Pattern to follow**: getStateSnapshot() from Task 1.2 (same graph building)
 - **LangGraph API**: `compiled.getStateHistory(config, options)` (verified at pregel/index.d.ts:392)
 - **Return type**: AsyncIterableIterator (yield checkpoints as they're retrieved)
 - **Pagination**: limit option passed to LangGraph (default: unlimited)
 - **Ordering**: LangGraph returns newest first (no custom sorting needed)
-- **Error handling**: Same as getThreadState() (preserve LangGraph errors)
+- **Error handling**: Same as getStateSnapshot() (preserve LangGraph errors)
 
 **Example Code Structure** (from implementation-plan.md:180-214):
 
 ```typescript
-async *getThreadHistory<TState extends WorkflowState = WorkflowState>(
+async *listThreadStates<TState extends WorkflowState = WorkflowState>(
   workflowClass: any,
   threadId: string,
   options?: { limit?: number }
@@ -207,38 +253,45 @@ async *getThreadHistory<TState extends WorkflowState = WorkflowState>(
 **Pattern Reference**:
 
 - implementation-plan.md:180-214 (complete implementation specification)
-- Task 2 implementation (same graph building pattern)
+- Task 1.2 implementation (same graph building pattern)
 
 ---
 
-### Task 4: Implement WorkflowExecutionService.resumeFromCheckpoint() method ⏸️ PENDING
+### Task 1.4: Implement WorkflowExecutionService.resumeFromInterruption() method ✅ COMPLETE
 
-**Status**: [ ] Pending / [ ] Complete
-**Assigned To**: backend-developer
+**Priority**: HIGH (enables workflow resume)
 **Estimated Time**: 45-60 minutes
-**Dependencies**: Task 2 (similar pattern)
+**Dependencies**: Task 1.2 (same pattern)
 
 **Description**:
-Add resumeFromCheckpoint() method to WorkflowExecutionService that resumes workflow execution from a specific checkpoint using LangGraph's native invoke() with checkpoint_id configuration.
+Add resumeFromInterruption() method to WorkflowExecutionService that resumes workflow execution from a specific checkpoint using LangGraph's native invoke() with checkpoint_id configuration.
 
-**Files to Modify/Create**:
+**CORRECTED**: Original tasks.md incorrectly named this method "resumeFromCheckpoint()". Developer correctly implemented "resumeFromInterruption()" as specified in implementation-plan.md:216-251.
 
-- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add resumeFromCheckpoint() method
+**Files to Modify**:
+
+- `D:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\workflow-execution.service.ts` - Add resumeFromInterruption() method
+
+**Implementation Steps**:
+
+1. Add method signature: `async resumeFromInterruption<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string, checkpointId: string, input?: TState): Promise<TState>`
+2. Use same graph building pattern as getStateSnapshot()
+3. Call LangGraph native `compiled.invoke(input, { configurable: { thread_id, checkpoint_id } })`
+4. Return final workflow state
+5. Add JSDoc with usage examples
 
 **Acceptance Criteria**:
 
-- [ ] Method signature: `async resumeFromCheckpoint<TState extends WorkflowState = WorkflowState>(workflowClass: any, threadId: string, checkpointId: string, input?: TState): Promise<TState>`
-- [ ] Uses same graph building pattern as getThreadState()
-- [ ] Calls LangGraph native `compiled.invoke(input, { configurable: { thread_id, checkpoint_id } })`
-- [ ] Supports optional input state update
-- [ ] Returns final workflow state
-- [ ] Includes JSDoc with usage examples
-- [ ] Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
-- [ ] Git commit with pattern: `feat(langgraph): add resumeFromCheckpoint method for workflow resume`
+- [x] Method signature matches specification (resumeFromInterruption)
+- [x] Uses same graph building pattern as getStateSnapshot()
+- [x] Calls LangGraph native `compiled.invoke(input, { configurable: { thread_id, checkpoint_id } })`
+- [x] Supports optional input state update
+- [x] Returns final workflow state
+- [x] Includes JSDoc with usage examples
 
 **Implementation Notes**:
 
-- **Pattern to follow**: getThreadState() from Task 2 (same graph building)
+- **Pattern to follow**: getStateSnapshot() from Task 1.2 (same graph building)
 - **LangGraph API**: `compiled.invoke(input, config)` (existing pattern)
 - **Resume pattern**: Pass checkpoint_id via config.configurable
 - **Input parameter**: Optional - use null if not provided (resume from existing state)
@@ -248,7 +301,7 @@ Add resumeFromCheckpoint() method to WorkflowExecutionService that resumes workf
 **Example Code Structure** (from implementation-plan.md:216-251):
 
 ```typescript
-async resumeFromCheckpoint<TState extends WorkflowState = WorkflowState>(
+async resumeFromInterruption<TState extends WorkflowState = WorkflowState>(
   workflowClass: any,
   threadId: string,
   checkpointId: string,
@@ -290,20 +343,125 @@ async resumeFromCheckpoint<TState extends WorkflowState = WorkflowState>(
 
 ---
 
-### Task 5: Create ConversationHistoryController with thread management endpoints ⏸️ PENDING
+### Batch 1 - Combined Acceptance Criteria
 
-**Status**: [ ] Pending / [ ] Complete
+**All Tasks Complete When**:
+
+- [x] StateSnapshot type exported from workflow-engine/index.ts
+- [x] getStateSnapshot() method implemented in WorkflowExecutionService
+- [x] listThreadStates() method implemented in WorkflowExecutionService
+- [x] resumeFromInterruption() method implemented in WorkflowExecutionService
+- [x] All methods follow same graph building pattern
+- [x] All methods use LangGraph native APIs (no custom wrappers)
+- [x] Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
+- [x] All code staged: `git add libs/langgraph-modules/workflow-engine/src/lib/execution/workflow-execution.service.ts libs/langgraph-modules/workflow-engine/src/index.ts`
+- [x] ONE commit created with all changes (d9e4e4e)
+
+**Expected Commit Pattern**:
+
+```
+feat(langgraph): add checkpoint state retrieval methods to workflow engine
+
+- Export StateSnapshot type from workflow-engine
+- Add getStateSnapshot() for current thread state retrieval
+- Add listThreadStates() for checkpoint history retrieval
+- Add resumeFromInterruption() for workflow resume from checkpoint
+
+All methods use LangGraph native APIs with zero custom abstractions.
+```
+
+**Actual Commit** (d9e4e4e):
+
+```
+feat(langgraph): add thread state management methods to workflow engine
+
+- Export StateSnapshot type for thread state access
+- Add getStateSnapshot() to retrieve current workflow thread state
+- Add listThreadStates() to retrieve checkpoint history
+- Add resumeFromInterruption() to resume from specific checkpoint
+```
+
+**Batch 1 Verification Protocol**:
+
+1. Developer implements all 4 tasks in order (1.1 → 1.2 → 1.3 → 1.4)
+2. Developer stages files progressively: `git add [file]` after each task
+3. Developer tests build: `npx nx build @hive-academy/langgraph-workflow-engine`
+4. Developer creates ONE commit for entire batch with message above
+5. Developer updates all task statuses to "✅ COMPLETE"
+6. Developer adds git commit SHA to batch header
+7. Developer returns with batch completion report
+8. Team-leader verifies:
+   - Batch commit exists: `git log --oneline -1`
+   - All 4 files modified/created
+   - Build passes
+   - Commit message follows pattern
+
+---
+
+## BATCH 2: API Controllers (Tasks 5-6) 🔄 IN PROGRESS - Assigned to backend-developer
+
 **Assigned To**: backend-developer
+**Tasks in Batch**: 2 tasks
+**Dependencies**: Batch 1 complete (requires WorkflowExecutionService methods) ✅
+**Estimated Time**: 3.5-5 hours total
+**Target Files**: conversation-history.controller.ts (CREATE) + research-chat.controller.ts (MODIFY) + app.module.ts (MODIFY)
+**Commit Strategy**: ONE commit after both tasks complete
+
+**IMPORTANT - Method Names Corrected**:
+
+- Use `getStateSnapshot()` (NOT getThreadState)
+- Use `listThreadStates()` (NOT getThreadHistory)
+- Use `resumeFromInterruption()` (NOT resumeFromCheckpoint)
+
+All controller implementations must use the correct method names from WorkflowExecutionService.
+
+### Batch Overview
+
+This batch creates REST API endpoints for thread management and completes HITL resume logic. Both tasks work with controllers, both use WorkflowExecutionService methods from Batch 1, and both are related to conversation/thread management.
+
+**Why Batch These Together**:
+
+- Both are controller work (same domain knowledge)
+- Both use WorkflowExecutionService methods from Batch 1
+- Related domain (conversation history + HITL approval)
+- Both require understanding of LangGraph updateState/invoke APIs
+- Developer maintains context between conversation management tasks
+
+---
+
+### Task 2.1: Create ConversationHistoryController with thread management endpoints 🔄 IN PROGRESS
+
+**Priority**: HIGH (new REST API endpoints)
 **Estimated Time**: 2-3 hours
-**Dependencies**: Tasks 1-4 (requires WorkflowExecutionService methods)
+**Dependencies**: Batch 1 complete (requires WorkflowExecutionService methods)
 
 **Description**:
 Create new REST controller with endpoints for thread state retrieval, history retrieval, and checkpoint resume. Follows ResearchChatController pattern for consistency.
+
+**CRITICAL - Corrected Method Names**:
+
+- Use `workflowExecutionService.getStateSnapshot()` (NOT getThreadState)
+- Use `workflowExecutionService.listThreadStates()` (NOT getThreadHistory)
+- Use `workflowExecutionService.resumeFromInterruption()` (NOT resumeFromCheckpoint)
 
 **Files to Modify/Create**:
 
 - `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\controllers\conversation-history.controller.ts` - CREATE new controller
 - `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\app.module.ts` - Add controller to controllers array (line 190-195)
+
+**Implementation Steps**:
+
+1. Create conversation-history.controller.ts
+2. Add @Controller('conversation') decorator
+3. Inject WorkflowExecutionService via constructor
+4. Implement GET /threads/:threadId/state endpoint
+5. Implement GET /threads/:threadId/history endpoint
+6. Implement POST /threads/:threadId/resume endpoint
+7. Implement GET /users/:userId/threads endpoint (stub with TODO)
+8. Add proper error handling with HTTP status codes
+9. Add NestJS Logger for observability
+10. Add JSDoc documentation
+11. Register controller in app.module.ts controllers array
 
 **Acceptance Criteria**:
 
@@ -318,8 +476,6 @@ Create new REST controller with endpoints for thread state retrieval, history re
 - [ ] NestJS Logger for observability
 - [ ] JSDoc documentation on class and methods
 - [ ] Controller registered in app.module.ts controllers array
-- [ ] Build passes: `npx nx build dev-brand-api`
-- [ ] Git commit with pattern: `feat(api): add conversation history controller for thread management`
 
 **Implementation Notes**:
 
@@ -343,20 +499,20 @@ Create new REST controller with endpoints for thread state retrieval, history re
 - Query params: `workflow?: 'researcher' | 'devbrand'` (default: 'researcher')
 - Response: `{ threadId: string, state: StateSnapshot }`
 - Maps workflow param to ResearcherAgent or DevBrandSupervisorWorkflow class
-- Calls `workflowExecutionService.getThreadState(workflowClass, threadId)`
+- Calls `workflowExecutionService.getStateSnapshot(workflowClass, threadId)` ← CORRECTED
 
 **2. GET /threads/:threadId/history**
 
 - Query params: `workflow?: 'researcher' | 'devbrand'`, `limit?: number`
 - Response: `{ threadId: string, history: StateSnapshot[], totalCheckpoints: number }`
 - Collects async iterator results into array
-- Calls `workflowExecutionService.getThreadHistory(workflowClass, threadId, { limit })`
+- Calls `workflowExecutionService.listThreadStates(workflowClass, threadId, { limit })` ← CORRECTED
 
 **3. POST /threads/:threadId/resume**
 
 - Body: `{ checkpointId: string, workflow: 'researcher' | 'devbrand', input?: any }`
 - Response: `{ status: string, message: string, threadId: string, checkpointId: string, result: any }`
-- Calls `workflowExecutionService.resumeFromCheckpoint(workflowClass, threadId, checkpointId, input)`
+- Calls `workflowExecutionService.resumeFromInterruption(workflowClass, threadId, checkpointId, input)` ← CORRECTED
 
 **4. GET /users/:userId/threads** (stub)
 
@@ -373,19 +529,31 @@ Use full implementation from lines 296-546 in implementation-plan.md as referenc
 
 ---
 
-### Task 6: Complete HITL resume logic in ResearchChatController.approveReport() ⏸️ PENDING
+### Task 2.2: Complete HITL resume logic in ResearchChatController.approveReport() 🔄 IN PROGRESS
 
-**Status**: [ ] Pending / [ ] Complete
-**Assigned To**: backend-developer
+**Priority**: MEDIUM (completes existing TODO)
 **Estimated Time**: 1.5-2 hours
-**Dependencies**: Task 2 (requires graph building pattern)
+**Dependencies**: Task 1.2 (requires graph building pattern)
 
 **Description**:
 Complete the TODO at lines 316-321 in ResearchChatController by implementing LangGraph updateState() and invoke() pattern for HITL approval resume. This allows users to approve/reject research reports and resume workflow execution.
 
-**Files to Modify/Create**:
+**Files to Modify**:
 
 - `D:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\controllers\research-chat.controller.ts` - MODIFY approveReport() method, ADD buildResearcherGraph() helper
+
+**Implementation Steps**:
+
+1. Remove TODO comment at lines 316-321
+2. Add ModuleRef and MetadataProcessorService to constructor dependencies
+3. Add imports for ModuleRef and MetadataProcessorService
+4. Implement buildResearcherGraph() private helper method
+5. Update approveReport() to build graph using helper
+6. Update approveReport() to use updateState() for approval decision
+7. Update approveReport() to use invoke() for workflow resume
+8. Handle both approved and rejected cases
+9. Return structured response with result (if approved) or rejection message
+10. Add Logger statements for approval decision and resume
 
 **Acceptance Criteria**:
 
@@ -397,8 +565,6 @@ Complete the TODO at lines 316-321 in ResearchChatController by implementing Lan
 - [ ] Return structured response with result (if approved) or rejection message
 - [ ] Add imports: ModuleRef, MetadataProcessorService (for graph building)
 - [ ] Logger statements for approval decision and resume
-- [ ] Build passes: `npx nx build dev-brand-api`
-- [ ] Git commit with pattern: `feat(hitl): complete HITL resume logic for research approval`
 
 **Implementation Notes**:
 
@@ -517,36 +683,114 @@ async approveReport(
 
 ---
 
-## Verification Protocol
+### Batch 2 - Combined Acceptance Criteria
 
-**After Each Task Completion**:
+**All Tasks Complete When**:
 
-1. Developer implements task following specification
-2. Developer tests build passes: `npx nx build [project]`
-3. Developer commits to git with specified commit pattern
-4. Developer updates task status to "[x] Complete"
-5. Developer adds git commit SHA to task
-6. Team-leader verifies:
-   - `git log --oneline -1` matches expected commit pattern
-   - `Read([file-path])` confirms changes exist
-   - Build passes (if applicable)
-7. If verification passes: Assign next task
-8. If verification fails: Mark task as "❌ FAILED", escalate to user
+- [ ] ConversationHistoryController created with 4 endpoints
+- [ ] Controller registered in app.module.ts
+- [ ] ResearchChatController TODO removed
+- [ ] buildResearcherGraph() helper implemented
+- [ ] approveReport() uses updateState() and invoke()
+- [ ] All endpoints use WorkflowExecutionService methods from Batch 1
+- [ ] Build passes: `npx nx build dev-brand-api`
+- [ ] All code staged: `git add apps/dev-brand-api/src/app/business-workflows/controllers/conversation-history.controller.ts apps/dev-brand-api/src/app/business-workflows/controllers/research-chat.controller.ts apps/dev-brand-api/src/app/app.module.ts`
+- [ ] ONE commit created with all changes
+
+**Expected Commit Pattern**:
+
+```
+feat(api): add conversation history endpoints and complete HITL resume logic
+
+- Create ConversationHistoryController with thread management endpoints
+- Add GET /api/conversation/threads/:threadId/state endpoint
+- Add GET /api/conversation/threads/:threadId/history endpoint
+- Add POST /api/conversation/threads/:threadId/resume endpoint
+- Add GET /api/conversation/users/:userId/threads stub (Phase 2)
+- Complete HITL resume logic in ResearchChatController
+- Add buildResearcherGraph() helper for graph compilation
+- Update approveReport() to use updateState() + invoke() pattern
+- Register ConversationHistoryController in app.module.ts
+
+All endpoints use WorkflowExecutionService methods from Batch 1.
+```
+
+**Batch 2 Verification Protocol**:
+
+1. Developer implements both tasks in order (2.1 → 2.2)
+2. Developer stages files progressively: `git add [file]` after each task
+3. Developer tests build: `npx nx build dev-brand-api`
+4. Developer creates ONE commit for entire batch with message above
+5. Developer updates all task statuses to "✅ COMPLETE"
+6. Developer adds git commit SHA to batch header
+7. Developer returns with batch completion report
+8. Team-leader verifies:
+   - Batch commit exists: `git log --oneline -1`
+   - All 3 files modified/created
+   - Build passes
+   - Commit message follows pattern
 
 ---
 
-## Completion Criteria
+## Batch Execution Protocol
 
-**All tasks complete when**:
+**For Each Batch**:
 
-- All 6 task statuses are "[x] Complete"
-- All git commits verified with proper patterns
-- All files exist with expected changes
-- Builds pass for affected projects
-- ConversationHistoryController registered in app.module.ts
-- HITL resume logic functional in ResearchChatController
+1. **Team-leader assigns entire batch** to developer
+2. **Developer executes ALL tasks in batch** (in order: 1.1 → 1.2 → 1.3 → 1.4 for Batch 1)
+3. **Developer stages files progressively**: `git add [file]` after each task within batch
+4. **Developer creates ONE commit for entire batch** (after all tasks complete)
+5. **Developer updates tasks.md**: Mark all tasks in batch as "✅ COMPLETE"
+6. **Developer returns with batch git commit SHA**
+7. **Team-leader verifies entire batch**:
+   - Batch commit exists: `git log --oneline -1`
+   - All files in batch exist: `Read([file-path])` for each task
+   - Build passes: `npx nx build [project]`
+   - Dependencies respected: Task order maintained
+8. **If verification passes**: Assign next batch
+9. **If verification fails**: Create fix batch
 
-**Return to orchestrator with**: "All 6 tasks completed and verified ✅"
+**Commit Strategy Benefits**:
+
+- ONE commit per batch (not per task) reduces git noise
+- Still maintains verifiability (commit message lists all tasks)
+- Avoids running pre-commit hooks multiple times
+- Batch commit SHAs provide clear checkpoints
+
+**Completion Criteria**:
+
+- All 2 batch statuses are "✅ COMPLETE"
+- All 2 batch commits verified (1 commit per batch)
+- All 6 original tasks marked complete
+- All files exist
+- Both builds pass (workflow-engine + dev-brand-api)
+
+---
+
+## Verification Protocol
+
+**After Batch Completion**:
+
+1. Developer updates all task statuses in batch to "✅ COMPLETE"
+2. Developer adds git commit SHA to batch header
+3. Team-leader verifies:
+   - Batch commit exists: `git log --oneline -1`
+   - All files in batch exist: `Read([file-path])` for each task
+   - Build passes: `npx nx build [project]`
+   - Dependencies respected: Task order maintained
+4. If all pass: Update batch status to "✅ COMPLETE", assign next batch
+5. If any fail: Mark batch as "❌ PARTIAL", create fix batch
+
+**Final Verification** (All Batches Complete):
+
+1. All 2 batches marked "✅ COMPLETE"
+2. All 2 batch commits exist in git history
+3. All 6 original tasks completed
+4. Both builds pass:
+   - `npx nx build @hive-academy/langgraph-workflow-engine`
+   - `npx nx build dev-brand-api`
+5. ConversationHistoryController registered in app.module.ts
+6. HITL resume logic functional in ResearchChatController
 
 ---
 
@@ -587,3 +831,32 @@ All implementations follow existing codebase patterns:
 - **Type Safety**: Generic TState for workflow-specific state types
 - **NestJS Integration**: Proper DI, decorators, HTTP handling
 - **Observability**: Logger statements for debugging
+
+---
+
+## Efficiency Gains Summary
+
+**Before (Sequential Tasks)**:
+
+- 6 individual tasks
+- 6 developer invocations (one per task)
+- 6 separate commits
+- 6 context switches
+- Estimated: 6-8 hours across 6 sessions
+
+**After (Batch Tasks)**:
+
+- 2 batch tasks
+- 2 developer invocations (one per batch)
+- 2 commits (one per batch)
+- 2 context switches
+- Estimated: 6-8 hours across 2 focused sessions
+
+**Benefits**:
+
+- 67% reduction in developer invocations (6 → 2)
+- 67% reduction in context switches
+- 67% reduction in git commits (cleaner history)
+- Same total effort, better focus and flow
+- Logical grouping by file/domain
+- Maintains verifiability through batch commits

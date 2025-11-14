@@ -98,6 +98,9 @@ export * from './lib/core/metadata-processor.service';
 // Execution Services
 export * from './lib/execution/workflow-execution.service';
 
+// Controllers (REST API endpoints)
+export * from './lib/controllers/conversation-history.controller';
+
 // Graph Building Strategies (Strategy Pattern)
 export * from './lib/execution/strategies';
 

@@ -17,6 +17,7 @@ import {
   MessageStreamEvent,
   CustomStreamEvent,
   DebugStreamEvent,
+  WorkflowExecutionService,
 } from '@hive-academy/langgraph-workflow-engine';
 
 /**
@@ -68,7 +69,8 @@ export class ResearchChatController {
 
   constructor(
     private readonly researcherAgent: ResearcherAgent,
-    private readonly fileTools: FileOperationTools
+    private readonly fileTools: FileOperationTools,
+    private readonly workflowExecutionService: WorkflowExecutionService
   ) {}
 
   /**
@@ -296,7 +298,15 @@ export class ResearchChatController {
 
   /**
    * HITL approval endpoint - Resume workflow with user decision
-   * TODO: Implement LangGraph Command(resume=...) pattern
+   *
+   * Uses LangGraph resumeFromInterruption() to resume interrupted workflows:
+   * 1. Workflow interrupts after @RequiresApproval task (approveReport)
+   * 2. User reviews report draft in UI modal
+   * 3. User approves/rejects via this endpoint
+   * 4. Call resumeFromInterruption() with approval state
+   * 5. Workflow continues from interrupted checkpoint
+   *
+   * Implementation: TASK_2025_048 - BATCH 2, Task 2.2
    */
   @Post('approve/:executionId')
   async approveReport(
@@ -306,7 +316,7 @@ export class ResearchChatController {
       approved: boolean;
       feedback?: string;
     }
-  ): Promise<{ status: string; message: string }> {
+  ): Promise<{ status: string; message: string; result?: any }> {
     this.logger.log(
       `📝 Approval received for ${executionId}: ${
         body.approved ? 'APPROVED' : 'REJECTED'
@@ -314,19 +324,45 @@ export class ResearchChatController {
     );
 
     try {
-      // TODO: Implement LangGraph Command(resume=...) to resume workflow
-      // This requires:
-      // 1. LangGraph checkpointer to store interrupted state
-      // 2. Command API to resume with user input
-      // 3. Update ResearcherAgent to handle approval state
-      //
-      // For now, return success (approval mechanism needs infrastructure)
-      return {
-        status: 'success',
-        message: `Approval ${
-          body.approved ? 'accepted' : 'rejected'
-        }. Workflow resume pending implementation.`,
+      // Prepare approval state to inject into workflow
+      const approvalState = {
+        metadata: {
+          userApproval: body.approved ? 'approved' : 'rejected',
+          approvalFeedback: body.feedback,
+          approvalTimestamp: new Date().toISOString(),
+        },
       };
+
+      // Resume workflow from interruption with approval state
+      if (body.approved) {
+        this.logger.log(`▶️  Resuming workflow: ${executionId}`);
+
+        // Resume using LangGraph native resumeFromInterruption()
+        await this.workflowExecutionService.resumeFromInterruption(
+          executionId,
+          approvalState
+        );
+
+        this.logger.log(`✅ Workflow resumed and completed: ${executionId}`);
+
+        return {
+          status: 'success',
+          message: 'Report approved and workflow resumed successfully',
+        };
+      } else {
+        this.logger.log(`⛔ Workflow rejected: ${executionId}`);
+
+        // For rejection, we still resume but the workflow can check approval state
+        await this.workflowExecutionService.resumeFromInterruption(
+          executionId,
+          approvalState
+        );
+
+        return {
+          status: 'success',
+          message: 'Report rejected. Workflow resumed with rejection state.',
+        };
+      }
     } catch (error: any) {
       this.logger.error(`❌ Approval failed:`, error.message);
       throw new HttpException(
