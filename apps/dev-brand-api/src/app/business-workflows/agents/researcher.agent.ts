@@ -7,6 +7,8 @@ import {
   WorkflowExecutionService,
   type TaskExecutionContext,
   type TaskExecutionResult,
+  StreamEventParser,
+  StreamEventTransformer,
 } from '@hive-academy/langgraph-workflow-engine';
 import { RequiresApproval } from '@hive-academy/langgraph-hitl';
 import { AIMessage } from '@langchain/core/messages';
@@ -447,6 +449,8 @@ Remember: Call create-report LAST when research is complete!`;
   /**
    * Execute with streaming support (following DevBrand POC pattern)
    *
+   * ✅ UPDATED: Now uses StreamEventParser and StreamEventTransformer for robust stream handling
+   *
    * Returns an async iterator for real-time streaming of research workflow events.
    * Uses WorkflowExecutionService.streamWorkflow() for LangGraph native streaming.
    *
@@ -505,31 +509,33 @@ Remember: Call create-report LAST when research is complete!`;
       }
     );
 
-    // Yield events to caller with enhanced typing for tool events
-    for await (const update of stream) {
-      // LangGraph 'updates' mode returns: { nodeName: stateUpdate }
-      // Example: { 'conductAutonomousResearch': { metadata: {...} } } or { 'tools': { messages: [...] } }
-      const nodeName = Object.keys(update)[0];
-      const nodeData = update[nodeName];
+    // ✅ NEW: Use StreamEventParser and StreamEventTransformer for robust parsing
+    const parser = new StreamEventParser();
+    const transformer = new StreamEventTransformer();
 
-      if (nodeName === 'tools') {
-        // Tool execution event
-        yield {
-          type: 'tool-execution',
-          executionId,
-          toolData: nodeData,
-          timestamp: new Date().toISOString(),
-        } as any;
-      } else {
-        // Regular workflow node update
-        yield {
-          type: 'workflow-update',
-          executionId,
-          nodeName,
-          state: nodeData as any as TypedAgentState<ResearcherMetadata>,
-          timestamp: new Date().toISOString(),
-        } as any;
+    // Parse and transform stream events
+    for await (const chunk of stream) {
+      // Parse chunk with defensive validation
+      const parsedEvent = parser.parseChunk(chunk);
+
+      if (!parsedEvent) {
+        // Skip invalid/empty chunks
+        continue;
       }
+
+      // Skip events that should be filtered (e.g., __start__)
+      if (parser.shouldSkipEvent(parsedEvent)) {
+        continue;
+      }
+
+      // Transform to domain event
+      const domainEvent = transformer.transformToDomainEvent(
+        parsedEvent,
+        executionId
+      );
+
+      // Yield domain event in expected format
+      yield domainEvent as any;
     }
 
     this.logger.log(`Streaming research completed for ${executionId}`);

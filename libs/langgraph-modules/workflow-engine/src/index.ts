@@ -141,3 +141,10 @@ export * from './lib/constants';
 // Configuration utilities
 export * from './lib/utils/workflow-engine-config.accessor';
 export * from './lib/utils/type-guards';
+
+// ============================================================================
+// STREAMING UTILITIES
+// ============================================================================
+
+// LangGraph Streaming - Production-ready stream parsing and transformation
+export * from './lib/streaming';

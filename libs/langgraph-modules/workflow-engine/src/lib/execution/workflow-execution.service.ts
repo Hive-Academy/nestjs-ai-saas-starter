@@ -154,19 +154,37 @@ export class WorkflowExecutionService {
   /**
    * Stream a workflow using LangGraph's native stream()
    *
+   * Supports all LangGraph stream modes:
+   * - 'updates': Node-level state deltas (RECOMMENDED - shows tool execution)
+   * - 'values': Full state snapshots after super-steps
+   * - 'messages': LLM token-level streaming
+   * - 'custom': User-defined custom data
+   * - 'debug': Detailed execution traces
+   * - Array: Multiple modes combined (e.g., ['updates', 'messages'])
+   *
    * @param workflowClass - Decorated workflow class
    * @param input - Initial workflow state
-   * @param config - Optional RunnableConfig with streamMode ('updates' by default for tool visibility)
-   * @yields Workflow state updates
+   * @param config - Optional RunnableConfig with streamMode and subgraphs flag
+   * @yields Workflow state updates (raw chunks from LangGraph)
    *
    * Implementation: Task 3.3
    * Enhancement: Task 6 - Default to 'updates' mode for tool call visibility
+   * Enhancement: Comprehensive streaming modes support (messages, custom, debug, multi-mode)
    */
   async *streamWorkflow<TState extends WorkflowState = WorkflowState>(
     workflowClass: any,
     input: TState,
-    config?: RunnableConfig & { streamMode?: 'values' | 'updates' | 'messages' }
-  ): AsyncIterable<TState> {
+    config?: RunnableConfig & {
+      streamMode?:
+        | 'values'
+        | 'updates'
+        | 'messages'
+        | 'custom'
+        | 'debug'
+        | string[];
+      subgraphs?: boolean;
+    }
+  ): AsyncIterable<unknown> {
     this.logger.debug(`Streaming workflow from class ${workflowClass.name}`);
 
     // 1. Get workflow instance from NestJS DI (required for bound handlers)
@@ -201,15 +219,19 @@ export class WorkflowExecutionService {
     // 7. Stream using LangGraph's native stream()
     // Default to 'updates' mode for tool call visibility (Task 6 enhancement)
     const streamMode = config?.streamMode || 'updates';
-    this.logger.debug(`Streaming mode: ${streamMode}`);
+    this.logger.debug(
+      `Streaming mode: ${
+        Array.isArray(streamMode) ? streamMode.join(',') : streamMode
+      }`
+    );
 
     const stream = await compiled.stream(input, {
       ...config,
-      streamMode,
+      streamMode: streamMode as any, // LangGraph's StreamMode type
     });
 
     for await (const chunk of stream) {
-      yield chunk as TState;
+      yield chunk; // Raw chunks - caller uses StreamEventParser
     }
 
     this.logger.log(`Workflow ${definition.name} streaming completed`);

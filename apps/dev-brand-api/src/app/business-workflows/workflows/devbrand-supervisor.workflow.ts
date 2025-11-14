@@ -4,12 +4,15 @@ import {
   MultiAgentTopology,
   SupervisorConfig,
   WorkflowExecutionService,
+  StreamEventParser,
+  StreamEventTransformer,
+  type DomainStreamEvent,
 } from '@hive-academy/langgraph-workflow-engine';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
-import type { TypedAgentState, StreamEvent } from '../types';
+import type { TypedAgentState } from '../types';
 import type {
   Achievement,
   BrandStrategy,
@@ -258,7 +261,7 @@ export class DevBrandSupervisorWorkflow {
    */
   async *executeWithStreaming(
     input: DevBrandWorkflowInput
-  ): AsyncGenerator<StreamEvent, void, unknown> {
+  ): AsyncGenerator<DomainStreamEvent, void, unknown> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
 
     this.logger.log(
@@ -288,25 +291,44 @@ export class DevBrandSupervisorWorkflow {
       },
     };
 
-    // 2. Stream via WorkflowExecutionService
+    // 2. Stream via WorkflowExecutionService with subgraph support
     // Note: DevBrandSupervisorWorkflow already has agents configured via @MultiAgent decorator
     const stream = this.workflowExecution.streamWorkflow(
       DevBrandSupervisorWorkflow,
       initialState,
       {
         configurable: { thread_id: executionId },
-        streamMode: 'values', // Full state snapshots
-      }
+        streamMode: 'updates', // Node-level events (RECOMMENDED for multi-agent)
+        subgraphs: true, // Enable worker agent streaming
+      } as any // Temporary bypass - streamMode types will be updated in workflow-engine
     );
 
-    // 3. Yield events to caller
-    for await (const stateUpdate of stream) {
-      yield {
-        type: 'workflow-update',
-        executionId,
-        state: stateUpdate,
-        timestamp: new Date().toISOString(),
-      };
+    // 3. Parse and transform stream events using defensive utilities
+    const parser = new StreamEventParser();
+    const transformer = new StreamEventTransformer();
+
+    for await (const chunk of stream) {
+      // Parse chunk with defensive validation
+      const parsedEvent = parser.parseChunk(chunk);
+
+      if (!parsedEvent) {
+        // Skip invalid/empty chunks
+        continue;
+      }
+
+      // Skip events that should be filtered (e.g., __start__, empty updates)
+      if (parser.shouldSkipEvent(parsedEvent)) {
+        continue;
+      }
+
+      // Transform to domain event
+      const domainEvent = transformer.transformToDomainEvent(
+        parsedEvent,
+        executionId
+      );
+
+      // Yield to caller (includes subgraph metadata if from worker agent)
+      yield domainEvent;
     }
 
     this.logger.log(`Streaming execution completed for ${executionId}`);

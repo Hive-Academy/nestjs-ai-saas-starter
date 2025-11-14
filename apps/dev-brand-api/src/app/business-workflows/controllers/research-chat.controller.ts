@@ -24,6 +24,8 @@ import { FileOperationTools } from '../core/tools/file-operation.tools';
  * │ 1. POST /api/research/chat → Returns executionId immediately     │
  * │ 2. GET /api/research/stream/:id → SSE stream (EventSource)       │
  * │ 3. ResearcherAgent.executeWithStreaming() → LangGraph.stream()   │
+ * │    ✅ Uses StreamEventParser for robust chunk parsing            │
+ * │    ✅ Uses StreamEventTransformer for domain event mapping       │
  * │ 4. Stream yields workflow state updates in real-time             │
  * │ 5. HITL interruption pauses workflow after report draft          │
  * │ 6. POST /api/research/approve/:id → Resume with user decision    │
@@ -38,7 +40,7 @@ import { FileOperationTools } from '../core/tools/file-operation.tools';
  *
  * SSE Streaming Format:
  * - event: workflow-update
- * - data: { executionId, state, timestamp }
+ * - data: { type, executionId, nodeName, state, timestamp }
  *
  * Frontend Integration (Angular):
  * ```typescript
