@@ -13,6 +13,8 @@ import { SequentialGraphBuilder } from './services/multi-agent/builders/sequenti
 import { SupervisorGraphBuilder } from './services/multi-agent/builders/supervisor-graph-builder';
 import { MultiAgentGraphBuilderService } from './services/multi-agent/multi-agent-graph-builder.service';
 import { ToolRegistryService } from './services/tool-registry.service';
+import { WorkflowResumptionService } from './services/workflow-resumption.service';
+import { LangGraphCommandService } from './services/langgraph-command.service';
 import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 
 export interface WorkflowEngineModuleOptions {
@@ -101,6 +103,10 @@ export class WorkflowEngineModule {
         // Execution services
         WorkflowExecutionService,
 
+        // Resumption services (TASK_2025_049)
+        LangGraphCommandService,
+        WorkflowResumptionService,
+
         // Multi-Agent Graph Builders (Strategy Pattern)
         MultiAgentGraphBuilderService,
         SupervisorGraphBuilder,
@@ -113,6 +119,8 @@ export class WorkflowEngineModule {
       exports: [
         MetadataProcessorService,
         WorkflowExecutionService,
+        WorkflowResumptionService, // Export for HITL integration (TASK_2025_049)
+        LangGraphCommandService,
         MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
@@ -158,6 +166,10 @@ export class WorkflowEngineModule {
         // Execution services
         WorkflowExecutionService,
 
+        // Resumption services (TASK_2025_049)
+        LangGraphCommandService,
+        WorkflowResumptionService,
+
         // Multi-Agent Graph Builders (Strategy Pattern)
         MultiAgentGraphBuilderService,
         SupervisorGraphBuilder,
@@ -172,6 +184,8 @@ export class WorkflowEngineModule {
       exports: [
         MetadataProcessorService,
         WorkflowExecutionService,
+        WorkflowResumptionService, // Export for HITL integration (TASK_2025_049)
+        LangGraphCommandService,
         MultiAgentGraphBuilderService,
         ToolRegistryService,
         LlmProviderService,
