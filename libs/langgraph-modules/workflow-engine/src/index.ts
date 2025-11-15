@@ -102,9 +102,6 @@ export * from './lib/execution/workflow-execution.service';
 export * from './lib/services/langgraph-command.service';
 export * from './lib/services/workflow-resumption.service';
 
-// Controllers (REST API endpoints)
-export * from './lib/controllers/conversation-history.controller';
-
 // Graph Building Strategies (Strategy Pattern)
 export * from './lib/execution/strategies';
 
