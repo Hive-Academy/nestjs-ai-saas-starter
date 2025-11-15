@@ -333,13 +333,29 @@ export class ResearchChatController {
         },
       };
 
+      // Get current state snapshot to extract checkpoint_id
+      const snapshot = await this.workflowExecutionService.getStateSnapshot(
+        ResearcherAgent,
+        executionId
+      );
+
+      const checkpointId = snapshot.config?.configurable?.checkpoint_id as
+        | string
+        | undefined;
+
+      if (!checkpointId) {
+        throw new Error(`No checkpoint found for execution ${executionId}`);
+      }
+
       // Resume workflow from interruption with approval state
       if (body.approved) {
         this.logger.log(`▶️  Resuming workflow: ${executionId}`);
 
         // Resume using LangGraph native resumeFromInterruption()
         await this.workflowExecutionService.resumeFromInterruption(
+          ResearcherAgent,
           executionId,
+          checkpointId,
           approvalState
         );
 
@@ -354,7 +370,9 @@ export class ResearchChatController {
 
         // For rejection, we still resume but the workflow can check approval state
         await this.workflowExecutionService.resumeFromInterruption(
+          ResearcherAgent,
           executionId,
+          checkpointId,
           approvalState
         );
 

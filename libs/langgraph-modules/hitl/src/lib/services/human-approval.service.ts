@@ -4,9 +4,11 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Inject,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowState } from '@hive-academy/langgraph-core';
+import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
 // Removed unused imports - services delegated to HitlApprovalRequestService
 import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
@@ -56,11 +58,21 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly hitlValidationService: HitlValidationService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,
     @Inject(IHitlStorageService)
-    private readonly hitlStorage: IHitlStorageService // Required
+    private readonly hitlStorage: IHitlStorageService, // Required
+
+    // NEW: WorkflowResumptionService for workflow resumption (TASK_2025_049)
+    @Optional()
+    private readonly resumptionService?: WorkflowResumptionService
   ) {
     this.logger.log(
       '🎯 Human Approval Service initialized with specialized services'
     );
+
+    if (!this.resumptionService) {
+      this.logger.warn(
+        'WorkflowResumptionService not available - HITL workflow resumption disabled'
+      );
+    }
   }
 
   /**
@@ -88,20 +100,46 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Request human approval for a workflow node
+   *
+   * ARCHITECTURE CHANGE (TASK_2025_049):
+   * - Added workflowClass parameter for multi-workflow support
+   * - Stores workflowClass in approval metadata for resumption
+   *
+   * @param executionId - Workflow execution thread ID
+   * @param nodeId - Node requesting approval
+   * @param message - Approval message for user
+   * @param state - Current workflow state
+   * @param options - Approval options (timeout, confidence threshold, etc.)
+   * @param workflowClass - Workflow class name for resumption (e.g., 'ResearcherAgent')
    */
   async requestApproval(
     executionId: string,
     nodeId: string,
     message: string,
     state: WorkflowState,
-    options: RequiresApprovalOptions = {}
+    options: RequiresApprovalOptions = {},
+    workflowClass?: string // NEW parameter (optional for backward compatibility)
   ): Promise<HumanApprovalRequest> {
+    // Enhance options with workflowClass metadata
+    const enhancedOptions: RequiresApprovalOptions = {
+      ...options,
+      // metadata must be a function that returns the metadata object
+      metadata: (state: WorkflowState) => {
+        const baseMetadata =
+          typeof options.metadata === 'function' ? options.metadata(state) : {};
+        return {
+          ...baseMetadata,
+          workflowClass, // Store for resumption in processApprovalResponse
+        };
+      },
+    };
+
     return this.hitlApprovalRequestService.createApprovalRequest(
       executionId,
       nodeId,
       message,
       state,
-      options,
+      enhancedOptions,
       this.hitlStorage,
       this.approvalCache,
       (id) => this.handleTimeout(id)
@@ -109,7 +147,19 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Process human approval response
+   * Process human approval response and resume workflow using Command pattern
+   *
+   * ARCHITECTURE CHANGE (TASK_2025_049):
+   * - Added workflow resumption via WorkflowResumptionService.resumeWorkflow()
+   * - Extracts workflowClass from approval metadata
+   * - Gets checkpoint_id from StateSnapshot for precise resumption
+   * - Gracefully degrades if WorkflowResumptionService unavailable
+   *
+   * @param requestId - Approval request identifier
+   * @param response - User's approval decision
+   * @returns Approval result + workflow resumption status
+   *
+   * Evidence: task-description.md:410-461 (Command Class Integration with HITL)
    */
   async processApprovalResponse(
     requestId: string,
@@ -118,7 +168,9 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     success: boolean;
     nextState?: Partial<WorkflowState>;
     error?: string;
+    workflowResumed?: boolean; // NEW
   }> {
+    // Step 1: Retrieve approval request (same as before)
     let request = this.approvalCache.get(requestId);
     if (!request) {
       const storageRequest = await this.hitlStorage.get(requestId);
@@ -135,17 +187,17 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       };
     }
 
-    // Clear timeout
+    // Step 2: Clear timeout (same as before)
     this.approvalTimeoutService.clearTimeout(requestId);
 
-    // Process through the processing service
+    // Step 3: Process through the processing service (same as before)
     const result = await this.approvalProcessingService.processApprovalResponse(
       requestId,
       response,
       this.approvalCache
     );
 
-    // Stream real-time update
+    // Step 4: Stream real-time update (same as before)
     if (
       this.approvalStreamingService.hasStreamConnection(request.executionId)
     ) {
@@ -155,10 +207,68 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
+    // Step 5: Resume workflow using Command pattern (NEW)
+    let workflowResumed = false;
+    if (this.resumptionService) {
+      try {
+        // Extract workflowClass from approval metadata
+        const workflowClassName = request.metadata?.workflowClass as
+          | string
+          | undefined;
+        if (!workflowClassName) {
+          this.logger.warn(
+            `Approval ${requestId} missing workflowClass metadata - cannot resume workflow`
+          );
+        } else {
+          // Resolve workflow class from name
+          const workflowClass = this.resolveWorkflowClass(workflowClassName);
+
+          // Get current StateSnapshot to extract checkpoint_id
+          const snapshot = await this.resumptionService.getWorkflowState(
+            workflowClass,
+            request.executionId
+          );
+
+          const checkpointId = snapshot.config.configurable?.checkpoint_id as
+            | string
+            | undefined;
+          if (!checkpointId) {
+            this.logger.warn(
+              `No checkpoint_id found for thread ${request.executionId} - cannot resume`
+            );
+          } else {
+            // Resume workflow with user's approval decision
+            await this.resumptionService.resumeWorkflow(
+              workflowClass,
+              request.executionId,
+              {
+                approved: response.decision === 'approved',
+                feedback: response.message,
+                approvedBy: response.approver?.id,
+                approvedAt: response.timestamp,
+              },
+              checkpointId
+            );
+
+            workflowResumed = true;
+            this.logger.log(
+              `✅ Workflow resumed for thread ${request.executionId} after approval ${requestId}`
+            );
+          }
+        }
+      } catch (error: any) {
+        this.logger.error(
+          `❌ Failed to resume workflow for thread ${request.executionId}:`,
+          error.message
+        );
+        // Don't fail approval processing if resumption fails - graceful degradation
+      }
+    }
+
     // NOTE: State persistence handled by LangGraph checkpointer
     // No manual checkpoint saving needed
 
-    return result;
+    return { ...result, workflowResumed };
   }
 
   /**
@@ -391,5 +501,29 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
       'resumeApprovalWorkflow() is deprecated - use LangGraph workflow resumption instead'
     );
     return null;
+  }
+
+  /**
+   * Resolve workflow class from class name string
+   *
+   * INTERNAL HELPER: Convert string name to actual class reference
+   *
+   * Implementation options:
+   * 1. Static registry: Map<string, Type> maintained by WorkflowEngineModule
+   * 2. ModuleRef.get() if class name matches NestJS provider token
+   * 3. Metadata-based lookup via MetadataProcessorService
+   *
+   * @param workflowClassName - Class name (e.g., 'ResearcherAgent')
+   * @returns Workflow class reference
+   * @throws Error if class not found
+   */
+  private resolveWorkflowClass(workflowClassName: string): any {
+    // IMPLEMENTATION NOTE: This is a placeholder
+    // Team-leader will implement in atomic task with chosen strategy
+    // Recommended: Static registry in WorkflowEngineModule for performance
+
+    throw new Error(
+      `Workflow class resolution not implemented: ${workflowClassName}`
+    );
   }
 }

@@ -98,6 +98,10 @@ export * from './lib/core/metadata-processor.service';
 // Execution Services
 export * from './lib/execution/workflow-execution.service';
 
+// Resumption Services (TASK_2025_049)
+export * from './lib/services/langgraph-command.service';
+export * from './lib/services/workflow-resumption.service';
+
 // Controllers (REST API endpoints)
 export * from './lib/controllers/conversation-history.controller';
 
