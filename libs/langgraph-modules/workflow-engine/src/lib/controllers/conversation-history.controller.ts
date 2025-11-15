@@ -7,7 +7,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { WorkflowExecutionService } from '../execution/workflow-execution.service';
 
 /**
  * Conversation History Controller
@@ -32,10 +31,6 @@ import { WorkflowExecutionService } from '../execution/workflow-execution.servic
 @ApiTags('Conversation History')
 export class ConversationHistoryController {
   private readonly logger = new Logger(ConversationHistoryController.name);
-
-  constructor(
-    private readonly workflowExecutionService: WorkflowExecutionService
-  ) {}
 
   /**
    * Get conversation history for a user
@@ -187,43 +182,11 @@ export class ConversationHistoryController {
   }> {
     this.logger.log(`Retrieving thread ${threadId} for user ${userId}`);
 
-    try {
-      // Retrieve state using LangGraph native API
-      const snapshot = await this.workflowExecutionService.getStateSnapshot(
-        threadId
-      );
-
-      this.logger.log(`Thread state retrieved: ${threadId}`);
-
-      return {
-        userId,
-        threadId,
-        state: snapshot,
-      };
-    } catch (error: any) {
-      this.logger.error(
-        `Failed to get thread state for ${threadId}:`,
-        error.message
-      );
-
-      if (error.message?.includes('checkpointer')) {
-        throw new HttpException(
-          'Checkpointer not configured - cannot retrieve thread state',
-          HttpStatus.SERVICE_UNAVAILABLE
-        );
-      }
-
-      if (error.message?.includes('not found')) {
-        throw new HttpException(
-          `Thread ${threadId} not found`,
-          HttpStatus.NOT_FOUND
-        );
-      }
-
-      throw new HttpException(
-        error.message || 'Failed to retrieve thread state',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+    // TASK_2025_049: API broken - getStateSnapshot requires workflowClass parameter
+    // This endpoint cannot work without knowing which workflow to compile
+    throw new HttpException(
+      'API broken: getStateSnapshot requires workflowClass parameter. Use WorkflowResumptionService.getWorkflowState() directly in your application code.',
+      HttpStatus.NOT_IMPLEMENTED
+    );
   }
 }

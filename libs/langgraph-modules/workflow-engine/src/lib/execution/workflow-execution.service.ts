@@ -18,6 +18,7 @@ import {
   FunctionalTaskGraphStrategy,
   FunctionalNodeGraphStrategy,
 } from './strategies';
+import { WorkflowResumptionService } from '../services/workflow-resumption.service';
 
 /**
  * WorkflowExecutionService
@@ -57,7 +58,11 @@ export class WorkflowExecutionService {
     // Inject BaseStore from MemoryModule (optional enhancement) - using typed token
     @Optional()
     @Inject(BASE_STORE_TOKEN)
-    private readonly store?: BaseStore
+    private readonly store?: BaseStore,
+
+    // NEW: Inject WorkflowResumptionService for resumption operations
+    @Optional()
+    private readonly resumptionService?: WorkflowResumptionService
   ) {
     // Get checkpointer from module options (LangGraph native)
     this.checkpointer = options.checkpointer;
@@ -78,6 +83,12 @@ export class WorkflowExecutionService {
     if (this.store) {
       this.logger.log(
         '✅ BaseStore available - nodes can access via RunnableConfig.store'
+      );
+    }
+
+    if (!this.resumptionService) {
+      this.logger.warn(
+        '⚠️  WorkflowResumptionService not available - resumption features disabled'
       );
     }
   }
@@ -331,90 +342,70 @@ export class WorkflowExecutionService {
   /**
    * Get current state snapshot for a specific thread using LangGraph's native getState() API
    *
-   * This method compiles the workflow graph on-demand and retrieves the latest checkpoint
-   * state for a given thread_id using LangGraph's built-in checkpoint retrieval.
+   * @deprecated Use WorkflowResumptionService.getWorkflowState() instead
+   * This method is kept for backward compatibility and delegates to WorkflowResumptionService
    *
+   * @param workflowClass - Workflow class (any type for backward compatibility)
    * @param threadId - Unique thread identifier for checkpoint isolation
    * @returns StateSnapshot containing current state values, next nodes to execute, config, and metadata
-   * @throws Error if checkpointer is not configured or thread state not found
+   * @throws Error if WorkflowResumptionService not available or state retrieval fails
    *
    * @example
    * ```typescript
-   * const snapshot = await workflowExecutionService.getStateSnapshot('thread-123');
+   * const snapshot = await workflowExecutionService.getStateSnapshot(MyWorkflow, 'thread-123');
    * console.log('Current state:', snapshot.values);
    * console.log('Next nodes:', snapshot.next);
-   * console.log('Checkpoint config:', snapshot.config);
    * ```
    *
    * Implementation: TASK_2025_048 - BATCH 1, Task 2
+   * Refactored: TASK_2025_049 - Task 3 (Delegation Pattern)
    */
-  async getStateSnapshot(threadId: string): Promise<any> {
-    this.logger.debug(`Retrieving state snapshot for thread: ${threadId}`);
-
-    if (!this.checkpointer) {
-      const error =
-        'Checkpointer not configured - cannot retrieve thread state';
-      this.logger.error(error);
-      throw new Error(error);
-    }
-
-    try {
-      // Use checkpointer's getTuple() method to retrieve CheckpointTuple (includes metadata and parent config)
-      // CheckpointTuple: { config, checkpoint, metadata, parentConfig, pendingWrites }
-      const checkpointTuple = await this.checkpointer.getTuple({
-        configurable: { thread_id: threadId },
-      });
-
-      if (!checkpointTuple) {
-        throw new Error(`No checkpoint found for thread: ${threadId}`);
-      }
-
-      // Extract from CheckpointTuple structure
-      const { checkpoint, config, metadata, parentConfig } = checkpointTuple;
-
-      // Convert to StateSnapshot format
-      // Checkpoint structure: { v, id, ts, channel_values, channel_versions, versions_seen }
-      const snapshot = {
-        values: checkpoint.channel_values || {},
-        next: [], // Next nodes determined by graph execution, not stored in checkpoint
-        config: config,
-        metadata: metadata || {},
-        createdAt: checkpoint.ts,
-        parentConfig: parentConfig,
-        tasks: [], // Pending tasks not stored in checkpoint
-      };
-
-      this.logger.log(`✅ State snapshot retrieved for thread: ${threadId}`);
-      return snapshot;
-    } catch (error: any) {
-      this.logger.error(
-        `❌ Failed to retrieve state snapshot for thread ${threadId}:`,
-        error.message
+  async getStateSnapshot(workflowClass: any, threadId: string): Promise<any> {
+    if (!this.resumptionService) {
+      throw new Error(
+        'WorkflowResumptionService not available - cannot retrieve state snapshot'
       );
-      throw error;
     }
+
+    this.logger.warn(
+      'DEPRECATED: getStateSnapshot() - Use WorkflowResumptionService.getWorkflowState() instead'
+    );
+
+    return await this.resumptionService.getWorkflowState(
+      workflowClass.name || workflowClass,
+      threadId
+    );
   }
 
   /**
    * List state snapshots for multiple threads in parallel
    *
-   * Efficiently retrieves current state snapshots for multiple threads using Promise.allSettled()
-   * to handle partial failures gracefully. Failed retrievals are logged but don't block successful ones.
+   * @deprecated This method has incorrect signature (missing workflowClass parameter)
+   * Use WorkflowResumptionService.getWorkflowState() for individual threads instead
    *
+   * @param workflowClass - Workflow class (required for graph compilation)
    * @param threadIds - Array of thread identifiers to retrieve snapshots for
    * @returns Map of threadId → StateSnapshot for successfully retrieved threads
    *
    * @example
    * ```typescript
-   * const snapshots = await workflowExecutionService.listThreadStates(['thread-1', 'thread-2', 'thread-3']);
+   * const snapshots = await workflowExecutionService.listThreadStates(MyWorkflow, ['thread-1', 'thread-2']);
    * for (const [threadId, snapshot] of snapshots) {
    *   console.log(`Thread ${threadId} state:`, snapshot.values);
    * }
    * ```
    *
    * Implementation: TASK_2025_048 - BATCH 1, Task 3
+   * Refactored: TASK_2025_049 - Task 3 (Delegation Pattern - signature fix)
    */
-  async listThreadStates(threadIds: string[]): Promise<Map<string, any>> {
+  async listThreadStates(
+    workflowClass: any,
+    threadIds: string[]
+  ): Promise<Map<string, any>> {
+    this.logger.warn(
+      'DEPRECATED: listThreadStates() - Use WorkflowResumptionService.getWorkflowState() for individual threads'
+    );
+
     this.logger.debug(
       `Listing state snapshots for ${threadIds.length} threads`
     );
@@ -428,7 +419,9 @@ export class WorkflowExecutionService {
     try {
       // Fetch all snapshots in parallel using Promise.allSettled for graceful error handling
       const results = await Promise.allSettled(
-        threadIds.map((threadId) => this.getStateSnapshot(threadId))
+        threadIds.map((threadId) =>
+          this.getStateSnapshot(workflowClass, threadId)
+        )
       );
 
       // Filter successful results and build map
@@ -456,98 +449,51 @@ export class WorkflowExecutionService {
   /**
    * Resume workflow execution from interruption (Human-in-the-Loop pattern)
    *
-   * This method handles HITL workflow resumption by:
-   * 1. Updating the thread state with user input/approval decision
-   * 2. Resuming workflow execution using LangGraph's invoke() with the updated state
+   * @deprecated Use WorkflowResumptionService.resumeWorkflow() instead
+   * This method is kept for backward compatibility and delegates to WorkflowResumptionService
    *
-   * Supports @RequiresApproval decorator pattern where workflows interrupt for user decisions,
-   * then resume after receiving approval/rejection.
-   *
+   * @param workflowClass - Workflow class (any type for backward compatibility)
    * @param threadId - Thread identifier for the interrupted workflow
-   * @param userInput - Command containing user decision (approval/rejection) and optional state updates
-   * @returns Void - workflow resumes asynchronously
-   * @throws Error if checkpointer not configured or thread not found
+   * @param checkpointId - Checkpoint identifier to resume from
+   * @param resumeValue - Value to resume with (passed to Command)
+   * @returns Final workflow state after resumption
+   * @throws Error if WorkflowResumptionService not available or resumption fails
    *
    * @example
    * ```typescript
    * // Resume with approval
-   * await workflowExecutionService.resumeFromInterruption('thread-123', {
-   *   type: 'update',
-   *   update: {
-   *     metadata: {
-   *       userApproval: 'approved',
-   *       approvalFeedback: 'Looks good!',
-   *       approvalTimestamp: new Date().toISOString(),
-   *     }
-   *   }
-   * });
+   * const result = await workflowExecutionService.resumeFromInterruption(
+   *   MyWorkflow,
+   *   'thread-123',
+   *   'ckpt-456',
+   *   { approved: true }
+   * );
    * ```
    *
    * Implementation: TASK_2025_048 - BATCH 1, Task 4
+   * Refactored: TASK_2025_049 - Task 3 (Delegation Pattern)
    */
   async resumeFromInterruption(
+    workflowClass: any,
     threadId: string,
-    userInput: any
-  ): Promise<void> {
-    this.logger.log(
-      `▶️  Resuming workflow from interruption for thread: ${threadId}`
+    checkpointId: string,
+    resumeValue: any
+  ): Promise<any> {
+    if (!this.resumptionService) {
+      throw new Error(
+        'WorkflowResumptionService not available - cannot resume workflow'
+      );
+    }
+
+    this.logger.warn(
+      'DEPRECATED: resumeFromInterruption() - Use WorkflowResumptionService.resumeWorkflow() instead'
     );
 
-    if (!this.checkpointer) {
-      const error = 'Checkpointer not configured - cannot resume workflow';
-      this.logger.error(error);
-      throw new Error(error);
-    }
-
-    try {
-      // Step 1: Retrieve current checkpoint tuple
-      const checkpointTuple = await this.checkpointer.getTuple({
-        configurable: { thread_id: threadId },
-      });
-
-      if (!checkpointTuple) {
-        throw new Error(`No checkpoint found for thread: ${threadId}`);
-      }
-
-      const { checkpoint, config, metadata } = checkpointTuple;
-
-      // Step 2: Merge user input with current state
-      // Handle Command interface: { type, update, goto, error, ... }
-      const stateUpdate = {
-        ...checkpoint.channel_values,
-        ...(userInput.update || {}),
-      };
-
-      // Step 3: Update checkpoint with new state
-      // checkpointer.put() signature: (config, checkpoint, metadata, newVersions)
-      await this.checkpointer.put(
-        config,
-        {
-          v: checkpoint.v,
-          id: checkpoint.id,
-          ts: new Date().toISOString(),
-          channel_values: stateUpdate,
-          channel_versions: checkpoint.channel_versions,
-          versions_seen: checkpoint.versions_seen,
-        },
-        {
-          ...(metadata || {}),
-          source: 'update' as const,
-          step: -1, // Indicates external update (not from graph execution)
-          parents: metadata?.parents || {},
-        },
-        {} // newVersions - empty for HITL resume (LangGraph manages versions)
-      );
-
-      this.logger.log(
-        `✅ Workflow resumed for thread ${threadId} - state updated with user input`
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `❌ Failed to resume workflow for thread ${threadId}:`,
-        error.message
-      );
-      throw error;
-    }
+    return await this.resumptionService.resumeWorkflow(
+      workflowClass.name || workflowClass,
+      threadId,
+      resumeValue,
+      checkpointId
+    );
   }
 }
