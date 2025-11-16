@@ -1,6 +1,7 @@
 .research-chat-container {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 280px 320px 1fr;
+  grid-template-rows: 1fr;
   height: 100vh;
   max-width: 1600px;
   margin: 0 auto;
@@ -9,6 +10,13 @@
     sans-serif;
   gap: 16px;
   padding: 16px;
+}
+
+// Conversation history sidebar
+.conversation-sidebar-column {
+  overflow-y: auto;
+  background: #f9fafb;
+  border-radius: 12px;
 }
 
 // Phase 3: Sidebar for agent status panel
@@ -398,9 +406,14 @@
 @media (max-width: 768px) {
   .research-chat-container {
     max-width: 100%;
-    flex-direction: column;
+    grid-template-columns: 1fr;
     padding: 8px;
     gap: 8px;
+  }
+
+  // Hide conversation sidebar on mobile (drawer pattern in sidebar component)
+  .conversation-sidebar-column {
+    display: none;
   }
 
   // Phase 3: Hide sidebar on mobile, show collapsible version

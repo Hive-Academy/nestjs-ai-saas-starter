@@ -1,4 +1,15 @@
 <div class="research-chat-container">
+  <!-- Conversation History Sidebar -->
+  <div class="conversation-sidebar-column">
+    <app-conversation-sidebar
+      workflowType="researcher"
+      [userId]="userId"
+      [currentThreadId]="currentThreadId"
+      (conversationSelected)="onConversationSelected($event)"
+      (newConversationCreated)="onNewConversation($event)"
+    />
+  </div>
+
   <!-- Phase 3: Agent Status Panel Sidebar -->
   <div class="sidebar">
     <app-agent-status-panel></app-agent-status-panel>

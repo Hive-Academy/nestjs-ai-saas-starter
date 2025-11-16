@@ -9,6 +9,8 @@ import { Subscription } from 'rxjs';
 import { ApprovalModalComponent } from './components/approval-modal.component';
 import { MarkdownModule } from 'ngx-markdown';
 import { AgentStatusPanelComponent } from '../../shared/components';
+import { ConversationSidebarComponent } from '../../shared/components/conversation-sidebar/conversation-sidebar.component';
+import { ConversationApiService } from '../../shared/services/conversation-api.service';
 import {
   isMessageStreamEvent,
   isCustomStreamEvent,
@@ -51,6 +53,7 @@ interface ChatMessage {
     ApprovalModalComponent,
     MarkdownModule,
     AgentStatusPanelComponent,
+    ConversationSidebarComponent,
   ],
   templateUrl: './research-chat.component.html',
   styleUrls: ['./research-chat.component.scss'],
@@ -62,7 +65,8 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
   showApprovalModal = false;
   reportDraft = '';
   currentExecutionId = '';
-  userId = 'demo-user-123'; // In production, get from auth service
+  userId = 'test-researcher-001'; // Hardcoded test user for POC
+  currentThreadId?: string; // Current conversation thread
 
   // Phase 3: Token streaming state
   private currentStreamingMessage = '';
@@ -73,7 +77,10 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
 
   private streamSubscription?: Subscription;
 
-  constructor(private researchService: ResearchService) {}
+  constructor(
+    private researchService: ResearchService,
+    private conversationApi: ConversationApiService
+  ) {}
 
   ngOnInit(): void {
     this.addSystemMessage(
@@ -116,6 +123,7 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             this.currentExecutionId = response.executionId;
+            this.currentThreadId = response.executionId; // Track thread ID
             this.addStatusMessage(`Research started: ${response.message}`);
             this.streamWorkflow(response.executionId);
           },
@@ -128,6 +136,47 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
       this.addErrorMessage(`Error: ${error.message}`);
       this.isResearching = false;
     }
+  }
+
+  /**
+   * Handle conversation selection from sidebar
+   */
+  onConversationSelected(threadId: string): void {
+    this.loadConversationHistory(threadId);
+  }
+
+  /**
+   * Load conversation history from API
+   */
+  private loadConversationHistory(threadId: string): void {
+    this.conversationApi.getResearcherConversationHistory(threadId).subscribe({
+      next: (response) => {
+        this.currentThreadId = threadId;
+        this.messages = response.conversationHistory.map((msg) => ({
+          role: msg.role as 'user' | 'assistant' | 'system' | 'tool',
+          content: msg.content,
+          type: 'text',
+          timestamp: new Date(msg.timestamp),
+          toolData: msg.toolCalls ? { toolOutput: msg.toolCalls } : undefined,
+        }));
+        this.scrollToBottom();
+      },
+      error: (error) => {
+        this.addErrorMessage(`Failed to load conversation: ${error}`);
+      },
+    });
+  }
+
+  /**
+   * Handle new conversation creation from sidebar
+   */
+  onNewConversation(threadId: string): void {
+    this.currentThreadId = threadId;
+    this.messages = [];
+    this.currentQuery = '';
+    this.addSystemMessage(
+      'New conversation started. Ask me to research any topic.'
+    );
   }
 
   /**

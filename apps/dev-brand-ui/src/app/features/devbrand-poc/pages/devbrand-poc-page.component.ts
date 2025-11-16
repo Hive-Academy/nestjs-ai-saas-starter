@@ -4,6 +4,8 @@ import { ProgressVisualizationComponent } from '../components/progress-visualiza
 import { EventStreamComponent } from '../components/event-stream.component';
 import { DevBrandSseService } from '../services/devbrand-sse.service';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
+import { ConversationSidebarComponent } from '../../../shared/components/conversation-sidebar/conversation-sidebar.component';
+import { ConversationApiService } from '../../../shared/services/conversation-api.service';
 
 /**
  * DevBrand POC Page Component
@@ -87,6 +89,7 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
     ExecutionControlComponent,
     ProgressVisualizationComponent,
     EventStreamComponent,
+    ConversationSidebarComponent,
   ],
   template: `
     <div class="container mx-auto px-4 py-8">
@@ -99,27 +102,44 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
         </p>
       </header>
 
-      <!-- Execution Control (top section) -->
-      <section class="mb-8">
-        <app-execution-control
-          (executionStarted)="onExecutionStarted($event)"
-        />
-      </section>
-
-      <!-- Two-Column Layout: Progress + Events -->
-      <section class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <!-- Left Column: Progress Visualization -->
-        <div class="space-y-4">
-          <h2 class="text-xl font-semibold text-gray-800">Agent Progress</h2>
-          <app-progress-visualization />
+      <!-- Grid Layout with Sidebar -->
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
+        <!-- Sidebar Column -->
+        <div>
+          <app-conversation-sidebar
+            workflowType="supervisor"
+            [userId]="userId"
+            [currentThreadId]="currentThreadId"
+            (conversationSelected)="onConversationSelected($event)"
+            (newConversationCreated)="onNewConversation($event)"
+          />
         </div>
 
-        <!-- Right Column: Event Stream -->
-        <div class="space-y-4">
-          <h2 class="text-xl font-semibold text-gray-800">Event Stream</h2>
-          <app-event-stream />
+        <!-- Main Content Column -->
+        <div class="space-y-8">
+          <!-- Execution Control -->
+          <app-execution-control
+            (executionStarted)="onExecutionStarted($event)"
+          />
+
+          <!-- Two-Column Layout: Progress + Events -->
+          <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <!-- Left: Progress Visualization -->
+            <div class="space-y-4">
+              <h2 class="text-xl font-semibold text-gray-800">
+                Agent Progress
+              </h2>
+              <app-progress-visualization />
+            </div>
+
+            <!-- Right: Event Stream -->
+            <div class="space-y-4">
+              <h2 class="text-xl font-semibold text-gray-800">Event Stream</h2>
+              <app-event-stream />
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   `,
   styles: [],
@@ -140,6 +160,21 @@ export class DevbrandPocPageComponent implements OnDestroy {
    * **Note**: Child components also inject this service to access shared state
    */
   private readonly workflowStateService = inject(DevBrandWorkflowStateService);
+
+  /**
+   * Conversation API service for conversation history management.
+   */
+  private readonly conversationApi = inject(ConversationApiService);
+
+  /**
+   * Test user ID for POC (hardcoded).
+   */
+  userId = 'test-supervisor-001';
+
+  /**
+   * Current conversation thread ID.
+   */
+  currentThreadId?: string;
 
   constructor() {
     console.log('🎬 [DevBrandPocPageComponent] Component constructed');
@@ -176,6 +211,9 @@ export class DevbrandPocPageComponent implements OnDestroy {
       response.executionId
     );
 
+    // Track current thread ID
+    this.currentThreadId = response.executionId;
+
     // Start workflow execution (connects SSE and subscribes to events)
     console.log(
       '🚀 [DevBrandPocPageComponent] Starting workflow state tracking...'
@@ -183,6 +221,30 @@ export class DevbrandPocPageComponent implements OnDestroy {
     // TODO:
     // this.workflowStateService.startExecution(response.streamUrl);
     console.log('✅ [DevBrandPocPageComponent] Workflow execution started');
+  }
+
+  /**
+   * Handle conversation selection from sidebar.
+   */
+  onConversationSelected(threadId: string): void {
+    this.currentThreadId = threadId;
+    console.log(
+      '📜 [DevBrandPocPageComponent] Conversation selected:',
+      threadId
+    );
+    // Optionally: Load conversation history and display
+  }
+
+  /**
+   * Handle new conversation creation from sidebar.
+   */
+  onNewConversation(threadId: string): void {
+    this.currentThreadId = threadId;
+    console.log(
+      '🆕 [DevBrandPocPageComponent] New conversation created:',
+      threadId
+    );
+    // Reset workflow state
   }
 
   /**
