@@ -25,7 +25,6 @@ export * from './lib/decorators/functional/edge.decorator';
 
 // Functional API Utilities
 export * from './lib/utils/functional/decorator-validator';
-export * from './lib/utils/functional/functional-api-config.accessor';
 
 // Functional API Interfaces
 export type * from './lib/interfaces/functional/functional-workflow.interface';
@@ -84,7 +83,6 @@ export * from './lib/types/agent-config.interface';
 export * from './lib/constants/multi-agent/multi-agent.constants';
 
 // Multi-Agent Utils
-export * from './lib/utils/multi-agent/multi-agent-config.accessor';
 export * from './lib/utils/multi-agent/state-validator';
 export * from './lib/utils/multi-agent/agent-state-validator';
 
