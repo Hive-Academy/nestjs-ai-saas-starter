@@ -9,6 +9,10 @@ import {
   HttpException,
   HttpStatus,
   Sse,
+  Req,
+  UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +24,13 @@ import { IsString, IsOptional } from 'class-validator';
 import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  SupervisorConversationHistoryResponseDto,
+  NewConversationResponseDto,
+  NewConversationDto,
+  ConversationListResponseDto,
+} from '../business-workflows/controllers/dto/conversation.dto';
 
 /**
  * 🎯 DEVBRAND WORKFLOW CONTROLLER - SSE STREAMING PATTERN
@@ -109,7 +120,10 @@ export class DevBrandController {
     AsyncGenerator<any, void, unknown>
   >();
 
-  constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow) {}
+  constructor(
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
+    private readonly workflowResumptionService: WorkflowResumptionService
+  ) {}
 
   /**
    * Start DevBrand workflow (non-blocking)
@@ -258,5 +272,219 @@ export class DevBrandController {
         }
       })();
     });
+  }
+
+  /**
+   * CONVERSATION HISTORY ENDPOINTS (TASK_2025_050)
+   * Following patterns from controller-implementation-guide.md
+   * Supervisor-specific: Uses DevBrandSupervisorWorkflow with agent coordination metadata
+   */
+
+  /**
+   * Get conversation list for authenticated user
+   * @route GET /devbrand/conversation/list
+   * @returns Last 10 supervisor conversations with preview, status, agent coordination
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:483-507
+   */
+  @Get('conversation/list')
+  async getConversationList(
+    @Req() request: any
+  ): Promise<ConversationListResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    // In production, this would come from JwtAuthGuard: request.user.id
+    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+
+    this.logger.log(
+      `📋 Retrieving supervisor conversation list for user: ${userId}`
+    );
+
+    try {
+      // NOTE: WorkflowResumptionService doesn't expose listThreads()
+      // RISK MITIGATION: Return empty list for POC
+      // TODO: Implement checkpoint storage query or extend service with listThreads()
+      // Reference: implementation-plan.md:1976-2020 (Risk 1 mitigation)
+
+      this.logger.warn(
+        '⚠️  Thread listing not implemented - checkpoint storage query needed'
+      );
+
+      return {
+        conversations: [],
+        totalCount: 0,
+        hasMore: false,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to retrieve conversation list for user ${userId}:`,
+        error.message
+      );
+      throw new InternalServerErrorException(
+        'Failed to retrieve conversation list'
+      );
+    }
+  }
+
+  /**
+   * Get conversation history for specific supervisor thread
+   * @route GET /devbrand/conversation/history/:threadId
+   * @returns Complete conversation with agent coordination (currentAgent, nextAgent, agentHistory)
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:509-594, controller-implementation-guide.md:393-485
+   */
+  @Get('conversation/history/:threadId')
+  async getSupervisorConversationHistory(
+    @Param('threadId') threadId: string,
+    @Req() request: any
+  ): Promise<SupervisorConversationHistoryResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+
+    this.logger.log(
+      `📖 Retrieving supervisor conversation history for thread: ${threadId}, user: ${userId}`
+    );
+
+    try {
+      // Get workflow state from resumption service
+      // Reference: controller-implementation-guide.md:409-413
+      const stateSnapshot =
+        await this.workflowResumptionService.getWorkflowState(
+          'DevBrandSupervisorWorkflow',
+          threadId
+        );
+
+      // Security: Verify thread ownership
+      // Reference: controller-implementation-guide.md:416-422
+      const threadUserId = stateSnapshot.values.metadata?.userId;
+      if (threadUserId && threadUserId !== userId) {
+        throw new UnauthorizedException(
+          `User ${userId} cannot access thread ${threadId}`
+        );
+      }
+
+      // Extract conversation messages
+      // Reference: controller-implementation-guide.md:425-429
+      const messages = stateSnapshot.values.messages || [];
+
+      // Format response with supervisor-specific structure
+      // Reference: controller-implementation-guide.md:431-467
+      return {
+        threadId,
+        userId: threadUserId || userId,
+        conversationHistory: messages.map((msg: any) => ({
+          role: msg._getType(), // 'human' | 'ai' | 'system'
+          content: msg.content,
+          timestamp:
+            msg.additional_kwargs?.timestamp || new Date().toISOString(),
+          agentId: msg.additional_kwargs?.agentId, // Supervisor-specific
+          toolCalls: msg.tool_calls || [],
+        })),
+        metadata: {
+          query: stateSnapshot.values.metadata?.query as string | undefined,
+          reportTitle: stateSnapshot.values.metadata?.reportTitle as
+            | string
+            | undefined,
+          researchStatus: stateSnapshot.values.metadata?.researchStatus as
+            | string
+            | undefined,
+          confidenceScore: stateSnapshot.values.metadata?.confidenceScore as
+            | number
+            | undefined,
+        },
+        agentCoordination: {
+          currentAgent: stateSnapshot.values.current as string | undefined,
+          nextAgent: stateSnapshot.values.next as string | undefined,
+          agentHistory: this.extractAgentHistory(messages),
+          pendingTasks: stateSnapshot.tasks || [],
+        },
+        nextSteps: stateSnapshot.next || [],
+        waitingForApproval:
+          (stateSnapshot.values.metadata?.waitingForApproval as boolean) ||
+          false,
+        checkpointId: stateSnapshot.config.configurable?.checkpoint_id as
+          | string
+          | undefined,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to retrieve supervisor conversation history for thread ${threadId}:`,
+        error.message
+      );
+
+      // Re-throw authorization errors
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new NotFoundException(
+        `Supervisor conversation history not found for thread ${threadId}`
+      );
+    }
+  }
+
+  /**
+   * Create new supervisor conversation thread
+   * @route POST /devbrand/conversation/new
+   * @returns New thread ID with devbrand-{timestamp}-{userId} format
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:596-601
+   */
+  @Post('conversation/new')
+  async createNewConversation(
+    @Body() dto: NewConversationDto,
+    @Req() request: any
+  ): Promise<NewConversationResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+
+    this.logger.log(
+      `🆕 Creating new supervisor conversation for user: ${userId}${
+        dto.initialQuery ? ` with query: "${dto.initialQuery}"` : ''
+      }`
+    );
+
+    try {
+      // Generate unique thread ID with supervisor-specific format
+      // Reference: implementation-plan.md:598
+      const threadId = `devbrand-${Date.now()}-${userId}`;
+
+      // NOTE: State is created when user sends first message
+      // This endpoint just returns thread ID for frontend to use
+      this.logger.log(
+        `Created new supervisor conversation thread: ${threadId}`
+      );
+
+      return {
+        threadId,
+        status: 'created',
+        conversationUrl: `/devbrand`,
+      };
+    } catch (error: any) {
+      this.logger.error(`Failed to create new conversation:`, error.message);
+      throw new InternalServerErrorException(
+        'Failed to create new conversation'
+      );
+    }
+  }
+
+  /**
+   * Helper: Extract agent history from messages
+   * Filters messages with agentId metadata to track agent coordination flow
+   *
+   * Reference: implementation-plan.md:580-593
+   */
+  private extractAgentHistory(
+    messages: any[]
+  ): Array<{ agentId: string; timestamp: string; action: string }> {
+    return messages
+      .filter((msg) => msg.additional_kwargs?.agentId)
+      .map((msg) => ({
+        agentId: msg.additional_kwargs.agentId,
+        timestamp: msg.additional_kwargs.timestamp || new Date().toISOString(),
+        action: msg.additional_kwargs.action || 'executed',
+      }));
   }
 }
