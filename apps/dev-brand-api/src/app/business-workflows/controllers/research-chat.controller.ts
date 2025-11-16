@@ -8,6 +8,10 @@ import {
   HttpException,
   HttpStatus,
   Sse,
+  Req,
+  UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
@@ -18,7 +22,14 @@ import {
   CustomStreamEvent,
   DebugStreamEvent,
   WorkflowExecutionService,
+  WorkflowResumptionService,
 } from '@hive-academy/langgraph-workflow-engine';
+import {
+  ConversationListResponseDto,
+  ConversationHistoryResponseDto,
+  NewConversationResponseDto,
+  NewConversationDto,
+} from './dto/conversation.dto';
 
 /**
  * 🔬 RESEARCH CHAT CONTROLLER - WITH NATIVE SSE STREAMING
@@ -70,7 +81,8 @@ export class ResearchChatController {
   constructor(
     private readonly researcherAgent: ResearcherAgent,
     private readonly fileTools: FileOperationTools,
-    private readonly workflowExecutionService: WorkflowExecutionService
+    private readonly workflowExecutionService: WorkflowExecutionService,
+    private readonly workflowResumptionService: WorkflowResumptionService
   ) {}
 
   /**
@@ -460,6 +472,189 @@ export class ResearchChatController {
       throw new HttpException(
         error.message || 'Failed to read report',
         HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * CONVERSATION HISTORY ENDPOINTS (TASK_2025_050)
+   * Following patterns from controller-implementation-guide.md
+   */
+
+  /**
+   * Get conversation list for authenticated user
+   * @route GET /research/conversation/list
+   * @returns Last 10 conversations with preview, status, metadata
+   *
+   * Implementation: TASK_2025_050 - TASK 2
+   * Reference: implementation-plan.md:156-278
+   */
+  @Get('conversation/list')
+  async getConversationList(
+    @Req() request: any
+  ): Promise<ConversationListResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    // In production, this would come from JwtAuthGuard: request.user.id
+    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+
+    this.logger.log(`📋 Retrieving conversation list for user: ${userId}`);
+
+    try {
+      // NOTE: WorkflowResumptionService doesn't expose listThreads()
+      // RISK MITIGATION: Return empty list for POC
+      // TODO: Implement checkpoint storage query or extend service with listThreads()
+      // Reference: implementation-plan.md:1976-2020 (Risk 1 mitigation)
+
+      this.logger.warn(
+        '⚠️  Thread listing not implemented - checkpoint storage query needed'
+      );
+
+      return {
+        conversations: [],
+        totalCount: 0,
+        hasMore: false,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to retrieve conversation list for user ${userId}:`,
+        error.message
+      );
+      throw new InternalServerErrorException(
+        'Failed to retrieve conversation list'
+      );
+    }
+  }
+
+  /**
+   * Get conversation history for specific thread
+   * @route GET /research/conversation/history/:threadId
+   * @returns Complete conversation history with messages, metadata, next steps
+   *
+   * Implementation: TASK_2025_050 - TASK 2
+   * Reference: implementation-plan.md:280-406, controller-implementation-guide.md:88-157
+   */
+  @Get('conversation/history/:threadId')
+  async getConversationHistory(
+    @Param('threadId') threadId: string,
+    @Req() request: any
+  ): Promise<ConversationHistoryResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+
+    this.logger.log(
+      `📖 Retrieving conversation history for thread: ${threadId}, user: ${userId}`
+    );
+
+    try {
+      // Get workflow state from resumption service
+      // Reference: controller-implementation-guide.md:106-110
+      const stateSnapshot =
+        await this.workflowResumptionService.getWorkflowState(
+          'ResearcherAgent',
+          threadId
+        );
+
+      // Security: Verify thread ownership
+      // Reference: controller-implementation-guide.md:113-118
+      const threadUserId = stateSnapshot.values.metadata?.userId;
+      if (threadUserId && threadUserId !== userId) {
+        throw new UnauthorizedException(
+          `User ${userId} cannot access thread ${threadId}`
+        );
+      }
+
+      // Extract conversation messages
+      // Reference: controller-implementation-guide.md:121-131
+      const messages = stateSnapshot.values.messages || [];
+
+      // Format response with researcher-specific structure
+      return {
+        threadId,
+        userId: threadUserId || userId,
+        conversationHistory: messages.map((msg: any) => ({
+          role: msg._getType(), // 'human' | 'ai' | 'system'
+          content: msg.content,
+          timestamp:
+            msg.additional_kwargs?.timestamp || new Date().toISOString(),
+          toolCalls: msg.tool_calls || [],
+        })),
+        metadata: {
+          query: stateSnapshot.values.metadata?.query as string | undefined,
+          reportTitle: stateSnapshot.values.metadata?.reportTitle as
+            | string
+            | undefined,
+          researchStatus: stateSnapshot.values.metadata?.researchStatus as
+            | string
+            | undefined,
+          confidenceScore: stateSnapshot.values.metadata?.confidenceScore as
+            | number
+            | undefined,
+        },
+        nextSteps: stateSnapshot.next || [],
+        waitingForApproval:
+          (stateSnapshot.values.metadata?.waitingForApproval as boolean) ||
+          false,
+        checkpointId: stateSnapshot.config.configurable?.checkpoint_id as
+          | string
+          | undefined,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to retrieve conversation history for thread ${threadId}:`,
+        error.message
+      );
+
+      // Re-throw authorization errors
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new NotFoundException(
+        `Conversation history not found for thread ${threadId}`
+      );
+    }
+  }
+
+  /**
+   * Create new conversation thread
+   * @route POST /research/conversation/new
+   * @returns New thread ID and conversation URL
+   *
+   * Implementation: TASK_2025_050 - TASK 2
+   * Reference: implementation-plan.md:408-481
+   */
+  @Post('conversation/new')
+  async createNewConversation(
+    @Body() dto: NewConversationDto,
+    @Req() request: any
+  ): Promise<NewConversationResponseDto> {
+    // CRITICAL: For POC, extract userId from header (mock JWT)
+    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+
+    this.logger.log(
+      `🆕 Creating new conversation for user: ${userId}${
+        dto.initialQuery ? ` with query: "${dto.initialQuery}"` : ''
+      }`
+    );
+
+    try {
+      // Generate unique thread ID
+      // Reference: implementation-plan.md:463
+      const threadId = `research-${Date.now()}-${userId}`;
+
+      // NOTE: State is created when user sends first message
+      // This endpoint just returns thread ID for frontend to use
+      this.logger.log(`Created new conversation thread: ${threadId}`);
+
+      return {
+        threadId,
+        status: 'created',
+        conversationUrl: `/research-chat`,
+      };
+    } catch (error: any) {
+      this.logger.error(`Failed to create new conversation:`, error.message);
+      throw new InternalServerErrorException(
+        'Failed to create new conversation'
       );
     }
   }
