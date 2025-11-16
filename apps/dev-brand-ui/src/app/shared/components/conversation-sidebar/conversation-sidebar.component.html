@@ -4,17 +4,29 @@
   [class.collapsed]="collapsed$ | async"
 >
   <!-- Header with Collapse Toggle -->
-  <div class="sidebar-header flex items-center justify-between p-4 border-b border-gray-200">
-    <h2 class="text-lg font-semibold text-gray-900" *ngIf="!(collapsed$ | async)">
+  <div
+    class="sidebar-header flex items-center justify-between p-4 border-b border-gray-200"
+  >
+    <h2
+      class="text-lg font-semibold text-gray-900"
+      *ngIf="!(collapsed$ | async)"
+    >
       Conversations
     </h2>
     <button
       (click)="toggleCollapse()"
       class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-      [attr.aria-label]="(collapsed$ | async) ? 'Expand sidebar' : 'Collapse sidebar'"
+      [attr.aria-label]="
+        (collapsed$ | async) ? 'Expand sidebar' : 'Collapse sidebar'
+      "
       type="button"
     >
-      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg
+        class="w-5 h-5 text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -38,8 +50,18 @@
       type="button"
       aria-label="Create new conversation"
     >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
       </svg>
       <span>New Chat</span>
     </button>
@@ -52,8 +74,12 @@
     role="status"
     aria-live="polite"
   >
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    <p class="text-sm text-gray-500" *ngIf="!(collapsed$ | async)">Loading conversations...</p>
+    <div
+      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+    ></div>
+    <p class="text-sm text-gray-500" *ngIf="!(collapsed$ | async)">
+      Loading conversations...
+    </p>
   </div>
 
   <!-- Error State -->
@@ -108,7 +134,10 @@
     <!-- Conversation Items -->
     <div class="space-y-1 p-2">
       <button
-        *ngFor="let conversation of conversations$ | async; trackBy: trackByThreadId"
+        *ngFor="
+          let conversation of conversations$ | async;
+          trackBy: trackByThreadId
+        "
         (click)="onSelectConversation(conversation.threadId)"
         [class.active]="conversation.threadId === currentThreadId"
         class="conversation-item w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-50"
@@ -123,7 +152,10 @@
         "
       >
         <!-- Collapsed View (Icon Only) -->
-        <div *ngIf="collapsed$ | async" class="flex items-center justify-center">
+        <div
+          *ngIf="collapsed$ | async"
+          class="flex items-center justify-center"
+        >
           <svg
             class="w-6 h-6 text-gray-600"
             fill="none"
@@ -169,7 +201,12 @@
             *ngIf="conversation.status === 'waiting'"
             class="mt-2 flex items-center gap-1 text-xs text-orange-600"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -182,13 +219,23 @@
 
           <!-- Supervisor-specific: Current Agent & Progress -->
           <div
-            *ngIf="conversation.currentAgent || conversation.workflowProgress !== undefined"
+            *ngIf="
+              conversation.currentAgent ||
+              conversation.workflowProgress !== undefined
+            "
             class="mt-2 space-y-1"
           >
-            <div *ngIf="conversation.currentAgent" class="text-xs text-gray-600">
-              <span class="font-medium">Agent:</span> {{ conversation.currentAgent }}
+            <div
+              *ngIf="conversation.currentAgent"
+              class="text-xs text-gray-600"
+            >
+              <span class="font-medium">Agent:</span>
+              {{ conversation.currentAgent }}
             </div>
-            <div *ngIf="conversation.workflowProgress !== undefined" class="text-xs">
+            <div
+              *ngIf="conversation.workflowProgress !== undefined"
+              class="text-xs"
+            >
               <div class="flex items-center gap-2">
                 <div class="flex-1 bg-gray-200 rounded-full h-1.5">
                   <div
@@ -196,7 +243,9 @@
                     [style.width.%]="conversation.workflowProgress"
                   ></div>
                 </div>
-                <span class="text-gray-600">{{ conversation.workflowProgress }}%</span>
+                <span class="text-gray-600"
+                  >{{ conversation.workflowProgress }}%</span
+                >
               </div>
             </div>
           </div>
