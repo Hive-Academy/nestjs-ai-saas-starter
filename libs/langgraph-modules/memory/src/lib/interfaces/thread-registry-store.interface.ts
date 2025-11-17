@@ -46,17 +46,21 @@ export abstract class IThreadRegistryStore {
    * Get thread metadata by thread ID
    *
    * @param threadId - Unique thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @returns Thread metadata if found, null otherwise (not throw)
    *
    * @example
    * ```typescript
-   * const thread = await threadRegistry.getThread('thread-456');
+   * const thread = await threadRegistry.getThread('thread-456', 'user-123');
    * if (!thread) {
    *   console.log('Thread not found');
    * }
    * ```
    */
-  abstract getThread(threadId: string): Promise<ThreadMetadata | null>;
+  abstract getThread(
+    threadId: string,
+    userId: string
+  ): Promise<ThreadMetadata | null>;
 
   /**
    * Create new thread with metadata
@@ -82,11 +86,12 @@ export abstract class IThreadRegistryStore {
    * Update thread metadata
    *
    * @param threadId - Thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @param updates - Partial updates to apply
    *
    * @example
    * ```typescript
-   * await threadRegistry.updateThread('thread-456', {
+   * await threadRegistry.updateThread('thread-456', 'user-123', {
    *   title: 'Updated title',
    *   lastMessageAt: new Date()
    * });
@@ -94,6 +99,7 @@ export abstract class IThreadRegistryStore {
    */
   abstract updateThread(
     threadId: string,
+    userId: string,
     updates: Partial<ThreadMetadata>
   ): Promise<void>;
 
@@ -101,17 +107,18 @@ export abstract class IThreadRegistryStore {
    * Delete thread by ID
    *
    * @param threadId - Thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @returns true if deleted, false if not found
    *
    * @example
    * ```typescript
-   * const deleted = await threadRegistry.deleteThread('thread-456');
+   * const deleted = await threadRegistry.deleteThread('thread-456', 'user-123');
    * if (deleted) {
    *   console.log('Thread deleted successfully');
    * }
    * ```
    */
-  abstract deleteThread(threadId: string): Promise<boolean>;
+  abstract deleteThread(threadId: string, userId: string): Promise<boolean>;
 
   /**
    * Validation template method for thread metadata
