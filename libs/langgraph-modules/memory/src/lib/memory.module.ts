@@ -58,7 +58,7 @@
  * @module MemoryModule
  */
 
-import { DynamicModule, Module } from '@nestjs/common';
+import { DynamicModule, Module, Type } from '@nestjs/common';
 import {
   ChromaDBModule,
   ChromaDBService,
@@ -68,6 +68,8 @@ import { ChromaDBBaseStore } from './stores/chromadb-base-store';
 import { LangGraphStoreRepository } from './repositories/langgraph-store.repository';
 import { LangGraphStoreEntity } from './entities/langgraph-store.entity';
 import { BASE_STORE_TOKEN } from './tokens/base-store.token';
+import { THREAD_REGISTRY_TOKEN } from './tokens/thread-registry.token';
+import type { IThreadRegistryStore } from './interfaces/thread-registry-store.interface';
 
 /**
  * Memory module configuration options
@@ -93,6 +95,46 @@ export interface MemoryModuleOptions {
    * @default false
    */
   enableSemanticSearch?: boolean;
+
+  /**
+   * Thread registry configuration for thread metadata storage
+   *
+   * Enables conversation list functionality by providing thread metadata storage.
+   * Supports both class-based adapters (Neo4jThreadRegistryAdapter) and instance-based
+   * adapters for maximum flexibility.
+   *
+   * @example
+   * ```typescript
+   * // Class-based adapter
+   * MemoryModule.forRoot({
+   *   threadRegistry: {
+   *     adapter: Neo4jThreadRegistryAdapter,
+   *     defaultLimit: 20
+   *   }
+   * })
+   *
+   * // Instance-based adapter
+   * MemoryModule.forRoot({
+   *   threadRegistry: {
+   *     adapter: new ChromaDBThreadRegistryAdapter(chromaService),
+   *     defaultLimit: 50
+   *   }
+   * })
+   * ```
+   */
+  threadRegistry?: {
+    /**
+     * Thread registry storage adapter (class or instance)
+     */
+    adapter: Type<IThreadRegistryStore> | IThreadRegistryStore;
+
+    /**
+     * Default limit for thread listing pagination
+     *
+     * @default 20
+     */
+    defaultLimit?: number;
+  };
 }
 
 /**
@@ -159,6 +201,54 @@ export class MemoryModule {
    * ```
    */
   static forRoot(options: MemoryModuleOptions = {}): DynamicModule {
+    const providers: any[] = [
+      // Repository provider with proper DI
+      {
+        provide: LangGraphStoreRepository,
+        useFactory: (
+          chromaDB: ChromaDBService,
+          collectionRegistry: CollectionRegistryService
+        ) => {
+          return new LangGraphStoreRepository(chromaDB, collectionRegistry);
+        },
+        inject: [ChromaDBService, CollectionRegistryService],
+      },
+      // BaseStore provider using typed token and repository pattern
+      {
+        provide: BASE_STORE_TOKEN,
+        useFactory: (repository: LangGraphStoreRepository) => {
+          // Create ChromaDBBaseStore with repository delegation
+          return new ChromaDBBaseStore(repository);
+        },
+        inject: [LangGraphStoreRepository],
+      },
+    ];
+
+    // Conditionally add ThreadRegistryStore provider
+    if (options.threadRegistry) {
+      const adapterConfig = options.threadRegistry;
+
+      // Support both class-based and instance-based adapters
+      if (typeof adapterConfig.adapter === 'function') {
+        // Class-based adapter (Neo4jThreadRegistryAdapter)
+        providers.push({
+          provide: THREAD_REGISTRY_TOKEN,
+          useClass: adapterConfig.adapter,
+        });
+      } else {
+        // Instance-based adapter (new ChromaDBThreadRegistryAdapter(...))
+        providers.push({
+          provide: THREAD_REGISTRY_TOKEN,
+          useValue: adapterConfig.adapter,
+        });
+      }
+    } else {
+      // Log warning when threadRegistry not configured
+      console.warn(
+        '[MemoryModule] Thread registry not configured - thread listing unavailable'
+      );
+    }
+
     return {
       module: MemoryModule,
       imports: [
@@ -167,30 +257,13 @@ export class MemoryModule {
         // Register LangGraphStoreEntity with ChromaDB collection system
         ChromaDBModule.forFeature([LangGraphStoreEntity]),
       ],
-      providers: [
-        // Repository provider with proper DI
-        {
-          provide: LangGraphStoreRepository,
-          useFactory: (
-            chromaDB: ChromaDBService,
-            collectionRegistry: CollectionRegistryService
-          ) => {
-            return new LangGraphStoreRepository(chromaDB, collectionRegistry);
-          },
-          inject: [ChromaDBService, CollectionRegistryService],
-        },
-        // BaseStore provider using typed token and repository pattern
-        {
-          provide: BASE_STORE_TOKEN,
-          useFactory: (repository: LangGraphStoreRepository) => {
-            // Create ChromaDBBaseStore with repository delegation
-            return new ChromaDBBaseStore(repository);
-          },
-          inject: [LangGraphStoreRepository],
-        },
+      providers,
+      exports: [
+        BASE_STORE_TOKEN,
+        THREAD_REGISTRY_TOKEN,
+        LangGraphStoreRepository,
       ],
-      exports: [BASE_STORE_TOKEN, LangGraphStoreRepository],
-      global: true, // Make BaseStore available globally
+      global: true, // Make BaseStore and ThreadRegistry available globally
     };
   }
 
@@ -217,6 +290,60 @@ export class MemoryModule {
    * ```
    */
   static forRootAsync(options: MemoryModuleAsyncOptions): DynamicModule {
+    const providers: any[] = [
+      // Provider for async module options
+      {
+        provide: 'MEMORY_MODULE_OPTIONS',
+        useFactory: options.useFactory,
+        inject: options.inject || [],
+      },
+      // Repository provider with proper DI
+      {
+        provide: LangGraphStoreRepository,
+        useFactory: (
+          chromaDB: ChromaDBService,
+          collectionRegistry: CollectionRegistryService
+        ) => {
+          return new LangGraphStoreRepository(chromaDB, collectionRegistry);
+        },
+        inject: [ChromaDBService, CollectionRegistryService],
+      },
+      // BaseStore provider using typed token and repository pattern
+      {
+        provide: BASE_STORE_TOKEN,
+        useFactory: (repository: LangGraphStoreRepository) => {
+          // Create ChromaDBBaseStore with repository delegation
+          return new ChromaDBBaseStore(repository);
+        },
+        inject: [LangGraphStoreRepository],
+      },
+      // ThreadRegistryStore provider (async factory)
+      {
+        provide: THREAD_REGISTRY_TOKEN,
+        useFactory: (moduleOptions: MemoryModuleOptions) => {
+          if (moduleOptions.threadRegistry) {
+            const adapterConfig = moduleOptions.threadRegistry;
+
+            // Support both class-based and instance-based adapters
+            if (typeof adapterConfig.adapter === 'function') {
+              // Class-based adapter - instantiate
+              return new adapterConfig.adapter();
+            } else {
+              // Instance-based adapter - return as-is
+              return adapterConfig.adapter;
+            }
+          } else {
+            // Log warning when threadRegistry not configured
+            console.warn(
+              '[MemoryModule] Thread registry not configured - thread listing unavailable'
+            );
+            return null;
+          }
+        },
+        inject: ['MEMORY_MODULE_OPTIONS'],
+      },
+    ];
+
     return {
       module: MemoryModule,
       imports: [
@@ -227,36 +354,13 @@ export class MemoryModule {
         // Import user-provided modules for async configuration
         ...(options.imports || []),
       ],
-      providers: [
-        // Provider for async module options
-        {
-          provide: 'MEMORY_MODULE_OPTIONS',
-          useFactory: options.useFactory,
-          inject: options.inject || [],
-        },
-        // Repository provider with proper DI
-        {
-          provide: LangGraphStoreRepository,
-          useFactory: (
-            chromaDB: ChromaDBService,
-            collectionRegistry: CollectionRegistryService
-          ) => {
-            return new LangGraphStoreRepository(chromaDB, collectionRegistry);
-          },
-          inject: [ChromaDBService, CollectionRegistryService],
-        },
-        // BaseStore provider using typed token and repository pattern
-        {
-          provide: BASE_STORE_TOKEN,
-          useFactory: (repository: LangGraphStoreRepository) => {
-            // Create ChromaDBBaseStore with repository delegation
-            return new ChromaDBBaseStore(repository);
-          },
-          inject: [LangGraphStoreRepository],
-        },
+      providers,
+      exports: [
+        BASE_STORE_TOKEN,
+        THREAD_REGISTRY_TOKEN,
+        LangGraphStoreRepository,
       ],
-      exports: [BASE_STORE_TOKEN, LangGraphStoreRepository],
-      global: true, // Make BaseStore available globally
+      global: true, // Make BaseStore and ThreadRegistry available globally
     };
   }
 }
