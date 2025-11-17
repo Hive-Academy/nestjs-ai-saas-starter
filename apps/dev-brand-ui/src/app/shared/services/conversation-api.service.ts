@@ -74,7 +74,7 @@ export class ConversationApiService {
    * - Researcher workflow: /api/research-chat
    * - Supervisor workflow: /api/devbrand
    */
-  private readonly researchApiUrl = '/api/research-chat/conversation';
+  private readonly researchApiUrl = '/api/research/conversation';
   private readonly supervisorApiUrl = '/api/devbrand/conversation';
 
   /**
