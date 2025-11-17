@@ -12,3 +12,6 @@ export * from './approval-response.entity';
 export * from './confidence-pattern.entity';
 export * from './feedback-entry.entity';
 export * from './interruption-point.entity';
+
+// Memory entities
+export * from './thread.entity';
