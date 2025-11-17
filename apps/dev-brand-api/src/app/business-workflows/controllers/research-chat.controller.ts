@@ -26,6 +26,7 @@ import {
   WorkflowExecutionService,
   WorkflowResumptionService,
 } from '@hive-academy/langgraph-workflow-engine';
+import { generateThreadId } from '@hive-academy/langgraph-core';
 import {
   ConversationListResponseDto,
   ConversationHistoryResponseDto,
@@ -683,18 +684,21 @@ export class ResearchChatController {
     );
 
     try {
-      // Generate unique thread ID
-      // Reference: implementation-plan.md:463
-      const threadId = `research-${Date.now()}-${userId}`;
+      const workflowType = 'researcher';
+
+      // Generate unique thread ID using standardized utility from core
+      // Format: thread_{workflowType}_{uuid-12-chars}
+      const threadId = generateThreadId(workflowType);
 
       // Create thread in ThreadRegistryStore
       if (this.threadRegistry) {
         try {
           await this.threadRegistry.createThread(userId, {
+            threadId, // Pass generated threadId to prevent mismatch
             title: dto.initialQuery || 'New Research',
             metadata: {
               source: 'web_ui',
-              workflowType: 'researcher',
+              workflowType,
               initialQuery: dto.initialQuery,
             },
           });

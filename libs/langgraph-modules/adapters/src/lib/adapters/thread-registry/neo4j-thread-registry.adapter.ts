@@ -66,7 +66,8 @@ export class Neo4jThreadRegistryAdapter extends IThreadRegistryStore {
 
   /**
    * Create new thread with metadata
-   * Generates unique threadId and timestamps before delegation
+   * Uses provided threadId or generates unique threadId if not provided
+   * Always generates timestamps before delegation
    */
   async createThread(
     userId: string,
@@ -76,7 +77,8 @@ export class Neo4jThreadRegistryAdapter extends IThreadRegistryStore {
       throw new Error('User ID is required');
     }
 
-    const threadId = this.generateThreadId();
+    // Use provided threadId if available, otherwise generate one
+    const threadId = metadata.threadId?.trim() || this.generateThreadId();
     const now = new Date();
 
     const fullMetadata: ThreadMetadata = {

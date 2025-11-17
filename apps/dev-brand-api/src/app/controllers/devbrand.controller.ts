@@ -27,6 +27,7 @@ import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
 import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
+import { generateThreadId } from '@hive-academy/langgraph-core';
 import {
   SupervisorConversationHistoryResponseDto,
   NewConversationResponseDto,
@@ -493,18 +494,21 @@ export class DevBrandController {
     );
 
     try {
-      // Generate unique thread ID with supervisor-specific format
-      // Reference: implementation-plan.md:598
-      const threadId = `devbrand-${Date.now()}-${userId}`;
+      const workflowType = 'supervisor';
+
+      // Generate unique thread ID using standardized utility from core
+      // Format: thread_{workflowType}_{uuid-12-chars}
+      const threadId = generateThreadId(workflowType);
 
       // Create thread in ThreadRegistryStore
       if (this.threadRegistry) {
         try {
           await this.threadRegistry.createThread(userId, {
+            threadId, // Pass generated threadId to prevent mismatch
             title: dto.initialQuery || 'New Conversation',
             metadata: {
               source: 'web_ui',
-              workflowType: 'supervisor',
+              workflowType,
               initialQuery: dto.initialQuery,
             },
           });
