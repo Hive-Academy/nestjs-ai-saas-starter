@@ -51,11 +51,17 @@ export class Neo4jThreadRegistryAdapter extends IThreadRegistryStore {
    * Get thread metadata by thread ID
    * Delegates to repository after validation
    */
-  async getThread(threadId: string): Promise<ThreadMetadata | null> {
+  async getThread(
+    threadId: string,
+    userId: string
+  ): Promise<ThreadMetadata | null> {
     if (!threadId?.trim()) {
       throw new Error('Thread ID is required');
     }
-    return this.threadRepo.getThread(threadId);
+    if (!userId?.trim()) {
+      throw new Error('User ID is required');
+    }
+    return this.threadRepo.getThread(threadId, userId);
   }
 
   /**
@@ -93,23 +99,30 @@ export class Neo4jThreadRegistryAdapter extends IThreadRegistryStore {
    */
   async updateThread(
     threadId: string,
+    userId: string,
     updates: Partial<ThreadMetadata>
   ): Promise<void> {
     if (!threadId?.trim()) {
       throw new Error('Thread ID is required');
     }
-    await this.threadRepo.updateThread(threadId, updates);
+    if (!userId?.trim()) {
+      throw new Error('User ID is required');
+    }
+    await this.threadRepo.updateThread(threadId, userId, updates);
   }
 
   /**
    * Delete thread by ID
    * Delegates to repository after validation
    */
-  async deleteThread(threadId: string): Promise<boolean> {
+  async deleteThread(threadId: string, userId: string): Promise<boolean> {
     if (!threadId?.trim()) {
       throw new Error('Thread ID is required');
     }
-    return this.threadRepo.deleteThread(threadId);
+    if (!userId?.trim()) {
+      throw new Error('User ID is required');
+    }
+    return this.threadRepo.deleteThread(threadId, userId);
   }
 
   /**

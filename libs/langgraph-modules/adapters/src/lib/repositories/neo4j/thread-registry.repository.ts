@@ -99,23 +99,28 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
    * Get thread metadata by thread ID
    *
    * @param threadId - Thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @returns Thread metadata if found, null otherwise
    */
   @ValidateInput()
   @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
-  async getThread(threadId: string): Promise<ThreadMetadata | null> {
+  async getThread(
+    threadId: string,
+    userId: string
+  ): Promise<ThreadMetadata | null> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
 
       queryBuilder
         .match(`(t:Thread)`)
-        .where(`t.threadId = $threadId`)
+        .where(`t.threadId = $threadId AND t.userId = $userId`)
         .return(`t`);
 
       const baseQuery = queryBuilder.getStatement();
       const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
         threadId,
+        userId,
       });
 
       const result = await this.neogma.run(query, params);
@@ -127,7 +132,7 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
       return this.mapToThreadMetadata(result.records[0].get('t'));
     } catch (error) {
       this.logger.error(
-        `Failed to get thread ${threadId}`,
+        `Failed to get thread ${threadId} for user ${userId}`,
         error instanceof Error ? error.stack : String(error)
       );
       throw new Error(
@@ -195,6 +200,7 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
    * Update thread metadata
    *
    * @param threadId - Thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @param updates - Partial updates to apply
    */
   @ValidateInput()
@@ -202,11 +208,12 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
   @Safe()
   async updateThread(
     threadId: string,
+    userId: string,
     updates: Partial<ThreadMetadata>
   ): Promise<void> {
     try {
       const setClauses: string[] = [];
-      const params: Record<string, unknown> = { threadId };
+      const params: Record<string, unknown> = { threadId, userId };
 
       if (updates.lastMessageAt) {
         setClauses.push('t.lastMessageAt = datetime($lastMessageAt)');
@@ -232,7 +239,7 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
 
       queryBuilder
         .match(`(t:Thread)`)
-        .where(`t.threadId = $threadId`)
+        .where(`t.threadId = $threadId AND t.userId = $userId`)
         .set(setClauses.join(', '))
         .return('t');
 
@@ -245,7 +252,7 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
       await this.neogma.run(query, boundParams);
     } catch (error) {
       this.logger.error(
-        `Failed to update thread ${threadId}`,
+        `Failed to update thread ${threadId} for user ${userId}`,
         error instanceof Error ? error.stack : String(error)
       );
       throw new Error(
@@ -260,24 +267,26 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
    * Delete thread by ID
    *
    * @param threadId - Thread identifier
+   * @param userId - User identifier for authorization (prevents IDOR)
    * @returns true if deleted, false if not found
    */
   @ValidateInput()
   @AuditLog({ logLevel: 'detailed', enabled: true, logSuccess: true })
   @Safe()
-  async deleteThread(threadId: string): Promise<boolean> {
+  async deleteThread(threadId: string, userId: string): Promise<boolean> {
     try {
       const queryBuilder = this.neogma.createQueryBuilder();
 
       queryBuilder
         .match(`(t:Thread)`)
-        .where(`t.threadId = $threadId`)
+        .where(`t.threadId = $threadId AND t.userId = $userId`)
         .delete('t')
         .return('count(t) as deletedCount');
 
       const baseQuery = queryBuilder.getStatement();
       const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
         threadId,
+        userId,
       });
 
       const result = await this.neogma.run(query, params);
@@ -287,7 +296,7 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
       return deletedCount > 0;
     } catch (error) {
       this.logger.error(
-        `Failed to delete thread ${threadId}`,
+        `Failed to delete thread ${threadId} for user ${userId}`,
         error instanceof Error ? error.stack : String(error)
       );
       throw new Error(
