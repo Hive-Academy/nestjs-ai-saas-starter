@@ -32,6 +32,18 @@ export {
   type BaseStoreTokenType,
 } from './lib/tokens/base-store.token';
 
+export {
+  THREAD_REGISTRY_TOKEN,
+  type ThreadRegistryTokenType,
+} from './lib/tokens/thread-registry.token';
+
+// Thread Registry Interface & Types
+export {
+  IThreadRegistryStore,
+  type ThreadMetadata,
+  type ThreadListOptions,
+} from './lib/interfaces/thread-registry-store.interface';
+
 // Type-Safe Utilities
 export { RunnableConfigStoreHelpers } from './lib/utils/runnable-config-store.helpers';
 
