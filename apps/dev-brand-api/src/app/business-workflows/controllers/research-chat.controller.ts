@@ -687,9 +687,25 @@ export class ResearchChatController {
       // Reference: implementation-plan.md:463
       const threadId = `research-${Date.now()}-${userId}`;
 
-      // NOTE: State is created when user sends first message
-      // This endpoint just returns thread ID for frontend to use
-      this.logger.log(`Created new conversation thread: ${threadId}`);
+      // Create thread in ThreadRegistryStore
+      if (this.threadRegistry) {
+        try {
+          await this.threadRegistry.createThread(userId, {
+            title: dto.initialQuery || 'New Research',
+            metadata: {
+              source: 'web_ui',
+              workflowType: 'researcher',
+              initialQuery: dto.initialQuery,
+            },
+          });
+          this.logger.log(`✅ Thread created in registry: ${threadId}`);
+        } catch (error: any) {
+          this.logger.warn(
+            `Failed to create thread in registry: ${error.message}`
+          );
+          // Continue - graceful degradation
+        }
+      }
 
       return {
         threadId,
