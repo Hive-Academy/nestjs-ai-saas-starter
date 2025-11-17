@@ -13,6 +13,8 @@ import {
   UnauthorizedException,
   NotFoundException,
   InternalServerErrorException,
+  Inject,
+  Optional,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,7 +32,13 @@ import {
   NewConversationResponseDto,
   NewConversationDto,
   ConversationListResponseDto,
+  ConversationSummaryDto,
 } from '../business-workflows/controllers/dto/conversation.dto';
+import {
+  THREAD_REGISTRY_TOKEN,
+  type IThreadRegistryStore,
+  type ThreadMetadata,
+} from '@hive-academy/langgraph-memory';
 
 /**
  * 🎯 DEVBRAND WORKFLOW CONTROLLER - SSE STREAMING PATTERN
@@ -122,8 +130,17 @@ export class DevBrandController {
 
   constructor(
     private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
-    private readonly workflowResumptionService: WorkflowResumptionService
-  ) {}
+    private readonly workflowResumptionService: WorkflowResumptionService,
+    @Optional()
+    @Inject(THREAD_REGISTRY_TOKEN)
+    private readonly threadRegistry?: IThreadRegistryStore
+  ) {
+    if (!this.threadRegistry) {
+      this.logger.log(
+        '⚠️  ThreadRegistryStore not configured - conversation list will be empty'
+      );
+    }
+  }
 
   /**
    * Start DevBrand workflow (non-blocking)
@@ -301,19 +318,48 @@ export class DevBrandController {
     );
 
     try {
-      // NOTE: WorkflowResumptionService doesn't expose listThreads()
-      // RISK MITIGATION: Return empty list for POC
-      // TODO: Implement checkpoint storage query or extend service with listThreads()
-      // Reference: implementation-plan.md:1976-2020 (Risk 1 mitigation)
+      // Check if ThreadRegistryStore available
+      if (!this.threadRegistry) {
+        this.logger.log('Thread registry unavailable - returning empty list');
+        return {
+          conversations: [],
+          totalCount: 0,
+          hasMore: false,
+        };
+      }
 
-      this.logger.warn(
-        '⚠️  Thread listing not implemented - checkpoint storage query needed'
+      // Retrieve threads from registry
+      const threads = await this.threadRegistry.listThreads(userId, {
+        limit: 50,
+        orderBy: 'lastMessageAt',
+        orderDirection: 'DESC',
+      });
+
+      // Map ThreadMetadata to ConversationSummaryDto
+      const conversations: ConversationSummaryDto[] = threads.map(
+        (thread: ThreadMetadata) => ({
+          threadId: thread.threadId,
+          preview:
+            thread.title ||
+            `Conversation ${thread.createdAt.toLocaleDateString()}`,
+          timestamp: thread.lastMessageAt.toISOString(),
+          status: 'active' as const,
+          metadata:
+            (thread.metadata as
+              | {
+                  query?: string;
+                  reportTitle?: string;
+                  researchStatus?: string;
+                }
+              | undefined) || {},
+          unread: false,
+        })
       );
 
       return {
-        conversations: [],
-        totalCount: 0,
-        hasMore: false,
+        conversations,
+        totalCount: threads.length,
+        hasMore: threads.length === 50, // Basic pagination check
       };
     } catch (error: any) {
       this.logger.error(
