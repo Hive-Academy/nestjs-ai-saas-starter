@@ -7,3 +7,4 @@ export * from './approval-chain.repository';
 export * from './confidence-pattern.repository';
 export * from './feedback.repository';
 export * from './interruption.repository';
+export * from './thread-registry.repository';

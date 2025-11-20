@@ -6,7 +6,11 @@ import type { MemoryModuleOptions } from '@hive-academy/langgraph-memory';
  * TASK_2025_039: BaseStore Pattern Migration
  * - Simplified to use LangGraph native BaseStore interface
  * - ChromaDBBaseStore implementation handles storage internally
- * - No adapter configuration needed (injected by app.module.ts)
+ *
+ * TASK_2025_052: Thread Registry Integration
+ * - Thread registry adapter is now injected in app.module.ts via forRootAsync
+ * - Follows the same pattern as HitlModule for proper dependency injection
+ * - Prevents direct coupling between library modules
  */
 export function getMemoryConfig(): MemoryModuleOptions {
   return {
@@ -15,6 +19,9 @@ export function getMemoryConfig(): MemoryModuleOptions {
 
     // Enable semantic search capabilities
     enableSemanticSearch: process.env.MEMORY_SEMANTIC_SEARCH_ENABLED === 'true',
+
+    // NOTE: threadRegistry is injected in app.module.ts via forRootAsync
+    // This prevents direct dependency between MemoryModule and LangGraphAdaptersModule
   };
 }
 
@@ -26,5 +33,7 @@ export function getMemoryDevConfig(): MemoryModuleOptions {
   return {
     collection: 'langgraph_store_dev',
     enableSemanticSearch: true, // Always enabled in dev
+
+    // NOTE: threadRegistry is injected in app.module.ts via forRootAsync
   };
 }

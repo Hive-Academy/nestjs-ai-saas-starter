@@ -33,7 +33,6 @@ const HIVE_LIBRARIES = [
   'langgraph-memory',
   'langgraph-monitoring',
   'langgraph-platform',
-  'langgraph-time-travel',
   'langgraph-workflow-engine',
   'langgraph-angular',
 ];

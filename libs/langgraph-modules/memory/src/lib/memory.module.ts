@@ -224,6 +224,9 @@ export class MemoryModule {
       },
     ];
 
+    // Build exports array - conditionally include THREAD_REGISTRY_TOKEN
+    const exports: any[] = [BASE_STORE_TOKEN, LangGraphStoreRepository];
+
     // Conditionally add ThreadRegistryStore provider
     if (options.threadRegistry) {
       const adapterConfig = options.threadRegistry;
@@ -242,6 +245,8 @@ export class MemoryModule {
           useValue: adapterConfig.adapter,
         });
       }
+      // Only export THREAD_REGISTRY_TOKEN when it's provided
+      exports.push(THREAD_REGISTRY_TOKEN);
     } else {
       // Log warning when threadRegistry not configured
       console.warn(
@@ -258,11 +263,7 @@ export class MemoryModule {
         ChromaDBModule.forFeature([LangGraphStoreEntity]),
       ],
       providers,
-      exports: [
-        BASE_STORE_TOKEN,
-        THREAD_REGISTRY_TOKEN,
-        LangGraphStoreRepository,
-      ],
+      exports,
       global: true, // Make BaseStore and ThreadRegistry available globally
     };
   }
@@ -317,7 +318,7 @@ export class MemoryModule {
         },
         inject: [LangGraphStoreRepository],
       },
-      // ThreadRegistryStore provider (async factory)
+      // ThreadRegistryStore provider (async factory) - ALWAYS created to check config
       {
         provide: THREAD_REGISTRY_TOKEN,
         useFactory: (moduleOptions: MemoryModuleOptions) => {
@@ -344,6 +345,15 @@ export class MemoryModule {
       },
     ];
 
+    // Build exports array - BASE_STORE_TOKEN and LangGraphStoreRepository always exported
+    // THREAD_REGISTRY_TOKEN always exported in async mode since provider always exists
+    // (returns null when not configured)
+    const exports: any[] = [
+      BASE_STORE_TOKEN,
+      THREAD_REGISTRY_TOKEN,
+      LangGraphStoreRepository,
+    ];
+
     return {
       module: MemoryModule,
       imports: [
@@ -355,11 +365,7 @@ export class MemoryModule {
         ...(options.imports || []),
       ],
       providers,
-      exports: [
-        BASE_STORE_TOKEN,
-        THREAD_REGISTRY_TOKEN,
-        LangGraphStoreRepository,
-      ],
+      exports,
       global: true, // Make BaseStore and ThreadRegistry available globally
     };
   }

@@ -3,7 +3,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // Core library imports
-import { MemoryModule } from '@hive-academy/langgraph-memory';
+import {
+  MemoryModule,
+  MemoryModuleOptions,
+  IThreadRegistryStore,
+} from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
@@ -123,8 +127,22 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
     // Application-specific repositories (analytics and business domain)
     RepositoryModule,
 
-    // Memory module with BaseStore pattern (ChromaDBBaseStore injected internally)
-    MemoryModule.forRoot(getMemoryConfig()),
+    // Memory module with BaseStore pattern and thread registry adapter
+    MemoryModule.forRootAsync({
+      imports: [LangGraphAdaptersModule],
+      useFactory: async (
+        threadRegistryAdapter: IThreadRegistryStore
+      ): Promise<MemoryModuleOptions> => {
+        return {
+          ...getMemoryConfig(),
+          threadRegistry: {
+            adapter: threadRegistryAdapter, // Inject adapter instance via token
+            defaultLimit: 50,
+          },
+        };
+      },
+      inject: ['THREAD_REGISTRY_ADAPTER'], // Inject via token from LangGraphAdaptersModule
+    }),
 
     // HITL module - Neo4j storage adapters (NO checkpoint injection needed)
     HitlModule.forRootAsync({
