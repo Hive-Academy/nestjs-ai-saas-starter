@@ -2,64 +2,26 @@
 
 ## Overview
 
-The **Workflow Engine** is the unified orchestration layer that consolidates three previously separate packages into a single, cohesive solution:
+The **Workflow Engine** is the unified orchestration layer for building LangGraph workflows in NestJS. It consolidates three previously separate concerns into a single, cohesive library:
 
 1. **Functional API** - Decorator-driven workflow definitions with task-based and node-based patterns
-2. **Multi-Agent** - Sophisticated multi-agent coordination with topology patterns (supervisor, swarm, hierarchical, network)
-3. **Workflow Engine Core** - Metadata processing, execution services, and debugging utilities
+2. **Multi-Agent** - Sophisticated multi-agent coordination with topology patterns
+3. **Tool Integration** - Automatic tool discovery, binding, and execution
 
-This library provides a **decorator-first** architecture for building LangGraph workflows in NestJS applications, with zero-config defaults, automatic registration, and intelligent type inference.
+**Architecture Philosophy:**
 
----
-
-## Architecture Layers
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   APPLICATION LAYER                         │
-│  (Business Workflows, Agents, Custom Implementations)       │
-└─────────────────────────────────────────────────────────────┘
-                            ▲
-                            │ Consumes Decorators
-                            │
-┌─────────────────────────────────────────────────────────────┐
-│              @hive-academy/langgraph-workflow-engine        │
-│                                                              │
-│  ┌───────────────┐  ┌───────────────┐  ┌────────────────┐  │
-│  │ Functional API│  │  Multi-Agent  │  │  Core Engine   │  │
-│  │               │  │               │  │                │  │
-│  │ @Workflow     │  │ @Agent        │  │ Metadata       │  │
-│  │ @Node/@Edge   │  │ @MultiAgent   │  │ Processor      │  │
-│  │ @Task         │  │ @Tool         │  │ Execution      │  │
-│  │ @Entrypoint   │  │               │  │ Services       │  │
-│  └───────────────┘  └───────────────┘  └────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                            ▲
-                            │ Uses Core Interfaces
-                            │
-┌─────────────────────────────────────────────────────────────┐
-│              @hive-academy/langgraph-core                   │
-│  (Shared Interfaces, Types, Constants, Annotations)        │
-└─────────────────────────────────────────────────────────────┘
-```
+- **Decorator-First**: Pure decorator-driven architecture, no base classes required
+- **Zero-Config Defaults**: Sensible defaults with opt-in customization
+- **Type-Safe**: Full TypeScript support with intelligent type inference
+- **NestJS Native**: Seamless DI integration and module composition
 
 ---
 
-## Decorator Registration & Consumption
+## Quick Start
 
-### How Decorators Work
-
-All decorators in the workflow-engine follow a **metadata-driven registration** pattern:
-
-1. **Metadata Storage**: Decorators use `Reflect.defineMetadata()` to attach configuration to classes/methods
-2. **NestJS Integration**: Decorators apply `SetMetadata()` for NestJS DI compatibility
-3. **Runtime Discovery**: Services (MetadataProcessorService, WorkflowExecutionService) read metadata at runtime
-4. **Automatic Registration**: No manual registration required - decorators self-register via reflection
-
-### Module Registration Pattern
+### Module Registration
 
 ```typescript
-// App Module
 import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
 
 @Module({
@@ -77,179 +39,234 @@ import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
       execution: {
         defaultTimeout: 60000,
         streamingEnabled: true,
-        parallelExecution: true,
         maxConcurrency: 10,
       },
-      debugging: {
-        enabled: true,
-        logLevel: 'debug',
-        traceExecution: true,
-      },
-    }),
-
-    // OR: Async configuration with dependency injection
-    WorkflowEngineModule.forRootAsync({
-      useFactory: (streamingService: StreamingService) => ({
-        streamingAdapter: streamingService,
-        execution: { streamingEnabled: true },
-      }),
-      inject: [StreamingService],
     }),
   ],
-  providers: [
-    // Your workflow classes with decorators
-    PersonalBrandStrategistAgent,
-    ContentCreatorAgent,
-    DevBrandChatWorkflow,
-  ],
+  providers: [MyWorkflow],
 })
 export class AppModule {}
 ```
 
 **Key Points:**
 
-- `WorkflowEngineModule` is marked as `global: true` - available everywhere
-- Exports `MetadataProcessorService` and `WorkflowExecutionService` for runtime use
-- Stores configuration in `WORKFLOW_ENGINE_MODULE_OPTIONS` token for decorator access
-- No base classes required - pure decorator-driven architecture
+- `WorkflowEngineModule` is `global: true` - available everywhere
+- No manual registration needed - decorators handle everything
+- Configuration stored in `WORKFLOW_ENGINE_MODULE_OPTIONS` token
 
 ---
 
-## Decorator Categories
+## Workflow Patterns
 
-### 1. Functional API Decorators
+### Two Distinct Patterns
 
-#### @FunctionalWorkflow
+The workflow-engine supports two mutually exclusive patterns:
 
-**Purpose**: Marks a class as a LangGraph workflow with declarative configuration
+1. **Task-Based** (`FUNCTIONAL_TASK`): Sequential, linear execution
+   - Decorators: `@Entrypoint`, `@Task`, `@LLMTask`
+   - Use Case: Simple pipelines, sequential workflows
+2. **Node-Based** (`FUNCTIONAL_NODE`): Complex graph routing
+   - Decorators: `@Node`, `@Edge`
+   - Use Case: Conditional branching, dynamic routing
 
-**Registration**:
+**CRITICAL**: These patterns are mutually exclusive. Mixing `@Task` with `@Node` in the same workflow will throw a validation error.
 
-- Stores workflow metadata via `WORKFLOW_METADATA_KEY`
-- Wraps constructor to apply configuration and enable Time-Travel auto-registration
-- Preserves NestJS DI metadata for proper dependency injection
+---
 
-**Consumption**:
+## Pattern 1: Task-Based Workflows
+
+### Basic Example
 
 ```typescript
-import { FunctionalWorkflow, Node, Edge } from '@hive-academy/langgraph-workflow-engine';
+import {
+  FunctionalWorkflow,
+  Entrypoint,
+  Task,
+  WorkflowType,
+  TaskExecutionContext,
+  TaskExecutionResult,
+} from '@hive-academy/langgraph-workflow-engine';
 
 @FunctionalWorkflow({
-  name: 'customer-support',
-  description: 'Customer support automation workflow',
-  type: WorkflowType.FUNCTIONAL_NODE, // Explicit pattern declaration
+  name: 'data-pipeline',
+  type: WorkflowType.FUNCTIONAL_TASK, // Explicit pattern declaration
   streaming: true,
-  cache: true,
-  hitl: { enabled: true, timeout: 120000 },
-  pattern: 'supervisor',
-  interruptNodes: ['human_approval'],
-  timeTravel: true, // Auto-register with Time-Travel service
 })
 @Injectable()
-export class CustomerSupportWorkflow {
-  // No base class needed - decorator handles everything
+export class DataPipelineWorkflow {
   constructor(private llm: LlmProviderService) {}
 
-  @Node({ type: 'llm' })
-  async analyzeRequest(state: WorkflowState) {
-    // Implementation
+  @Entrypoint({ timeout: 10000 })
+  async ingest(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+
+    // Load data from source
+    const data = await this.loadData();
+
+    return {
+      state: { ...state, data, ingested: true },
+    };
+  }
+
+  @Task({ dependsOn: ['ingest'] })
+  async validate(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+
+    // Validate data quality
+    const valid = this.validateData(state.data);
+
+    return {
+      state: { ...state, validated: valid },
+    };
+  }
+
+  @Task({ dependsOn: ['validate'] })
+  async transform(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+
+    // Transform data
+    const transformed = this.transformData(state.data);
+
+    return {
+      state: { ...state, transformed },
+    };
   }
 }
 ```
 
-**Configuration Merging**:
+### Execution Order
 
-1. Module defaults (from `WorkflowEngineModule.forRoot()`)
-2. Decorator-level defaults (hardcoded sensible defaults)
-3. User-provided options (highest priority)
-
-**Auto-Registration Features**:
-
-- **Time-Travel Integration**: Automatically emits `workflow.auto-register` event when `timeTravel: true`
-- **Event-Based Discovery**: Uses global EventEmitter2 for loose coupling
-- **Graceful Degradation**: Silently skips if Time-Travel module not available
-
----
-
-#### @Node
-
-**Purpose**: Marks a method as a workflow node (graph vertex)
-
-**Registration**:
-
-- Stores node metadata in `WORKFLOW_NODES_KEY` array on class
-- Stores method-specific metadata via `node:metadata` key
-- Wraps method to add node context, approval checks, timeout handling
-
-**Consumption**:
+Tasks execute in **source code order** (top-to-bottom) by default. You can override this with `dependsOn`:
 
 ```typescript
-@Node({
-  id: 'analyze_data',        // Optional - defaults to method name
-  name: 'Data Analyzer',
-  description: 'Analyzes incoming data',
-  type: 'llm',              // standard | tool | llm | human | subgraph | stream | condition | aggregator
-  requiresApproval: true,   // Enable HITL approval
-  confidenceThreshold: 0.8,
-  maxRetries: 3,
-  timeout: 30000,
-  tags: ['analysis', 'critical']
-})
-async analyzeData(state: WorkflowState): Promise<Partial<WorkflowState>> {
-  // Node logic
-  return { analysis: result };
+@Task({ dependsOn: ['step1', 'step2'] }) // Waits for both
+async step3(context: TaskExecutionContext) { ... }
+```
+
+### State Management
+
+**Define Custom State:**
+
+```typescript
+import { FunctionalWorkflowState } from '@hive-academy/langgraph-core';
+
+export interface MyWorkflowState extends FunctionalWorkflowState {
+  userId: string;
+  data: any[];
+  processed: boolean;
 }
 ```
 
-**Special Node Decorators** (convenience wrappers):
+**Access State in Tasks:**
 
-- `@StartNode()` - Entry point (id: 'start')
-- `@EndNode()` - Terminal node (id: 'end')
-- `@ApprovalNode()` - Human-in-the-loop (type: 'human', requiresApproval: true)
-- `@StreamNode()` - Streaming node (type: 'stream')
-- `@ConditionNode()` - Routing logic (type: 'condition')
-- `@ToolNode()` - Tool execution (type: 'tool')
-- `@LLMNode()` - LLM-powered (type: 'llm')
-- `@AggregatorNode()` - Result aggregation (type: 'aggregator')
-- `@SubgraphNode()` - Subgraph invocation (type: 'subgraph')
+```typescript
+@Task()
+async processData(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  const state = context.state as MyWorkflowState;
 
-**Pattern Validation**:
+  // Modify state
+  const processed = state.data.map(item => ({ ...item, processed: true }));
 
-- Enforces `node-based` pattern via `validateDecoratorPattern()`
-- Mutually exclusive with `@Entrypoint` and `@Task` decorators
-- Validates at decoration time (not runtime)
+  return {
+    state: { ...state, data: processed, processed: true }
+  };
+}
+```
+
+**IMPORTANT**: Always return a new state object. Do not mutate `context.state` directly.
 
 ---
 
-#### @Edge
+## Pattern 2: Node-Based Workflows
 
-**Purpose**: Defines edges (transitions) between nodes
+### Basic Example
 
-**Registration**:
+```typescript
+import {
+  FunctionalWorkflow,
+  Node,
+  Edge,
+  WorkflowType,
+} from '@hive-academy/langgraph-workflow-engine';
+import type { WorkflowState } from '@hive-academy/langgraph-core';
 
-- Stores edge metadata in `WORKFLOW_EDGES_KEY` array on class
-- Stores method-specific metadata via `edge:metadata` key
-- Supports functional conditions (method body evaluated as boolean)
+@FunctionalWorkflow({
+  name: 'approval-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE,
+})
+@Injectable()
+export class ApprovalWorkflow {
+  @Node({ id: 'analyze', type: 'llm' })
+  async analyze(state: WorkflowState): Promise<Partial<WorkflowState>> {
+    const llm = await this.llm.getLLM({ temperature: 0.1 });
+    const analysis = await llm.invoke([...]);
 
-**Consumption**:
+    return { analysis, confidence: analysis.confidence };
+  }
 
-**Simple Edge** (unconditional):
+  @Edge('analyze', 'approve')
+  shouldApprove(state: WorkflowState): boolean {
+    return state.confidence >= 0.9 && state.riskLevel === 'low';
+  }
+
+  @Edge('analyze', 'review')
+  needsReview(state: WorkflowState): boolean {
+    return state.confidence >= 0.6 && state.confidence < 0.9;
+  }
+
+  @Edge('analyze', 'reject')
+  shouldReject(state: WorkflowState): boolean {
+    return state.confidence < 0.6;
+  }
+
+  @Node({ id: 'approve' })
+  async approve(state: WorkflowState): Promise<Partial<WorkflowState>> {
+    return { approved: true, status: 'approved' };
+  }
+
+  @Node({ id: 'review', type: 'human' })
+  async review(state: WorkflowState): Promise<Partial<WorkflowState>> {
+    // Human-in-the-loop review
+    return { needsHumanReview: true };
+  }
+
+  @Node({ id: 'reject' })
+  async reject(state: WorkflowState): Promise<Partial<WorkflowState>> {
+    return { approved: false, status: 'rejected' };
+  }
+}
+```
+
+### Node Types
+
+- **`standard`**: Default node type
+- **`llm`**: LLM-powered node (requires LLM service)
+- **`tool`**: Tool execution node
+- **`human`**: Human-in-the-loop approval
+- **`condition`**: Routing/conditional logic
+- **`stream`**: Streaming response node
+- **`subgraph`**: Nested subworkflow
+- **`aggregator`**: Result aggregation
+
+### Edge Patterns
+
+**1. Simple Edge (Unconditional):**
+
+```typescript
+@Edge('step1', 'step2')
+simpleTransition() {} // Always true
+```
+
+**2. Functional Condition (Method Body):**
 
 ```typescript
 @Edge('analyze', 'process')
-analyzeToProcess() {} // Empty method - always true
-```
-
-**Functional Condition Edge** (method body as condition):
-
-```typescript
-@Edge('analyze', 'approve')
-shouldApprove(state: WorkflowState): boolean {
-  return state.confidence >= 0.9 && state.riskLevel === 'low';
+shouldProcess(state: WorkflowState): boolean {
+  return state.score > 0.8 && state.verified;
 }
 ```
 
-**Inline Condition Edge** (lambda in options):
+**3. Inline Condition (Lambda):**
 
 ```typescript
 @Edge('process', 'notify', {
@@ -258,10 +275,10 @@ shouldApprove(state: WorkflowState): boolean {
 notifyOnComplete() {}
 ```
 
-**Conditional Routing Edge** (dynamic target selection):
+**4. Dynamic Routing (Return Target):**
 
 ```typescript
-@Edge('assessment', (state) => {
+@Edge('assess', (state) => {
   if (state.score > 0.9) return 'auto_approve';
   if (state.score > 0.7) return 'human_review';
   return 'reject';
@@ -269,133 +286,81 @@ notifyOnComplete() {}
 routeByScore() {}
 ```
 
-**Special Edge Decorators** (convenience wrappers):
-
-1. **@ConditionalEdge** - Multi-path routing with named routes:
-
-```typescript
-@ConditionalEdge('analyze', {
-  'high_confidence': 'auto_process',
-  'medium_confidence': 'human_review',
-  'low_confidence': 'reject'
-}, { default: 'fallback' })
-routeByConfidence(state: WorkflowState): string {
-  if (state.confidence > 0.9) return 'high_confidence';
-  if (state.confidence > 0.6) return 'medium_confidence';
-  return 'low_confidence';
-}
-```
-
-2. **@ConfidenceRoute** - Threshold-based routing:
-
-```typescript
-@ConfidenceRoute('evaluate', {
-  highConfidence: { threshold: 0.9, target: 'auto_approve' },
-  mediumConfidence: { threshold: 0.6, target: 'human_review' },
-  lowConfidence: { target: 'reject' },
-  default: 'fallback'
-})
-routeByConfidenceThreshold() {}
-```
-
-3. **@FallbackEdge** - Default/catch-all edge:
-
-```typescript
-@FallbackEdge('process', 'error_handler')
-processFallback() {} // Lower priority than other edges
-```
-
-4. **@ErrorEdge** - Error-triggered edge:
-
-```typescript
-@ErrorEdge('risky_operation', 'error_recovery')
-handleRiskyError() {} // Only traverses if state.error exists
-```
-
-**Pattern Validation**:
-
-- Enforces `node-based` pattern via `validateDecoratorPattern()`
-- Mutually exclusive with `@Entrypoint` and `@Task` decorators
-
 ---
 
-#### @Entrypoint & @Task
+## Advanced: LLM Task Decorator
 
-**Purpose**: Sequential/linear workflow pattern (alternative to @Node/@Edge)
+The `@LLMTask` decorator enables **autonomous tool calling** in task-based workflows without converting to node-based patterns.
 
-**Pattern**: Task-based workflows execute in decorator order (top-to-bottom in class)
+### Problem It Solves
 
-**Registration**:
+Traditional task workflows execute linearly. If an LLM needs to call tools, you'd have to:
 
-- Stores task metadata in `WORKFLOW_NODES_KEY` (tasks are nodes internally)
-- Automatically generates linear edges between tasks
-- Entrypoint is always first, tasks follow in order
+1. Convert to node-based pattern
+2. Implement complex routing logic
+3. Manage tool loops manually
 
-**Consumption**:
+`@LLMTask` automates this while keeping sequential workflow simplicity.
+
+### How It Works
 
 ```typescript
 @FunctionalWorkflow({
-  name: 'data-pipeline',
-  type: WorkflowType.FUNCTIONAL_TASK, // Explicit task-based pattern
+  type: WorkflowType.FUNCTIONAL_TASK,
 })
 @Injectable()
-export class DataPipelineWorkflow {
-  @Entrypoint({ description: 'Start data ingestion' })
-  async ingestData(state: WorkflowState) {
-    return { data: loadedData };
+export class ResearchAgent {
+  @Entrypoint()
+  async init(context: TaskExecutionContext) {
+    return { state: { ...context.state, initialized: true } };
   }
 
-  @Task({ description: 'Validate data quality' })
-  async validateData(state: WorkflowState) {
-    return { validated: true };
+  @LLMTask({
+    tools: ['web-search', 'extract-content'],
+    maxToolIterations: 5,
+    toolTimeout: 30000,
+    dependsOn: ['init'],
+  })
+  async research(context: TaskExecutionContext) {
+    // LLM autonomously calls tools
+    // Framework creates: research ↔ tools_research loop
+    // Continues to next task when LLM stops generating tool_calls
+    return { state: context.state };
   }
 
-  @Task({ description: 'Transform data' })
-  async transformData(state: WorkflowState) {
-    return { transformed: processedData };
-  }
-
-  @Task({ description: 'Store results' })
-  async storeResults(state: WorkflowState) {
-    return { stored: true };
+  @Task({ dependsOn: ['research'] })
+  async analyze(context: TaskExecutionContext) {
+    // Standard task - no tool calling
+    return { state: context.state };
   }
 }
 ```
 
-**Pattern Validation**:
+### Generated Graph Structure
 
-- Enforces `task-based` pattern via `validateDecoratorPattern()`
-- Mutually exclusive with `@Node` and `@Edge` decorators
-- Exactly one `@Entrypoint` required per workflow
-- Tasks execute in source code order
+```
+init → research ↔ tools_research
+          ↓ (when no tool_calls)
+       analyze → END
+```
 
----
+### Key Features
 
-#### @LLMTask
+- **Task-Specific Tools**: Each `@LLMTask` can have different tools
+- **Automatic Binding**: Tools resolved from `ToolRegistry` and bound to LLM
+- **Iteration Limits**: `maxToolIterations` prevents infinite loops (default: 10)
+- **Timeout Control**: `toolTimeout` for each tool call (default: 30s)
+- **Auto-Continuation**: Workflow continues when LLM stops calling tools
 
-**Purpose**: Enable LLM-driven tool calling in functional-task workflows
+### Real-World Example
 
-**Pattern**: Task-specific tool routing loops that prevent infinite loops in sequential workflows
-
-**Key Innovation**: Tools route back to the ORIGINATING TASK, not the entrypoint
-
-**Registration**:
-
-- Automatically applies `@Task` decorator (DRY principle)
-- Stores LLM-specific metadata via `LLM_TASK_METADATA_KEY`
-- Validates tool names, enforces task-based pattern
-- Creates task-specific ToolNode at graph compilation
-
-**Consumption**:
+From `apps/dev-brand-api/src/app/business-workflows/agents/examples/research-workflow.agent.ts`:
 
 ```typescript
-import { Agent, Entrypoint, LLMTask, Task } from '@hive-academy/langgraph-workflow-engine';
-import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-
 @Agent({
   description: 'Research assistant with autonomous tool calling',
   workflow: {
-    type: 'functional-task', // ✅ Now supports LLM tool calling via @LLMTask
+    type: 'functional-task',
     streaming: true,
   },
 })
@@ -406,18 +371,13 @@ export class ResearchWorkflowAgent {
     return { state: { ...context.state, initialized: true } };
   }
 
-  // 🔑 @LLMTask enables autonomous tool calling
   @LLMTask({
     description: 'Search the web for information',
-    tools: ['web-search', 'extract-content'], // LLM chooses which to use
-    maxToolIterations: 5, // Max 5 tool execution loops (default: 10)
-    toolTimeout: 30000, // 30s per tool call (default: 30000)
-    dependsOn: ['initializeResearch'], // Same as @Task
+    tools: ['web-search', 'extract-content'],
+    maxToolIterations: 5,
+    dependsOn: ['initializeResearch'],
   })
   async gatherInformation(context: TaskExecutionContext) {
-    // LLM autonomously calls web-search and extract-content
-    // Framework creates: gatherInformation ↔ tools_gatherInformation loop
-    // Continues to next task when no more tool_calls
     return { state: context.state };
   }
 
@@ -428,229 +388,58 @@ export class ResearchWorkflowAgent {
     dependsOn: ['gatherInformation'],
   })
   async analyzeFindings(context: TaskExecutionContext) {
-    // LLM autonomously calls analysis tools
-    // Framework creates: analyzeFindings ↔ tools_analyzeFindings loop
     return { state: context.state };
   }
 
   @Task({ dependsOn: ['analyzeFindings'] })
-  async generateReport(context: TaskExecutionContext) {
-    // Standard task - no tool calling
-    return { state: context.state };
-  }
-
-  @Task({ dependsOn: ['generateReport'] })
   @RequiresApproval({
-    message: (state) => `Research report ready. Please review and approve.`,
+    message: (state) => `Research complete. Review findings.`,
     timeoutMs: 180000,
   })
   async approveReport(context: TaskExecutionContext) {
-    // HITL approval gate works with @LLMTask workflows
-    return { state: context.state };
-  }
-
-  @Task({ dependsOn: ['approveReport'] })
-  async saveReport(context: TaskExecutionContext) {
     return { state: context.state };
   }
 }
 ```
-
-**Graph Structure Generated**:
-
-```
-initializeResearch → gatherInformation ↔ tools_gatherInformation
-                            ↓
-                     analyzeFindings ↔ tools_analyzeFindings
-                            ↓
-                     generateReport → approveReport (HITL) → saveReport → END
-```
-
-**Options Interface**:
-
-```typescript
-interface LLMTaskOptions {
-  /**
-   * Tool names to bind to this task's LLM
-   * Must be registered in WorkflowEngineModule.forRoot({ tools: [...] })
-   */
-  readonly tools: readonly string[];
-
-  /**
-   * Maximum number of tool execution loops before forcing continuation
-   * Prevents infinite loops if LLM continuously generates tool_calls
-   * @default 10
-   */
-  readonly maxToolIterations?: number;
-
-  /**
-   * Timeout for each tool execution in milliseconds
-   * @default 30000 (30 seconds)
-   */
-  readonly toolTimeout?: number;
-
-  /**
-   * Description of the LLM task (shown in logs and debugging)
-   */
-  readonly description?: string;
-
-  /**
-   * Standard task options (dependsOn, timeout, retryCount, etc.)
-   */
-  readonly dependsOn?: readonly string[];
-  readonly timeout?: number;
-  readonly retryCount?: number;
-  readonly errorHandler?: string;
-  readonly metadata?: Record<string, unknown>;
-}
-```
-
-**Key Features**:
-
-- ✅ Task-specific tool sets: Each @LLMTask can have different tools
-- ✅ Automatic tool binding: Tools resolved from ToolRegistry and bound at compilation
-- ✅ Max iteration limits: Prevents infinite loops (default: 10)
-- ✅ Tool timeout: Individual tool call timeout (default: 30s)
-- ✅ Tool validation: Tool names validated against ToolRegistry at compilation
-- ✅ Auto-applies @Task: No need for separate @Task decorator
-- ✅ Compatible with HITL: Works seamlessly with @RequiresApproval
-
-**When to Use @LLMTask**:
-
-1. LLM needs to autonomously choose between tools
-2. Workflow is sequential but requires tool calling
-3. Different tasks need different tool sets
-4. Want to avoid functional-node complexity
-
-**Pattern Validation**:
-
-- Enforces `task-based` pattern via `validateDecoratorPattern()`
-- Mutually exclusive with `@Node` and `@Edge` decorators
-- Validates tool names exist in ToolRegistry
-- Requires at least one tool in `tools` array
-
-**Complete Example**: See `apps/dev-brand-api/src/app/business-workflows/agents/examples/research-workflow.agent.ts`
 
 ---
 
-### 2. Multi-Agent Decorators
+## Multi-Agent Patterns
 
-#### @Agent
+### @Agent Decorator
 
-**Purpose**: Declarative agent configuration with smart defaults and auto-detection
-
-**Registration**:
-
-- Stores agent metadata via `AGENT_METADATA_KEY`
-- Auto-detects agent type by inspecting class hierarchy
-- Auto-applies workflow configuration for `workflow-agent` types
-- Applies `SetMetadata('agent:marker', true)` for discovery
-
-**Consumption**:
-
-**Minimal Agent** (Smart Defaults):
+Declarative agent configuration with smart defaults.
 
 ```typescript
+import { Agent } from '@hive-academy/langgraph-workflow-engine';
+
 @Agent({
-  description: 'Analyzes GitHub repositories for technical achievements',
-})
-@Injectable()
-export class GitHubAnalyzerAgent {
-  // ✅ Auto-derived: id = 'git-hub-analyzer'
-  // ✅ Auto-generated: name = 'Git Hub Analyzer'
-  // ✅ Auto-detected: type = 'simple-agent'
-}
-```
-
-**Workflow Agent** (Auto-Detection):
-
-```typescript
-@Agent({
-  description: 'Multi-step brand analysis and strategy generation',
-})
-@Injectable()
-export class PersonalBrandStrategistAgent extends DeclarativeWorkflowBase {
-  // ✅ Auto-derived: id = 'personal-brand-strategist'
-  // ✅ Auto-generated: name = 'Personal Brand Strategist'
-  // ✅ Auto-detected: type = 'workflow-agent' (from DeclarativeWorkflowBase)
-  // ✅ Auto-applied: workflow = { streaming: true, confidenceThreshold: 0.7, ... }
-}
-```
-
-**Full Control** (Explicit Config):
-
-```typescript
-@Agent({
-  id: 'github-analyzer',
-  name: 'GitHub Analyzer',
-  description: 'Analyzes GitHub repositories for technical achievements',
-  type: 'workflow-agent', // Explicit override
+  description: 'Analyzes GitHub repositories for achievements',
   tools: ['github_analyzer', 'achievement_extractor'],
-  capabilities: ['repository_analysis', 'skill_extraction'],
-  priority: 'high',
-  executionTime: 'medium',
-  outputFormat: 'json',
   workflow: {
-    name: 'github-analysis-workflow',
-    type: 'functional-node', // 🔑 Explicit node-based workflow
-    confidenceThreshold: 0.9,
+    type: 'functional-task',
     streaming: true,
-    multiAgentStreaming: {
-      enabled: true,
-      captureSubgraphs: true,
-      streamMode: 'values',
-    },
-    multiAgentInterruption: {
-      enabled: true,
-      interruptBefore: ['critical_analysis'],
-      interruptAfter: ['final_report'],
-    },
   },
 })
 @Injectable()
 export class GitHubAnalyzerAgent {
-  @Node() async step1() {}
-  @Node() async step2() {}
-  @Edge('step1', 'step2') connectSteps() {}
+  // Auto-derived: id = 'git-hub-analyzer'
+  // Auto-generated: name = 'Git Hub Analyzer'
+
+  @Entrypoint()
+  async start(context: TaskExecutionContext) { ... }
 }
 ```
 
-**Smart Defaults**:
+**Auto-Derivation:**
 
-- `deriveIdFromClassName()` - Converts `GitHubAnalyzerAgent` → `github-analyzer`
-- `humanizeClassName()` - Converts `GitHubAnalyzerAgent` → `GitHub Analyzer`
-- `detectAgentType()` - Inspects prototype chain for `DeclarativeWorkflowBase`, `StreamingWorkflowBase`, `UnifiedWorkflowBase`
-- `createDefaultWorkflowConfig()` - Applies module config + sensible defaults for workflow-agent types
+- `id`: Converts `GitHubAnalyzerAgent` → `git-hub-analyzer`
+- `name`: Converts `GitHubAnalyzerAgent` → `Git Hub Analyzer`
+- `type`: Auto-detects based on class hierarchy
 
-**Unified Workflow Configuration**:
+### @MultiAgent Topologies
 
-- **workflow-agent** type auto-applies `@Workflow` metadata internally
-- Eliminates need for separate `@Workflow` decorator on agent classes
-- `workflow.type` determines decorator pattern ('functional-task' or 'functional-node')
-- `workflow.multiAgentStreaming` controls subgraph streaming behavior
-- `workflow.multiAgentInterruption` controls HITL interruption points
-
-**Pattern Validation**:
-
-- Agent's `workflow.type` enforces decorator pattern validation
-- `functional-task` → only `@Entrypoint` + `@Task` allowed
-- `functional-node` → only `@Node` + `@Edge` allowed
-
----
-
-#### @MultiAgent
-
-**Purpose**: Configures multi-agent coordination topology (supervisor, swarm, hierarchical, network)
-
-**Registration**:
-
-- Stores topology configuration via `MULTI_AGENT_METADATA_KEY`
-- Validates topology schema using Zod schemas
-- Applies `SetMetadata('multi-agent:marker', true)` for discovery
-
-**Consumption**:
-
-**Supervisor Topology**:
+#### 1. Supervisor Pattern
 
 ```typescript
 @MultiAgent({
@@ -661,19 +450,23 @@ export class GitHubAnalyzerAgent {
       model: 'gpt-4',
       temperature: 0.3,
     },
-    workers: ['github-analyzer', 'personal-brand-strategist', 'content-creator'],
+    workers: ['github-analyzer', 'content-creator', 'brand-strategist'],
     routingStrategy: 'llm-based',
     maxIterations: 10,
-    systemPrompt: 'You are a workflow supervisor...',
+    systemPrompt: `You are a workflow supervisor coordinating specialized agents...`,
   },
 })
 @Injectable()
-export class DevBrandSupervisorWorkflow {
-  // Supervisor coordinates worker agents
-}
+export class DevBrandSupervisorWorkflow {}
 ```
 
-**Swarm Topology**:
+**How It Works:**
+
+- Supervisor LLM decides which worker to invoke
+- Workers execute and return results to supervisor
+- Supervisor continues until task complete or max iterations reached
+
+#### 2. Swarm Pattern
 
 ```typescript
 @MultiAgent({
@@ -682,6 +475,7 @@ export class DevBrandSupervisorWorkflow {
     workers: [
       { agentId: 'researcher', capabilities: ['research', 'analysis'] },
       { agentId: 'writer', capabilities: ['content-creation'] },
+      { agentId: 'reviewer', capabilities: ['quality-check'] },
     ],
     communicationProtocol: 'broadcast',
     handoffStrategy: 'capability-based',
@@ -691,7 +485,13 @@ export class DevBrandSupervisorWorkflow {
 export class ResearchSwarmWorkflow {}
 ```
 
-**Hierarchical Topology**:
+**How It Works:**
+
+- Agents communicate via broadcast or direct messaging
+- Handoff based on capabilities or explicit routing
+- Emergent behavior from agent interactions
+
+#### 3. Hierarchical Pattern
 
 ```typescript
 @MultiAgent({
@@ -715,59 +515,41 @@ export class ResearchSwarmWorkflow {}
 export class HierarchicalStrategyWorkflow {}
 ```
 
-**Network Topology**:
+**How It Works:**
 
-```typescript
-@MultiAgent({
-  type: 'network',
-  network: {
-    nodes: ['agent-1', 'agent-2', 'agent-3'],
-    edges: [
-      { from: 'agent-1', to: 'agent-2', condition: (state) => state.confidence > 0.8 },
-      { from: 'agent-2', to: 'agent-3' },
-    ],
-    communicationMode: 'message-passing',
-  },
-})
-@Injectable()
-export class NetworkCollaborationWorkflow {}
-```
-
-**Helper Functions**:
-
-- `getMultiAgentConfig(target)` - Retrieve topology configuration
-- `getSupervisorConfig(target)` - Extract supervisor-specific config
-- `getSwarmConfig(target)` - Extract swarm-specific config
-- `getHierarchicalConfig(target)` - Extract hierarchical-specific config
+- Multi-level supervision hierarchy
+- Each level's supervisor coordinates its workers
+- Results bubble up through levels
 
 ---
 
-#### @Tool
+## Tool Integration
 
-**Purpose**: Registers tools for agent use (LangChain-compatible tools)
-
-**Registration**:
-
-- Stores tool metadata via `TOOL_METADATA_KEY`
-- Marks method as tool via `tool:marker` metadata
-- Validates tool signature and return type
-
-**Consumption**:
+### Registering Tools
 
 ```typescript
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
+
 @Injectable()
 export class GitHubToolsProvider {
   @Tool({
     name: 'github_analyzer',
-    description: 'Analyzes GitHub profile for achievements',
+    description: 'Analyzes GitHub profile for technical achievements',
     schema: {
       username: { type: 'string', required: true },
       includeRepos: { type: 'boolean', default: true },
     },
   })
-  async analyzeGitHubProfile(username: string, includeRepos = true): Promise<GitHubAnalysis> {
+  async analyzeGitHub(username: string, includeRepos = true): Promise<Analysis> {
     // Tool implementation
-    return analysis;
+    const profile = await this.github.getProfile(username);
+    const repos = includeRepos ? await this.github.getRepos(username) : [];
+
+    return {
+      profile,
+      repos,
+      achievements: this.extractAchievements(repos),
+    };
   }
 
   @Tool({
@@ -775,93 +557,19 @@ export class GitHubToolsProvider {
     description: 'Extracts achievements from commit history',
   })
   async extractAchievements(commits: Commit[]): Promise<Achievement[]> {
-    return achievements;
+    return commits.filter((c) => this.isSignificant(c)).map((c) => this.toAchievement(c));
   }
 }
 ```
 
-**Tool Discovery**:
-
-- Tools referenced by name in `@Agent({ tools: ['github_analyzer'] })`
-- Resolved from NestJS DI container at runtime
-- Auto-converted to LangChain StructuredTool format
-
----
-
-## Tool Integration System
-
-### Overview
-
-The workflow-engine module provides automatic tool discovery and binding for LangGraph agents. Tools decorated with @Tool are automatically:
-
-- **Discovered** from registered tool classes via ToolRegistryService
-- **Bound** to LLM instances using `llm.bindTools()` during graph compilation
-- **Executed** autonomously via LangGraph's ToolNode with conditional routing
-- **Streamed** in real-time using 'updates' mode for complete tool visibility
-
-This zero-config approach eliminates manual tool wiring, enabling agents to use tools with just decorator configuration.
-
----
-
-### Quick Start
-
-**Step 1: Create Tool Class**
-
-Create a tool provider class with methods decorated with @Tool:
+### Tool Registration in Module
 
 ```typescript
-import { Injectable } from '@nestjs/common';
-import { Tool } from '@hive-academy/langgraph-workflow-engine';
-import { z } from 'zod';
-
-@Injectable()
-export class CalculatorTools {
-  @Tool({
-    name: 'calculator',
-    description: 'Performs mathematical calculations on two numbers',
-    schema: z.object({
-      operation: z
-        .enum(['add', 'subtract', 'multiply', 'divide'])
-        .describe('Mathematical operation to perform'),
-      a: z.number().describe('First number'),
-      b: z.number().describe('Second number'),
-    }),
-  })
-  async calculate({ operation, a, b }: { operation: string; a: number; b: number }) {
-    switch (operation) {
-      case 'add':
-        return { result: a + b };
-      case 'subtract':
-        return { result: a - b };
-      case 'multiply':
-        return { result: a * b };
-      case 'divide':
-        if (b === 0) return { error: 'Cannot divide by zero' };
-        return { result: a / b };
-      default:
-        return { error: 'Unknown operation' };
-    }
-  }
-}
-```
-
-**Step 2: Register Tools in Module**
-
-Register tool classes in WorkflowEngineModule.forRoot():
-
-```typescript
-import { Module } from '@nestjs/common';
-import { WorkflowEngineModule } from '@hive-academy/langgraph-workflow-engine';
-import { CalculatorTools } from './tools/calculator.tools';
-import { GitHubTools } from './tools/github.tools';
-import { WebResearchTools } from './tools/web-research.tools';
-
 @Module({
   imports: [
     WorkflowEngineModule.forRoot({
-      tools: [CalculatorTools, GitHubTools, WebResearchTools],
-      execution: {
-        streamingEnabled: true,
+      tools: {
+        providers: [GitHubToolsProvider],
       },
     }),
   ],
@@ -869,1155 +577,424 @@ import { WebResearchTools } from './tools/web-research.tools';
 export class AppModule {}
 ```
 
-**Step 3: Configure Agent Tools**
+### Tool Discovery
 
-Specify tools in @Agent decorator - they're automatically bound to the LLM:
+Tools are automatically:
+
+1. **Discovered** from registered provider classes via `ToolRegistryService`
+2. **Validated** at graph compilation time
+3. **Bound** to LLM instances using `llm.bindTools()`
+4. **Executed** via LangGraph's `ToolNode` with conditional routing
+
+---
+
+## Real-World Example: Chat Workflow
+
+From `apps/dev-brand-api/src/app/business-workflows/workflows/devbrand-chat.workflow.ts`:
 
 ```typescript
-import { Agent, Node, Edge } from '@hive-academy/langgraph-workflow-engine';
-import { Injectable } from '@nestjs/common';
-
-@Agent({
-  description: 'Mathematical assistant that can perform calculations',
-  tools: ['calculator'], // Automatically bound to LLM, zero manual wiring
-  workflow: {
-    type: 'functional-node',
-  },
+@FunctionalWorkflow({
+  name: 'devbrand-chat-workflow',
+  description: 'Conversational interface for DevBrand Chat Studio',
+  type: WorkflowType.FUNCTIONAL_TASK,
+  streaming: true,
+  confidenceThreshold: 0.6,
 })
 @Injectable()
-export class MathAssistantAgent {
-  @Node({ type: 'llm' })
-  async processQuery(state: WorkflowState) {
-    // LLM automatically has calculator tool bound
-    // If user asks "What is 5 + 3?", LLM will call calculator tool
-    return state;
-  }
-
-  @Edge('processQuery', '__end__')
-  finish() {
-    return true;
-  }
-}
-```
-
-**Step 4: Execute Workflow and Stream Tool Events**
-
-Execute the workflow with streaming to see tool execution in real-time:
-
-```typescript
-import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
-
-@Injectable()
-export class WorkflowOrchestrator {
-  constructor(private readonly execution: WorkflowExecutionService) {}
-
-  async runMathAssistant(query: string) {
-    const stream = await this.execution.streamWorkflow(
-      MathAssistantAgent,
-      { messages: [{ role: 'user', content: query }] },
-      { streamMode: 'updates' } // 'updates' mode shows tool execution events
-    );
-
-    for await (const event of stream) {
-      if (event.node === 'tools') {
-        // Tool execution event
-        console.log('Tool executed:', event.data);
-      } else if (event.node === 'processQuery') {
-        // Agent node event
-        console.log('Agent response:', event.data);
-      }
-    }
-  }
-}
-
-// Example usage:
-// User: "What is 15 multiplied by 7?"
-// Output:
-// Tool executed: { operation: 'multiply', a: 15, b: 7, result: 105 }
-// Agent response: { content: "The result is 105" }
-```
-
----
-
-### Tool Execution Flow
-
-The tool execution flow demonstrates how agents autonomously discover, route to, and execute tools:
-
-```
-┌─────────────────┐
-│   User Query    │
-│ "What is 5+3?"  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│  Agent Node (LLM with bound tools)  │
-│  - Receives query                   │
-│  - LLM has access to 'calculator'   │
-└────────┬────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│  LLM Decision                       │
-│  - Decides to use calculator tool   │
-│  - Returns tool_calls in message    │
-└────────┬────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────┐
-│  Conditional Routing                 │
-│  shouldExecuteTools() checks for:    │
-│  - tool_calls present? → 'tools'     │
-│  - no tool_calls? → 'continue'       │
-└────────┬─────────────────────────────┘
-         │
-         ├─────────────┐
-         │             │
-    'tools'       'continue'
-         │             │
-         ▼             ▼
-┌─────────────┐  ┌──────────┐
-│  ToolNode   │  │ Next Node│
-│  Executes   │  │ or END   │
-│  calculator │  └──────────┘
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────────────────────┐
-│  Tool Result                    │
-│  - Appended to state.messages   │
-│  - Returns to Agent Node        │
-└────────┬────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────┐
-│  Agent Node (with tool result)  │
-│  - Synthesizes final response   │
-└────────┬────────────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Final Response  │
-│ "The result is 8"│
-└─────────────────┘
-```
-
-**Key Decision Points**:
-
-- **shouldExecuteTools()**: Checks `lastMessage.tool_calls` array length
-- **Routing**: 'tools' → ToolNode execution, 'continue' → next node or END
-- **Tool Loop**: Tools → Agent → (if more tool_calls) → Tools → Agent → ...
-
----
-
-### Best Practices
-
-**Schema Design**:
-
-- Use `.describe()` on each schema field for better LLM understanding
-- Keep schemas simple - avoid deep nesting (max 2-3 levels)
-- Use enums for constrained choices (e.g., `z.enum(['option1', 'option2'])`)
-- Provide clear, specific descriptions that explain what the field is for
-
-```typescript
-// ✅ GOOD: Clear, simple schema with descriptions
-schema: z.object({
-  username: z.string().describe('GitHub username to analyze'),
-  includePrivate: z.boolean().describe('Whether to include private repos'),
-});
-
-// ❌ BAD: No descriptions, complex nested structure
-schema: z.object({
-  user: z.object({
-    profile: z.object({
-      data: z.object({
-        name: z.string(),
-      }),
-    }),
-  }),
-});
-```
-
-**Tool Naming**:
-
-- Use kebab-case (e.g., 'github-analyzer', not 'GitHubAnalyzer')
-- Be specific about what the tool does (e.g., 'extract-code-snippets' not 'tool1')
-- Keep names concise but descriptive (2-4 words ideal)
-- Tool names must be unique across all registered tools
-
-```typescript
-// ✅ GOOD: Specific, kebab-case names
-@Tool({ name: 'github-profile-analyzer', ... })
-@Tool({ name: 'code-snippet-extractor', ... })
-
-// ❌ BAD: Generic, unclear names
-@Tool({ name: 'tool1', ... })
-@Tool({ name: 'DoStuff', ... })
-```
-
-**Error Handling**:
-
-- Return error objects from tools (don't throw exceptions)
-- Include context in error messages for LLM understanding
-- Let the LLM see errors so it can retry or adjust strategy
-- Use structured error objects with `error` field
-
-```typescript
-// ✅ GOOD: Return error object with context
-@Tool({ name: 'fetch-data', ... })
-async fetchData({ url }: { url: string }) {
-  try {
-    const response = await fetch(url);
-    return { data: await response.json() };
-  } catch (error) {
-    // Return error object - LLM sees this and can adjust
-    return {
-      error: 'Failed to fetch data',
-      reason: error.message,
-      url: url,
-    };
-  }
-}
-
-// ❌ BAD: Throw exception (breaks tool execution flow)
-@Tool({ name: 'fetch-data', ... })
-async fetchData({ url }: { url: string }) {
-  const response = await fetch(url); // Throws if fails
-  return { data: await response.json() };
-}
-```
-
----
-
-### Troubleshooting
-
-**Error: "Tool Not Found: [tool-name]"**
-
-**Cause**: Tool name mismatch between @Agent configuration and @Tool registration
-
-**Solution**:
-
-1. Verify tool class is registered in `WorkflowEngineModule.forRoot({ tools: [...] })`
-2. Check tool name in @Tool decorator matches name in @Agent tools array
-3. Ensure tool name is kebab-case and unique
-
-```typescript
-// Check tool registration
-@Tool({ name: 'github-analyzer' }) // Must match exactly
-async analyzeGitHub() {}
-
-// Check agent configuration
-@Agent({ tools: ['github-analyzer'] }) // Must match @Tool name
-```
-
-**Error: "Duplicate Tool Name: [tool-name]"**
-
-**Cause**: Multiple tools registered with the same name
-
-**Solution**:
-
-1. Search codebase for all @Tool decorators with the same name
-2. Rename duplicate tools to be unique and descriptive
-3. Update @Agent tools arrays to use new unique names
-
-```typescript
-// ❌ BAD: Duplicate tool names
-// File: calculator.tools.ts
-@Tool({ name: 'calculate' })
-async add() {}
-
-// File: advanced-calculator.tools.ts
-@Tool({ name: 'calculate' }) // Duplicate!
-async scientificCalculate() {}
-
-// ✅ GOOD: Unique tool names
-// File: calculator.tools.ts
-@Tool({ name: 'basic-calculator' })
-async add() {}
-
-// File: advanced-calculator.tools.ts
-@Tool({ name: 'scientific-calculator' })
-async scientificCalculate() {}
-```
-
----
-
-### 3. Workflow Engine Core
-
-#### MetadataProcessorService
-
-**Purpose**: Processes decorator metadata and builds LangGraph graphs
-
-**Registration**: Auto-registered by `WorkflowEngineModule.forRoot()`
-
-**Usage**:
-
-```typescript
-@Injectable()
-export class CustomWorkflowService {
-  constructor(private metadata: MetadataProcessorService) {}
-
-  async processWorkflow(workflowClass: Type<any>) {
-    const metadata = this.metadata.extractWorkflowMetadata(workflowClass);
-    const graph = this.metadata.buildGraphFromMetadata(metadata);
-    return graph;
-  }
-}
-```
-
----
-
-#### WorkflowExecutionService
-
-**Purpose**: Executes workflows with streaming, checkpointing, and error handling
-
-**Registration**: Auto-registered by `WorkflowEngineModule.forRoot()`
-
-**Usage**:
-
-```typescript
-@Injectable()
-export class WorkflowOrchestrator {
-  constructor(private execution: WorkflowExecutionService) {}
-
-  async runWorkflow(workflowClass: Type<any>, input: WorkflowState) {
-    const result = await this.execution.execute(workflowClass, {
-      input,
-      streaming: true,
-      checkpoint: true,
-      threadId: 'user-session-123',
-    });
-    return result;
-  }
-}
-```
-
----
-
-## Decorator Pattern Validation
-
-### Pattern Enforcement Rules
-
-The workflow-engine enforces **mutually exclusive decorator patterns** to prevent mixing incompatible workflow styles:
-
-1. **Task-Based Pattern** (`@Entrypoint` + `@Task`)
-
-   - ❌ Cannot use `@Node` or `@Edge`
-   - ✅ Linear execution, sequential tasks
-   - ✅ Declared via `WorkflowType.FUNCTIONAL_TASK` or `workflow.type: 'functional-task'`
-
-2. **Node-Based Pattern** (`@Node` + `@Edge`)
-   - ❌ Cannot use `@Entrypoint` or `@Task`
-   - ✅ Graph-based, conditional routing, complex flows
-   - ✅ Declared via `WorkflowType.FUNCTIONAL_NODE` or `workflow.type: 'functional-node'`
-
-### Validation Implementation
-
-**Location**: `libs/langgraph-modules/workflow-engine/src/lib/utils/functional/decorator-validator.ts`
-
-**Validation Logic**:
-
-```typescript
-export function validateDecoratorPattern(
-  target: any,
-  requiredPattern: 'task-based' | 'node-based',
-  decoratorName: string,
-  workflowName: string
-): void {
-  const workflowMetadata = getWorkflowMetadata(target);
-  const declaredType = workflowMetadata?.type;
-
-  // Check for conflicting decorators
-  const hasEntrypointOrTask =
-    Reflect.getMetadata(WORKFLOW_ENTRYPOINT_KEY, target) ||
-    Reflect.getMetadata(WORKFLOW_TASKS_KEY, target);
-  const hasNodeOrEdge =
-    Reflect.getMetadata(WORKFLOW_NODES_KEY, target) ||
-    Reflect.getMetadata(WORKFLOW_EDGES_KEY, target);
-
-  if (requiredPattern === 'node-based' && hasEntrypointOrTask) {
-    throw new FunctionalWorkflowError(
-      `Cannot use @${decoratorName} with @Entrypoint/@Task in ${workflowName}. Declare workflow type as 'functional-node'.`
-    );
-  }
-
-  if (requiredPattern === 'task-based' && hasNodeOrEdge) {
-    throw new FunctionalWorkflowError(
-      `Cannot use @${decoratorName} with @Node/@Edge in ${workflowName}. Declare workflow type as 'functional-task'.`
-    );
-  }
-}
-```
-
-**Enforcement Points**:
-
-- `@Entrypoint` decorator validates no `@Node`/`@Edge` present
-- `@Task` decorator validates no `@Node`/`@Edge` present
-- `@Node` decorator validates no `@Entrypoint`/`@Task` present
-- `@Edge` decorator validates no `@Entrypoint`/`@Task` present
-
-**Error Messages**:
-
-```
-❌ FunctionalWorkflowError: Cannot use @Node with @Entrypoint/@Task in CustomerSupportWorkflow.
-   Workflows must use EITHER @Entrypoint + @Task (task-based, linear)
-   OR @Node + @Edge (node-based, graph).
-   Declare workflow type as 'functional-node' if using @Node/@Edge.
-```
-
----
-
-## State Management
-
-### Standard Pattern: AgentStateAnnotation + Metadata
-
-All agents use the default `AgentStateAnnotation` with metadata nesting for custom state fields.
-
-**AgentStateAnnotation Fields** (provided by @hive-academy/langgraph-core):
-
-- `messages: BaseMessage[]` - LangGraph message history (concatenates)
-- `metadata: Record<string, unknown>` - **Extensible custom state** (shallow merge)
-- `next: string | undefined` - Multi-agent routing target
-- `current: string | undefined` - Current agent identifier
-- `scratchpad: string` - Collaboration notes (append)
-- `task: string | undefined` - Task description
-- `threadId: string | undefined` - Memory context
-- `userId: string | undefined` - User identifier
-
-### How to Add Custom State
-
-**Step 1: Define Metadata Interface**
-
-Create a metadata interface in `apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts`:
-
-```typescript
-export interface MyAgentMetadata extends WorkflowAgentMetadata {
-  /**
-   * User's research query
-   */
-  query: string;
-
-  /**
-   * Search results from web research
-   */
-  searchResults?: any[];
-
-  /**
-   * Generated report draft
-   */
-  reportDraft?: string;
-
-  /**
-   * User approval status
-   */
-  userApproval?: 'pending' | 'approved' | 'rejected';
-}
-```
-
-**Step 2: Use TypedAgentState in Methods**
-
-```typescript
-import {
-  TypedAgentState,
-  TaskExecutionContext,
-  TaskExecutionResult,
-} from '@hive-academy/langgraph-workflow-engine';
-import type { MyAgentMetadata } from './shared/metadata.types';
-
-@Agent({
-  description: 'My workflow agent',
-  workflow: {
-    type: 'functional-task',
-    // NO channels field - always uses default AgentStateAnnotation
-  },
-})
-@Injectable()
-export class MyAgent {
-  @Entrypoint()
-  async startTask(
-    context: TaskExecutionContext<TypedAgentState<MyAgentMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<MyAgentMetadata>>> {
-    const state = context.state;
-
-    // ✅ Access custom state via state.metadata
-    this.logger.log(`Processing query: ${state.metadata.query}`);
-
-    // ✅ Return partial state update
-    return {
-      state: {
-        ...state,
-        metadata: {
-          ...state.metadata,
-          searchResults: fetchedResults,
-          reportDraft: generatedDraft,
-        },
-      },
-    };
-  }
-
-  @Task({ dependsOn: ['startTask'] })
-  async processResults(
-    context: TaskExecutionContext<TypedAgentState<MyAgentMetadata>>
-  ): Promise<TaskExecutionResult<TypedAgentState<MyAgentMetadata>>> {
-    const state = context.state;
-
-    // ✅ Access results from previous task
-    const results = state.metadata.searchResults;
-
-    return {
-      state: {
-        ...state,
-        metadata: {
-          ...state.metadata,
-          userApproval: 'pending',
-        },
-      },
-    };
-  }
-}
-```
-
-**Step 3: Initialize State When Executing**
-
-```typescript
-import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
-
-@Injectable()
-export class MyService {
-  constructor(private readonly execution: WorkflowExecutionService) {}
-
-  async runWorkflow(userId: string, query: string) {
-    const initialState: TypedAgentState<MyAgentMetadata> = {
-      messages: [],
-      metadata: {
-        userId,
-        query,
-        userApproval: 'pending',
-        // Initialize other metadata fields as needed
-      },
-    };
-
-    const result = await this.execution.execute(MyAgent, initialState, {
-      threadId: `workflow-${Date.now()}`,
-    });
-
-    return result;
-  }
-}
-```
-
-### Why This Pattern?
-
-✅ **Consistency**: All agents use the same pattern
-✅ **Type Safety**: Compile-time type checking via metadata interfaces
-✅ **Compatible**: Works seamlessly with multi-agent supervisor workflows
-✅ **Extensible**: Add custom fields via metadata interfaces
-✅ **No Schema Mismatches**: State access pattern matches StateGraph schema
-
-### ❌ What NOT to Do
-
-**Don't specify custom `channels` in workflow config:**
-
-```typescript
-❌ @Agent({
-     workflow: {
-       channels: CustomStateAnnotation, // REMOVED - causes schema mismatches
-     },
-   })
-```
-
-**Don't access state at root level:**
-
-```typescript
-❌ const value = state.customField; // Wrong - field doesn't exist at root
-✅ const value = state.metadata.customField; // Correct - access via metadata
-```
-
-**Don't create root-level state fields:**
-
-```typescript
-❌ const StateAnnotation = Annotation.Root({
-     customField: Annotation<string>(), // Creates state.customField
-   });
-
-✅ interface MyMetadata {
-     customField: string; // Creates state.metadata.customField
-   }
-```
-
-### Reference Documentation
-
-- **AgentStateAnnotation**: `libs/langgraph-modules/core/src/lib/annotations/agent-state.annotation.ts`
-- **TypedAgentState**: `libs/langgraph-modules/core/src/lib/types/agent.types.ts`
-- **Metadata Examples**: `apps/dev-brand-api/src/app/business-workflows/agents/shared/metadata.types.ts`
-- **Architectural Decision**: `LANGGRAPH_CHANNELS_DECISION.md`
-
----
-
-## Configuration System
-
-### Configuration Hierarchy (Priority Order)
-
-1. **User-Provided Options** (highest priority)
-
-   - Explicit decorator options (`@FunctionalWorkflow({ streaming: false })`)
-   - Explicit `WorkflowEngineModule.forRoot()` options
-
-2. **Module-Level Defaults**
-
-   - Configured via `WorkflowEngineModule.forRoot(options)`
-   - Applied to all workflows unless overridden
-
-3. **Decorator-Level Defaults** (lowest priority)
-   - Hardcoded sensible defaults in decorator implementations
-   - `streaming: true`, `cache: true`, `confidenceThreshold: 0.7`, etc.
-
-### Configuration Accessors
-
-**Functional API Config**:
-
-```typescript
-import { getFunctionalApiConfigWithDefaults } from '@hive-academy/langgraph-workflow-engine';
-
-const config = getFunctionalApiConfigWithDefaults();
-// Returns: { enableStreaming, enableCheckpointing, defaultTimeout, defaultRetryCount }
-```
-
-**Multi-Agent Config**:
-
-```typescript
-import { getMultiAgentConfigWithDefaults } from '@hive-academy/langgraph-workflow-engine';
-
-const config = getMultiAgentConfigWithDefaults();
-// Returns: { streaming, checkpointing, llm, defaultTopology }
-```
-
-**Workflow Engine Config**:
-
-```typescript
-import { getWorkflowEngineConfigWithDefaults } from '@hive-academy/langgraph-workflow-engine';
-
-const config = getWorkflowEngineConfigWithDefaults();
-// Returns: { compilation, execution, debugging }
-```
-
----
-
-## Real-World Example: Personal Brand Strategist Agent
-
-**File**: `apps/dev-brand-api/src/app/business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent.ts`
-
-```typescript
-import { Edge, Node, Agent, LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
-import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import { Injectable } from '@nestjs/common';
-
-/**
- * Unified @Agent decorator with workflow configuration
- * - Smart defaults: id, name auto-derived from class name
- * - Auto-detection: type = 'workflow-agent' (detected from class hierarchy)
- * - Workflow config: Eliminates separate @Workflow decorator
- */
-@Agent({
-  id: 'personal-brand-strategist',
-  name: 'Personal Brand Strategist',
-  description: 'Enhanced Personal Brand Strategist with internal multi-step workflow',
-  type: 'workflow-agent',
-  capabilities: ['brand-analysis', 'strategic-positioning', 'career-guidance'],
-  tools: ['memory-analysis', 'brand-optimization', 'strategy-generation'],
-  priority: 'high',
-  executionTime: 'medium',
-  workflow: {
-    name: 'brand-strategist-workflow',
-    type: 'functional-node', // 🔑 Explicit node-based workflow type
-    multiAgentInterruption: {
-      enabled: true,
-      interruptAfter: ['generateFinalStrategy'], // HITL after strategy generation
-    },
-  },
-})
-@Injectable()
-export class PersonalBrandStrategistAgent {
+export class DevBrandChatWorkflow {
   constructor(
-    private readonly llm: LlmProviderService,
-    private readonly memory: PersonalBrandMemoryService
+    private readonly llmProvider: LlmProviderService,
+    private readonly brandMemory: PersonalBrandMemoryService,
+    private readonly githubTools: GitHubIntegrationTools,
+    private readonly webTools: WebResearchTools
   ) {}
 
-  /**
-   * Nodes: Workflow steps
-   */
-  @Node({ type: 'standard' })
-  async initializeBrandAnalysis(state: TypedAgentState) {
-    return { metadata: { currentStep: 'initialization' } };
-  }
+  @Entrypoint({ timeout: 10000 })
+  async parseUserMessage(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    const chatState = state as ChatWorkflowState;
 
-  @Node({ type: 'standard' })
-  async gatherBrandData(state: TypedAgentState) {
-    const [devContext, brandEvolution] = await Promise.all([
-      this.memory.getDevContext(state.metadata.githubUsername),
-      this.memory.getBrandEvolution(state.metadata.githubUsername),
-    ]);
-    return { metadata: { brandData: { devContext, brandEvolution } } };
-  }
+    // Use LLM to analyze user intent
+    const llm = await this.llmProvider.getLLM({
+      temperature: 0.1,
+      maxTokens: 200,
+    });
 
-  @Node({ type: 'standard' })
-  async analyzeBrandPositioning(state: TypedAgentState) {
-    const model = await this.llm.getLLM({ temperature: 0.3 });
-    const response = await model.invoke([{ role: 'user', content: analysisPrompt }]);
-    const analysis = JSON.parse(response.content.toString());
-    return { metadata: { brandAnalysis: analysis, brandScore: analysis.score } };
-  }
+    const intentPrompt = `Analyze this user message and determine intent:
+Message: "${chatState.userMessage}"
 
-  @Node({ type: 'condition' })
-  async assessBrandStrength(state: TypedAgentState) {
-    const route = state.metadata.brandScore > 0.7 ? 'optimize' : 'rebuild';
-    return { route };
-  }
+Classify intent as one of: analyze-github, create-content, strategy-advice, general-chat
+Extract entities like GitHub username, platforms (LinkedIn, Dev.to), topics.`;
 
-  @Node({ type: 'standard' })
-  async optimizeBrand(state: TypedAgentState) {
-    // Optimization strategy for strong brands
-    return { metadata: { strategyType: 'optimization', finalStrategy: strategy } };
-  }
+    const intentResponse = await llm.invoke([{ role: 'user', content: intentPrompt }]);
+    const intentAnalysis = this.parseIntentResponse(intentResponse.content.toString());
 
-  @Node({ type: 'standard' })
-  async rebuildStrategy(state: TypedAgentState) {
-    // Rebuild strategy for weak brands
-    return { metadata: { strategyType: 'rebuild', finalStrategy: strategy } };
-  }
-
-  /**
-   * Final node with HITL approval requirement
-   * - @RequiresApproval triggers human-in-the-loop flow
-   * - Configured via workflow.multiAgentInterruption.interruptAfter
-   */
-  @Node({ type: 'standard' })
-  @RequiresApproval({
-    confidenceThreshold: 0.7,
-    timeoutMs: 180000,
-    message: (state) => `Brand strategy complete. Please review and approve.`,
-    onTimeout: 'escalate',
-  })
-  async generateFinalStrategy(state: TypedAgentState) {
-    const consolidatedStrategy = {
-      userId: state.metadata.githubUsername,
-      strategyType: state.metadata.strategyType,
-      brandScore: state.metadata.brandScore,
-      strategy: state.metadata.finalStrategy,
-    };
     return {
-      messages: [new AIMessage(consolidatedStrategy.strategy)],
-      metadata: { brandStrategyCompleted: true },
-      next: 'content-creator', // Hand off to next agent
-      task: 'Create content from brand strategy',
+      state: {
+        ...chatState,
+        intent: intentAnalysis.intent,
+        entities: intentAnalysis.entities,
+        confidence: intentAnalysis.confidence,
+      },
     };
   }
 
-  /**
-   * Edges: Workflow transitions
-   * - Simple edges: Empty methods (always true)
-   * - Functional edges: Method body evaluated as boolean
-   */
-  @Edge('initializeBrandAnalysis', 'gatherBrandData')
-  initToGather() {
-    return true;
+  @Task({ dependsOn: ['parseUserMessage'] })
+  async retrieveContext(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    const chatState = state as ChatWorkflowState;
+
+    // Search for relevant memories using ChromaDB semantic search
+    const searchResults = await this.brandMemory.getPersonalizedContentStrategy(
+      chatState.userId,
+      chatState.userMessage
+    );
+
+    // Get developer context from Neo4j
+    const devContext = await this.brandMemory.getDevContext(chatState.userId);
+
+    return {
+      state: {
+        ...chatState,
+        relevantMemories: devContext.recentAchievements || [],
+        userPreferences: searchResults || {},
+      },
+    };
   }
 
-  @Edge('gatherBrandData', 'analyzeBrandPositioning')
-  gatherToAnalyze() {
-    return true;
+  @Task({ dependsOn: ['retrieveContext'] })
+  async executeAction(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    const chatState = state as ChatWorkflowState;
+
+    // Route based on intent (simplified - real version has separate tasks)
+    switch (chatState.intent) {
+      case 'analyze-github':
+        return this.analyzeGitHub(chatState);
+      case 'create-content':
+        return this.createContent(chatState);
+      case 'strategy-advice':
+        return this.provideStrategy(chatState);
+      default:
+        return this.generalChat(chatState);
+    }
   }
 
-  @Edge('analyzeBrandPositioning', 'assessBrandStrength')
-  analyzeToAssess() {
-    return true;
-  }
+  @Task({ dependsOn: ['executeAction'] })
+  async finalizeConversation(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+    const { state } = context;
+    const chatState = state as ChatWorkflowState;
 
-  /**
-   * Conditional edges: Route based on state
-   */
-  @Edge('assessBrandStrength', 'optimizeBrand')
-  shouldOptimizeBrand(state: TypedAgentState): boolean {
-    return state.metadata.brandScore > 0.7;
-  }
+    // Store conversation in ChromaDB for future context
+    await this.brandMemory.storeContentPerformance(chatState.userId, {
+      id: `conv-${chatState.conversationId}-${Date.now()}`,
+      platform: 'devbrand-chat' as const,
+      content: `User: ${chatState.userMessage}\nAssistant: ${chatState.response}`,
+      engagementScore: chatState.confidence,
+      metrics: { views: 1, likes: 0, comments: 0, shares: 0 },
+      createdAt: new Date().toISOString(),
+      userId: chatState.userId,
+    });
 
-  @Edge('assessBrandStrength', 'rebuildStrategy')
-  shouldRebuildBrand(state: TypedAgentState): boolean {
-    return state.metadata.brandScore <= 0.7;
-  }
-
-  @Edge('optimizeBrand', 'generateFinalStrategy')
-  optimizeToFinal() {
-    return true;
-  }
-
-  @Edge('rebuildStrategy', 'generateFinalStrategy')
-  rebuildToFinal() {
-    return true;
+    return {
+      state: {
+        ...chatState,
+        messageHistory: [
+          ...chatState.messageHistory,
+          { role: 'user', content: chatState.userMessage },
+          { role: 'assistant', content: chatState.response },
+        ],
+      },
+    };
   }
 }
 ```
-
-**How It Works**:
-
-1. **Module Registration**: Agent class registered in NestJS module providers
-2. **Decorator Metadata**: `@Agent` stores agent config, `@Node` stores nodes, `@Edge` stores edges
-3. **Runtime Discovery**: `MetadataProcessorService` reads metadata from class
-4. **Graph Building**: Nodes and edges converted to LangGraph graph structure
-5. **Execution**: `WorkflowExecutionService` compiles and executes graph
-6. **HITL Integration**: `@RequiresApproval` triggers interruption flow at `generateFinalStrategy`
-7. **Multi-Agent Handoff**: `next: 'content-creator'` routes to next agent in supervisor workflow
 
 ---
 
 ## Best Practices
 
-### ✅ DO
+### 1. Choose the Right Pattern
 
-1. **Use Explicit Workflow Types**:
+**Use Task-Based When:**
 
-   ```typescript
-   @FunctionalWorkflow({ type: WorkflowType.FUNCTIONAL_NODE })
-   // OR
-   @Agent({ workflow: { type: 'functional-node' } })
-   ```
+- Sequential execution is sufficient
+- Simple pipeline or waterfall flow
+- Each step processes previous step's output
+- Linear dependencies
 
-2. **Leverage Smart Defaults for Agents**:
+**Use Node-Based When:**
 
-   ```typescript
-   @Agent({ description: 'Analyzes GitHub repos' }) // id, name, type auto-derived
-   ```
+- Complex conditional routing needed
+- Dynamic branching based on state
+- Parallel execution paths
+- Fan-out/fan-in patterns
 
-3. **Use Functional Condition Edges**:
+### 2. State Management
 
-   ```typescript
-   @Edge('analyze', 'approve')
-   shouldApprove(state: WorkflowState): boolean {
-     return state.confidence >= 0.9;
-   }
-   ```
+```typescript
+// ✅ CORRECT: Return new state
+@Task()
+async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  return {
+    state: { ...context.state, processed: true }
+  };
+}
 
-4. **Configure Module Once, Apply Everywhere**:
+// ❌ WRONG: Mutating state
+@Task()
+async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  context.state.processed = true; // Don't do this
+  return { state: context.state };
+}
+```
 
-   ```typescript
-   WorkflowEngineModule.forRoot({
-     execution: { streamingEnabled: true, defaultTimeout: 60000 },
-   });
-   ```
+### 3. Type Safety
 
-5. **Use Specialized Node Decorators**:
+```typescript
+// ✅ CORRECT: Define custom state interface
+interface MyState extends FunctionalWorkflowState {
+  userId: string;
+  data: any[];
+}
 
-   ```typescript
-   @LLMNode() async analyze() {}      // Instead of @Node({ type: 'llm' })
-   @ApprovalNode() async approve() {} // Instead of @Node({ type: 'human', requiresApproval: true })
-   ```
+@Task()
+async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  const state = context.state as MyState;
+  // TypeScript knows state.userId exists
+}
 
-6. **Enable Time-Travel for Debugging**:
+// ❌ WRONG: Using any
+@Task()
+async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  const state: any = context.state; // Lose type safety
+}
+```
 
-   ```typescript
-   @FunctionalWorkflow({ timeTravel: true })
-   ```
+### 4. Error Handling
 
-### ❌ DON'T
+```typescript
+@Task()
+async riskyOperation(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  try {
+    const result = await this.externalService.call();
+    return { state: { ...context.state, result } };
+  } catch (error) {
+    console.error('Operation failed:', error);
+    return {
+      state: {
+        ...context.state,
+        error: error.message,
+        failed: true
+      }
+    };
+  }
+}
+```
 
-1. **Don't Mix Decorator Patterns**:
+### 5. Tool Validation
 
-   ```typescript
-   ❌ @Entrypoint() async start() {}
-   ❌ @Node() async process() {}  // ERROR: Cannot mix task-based and node-based
-   ```
+```typescript
+// ✅ CORRECT: Use registered tools
+@LLMTask({
+  tools: ['web-search', 'extract-content'], // These must exist in ToolRegistry
+})
 
-2. **Don't Skip Workflow Type Declaration**:
+// ❌ WRONG: Referencing non-existent tools
+@LLMTask({
+  tools: ['fake-tool'], // Will fail at compilation
+})
+```
 
-   ```typescript
-   ❌ @FunctionalWorkflow({ name: 'workflow' }) // Missing type!
-   ✅ @FunctionalWorkflow({ name: 'workflow', type: WorkflowType.FUNCTIONAL_NODE })
-   ```
+### 6. Streaming
 
-3. **Don't Manually Register Workflows**:
+Enable streaming for real-time UX:
 
-   ```typescript
-   ❌ MetadataProcessorService.register(MyWorkflow) // Not needed!
-   ✅ Just use decorators - auto-registration handles it
-   ```
+```typescript
+@FunctionalWorkflow({
+  streaming: true, // Enable streaming
+})
+```
 
-4. **Don't Duplicate @Workflow for Agents**:
+Then consume via streaming API:
 
-   ```typescript
-   ❌ @Agent({ type: 'workflow-agent' })
-   ❌ @Workflow({ name: 'my-workflow' }) // Redundant!
-   ✅ @Agent({ type: 'workflow-agent', workflow: { name: 'my-workflow' } })
-   ```
-
-5. **Don't Hardcode Defaults in Every Decorator**:
-
-   ```typescript
-   ❌ @Node({ maxRetries: 3, timeout: 30000 }) // Everywhere!
-   ✅ WorkflowEngineModule.forRoot({ execution: { defaultTimeout: 30000 } })
-   ```
+```typescript
+const stream = await workflowExecutor.stream(workflow, initialState);
+for await (const event of stream) {
+  console.log('Event:', event);
+}
+```
 
 ---
 
-## Troubleshooting
+## Common Pitfalls
 
-### "Cannot use @Node with @Entrypoint/@Task"
-
-**Cause**: Mixing task-based and node-based decorators
-
-**Solution**: Declare explicit workflow type:
+### 1. Mixing Patterns
 
 ```typescript
-@FunctionalWorkflow({ type: WorkflowType.FUNCTIONAL_NODE })
-// OR
-@Agent({ workflow: { type: 'functional-node' } })
+// ❌ WRONG: Mixing @Task and @Node
+@FunctionalWorkflow({ type: WorkflowType.FUNCTIONAL_TASK })
+export class BadWorkflow {
+  @Entrypoint()
+  async start() {}
+
+  @Node() // ERROR: Can't mix with @Entrypoint/@Task
+  async wrongNode() {}
+}
 ```
 
-### "Workflow metadata not found"
-
-**Cause**: Missing `@FunctionalWorkflow` or `@Agent` decorator
-
-**Solution**: Add decorator to class:
+### 2. Forgetting dependsOn
 
 ```typescript
-@FunctionalWorkflow({ name: 'my-workflow', type: WorkflowType.FUNCTIONAL_NODE })
-@Injectable()
-export class MyWorkflow {}
+// ❌ WRONG: Tasks may execute out of order
+@Task()
+async step1() { }
+
+@Task() // No dependsOn - may run before step1
+async step2() { }
+
+// ✅ CORRECT: Explicit dependency
+@Task({ dependsOn: ['step1'] })
+async step2() { }
 ```
 
-### "NestJS cannot resolve dependencies"
-
-**Cause**: Decorator wrapper broke DI metadata
-
-**Solution**: Ensure decorators preserve `design:paramtypes`:
-
-- This is handled automatically by decorators
-- Check `@Injectable()` is applied AFTER `@Agent` or `@FunctionalWorkflow`
-
-### "Time-Travel auto-registration not working"
-
-**Cause**: EventEmitter2 not available or Time-Travel module not imported
-
-**Solution**: Import Time-Travel module:
+### 3. Not Setting Workflow Type
 
 ```typescript
-@Module({
-  imports: [
-    WorkflowEngineModule.forRoot(),
-    TimeTravelModule.forRoot() // Required for auto-registration
-  ]
+// ❌ WRONG: Ambiguous pattern
+@FunctionalWorkflow({ name: 'my-workflow' }) // Missing type
+
+// ✅ CORRECT: Explicit pattern
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK
 })
 ```
 
 ---
 
-## API Reference
+## Debugging
 
-### Exports
+### Time-Travel Integration
+
+Enable automatic Time-Travel registration:
 
 ```typescript
-// Module
-export { WorkflowEngineModule } from './lib/workflow-engine.module';
-
-// Functional API Decorators
-export { FunctionalWorkflow, WorkflowType } from './lib/decorators/functional/workflow.decorator';
-export {
-  Node,
-  StartNode,
-  EndNode,
-  ApprovalNode,
-  StreamNode,
-  ConditionNode,
-  ToolNode,
-  LLMNode,
-  AggregatorNode,
-  SubgraphNode,
-} from './lib/decorators/functional/node.decorator';
-export {
-  Edge,
-  ConditionalEdge,
-  ConfidenceRoute,
-  FallbackEdge,
-  ErrorEdge,
-} from './lib/decorators/functional/edge.decorator';
-export { Entrypoint } from './lib/decorators/functional/entrypoint.decorator';
-export { Task } from './lib/decorators/functional/task.decorator';
-
-// Multi-Agent Decorators
-export { Agent } from './lib/decorators/multi-agent/agent.decorator';
-export { MultiAgent } from './lib/decorators/multi-agent/multi-agent.decorator';
-export { Tool } from './lib/decorators/multi-agent/tool.decorator';
-
-// Services
-export { MetadataProcessorService } from './lib/core/metadata-processor.service';
-export { WorkflowExecutionService } from './lib/execution/workflow-execution.service';
-export { LlmProviderService } from './lib/services/llm/llm-provider.service';
-
-// Utilities
-export { validateDecoratorPattern } from './lib/utils/functional/decorator-validator';
-export { getFunctionalApiConfigWithDefaults } from './lib/utils/functional/functional-api-config.accessor';
-export { getMultiAgentConfigWithDefaults } from './lib/utils/multi-agent/multi-agent-config.accessor';
-export { getWorkflowEngineConfigWithDefaults } from './lib/utils/workflow-engine-config.accessor';
-
-// Interfaces
-export type {
-  WorkflowOptions,
-  AgentConfig,
-  NodeOptions,
-  EdgeOptions,
-  WorkflowState,
-  WorkflowDefinition,
-} from './lib/interfaces';
+@FunctionalWorkflow({
+  timeTravel: true, // Auto-register with Time-Travel service
+})
 ```
+
+Or with custom config:
+
+```typescript
+@FunctionalWorkflow({
+  timeTravel: {
+    enabled: true,
+    domain: 'chat-workflows',
+    metadata: { version: '1.0' },
+  },
+})
+```
+
+### Logging
+
+The workflow-engine provides detailed logging:
+
+```typescript
+WorkflowEngineModule.forRoot({
+  debugging: {
+    enabled: true,
+    logLevel: 'debug',
+    traceExecution: true,
+  },
+});
+```
+
+---
+
+## Performance Tips
+
+1. **Enable Caching**: Compiled graphs are cached by default
+2. **Optimize LLM Calls**: Set appropriate `temperature` and `maxTokens`
+3. **Limit Tool Iterations**: Set realistic `maxToolIterations` to prevent runaway loops
+4. **Use Streaming**: For long-running workflows, enable streaming for better UX
+5. **Parallelize When Possible**: Use node-based patterns for parallel execution
 
 ---
 
 ## Migration Guide
 
-### From Standalone Packages
+### From Legacy Patterns
 
-**Before** (separate packages):
+If migrating from older workflow patterns:
 
-```typescript
-import { FunctionalWorkflow } from '@hive-academy/langgraph-functional-api';
-import { Agent } from '@hive-academy/langgraph-multi-agent';
-```
+1. **Remove base classes**: No need to extend `UnifiedWorkflowBase`
+2. **Add explicit type**: Set `type: WorkflowType.FUNCTIONAL_TASK` or `FUNCTIONAL_NODE`
+3. **Update state types**: Extend `FunctionalWorkflowState`
+4. **Apply `@Injectable()`**: Workflows must be NestJS providers
 
-**After** (unified package):
-
-```typescript
-import { FunctionalWorkflow, Agent } from '@hive-academy/langgraph-workflow-engine';
-```
-
-### From Base Classes to Decorators
-
-**Before** (inheritance-driven):
+**Before:**
 
 ```typescript
-export class MyWorkflow extends DeclarativeWorkflowBase {
-  constructor(llm, memory, metadata, emitter, graphBuilder, subgraph, stream) {
-    super(llm, memory, metadata, emitter, graphBuilder, subgraph, stream);
-  }
+export class MyWorkflow extends UnifiedWorkflowBase {
+  execute() { ... }
 }
 ```
 
-**After** (decorator-driven):
+**After:**
 
 ```typescript
-@FunctionalWorkflow({ type: WorkflowType.FUNCTIONAL_NODE })
+@FunctionalWorkflow({
+  type: WorkflowType.FUNCTIONAL_TASK,
+})
 @Injectable()
 export class MyWorkflow {
-  constructor(private llm: LlmProviderService, private memory: MemoryService) {}
+  @Entrypoint()
+  async start(context: TaskExecutionContext) { ... }
 }
 ```
-
-### Decorator Cleanup (TASK_2025_045)
-
-**Removed Non-Functional Options** (v1.5.0):
-
-The following options have been removed from `@Agent` workflow configuration as they were non-functional (stored but never used by workflow-engine):
-
-- ❌ `enableInternalStreaming` - Never read by workflow engine
-- ❌ `enableInternalCheckpointing` - Checkpointing configured at graph.compile() level
-- ❌ `internalTimeout` - Timeouts configured per-task or at module level
-- ❌ `enableErrorRecovery` - Error recovery is graph-level configuration
-- ❌ `maxInternalRetries` - Retry logic implemented per-task
-- ❌ `enableStepProgress` - Progress tracking handled by LangGraph runtime
-
-**HITL Pattern Migration** (config → decorator):
-
-**Before** (config-based interruption):
-
-```typescript
-@Agent({
-  description: 'Research agent with approval workflow',
-  workflow: {
-    type: 'functional-task',
-    // ❌ DEPRECATED: Config-based HITL (will be removed in v2.0.0)
-    multiAgentInterruption: {
-      enabled: true,
-      interruptAfter: ['generateReport'],
-    },
-  },
-})
-export class ResearcherAgent {
-  @Task()
-  async generateReport() {
-    // Implementation
-  }
-}
-```
-
-**After** (decorator-based interruption):
-
-```typescript
-@Agent({
-  description: 'Research agent with approval workflow',
-  workflow: {
-    type: 'functional-task',
-    streaming: true,
-    confidenceThreshold: 0.7,
-    metrics: true,
-    // ✅ No multiAgentInterruption config - use @RequiresApproval instead
-  },
-})
-export class ResearcherAgent {
-  @Task()
-  @RequiresApproval({
-    message: (state) => `Research report ready: "${state.metadata?.reportTitle}"`,
-    timeoutMs: 180000, // 3 minutes
-    onTimeout: 'approve', // Auto-approve on timeout
-    metadata: (state) => ({
-      approvalType: 'report-draft-review',
-      reportTitle: state.metadata?.reportTitle,
-    }),
-  })
-  async generateReport() {
-    // Implementation
-  }
-}
-```
-
-**Benefits of @RequiresApproval**:
-
-- ✅ **Clearer Intent**: Decorator at point of use (better discoverability)
-- ✅ **No Config Bloat**: No task names duplicated in workflow config
-- ✅ **Automatic State Management**: Decorator sets `waitingForApproval` property
-- ✅ **Rich Metadata**: Custom approval messages and metadata per task
-- ✅ **Timeout Handling**: Built-in timeout with configurable actions
-- ✅ **Consistent Pattern**: Aligns with HITL best practices
-
-**Migration Steps**:
-
-1. Remove `multiAgentInterruption` block from agent workflow config
-2. Add `@RequiresApproval` decorator to task methods requiring approval
-3. Update SSE controllers to detect both `userApproval === 'pending'` and `waitingForApproval === true` (for backward compatibility during transition)
-4. Test workflow interruption and resume functionality
-
-**Deprecation Timeline**:
-
-- **v1.5.0** (current): `multiAgentInterruption` marked as deprecated with warnings
-- **v2.0.0** (future): `multiAgentInterruption` interface will be removed entirely
 
 ---
 
-## Related Documentation
+## Reference
 
-- **Core Package**: `libs/langgraph-modules/core/CLAUDE.md` - Shared interfaces and types
-- **HITL Module**: `libs/langgraph-modules/hitl/CLAUDE.md` - Human-in-the-loop integration
+### Decorator Quick Reference
 
-- **Memory Module**: `libs/langgraph-modules/memory/CLAUDE.md` - Contextual memory
+| Decorator             | Pattern     | Purpose                |
+| --------------------- | ----------- | ---------------------- |
+| `@FunctionalWorkflow` | Both        | Mark class as workflow |
+| `@Entrypoint`         | Task        | Starting point         |
+| `@Task`               | Task        | Sequential step        |
+| `@LLMTask`            | Task        | LLM + tools step       |
+| `@Node`               | Node        | Graph vertex           |
+| `@Edge`               | Node        | Graph edge/transition  |
+| `@Agent`              | Multi-Agent | Agent configuration    |
+| `@MultiAgent`         | Multi-Agent | Topology configuration |
+| `@Tool`               | Tool        | Tool registration      |
 
----
+### Key Exports
 
-## Summary
+```typescript
+import {
+  // Decorators
+  FunctionalWorkflow,
+  Entrypoint,
+  Task,
+  LLMTask,
+  Node,
+  Edge,
+  Agent,
+  MultiAgent,
+  Tool,
 
-The **Workflow Engine** provides a **decorator-first**, **zero-config** approach to building LangGraph workflows:
+  // Types
+  WorkflowType,
+  TaskExecutionContext,
+  TaskExecutionResult,
 
-✅ **Unified Package** - Functional API + Multi-Agent + Core Engine consolidated
-✅ **Smart Defaults** - Auto-detection, auto-registration, convention-based configuration
-✅ **Pattern Validation** - Enforces task-based vs node-based patterns at decoration time
-✅ **NestJS Integration** - Seamless DI, global module, metadata-driven discovery
-✅ **Type-Safe** - Full TypeScript support with type inference
-✅ **Production-Ready** - Streaming, checkpointing, HITL, error handling, debugging
-
-**Start building workflows with decorators - no base classes, no boilerplate, just clean, declarative code.**
+  // Services
+  WorkflowExecutionService,
+  LlmProviderService,
+} from '@hive-academy/langgraph-workflow-engine';
+```

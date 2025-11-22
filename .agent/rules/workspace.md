@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# CLAUDE.md
+# Main Project Instructions
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -271,98 +271,3 @@ Orchestrator: "INVOKE senior-tester"
 | Architecture | software-architect                              | Design              |
 
 **Default**: When uncertain, use `/orchestrate`
-
----
-
-## 📁 Task Management
-
-### Task ID Format
-
-`TASK_YYYY_NNN` - Sequential format (TASK_2025_001, TASK_2025_002, etc.)
-
-### Folder Structure
-
-```
-task-tracking/
-  TASK_[ID]/
-    ├── context.md            # User intent, conversation summary
-    ├── task-description.md   # Requirements
-    ├── implementation-plan.md # Design
-    ├── tasks.md              # Atomic task breakdown & assignments (team-leader managed)
-    ├── test-report.md        # Testing
-    ├── code-review.md        # Review
-    └── future-enhancements.md # Future work
-```
-
-### Git Operations & Commit Standards
-
-**CRITICAL**: All commits MUST follow commitlint rules to pass pre-commit hooks.
-
-#### Commit Message Format
-
-```
-<type>(<scope>): <subject>
-
-[optional body]
-
-[optional footer]
-```
-
-#### Allowed Types (REQUIRED)
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style (formatting, no logic change)
-- `refactor`: Code restructuring (no bug fix or feature)
-- `perf`: Performance improvements
-- `test`: Adding/updating tests
-- `build`: Build system/dependency changes
-- `ci`: CI configuration changes
-- `chore`: Maintenance tasks (no src/test changes)
-- `revert`: Revert previous commit
-
-#### Allowed Scopes (REQUIRED)
-
-- `chromadb`: ChromaDB library changes
-- `neo4j`: Neo4j library changes
-- `langgraph`: LangGraph modules changes
-- `deps`: Dependency updates
-- `release`: Release-related changes
-- `ci`: CI/CD changes
-- `docs`: Documentation changes
-- `hooks`: Git hooks changes
-- `scripts`: Script changes
-- `angular-3d`: Angular 3D UI changes
-
-#### Commit Rules (ENFORCED)
-
-- ✅ Type: lowercase, required, from allowed list
-- ✅ Scope: lowercase, required, from allowed list
-- ✅ Subject:
-  - lowercase only (NOT Sentence-case, Start-case, UPPER-CASE)
-  - 3-72 characters
-  - No period at end
-  - Imperative mood ("add" not "added")
-- ✅ Header: max 100 characters total
-- ✅ Body/Footer lines: max 100 characters each
-
-#### Valid Examples
-
-```bash
-feat(chromadb): add semantic search for documents
-fix(neo4j): resolve connection timeout issue
-docs(langgraph): update workflow examples
-refactor(hooks): simplify pre-commit validation
-chore(deps): update langchain to v0.3.30
-```
-
-#### Invalid Examples (WILL FAIL)
-
-```bash
-❌ "Feature: Add search" # Wrong type, wrong case
-❌ "feat: Add search"    # Missing scope
-❌ "feat(search): Add search" # Invalid scope, wrong case
-❌ "feat(chromadb): Add search." # Period at end
-❌ "feat(chromadb): Add Search" # Uppercase in subject
-```
