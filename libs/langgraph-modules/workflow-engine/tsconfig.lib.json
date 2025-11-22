@@ -14,13 +14,7 @@
       "path": "../memory/tsconfig.lib.json"
     },
     {
-      "path": "../functional-api/tsconfig.lib.json"
-    },
-    {
       "path": "../core/tsconfig.lib.json"
-    },
-    {
-      "path": "../streaming/tsconfig.lib.json"
     }
   ]
 }

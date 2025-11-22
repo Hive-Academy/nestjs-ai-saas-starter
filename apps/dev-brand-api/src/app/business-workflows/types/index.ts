@@ -7,7 +7,7 @@
 // export type * from './customer-support.types';
 
 // Agent workflow state bridge
-import type { AgentState } from '@hive-academy/langgraph-multi-agent';
+import type { AgentState } from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * WorkflowAgentState - Bridge interface that extends both AgentState and includes workflow-specific properties
@@ -275,6 +275,18 @@ export interface StreamingResponse<T> {
   executionId: string;
   streaming: boolean;
   streamUrl?: string;
+}
+
+/**
+ * Stream event for workflow execution updates
+ * Yielded by executeWithStreaming() methods
+ */
+export interface StreamEvent {
+  type: 'workflow-update' | 'agent-update' | 'error';
+  executionId: string;
+  state: unknown;
+  timestamp: string;
+  error?: string;
 }
 
 export interface WorkflowMetadata {

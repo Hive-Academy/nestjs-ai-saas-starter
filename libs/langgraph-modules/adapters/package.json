@@ -3,7 +3,30 @@
   "version": "0.0.1",
   "private": false,
   "description": "Generic database adapters for LangGraph Memory and HITL modules with production-ready Neo4j and ChromaDB implementations",
-  "author": "Hive Academy Team",
+  "author": "Hive Academy",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "nestjs",
+    "neo4j",
+    "graph-database",
+    "cypher",
+    "relationships",
+    "typescript",
+    "langgraph",
+    "adapters",
+    "hiveacademy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/adapters"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "license": "MIT",
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -28,17 +51,14 @@
     "*.md",
     "!*.tsbuildinfo"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "*"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@hive-academy/nestjs-neo4j": "0.0.1",
-    "@hive-academy/nestjs-chromadb": "0.0.1",
-    "@hive-academy/langgraph-memory": "0.0.1",
-    "@hive-academy/langgraph-hitl": "0.0.1"
+    "@nestjs/common": "*",
+    "@hive-academy/nestjs-neo4j": "*",
+    "@hive-academy/nestjs-chromadb": "*",
+    "@hive-academy/langgraph-memory": "*",
+    "@hive-academy/langgraph-hitl": "*"
   }
 }

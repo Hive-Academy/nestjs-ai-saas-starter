@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  Inject,
+  Optional,
+} from '@nestjs/common';
 import type {
   DetailedHealthCheckResult,
   IHealthCheck,
@@ -6,6 +12,7 @@ import type {
   ServiceHealth,
   HealthStatus,
   HealthState,
+  MonitoringConfig,
 } from '../interfaces/monitoring.interface';
 import { HealthCheckError } from '../interfaces/monitoring.interface';
 
@@ -52,7 +59,32 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
   private totalChecks = 0;
   private failedChecks = 0;
 
-  constructor() {
+  // State tracking for change-only logging
+  private previousOverallState: HealthState | null = null;
+  private previousServiceStates = new Map<string, HealthState>();
+
+  // Configurable memory thresholds
+  private readonly memoryConfig: {
+    unhealthyThreshold: number;
+    degradedThreshold: number;
+  };
+
+  constructor(
+    @Optional()
+    @Inject('MONITORING_CONFIG')
+    private readonly config?: MonitoringConfig
+  ) {
+    // Initialize memory thresholds from config or use default fallbacks
+    const memoryThresholds = this.config?.healthChecks?.memory;
+    this.memoryConfig = {
+      unhealthyThreshold: memoryThresholds?.unhealthyThreshold || 90,
+      degradedThreshold: memoryThresholds?.degradedThreshold || 80,
+    };
+
+    this.logger.log(
+      `Memory thresholds initialized: unhealthy=${this.memoryConfig.unhealthyThreshold}%, degraded=${this.memoryConfig.degradedThreshold}%`
+    );
+
     // Start periodic health monitoring (every minute)
     this.monitoringInterval = setInterval(() => {
       this.performScheduledHealthCheck().catch((error) => {
@@ -77,6 +109,30 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     this.logger.log(
       `HealthCheckService shutdown - Total checks: ${this.totalChecks}, Failed: ${this.failedChecks}`
+    );
+  }
+
+  /**
+   * Configure memory health check thresholds
+   * @param unhealthyThreshold - Percentage at which memory is considered unhealthy
+   * @param degradedThreshold - Percentage at which memory is considered degraded
+   */
+  configureMemoryThresholds(
+    unhealthyThreshold: number,
+    degradedThreshold: number
+  ): void {
+    if (unhealthyThreshold <= degradedThreshold) {
+      this.logger.warn(
+        'Unhealthy threshold must be greater than degraded threshold, ignoring configuration'
+      );
+      return;
+    }
+
+    (this.memoryConfig as any).unhealthyThreshold = unhealthyThreshold;
+    (this.memoryConfig as any).degradedThreshold = degradedThreshold;
+
+    this.logger.log(
+      `Memory thresholds configured: unhealthy=${unhealthyThreshold}%, degraded=${degradedThreshold}%`
     );
   }
 
@@ -334,19 +390,46 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
 
     try {
       const health = await this.getSystemHealth();
+      const stateChanged = this.previousOverallState !== health.overall;
 
-      if (health.overall !== 'healthy') {
+      // Log only on state changes
+      if (health.overall !== 'healthy' && stateChanged) {
         this.logger.warn('System health degraded:', {
           overall: health.overall,
+          previousState: this.previousOverallState || 'unknown',
           unhealthyServices: Object.entries(health.services)
             .filter(([_, service]) => service.state !== 'healthy')
             .map(([name, service]) => ({
               name,
               state: service.state,
               error: service.error,
+              metadata: service.metadata, // Include actual memory values
             })),
         });
+      } else if (stateChanged && health.overall === 'healthy') {
+        this.logger.log('System health restored:', {
+          overall: health.overall,
+          previousState: this.previousOverallState || 'unknown',
+        });
       }
+
+      this.previousOverallState = health.overall;
+
+      // Track individual service state changes
+      Object.entries(health.services).forEach(([name, service]) => {
+        const prevState = this.previousServiceStates.get(name);
+        if (prevState !== service.state) {
+          this.logger.log(
+            `Service '${name}' state changed: ${prevState || 'unknown'} -> ${
+              service.state
+            }`,
+            {
+              metadata: service.metadata,
+            }
+          );
+          this.previousServiceStates.set(name, service.state);
+        }
+      });
     } catch (error) {
       this.logger.error(
         'Scheduled health check failed:',
@@ -359,17 +442,19 @@ export class HealthCheckService implements IHealthCheck, OnModuleDestroy {
    * Register default system health checks
    */
   private registerDefaultChecks(): void {
-    // Memory usage check with proper state differentiation
+    // Memory usage check with configurable thresholds
     this.register('memory', async () => {
       const memUsage = process.memoryUsage();
       const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
       const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
       const usagePercent = (heapUsedMB / heapTotalMB) * 100;
 
-      // Determine state explicitly to avoid ambiguity
-      const isUnhealthy = usagePercent >= 90;
-      const isDegraded = usagePercent >= 80 && usagePercent < 90;
-      const isHealthy = usagePercent < 80;
+      // Use configurable thresholds
+      const isUnhealthy = usagePercent >= this.memoryConfig.unhealthyThreshold;
+      const isDegraded =
+        usagePercent >= this.memoryConfig.degradedThreshold &&
+        usagePercent < this.memoryConfig.unhealthyThreshold;
+      const isHealthy = usagePercent < this.memoryConfig.degradedThreshold;
 
       // Return object with explicit state determination
       // Ensure exactly one flag is true to avoid ambiguity

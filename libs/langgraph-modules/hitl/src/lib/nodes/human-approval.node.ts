@@ -1,5 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { interrupt } from '@langchain/langgraph';
+import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
 import type {
   WorkflowState,
   HumanFeedback,
@@ -157,9 +160,13 @@ export class HumanApprovalNode {
 
   /**
    * Execute human approval checkpoint
+   * @param state - Current workflow state
+   * @param config - RunnableConfig containing checkpointer, store, and thread configuration
+   * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
   async execute<TState extends WorkflowState = WorkflowState>(
     state: TState,
+    config: RunnableConfig,
     options?: {
       extractActions?: (state: TState) => ProposedAction[];
       autoApproveThreshold?: number;
@@ -168,6 +175,25 @@ export class HumanApprovalNode {
     }
   ): Promise<Partial<TState>> {
     const { executionId } = state;
+
+    // Validate checkpointer configuration (required for interrupt())
+    const checkpointer = config.configurable?.checkpointer;
+    if (!checkpointer) {
+      this.logger.error(
+        `Checkpointer not configured in RunnableConfig for execution ${executionId}`
+      );
+      throw new Error(
+        'Checkpointer not configured. Human approval requires checkpointer for state persistence.'
+      );
+    }
+
+    // Access BaseStore for cross-workflow memory (optional enhancement) - using type-safe helper
+    const store = RunnableConfigStoreHelpers.getStore(config);
+    if (store) {
+      this.logger.debug(
+        `BaseStore available for approval context storage in execution ${executionId}`
+      );
+    }
 
     // Check skip condition
     if (options?.skipCondition?.(state)) {
@@ -203,6 +229,25 @@ export class HumanApprovalNode {
 
     this.logger.log(`Human approval requested for execution ${executionId}`);
 
+    // Retrieve historical approval patterns from BaseStore (if available)
+    let historicalApprovals: any[] = [];
+    if (store) {
+      try {
+        const userId = (state as any).userId || 'system';
+        const items = await store.search(['approval-context', userId]);
+        historicalApprovals = items.slice(0, 5); // Get top 5 similar approvals
+        this.logger.debug(
+          `Retrieved ${historicalApprovals.length} historical approvals from BaseStore`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to retrieve historical approvals from BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
     // Extract proposed actions
     const proposedActions = options?.extractActions
       ? options.extractActions(state)
@@ -217,7 +262,17 @@ export class HumanApprovalNode {
         proposedActions,
         confidence,
         risks: state.risks,
-        metadata: state.metadata,
+        metadata: {
+          ...(state.metadata || {}),
+          historicalApprovals:
+            historicalApprovals.length > 0
+              ? historicalApprovals.map((item) => ({
+                  executionId: item.value?.executionId,
+                  confidence: item.value?.confidence,
+                  timestamp: item.value?.timestamp,
+                }))
+              : undefined,
+        },
       },
       timestamp: new Date(),
       timeoutMs: options?.timeoutMs,
@@ -226,6 +281,34 @@ export class HumanApprovalNode {
 
     // Store pending approval
     this.pendingApprovals.set(executionId, approvalRequest);
+
+    // Store approval context in BaseStore for cross-workflow memory (if available)
+    if (store) {
+      try {
+        const userId = (state as any).userId || 'system';
+        await store.put(
+          ['approval-context', userId],
+          `approval-${executionId}`,
+          {
+            executionId,
+            nodeId: state.currentNode,
+            proposedActions,
+            confidence,
+            risks: approvalRequest.context.risks,
+            timestamp: approvalRequest.timestamp,
+          }
+        );
+        this.logger.debug(
+          `Stored approval context in BaseStore for user ${userId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to store approval context in BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     // Emit event for external systems
     await this.eventEmitter.emit(
@@ -241,19 +324,44 @@ export class HumanApprovalNode {
       - Risks: ${approvalRequest.context.risks?.length || 0}
     `);
 
-    // Return state update to indicate waiting for approval
+    // Use LangGraph native interrupt() to pause workflow execution
+    // Workflow will pause here until resumed via Command
+    // Checkpointer automatically saves state at this interrupt point
+    const humanDecision = interrupt({
+      type: 'approval_required',
+      executionId,
+      nodeId: state.currentNode,
+      approvalRequest,
+      confidence,
+      proposedActions,
+      risks: approvalRequest.context.risks,
+    });
+
+    // When workflow resumes via Command, execution continues here
+    // humanDecision contains the approval response data
+    this.logger.log(
+      `Approval received for ${executionId}: ${JSON.stringify(humanDecision)}`
+    );
+
+    // Process human decision and return state update
+    const approved = humanDecision?.decision === 'approved';
+    const feedback = humanDecision?.feedback;
+
     return {
       humanFeedback: {
-        approved: false,
-        status: 'pending',
-        timestamp: approvalRequest.timestamp,
-        metadata: {
-          requestedAt: approvalRequest.timestamp,
-          proposedActions: proposedActions.length,
-        },
-      },
-      waitingForApproval: true,
-      requiresApproval: true,
+        approved,
+        status: approved ? 'approved' : 'rejected',
+        approver: humanDecision?.approver || { id: 'unknown' },
+        message: feedback,
+        timestamp: new Date(),
+        metadata: humanDecision?.modifications,
+      } as HumanFeedback,
+      confidence: approved
+        ? Math.min((confidence || 0) + 0.1, 1.0)
+        : Math.max((confidence || 0) - 0.2, 0.0),
+      waitingForApproval: false,
+      approvalReceived: approved,
+      rejectionReason: !approved ? feedback : undefined,
     } as unknown as Partial<TState>;
   }
 

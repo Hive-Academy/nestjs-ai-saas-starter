@@ -1,49 +1,29 @@
 import { Module } from '@nestjs/common';
-import {
-  ChromaDBModule,
-  getRepositoryToken as getChromaRepositoryToken,
-} from '@hive-academy/nestjs-chromadb';
-
 import { getRepositoryToken, Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
 // Entities
 import {
-  Memory,
-  StoreItemEntity,
   ApprovalChain,
   ApprovalRequest,
   ApprovalResponse,
   ConfidencePattern,
   FeedbackEntry,
   InterruptionPoint,
+  Thread,
 } from './entities/neo4j';
-import { VectorMemoryEntity, LangGraphStoreEntity } from './entities/chromadb';
 
 // Repositories
 import {
-  MemoryGraphRepository,
-  StoreGraphRepository,
   ApprovalRequestRepository,
   ApprovalChainRepository,
   ConfidencePatternRepository,
   FeedbackRepository,
   InterruptionRepository,
+  ThreadRegistryRepository,
 } from './repositories/neo4j';
-import {
-  VectorMemoryRepository,
-  LangGraphStoreRepository,
-} from './repositories/chromadb';
-
-// Graph Helper Services
-import {
-  GraphCrudService,
-  GraphAgentService,
-  GraphTraversalService,
-  GraphHelpersService,
-} from './repositories/services';
 
 // Adapters
-import { Neo4jGraphAdapter, ChromaVectorAdapter } from './adapters/memory';
+// Memory adapters deleted in Task 7.6 - replaced by ChromaDBBaseStore
 import {
   Neo4jHitlStorageAdapter,
   Neo4jApprovalChainStorageAdapter,
@@ -51,27 +31,28 @@ import {
   Neo4jFeedbackStorageAdapter,
   Neo4jInterruptionStorageAdapter,
 } from './adapters/hitl';
+import { Neo4jThreadRegistryAdapter } from './adapters/thread-registry';
 
 /**
- * LangGraph Adapters Module - Generic Database Adapters for Memory & HITL
+ * LangGraph Adapters Module - Generic Database Adapters for HITL & LangGraph Store
  *
  * ARCHITECTURE:
- * - Provides production-ready Neo4j + ChromaDB adapters for Memory and HITL modules
+ * - Provides production-ready Neo4j + ChromaDB adapters for HITL and LangGraph Store
  * - Includes entities, repositories, and adapter implementations
  * - Fully generic and reusable across any LangGraph application
- * - Eliminates ~2000+ lines of boilerplate for new projects
+ * - Eliminates boilerplate for new projects
  *
  * DESIGN PATTERN:
  * - Follows TypeORM-style pattern with forFeature() registration
  * - Custom repositories override auto-generated defaults
  * - String token injection prevents circular dependencies
- * - Adapters implement library interfaces (IGraphService, IVectorService, IHitlStorageService, etc.)
+ * - Adapters implement library interfaces (IHitlStorageService, etc.)
  *
  * DI FLOW:
  * 1. Registers entities with Neo4jModule.forFeature() and ChromaDBModule.forFeature()
  * 2. Provides custom repositories for advanced operations
  * 3. Provides adapters that implement library interfaces
- * 4. Exports adapter tokens for consumption by MemoryModule and HitlModule
+ * 4. Exports adapter tokens for consumption by HitlModule
  *
  * USAGE:
  * ```typescript
@@ -80,7 +61,6 @@ import {
  *     Neo4jModule.forRoot({...}),
  *     ChromaDBModule.forRoot({...}),
  *     LangGraphAdaptersModule.forRoot(), // ✅ One line!
- *     MemoryModule.forRoot({...}),
  *     HitlModule.forRoot({...}),
  *   ]
  * })
@@ -89,38 +69,23 @@ import {
  */
 @Module({
   imports: [
-    ChromaDBModule,
+    // ChromaDBModule,
     Neo4jModule,
     // Auto-generate Neo4j repositories for all generic entities
     Neo4jModule.forFeature([
-      Memory,
-      StoreItemEntity,
       ApprovalChain,
       ApprovalRequest,
       ApprovalResponse,
       InterruptionPoint,
       ConfidencePattern,
       FeedbackEntry,
+      Thread, // Thread registry entity
     ]),
     // Auto-generate ChromaDB repositories for all generic entities
-    ChromaDBModule.forFeature([VectorMemoryEntity, LangGraphStoreEntity]),
+    // ChromaDBModule.forFeature([LangGraphStoreEntity]),
   ],
   providers: [
-    // Graph Helper Services (dependencies of MemoryGraphRepository)
-    GraphTraversalService,
-    GraphAgentService,
-    GraphCrudService,
-    GraphHelpersService,
-
     // Custom Neo4j Repositories (override auto-generated defaults with advanced operations)
-    {
-      provide: getRepositoryToken(Memory),
-      useClass: MemoryGraphRepository,
-    },
-    {
-      provide: getRepositoryToken(StoreItemEntity),
-      useClass: StoreGraphRepository,
-    },
     {
       provide: getRepositoryToken(ApprovalRequest),
       useClass: ApprovalRequestRepository,
@@ -141,26 +106,16 @@ import {
       provide: getRepositoryToken(FeedbackEntry),
       useClass: FeedbackRepository,
     },
+    {
+      provide: getRepositoryToken(Thread),
+      useClass: ThreadRegistryRepository,
+    },
 
     // Custom ChromaDB Repositories (override auto-generated defaults)
-    {
-      provide: getChromaRepositoryToken(VectorMemoryEntity),
-      useClass: VectorMemoryRepository,
-    },
-    {
-      provide: getChromaRepositoryToken(LangGraphStoreEntity),
-      useClass: LangGraphStoreRepository,
-    },
-
-    // Memory Adapters (implement library interfaces)
-    {
-      provide: 'IVectorService',
-      useClass: ChromaVectorAdapter,
-    },
-    {
-      provide: 'IGraphService',
-      useClass: Neo4jGraphAdapter,
-    },
+    // {
+    //   provide: getChromaRepositoryToken(LangGraphStoreEntity),
+    //   useClass: LangGraphStoreRepository,
+    // },
 
     // HITL Storage Adapters (implement library interfaces with custom tokens to prevent circular dependencies)
     {
@@ -183,24 +138,24 @@ import {
       provide: 'HITL_APPROVAL_CHAIN_STORAGE',
       useClass: Neo4jApprovalChainStorageAdapter,
     },
+
+    // Thread Registry Adapter (for MemoryModule thread listing)
+    {
+      provide: 'THREAD_REGISTRY_ADAPTER',
+      useClass: Neo4jThreadRegistryAdapter,
+    },
   ],
   exports: [
     // Export Neo4j repositories for advanced usage
-    getRepositoryToken(Memory),
-    getRepositoryToken(StoreItemEntity),
     getRepositoryToken(ApprovalRequest),
     getRepositoryToken(ApprovalChain),
     getRepositoryToken(InterruptionPoint),
     getRepositoryToken(ConfidencePattern),
     getRepositoryToken(FeedbackEntry),
+    getRepositoryToken(Thread), // Thread registry repository
 
     // Export ChromaDB repositories for advanced usage
-    getChromaRepositoryToken(VectorMemoryEntity),
-    getChromaRepositoryToken(LangGraphStoreEntity),
-
-    // Export adapter tokens for MemoryModule to inject
-    'IVectorService',
-    'IGraphService',
+    // getChromaRepositoryToken(LangGraphStoreEntity),
 
     // Export adapter tokens for HitlModule to inject
     'HITL_STORAGE',
@@ -208,6 +163,9 @@ import {
     'HITL_CONFIDENCE_STORAGE',
     'HITL_FEEDBACK_STORAGE',
     'HITL_APPROVAL_CHAIN_STORAGE',
+
+    // Export thread registry adapter for MemoryModule
+    'THREAD_REGISTRY_ADAPTER',
   ],
 })
 export class LangGraphAdaptersModule {

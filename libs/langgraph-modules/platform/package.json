@@ -1,6 +1,28 @@
 {
   "name": "@hive-academy/langgraph-platform",
   "version": "0.0.1",
+  "description": "Platform integrations for LangGraph modules with NestJS ChromaDB vector database support",
+  "author": "Hive Academy Team",
+  "license": "MIT",
+  "keywords": [
+    "nestjs",
+    "langgraph",
+    "ai",
+    "hiveacademy",
+    "langchain",
+    "modules",
+    "platform",
+    "chromadb"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/platform"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "private": false,
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -29,8 +51,8 @@
     "access": "public"
   },
   "peerDependencies": {
-    "tslib": "^2.3.0",
-    "@nestjs/common": "^11.0.0",
-    "axios": "^1.6.0"
+    "tslib": "*",
+    "@nestjs/common": "*",
+    "axios": "*"
   }
 }

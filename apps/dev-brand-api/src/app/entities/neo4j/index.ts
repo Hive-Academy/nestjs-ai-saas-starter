@@ -12,7 +12,6 @@
 export {
   ApprovalRequest,
   ApprovalResponse,
-  Memory,
   ConfidencePattern,
   FeedbackEntry,
   InterruptionPoint,
@@ -30,7 +29,7 @@ export { Strength } from './strength.entity';
 /**
  * Entity Summary:
  *
- * Total: 11 entities
+ * Total: 10 entities
  *
  * HITL Workflow:
  * - ApprovalRequest: HITL approval requests with workflow context
@@ -44,8 +43,9 @@ export { Strength } from './strength.entity';
  * - Strength: Developer strengths and competencies tracking
  *
  * Supporting Systems:
- * - Memory: Graph-based contextual memory management
  * - ConfidencePattern: ML confidence patterns for approval prediction
  * - FeedbackEntry: User feedback for AI learning and improvement
  * - InterruptionPoint: Workflow interruption points with timeout handling
+ *
+ * Note: Memory entity removed - migrated to BaseStore pattern (ChromaDBBaseStore)
  */

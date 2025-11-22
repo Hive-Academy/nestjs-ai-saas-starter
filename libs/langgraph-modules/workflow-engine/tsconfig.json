@@ -8,13 +8,7 @@
       "path": "../memory"
     },
     {
-      "path": "../functional-api"
-    },
-    {
       "path": "../core"
-    },
-    {
-      "path": "../streaming"
     },
     {
       "path": "./tsconfig.lib.json"

@@ -1,27 +1,21 @@
-import { Module, DynamicModule, InjectionToken } from '@nestjs/common';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import { DynamicModule, InjectionToken, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { WorkflowGraphBuilderService } from './core/workflow-graph-builder.service';
-import { CompilationCacheService } from './core/compilation-cache.service';
 import { MetadataProcessorService } from './core/metadata-processor.service';
-import { SubgraphManagerService } from './core/subgraph-manager.service';
-import { WorkflowStreamService } from './streaming/workflow-stream.service';
-import { StreamManagementService } from './streaming/stream-management.service';
-import { TokenProcessingService } from './streaming/token-processing.service';
-import { StreamEventProcessorService } from './streaming/stream-event-processor.service';
-import { WorkflowCheckpointService } from './core/workflow-checkpoint.service';
-import { WorkflowExecutionService } from './core/workflow-execution.service';
-import { DecoratorTranslationService } from './services/decorator-translation.service';
-import { MultiAgentTranslationService } from './services/multi-agent-translation.service';
-import { GraphPatternsService } from './core/graph-patterns.service';
-import { GraphOptimizationService } from './core/graph-optimization.service';
-import { CommandProcessorService } from './routing/command-processor.service';
-import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 import {
-  IStreamingService,
-  ICheckpointAdapter,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
+  FunctionalNodeGraphStrategy,
+  FunctionalTaskGraphStrategy,
+} from './execution/strategies';
+import { WorkflowExecutionService } from './execution/workflow-execution.service';
+import type { LlmModuleOptions } from './interfaces/llm-config.interface';
+import { LlmProviderService } from './services/llm/llm-provider.service';
+import { SequentialGraphBuilder } from './services/multi-agent/builders/sequential-graph-builder';
+import { SupervisorGraphBuilder } from './services/multi-agent/builders/supervisor-graph-builder';
+import { MultiAgentGraphBuilderService } from './services/multi-agent/multi-agent-graph-builder.service';
+import { ToolRegistryService } from './services/tool-registry.service';
+import { WorkflowResumptionService } from './services/workflow-resumption.service';
+import { LangGraphCommandService } from './services/langgraph-command.service';
+import { setWorkflowEngineConfig } from './utils/workflow-engine-config.accessor';
 
 export interface WorkflowEngineModuleOptions {
   compilation?: {
@@ -41,10 +35,35 @@ export interface WorkflowEngineModuleOptions {
     traceExecution?: boolean;
   };
 
-  // Optional adapters for external services
-  streamingAdapter?: IStreamingService;
-  checkpointAdapter?: ICheckpointAdapter;
-  memoryAdapter?: IMemoryAdapter;
+  /**
+   * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)
+   * Replaces ICheckpointAdapter - uses LangGraph's BaseCheckpointSaver directly
+   *
+   * @example
+   * // Production with Redis
+   * checkpointer: await RedisSaver.fromUrl('redis://localhost:6379')
+   *
+   * // Development with SQLite
+   * checkpointer: SqliteSaver.fromConnString('./data/checkpoints.db')
+   *
+   * // Testing with in-memory
+   * checkpointer: new MemorySaver()
+   */
+  checkpointer?: BaseCheckpointSaver;
+
+  /**
+   * Tool classes to register with the workflow engine.
+   * These tools will be automatically discovered and made available to agents.
+   * @example
+   * tools: [GithubToolsService, SearchToolsService]
+   */
+  tools?: any[];
+
+  /**
+   * LLM configuration for LlmProviderService
+   * Required for agents that use LLM functionality
+   */
+  llm?: LlmModuleOptions;
 }
 
 @Module({})
@@ -60,65 +79,54 @@ export class WorkflowEngineModule {
 
     return {
       module: WorkflowEngineModule,
-      imports: [ConfigModule, StreamingModule],
+      imports: [ConfigModule],
       providers: [
         {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useValue: options,
         },
+        {
+          provide: 'WORKFLOW_ENGINE_TOOL_CLASSES',
+          useValue: options.tools || [],
+        },
+        {
+          provide: 'LLM_MODULE_OPTIONS',
+          useValue: options.llm || {}, // Provide LLM config or empty object
+        },
         // Core services
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
         MetadataProcessorService,
-        SubgraphManagerService,
 
-        // Split streaming services
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowStreamService,
+        // Graph Building Strategies (Strategy Pattern - NEW!)
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
 
-        WorkflowCheckpointService,
+        // Execution services
         WorkflowExecutionService,
 
-        // Decorator translation services
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-        {
-          provide: 'DecoratorTranslationService',
-          useClass: DecoratorTranslationService,
-        },
-        {
-          provide: 'MultiAgentTranslationService',
-          useClass: MultiAgentTranslationService,
-        },
-        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
-        // Services will inject it directly via @Inject('ICheckpointAdapter')
+        // Resumption services (TASK_2025_049)
+        LangGraphCommandService,
+        WorkflowResumptionService,
 
-        // Note: IStreamingService is provided by StreamingModule via adapter pattern
+        // Multi-Agent Graph Builders (Strategy Pattern)
+        MultiAgentGraphBuilderService,
+        SupervisorGraphBuilder,
+        SequentialGraphBuilder,
+
+        // Tool registry service
+        ToolRegistryService,
+        LlmProviderService,
       ],
       exports: [
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
         MetadataProcessorService,
-        SubgraphManagerService,
-        // Streaming services
-        WorkflowStreamService,
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowCheckpointService,
         WorkflowExecutionService,
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
+        WorkflowResumptionService, // Export for HITL integration (TASK_2025_049)
+        LangGraphCommandService,
+        MultiAgentGraphBuilderService,
+        ToolRegistryService,
+        LlmProviderService,
+        // Export strategies for potential external use
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
       ],
       global: true,
     };
@@ -135,72 +143,54 @@ export class WorkflowEngineModule {
   }): DynamicModule {
     return {
       module: WorkflowEngineModule,
-      imports: [
-        ConfigModule,
-        StreamingModule.forRoot({
-          websocket: { enabled: false }, // Default disabled, can be overridden by app module
-          defaultBufferSize: 50,
-        }),
-      ],
+      imports: [ConfigModule],
       providers: [
         {
           provide: 'WORKFLOW_ENGINE_MODULE_OPTIONS',
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
+        {
+          provide: 'WORKFLOW_ENGINE_TOOL_CLASSES',
+          useFactory: (opts: WorkflowEngineModuleOptions) => opts.tools || [],
+          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
+        },
+        {
+          provide: 'LLM_MODULE_OPTIONS',
+          useFactory: (opts: WorkflowEngineModuleOptions) => opts.llm || {}, // Extract LLM config from options
+          inject: ['WORKFLOW_ENGINE_MODULE_OPTIONS'],
+        },
         // Core services
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
         MetadataProcessorService,
-        SubgraphManagerService,
 
-        // Split streaming services
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowStreamService,
-
-        WorkflowCheckpointService,
+        // Execution services
         WorkflowExecutionService,
 
-        // Decorator translation services
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
-        {
-          provide: 'DecoratorTranslationService',
-          useClass: DecoratorTranslationService,
-        },
-        {
-          provide: 'MultiAgentTranslationService',
-          useClass: MultiAgentTranslationService,
-        },
-        // Don't re-provide ICheckpointAdapter - it's injected from CheckpointModule
-        // Services will inject it directly via @Inject('ICheckpointAdapter')
+        // Resumption services (TASK_2025_049)
+        LangGraphCommandService,
+        WorkflowResumptionService,
 
-        // Note: IStreamingService is provided by StreamingModule via adapter pattern
+        // Multi-Agent Graph Builders (Strategy Pattern)
+        MultiAgentGraphBuilderService,
+        SupervisorGraphBuilder,
+        SequentialGraphBuilder,
+
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
+
+        ToolRegistryService,
+        LlmProviderService,
       ],
       exports: [
-        WorkflowGraphBuilderService,
-        CompilationCacheService,
         MetadataProcessorService,
-        SubgraphManagerService,
-        // Streaming services
-        WorkflowStreamService,
-        StreamManagementService,
-        TokenProcessingService,
-        StreamEventProcessorService,
-        WorkflowCheckpointService,
         WorkflowExecutionService,
-        DecoratorTranslationService,
-        MultiAgentTranslationService,
-        GraphPatternsService,
-        GraphOptimizationService,
-        // Command processing service
-        CommandProcessorService,
+        WorkflowResumptionService, // Export for HITL integration (TASK_2025_049)
+        LangGraphCommandService,
+        MultiAgentGraphBuilderService,
+        ToolRegistryService,
+        LlmProviderService,
+        FunctionalTaskGraphStrategy,
+        FunctionalNodeGraphStrategy,
       ],
       global: true,
     };

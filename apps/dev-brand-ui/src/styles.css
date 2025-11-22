@@ -1,3 +1,6 @@
+/* Prism.js Syntax Highlighting - MUST come before @tailwind directives */
+@import 'prismjs/themes/prism-okaidia.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

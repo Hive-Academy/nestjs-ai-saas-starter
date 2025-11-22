@@ -11,10 +11,7 @@ import { HitlNotificationService } from './services/hitl-notification.service';
 import { HitlTimeoutService } from './services/hitl-timeout.service';
 import { HumanApprovalService } from './services/human-approval.service';
 import { UserInterruptionService } from './services/user-interruption.service';
-import { HitlMemoryLearningService } from './services/hitl-memory-learning.service';
-import { HitlCheckpointService } from './services/hitl-checkpoint.service';
 import { HitlValidationService } from './services/hitl-validation.service';
-import { HitlRecoveryService } from './services/hitl-recovery.service';
 import { HitlApprovalRequestService } from './services/hitl-approval-request.service';
 // Phase 1a SOLID Refactoring - New services
 import { ApproverIntelligenceService } from './services/approver-intelligence.service';
@@ -47,10 +44,22 @@ import { DEFAULT_HITL_CONFIG, HITL_CONFIG } from './constants';
  * - LangGraph handles workflow checkpoints automatically
  * - Zero breaking changes for existing configurations
  *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Recovery):
+ * - Removed HitlRecoveryService from providers and exports
+ * - Recovery handled by LangGraph native checkpointer
+ * - No manual recovery service needed
+ *
+ * **TASK_2025_040 Phase 3** (RunnableConfig Integration):
+ * - Services now access checkpointer via RunnableConfig parameter
+ * - No standalone checkpoint/recovery services in providers
+ * - 18 enterprise services preserved with native LangGraph integration
+ * - Pattern: Embedded state management (workflow-engine alignment)
+ *
  * Provides:
  * - Adapter-based storage integration for approval persistence
- * - Human approval orchestration services
+ * - Human approval orchestration services (18 specialized services)
  * - Neo4j-based approval state persistence (Phase 5)
+ * - LangGraph native interrupt() and Command({ resume }) patterns
  * - 100% backward compatibility with existing configurations
  * - Extensibility through custom adapter injection
  */
@@ -106,10 +115,7 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
-        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         // Orchestrator service that depends on the above
         HumanApprovalService,
@@ -133,10 +139,7 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
-        HitlCheckpointService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HITL_CONFIG,
       ],
@@ -183,10 +186,7 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
-        HitlCheckpointService, // Now uses ApprovalStateRepository (Phase 5)
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HumanApprovalService,
         ApprovalEvaluatorService,
@@ -210,10 +210,7 @@ export class HitlModule {
         HitlNotificationService,
         HitlTimeoutService,
         // New specialized HITL services
-        HitlMemoryLearningService,
-        HitlCheckpointService,
         HitlValidationService,
-        HitlRecoveryService,
         HitlApprovalRequestService,
         HITL_CONFIG,
       ],

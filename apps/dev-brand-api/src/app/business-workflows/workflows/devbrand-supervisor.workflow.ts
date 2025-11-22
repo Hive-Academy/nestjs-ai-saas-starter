@@ -1,15 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   MultiAgent,
   MultiAgentTopology,
-  MultiAgentWorkflowBase,
   SupervisorConfig,
-} from '@hive-academy/langgraph-multi-agent';
-import type { StreamableWorkflow } from '@hive-academy/langgraph-streaming';
+  WorkflowExecutionService,
+  StreamEventParser,
+  StreamEventTransformer,
+  type DomainStreamEvent,
+} from '@hive-academy/langgraph-workflow-engine';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
+import type { TypedAgentState } from '../types';
+import type {
+  Achievement,
+  BrandStrategy,
+  PlatformContent,
+} from '../agents/shared/agent.types';
 
 /**
  * DevBrand workflow input type
@@ -118,13 +126,13 @@ Each agent builds on the work of the previous agent.`,
   debug: false,
 })
 @Injectable()
-export class DevBrandSupervisorWorkflow
-  extends MultiAgentWorkflowBase
-  implements StreamableWorkflow<DevBrandWorkflowInput, any>
-{
-  constructor(private readonly brandMemory: PersonalBrandMemoryService) {
-    super();
-  }
+export class DevBrandSupervisorWorkflow {
+  private readonly logger = new Logger(DevBrandSupervisorWorkflow.name);
+
+  constructor(
+    private readonly workflowExecution: WorkflowExecutionService,
+    private readonly brandMemory: PersonalBrandMemoryService
+  ) {}
 
   /**
    * Execute the complete personal branding workflow
@@ -137,9 +145,9 @@ export class DevBrandSupervisorWorkflow
     githubUsername: string;
     executionId?: string;
   }): Promise<{
-    achievements: any[];
-    strategy: any;
-    content: any;
+    achievements: Achievement[];
+    strategy: BrandStrategy;
+    content: PlatformContent;
     confidence: number;
   }> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
@@ -149,72 +157,88 @@ export class DevBrandSupervisorWorkflow
     );
 
     try {
-      // Build supervisor message
-      const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
-
-User Context:
-- User ID: ${input.userId}
-- GitHub Username: ${input.githubUsername}
-- Execution ID: ${executionId}
-
-Task Sequence:
-1. Analyze GitHub profile to extract achievements and technical skills
-2. Develop personal brand strategy based on the analysis
-3. Create platform-specific content (LinkedIn, Dev.to) for the brand
-
-Please coordinate the three agents to complete this workflow.`;
-
-      // Execute multi-agent coordination (automatic streaming/HITL)
-      const result = await this.executeSimple(supervisorMessage, {
-        userId: input.userId,
-        githubUsername: input.githubUsername,
+      // 1. Build LangGraph state from input
+      const now = new Date();
+      const initialState: TypedAgentState<Record<string, unknown>> = {
+        id: executionId,
+        createdAt: now,
+        updatedAt: now,
+        version: 1,
         executionId,
-        workflowType: 'personal-branding',
-      });
-
-      this.logger.log(
-        `✅ Multi-agent coordination completed. Execution path: ${result.executionPath?.join(
-          ' → '
-        )}`
-      );
-
-      // Extract results from agent coordination
-      const agentResults = {
-        githubAnalysis: result.finalState.metadata?.githubData || {},
-        brandStrategy: result.finalState.metadata?.brandStrategy || {},
-        contentCreation: result.finalState.metadata?.generatedContent || {},
+        status: 'active',
+        confidence: 1.0,
+        retryCount: 0,
+        startedAt: now,
+        timestamps: { started: now },
+        completedNodes: [],
+        messages: [],
+        metadata: {
+          userId: input.userId,
+          githubUsername: input.githubUsername,
+          executionId,
+          workflowType: 'personal-brand-analysis',
+        },
       };
 
-      // Store achievements in personal brand memory
+      // 2. Execute via WorkflowExecutionService (automatic checkpoint + memory)
+      const finalState = await this.workflowExecution.executeMultiAgentWorkflow(
+        DevBrandSupervisorWorkflow,
+        [
+          GitHubCodeAnalyzerAgent,
+          PersonalBrandStrategistAgent,
+          ContentCreatorAgent,
+        ],
+        initialState,
+        { configurable: { thread_id: executionId } }
+      );
+
+      this.logger.log(
+        '✅ Multi-agent coordination completed via WorkflowExecutionService'
+      );
+
+      // 3. Extract results from finalState.metadata (inline extraction for Task 2)
       const achievements =
-        agentResults.githubAnalysis?.achievements ||
-        agentResults.githubAnalysis?.data?.achievements ||
-        [];
+        (finalState.metadata as any)?.githubData?.achievements ||
+        ([] as Achievement[]);
+      const strategy =
+        (finalState.metadata as any)?.brandStrategy || ({} as BrandStrategy);
+      const content =
+        (finalState.metadata as any)?.generatedContent ||
+        ({ linkedin: {}, devto: {} } as PlatformContent);
+      const confidence = (finalState.metadata as any)?.confidence || 0.8;
 
-      if (achievements.length > 0) {
-        this.logger.log(
-          `Storing ${achievements.length} achievements in memory`
-        );
-
-        for (const achievement of achievements) {
+      // 4. Store achievements in memory (individual failures don't fail workflow)
+      let storedCount = 0;
+      for (const achievement of achievements) {
+        try {
           await this.brandMemory.storeCodeAchievement(input.userId, {
-            id: achievement.id || `achievement-${Date.now()}`,
-            description: achievement.description,
+            id: achievement.id || `ach-${Date.now()}-${storedCount}`,
+            repository: achievement.repository,
+            description: achievement.description || achievement.achievement,
             technologies: achievement.technologies || [],
             impact: achievement.impact || 'medium',
-            date: new Date().toISOString(),
-            repository: achievement.repository || 'unknown',
-            userId: input.userId,
+            date: achievement.date || achievement.timestamp || new Date(),
           });
+          storedCount++;
+        } catch (error) {
+          this.logger.warn(
+            `Failed to store achievement for ${achievement.repository}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
         }
       }
 
-      // Return consolidated results
+      this.logger.log(
+        `Stored ${storedCount}/${achievements.length} achievements for user ${input.userId}`
+      );
+
+      // 5. Return consolidated results
       return {
         achievements,
-        strategy: agentResults.brandStrategy,
-        content: agentResults.contentCreation,
-        confidence: result.finalState.metadata?.confidence || 0.8,
+        strategy,
+        content,
+        confidence,
       };
     } catch (error) {
       this.logger.error('Multi-agent coordination failed:', error);
@@ -229,45 +253,87 @@ Please coordinate the three agents to complete this workflow.`;
   /**
    * Execute with streaming support
    *
-   * Returns an async iterator for real-time streaming of agent events
-   * Implements StreamableWorkflow interface
+   * Returns an async iterator for real-time streaming of agent events.
+   * Uses WorkflowExecutionService.streamWorkflow() for LangGraph native streaming.
+   *
+   * @param input - Workflow input with user ID and GitHub username
+   * @yields StreamEvent objects with workflow state updates
    */
   async *executeWithStreaming(
     input: DevBrandWorkflowInput
-  ): AsyncGenerator<any, void, unknown> {
+  ): AsyncGenerator<DomainStreamEvent, void, unknown> {
     const executionId = input.executionId || `devbrand-${Date.now()}`;
 
-    const supervisorMessage = `Please help create a comprehensive personal brand for developer: ${input.githubUsername}
-
-User Context:
-- User ID: ${input.userId}
-- GitHub Username: ${input.githubUsername}
-- Execution ID: ${executionId}
-
-Task Sequence:
-1. Analyze GitHub profile to extract achievements and technical skills
-2. Develop personal brand strategy based on the analysis
-3. Create platform-specific content (LinkedIn, Dev.to) for the brand`;
-
-    // Execute with streaming
-    const stream = await this.executeCoordination(
-      {
-        messages: [supervisorMessage],
-        config: {
-          metadata: {
-            userId: input.userId,
-            githubUsername: input.githubUsername,
-            executionId,
-            workflowType: 'personal-branding',
-          },
-        },
-      },
-      { stream: true, streamMode: 'values' }
+    this.logger.log(
+      `Starting streaming execution for user ${input.userId}, execution ${executionId}`
     );
 
-    // Yield events from stream
-    for await (const event of stream) {
-      yield event;
+    // 1. Build initial state
+    const now = new Date();
+    const initialState: TypedAgentState<Record<string, unknown>> = {
+      id: executionId,
+      createdAt: now,
+      updatedAt: now,
+      version: 1,
+      executionId,
+      status: 'active',
+      confidence: 1.0,
+      retryCount: 0,
+      startedAt: now,
+      timestamps: { started: now },
+      completedNodes: [],
+      messages: [],
+      metadata: {
+        userId: input.userId,
+        githubUsername: input.githubUsername,
+        executionId,
+        workflowType: 'personal-brand-analysis',
+      },
+    };
+
+    // 2. Stream via WorkflowExecutionService with comprehensive streaming modes
+    // - 'updates': Node-level state changes (supervisor + workers via subgraphs)
+    // - 'messages': LLM token streaming from ALL agents (supervisor + workers)
+    // - 'custom': Custom progress events from worker agents
+    // Note: DevBrandSupervisorWorkflow already has agents configured via @MultiAgent decorator
+    const stream = this.workflowExecution.streamWorkflow(
+      DevBrandSupervisorWorkflow,
+      initialState,
+      {
+        configurable: { thread_id: executionId },
+        streamMode: ['updates', 'messages', 'custom'], // ✅ Add messages + custom modes
+        subgraphs: true, // Enable worker agent streaming
+      } as any // Type assertion needed for array streamMode (LangGraph types not updated yet)
+    );
+
+    // 3. Parse and transform stream events using defensive utilities
+    const parser = new StreamEventParser();
+    const transformer = new StreamEventTransformer();
+
+    for await (const chunk of stream) {
+      // Parse chunk with defensive validation
+      const parsedEvent = parser.parseChunk(chunk);
+
+      if (!parsedEvent) {
+        // Skip invalid/empty chunks
+        continue;
+      }
+
+      // Skip events that should be filtered (e.g., __start__, empty updates)
+      if (parser.shouldSkipEvent(parsedEvent)) {
+        continue;
+      }
+
+      // Transform to domain event
+      const domainEvent = transformer.transformToDomainEvent(
+        parsedEvent,
+        executionId
+      );
+
+      // Yield to caller (includes subgraph metadata if from worker agent)
+      yield domainEvent;
     }
+
+    this.logger.log(`Streaming execution completed for ${executionId}`);
   }
 }

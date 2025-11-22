@@ -1,87 +1,41 @@
-# ChromaDB Module - Enterprise Integration Guide
+# @hive-academy/nestjs-chromadb
 
 ## Overview
 
-The **@hive-academy/nestjs-chromadb** module provides **enterprise-grade ChromaDB integration** for NestJS applications with **declarative decorators**, **multi-tenancy**, and **production-ready monitoring**. This module transforms vector database operations into zero-boilerplate, type-safe, and highly performant experiences.
+Enterprise-grade ChromaDB integration for NestJS with a TypeORM-style repository pattern. Provides vector database capabilities for semantic search, document similarity, and embedding-based retrieval.
 
-## 🚀 **Enhanced Key Features**
+**Key Features:**
 
-### **🏗️ TypeORM-Style Repository Pattern (UPDATED 2025)**
+- **Repository Pattern**: TypeORM-style API (`ChromaDBRepository<T>`)
+- **Declarative Decorators**: `@Cached`, `@Profiled`, `@Retry`, `@VectorQuery`
+- **Multi-Tenancy**: Tenant isolation via `@TenantAware`
+- **Type Safety**: Strict TypeScript typing with generics
+- **Auto-Initialization**: Automatic collection creation and management
 
-- **ChromaDBRepository<T>** - Type-safe CRUD operations with explicit constructor DI
-- **Generic Type Propagation** - Full TypeScript inference with zero `any` types
-- **15+ Inherited Methods** - Complete CRUD without boilerplate (90% less code)
-- **Clean Architecture** - Composition pattern mirroring Neo4j implementation
-- **Extensible** - Add custom business methods while keeping all CRUD functionality
+**Use Cases:**
 
-### **🎯 Declarative Decorator Ecosystem (Service Methods)**
+- Semantic search over documents
+- RAG (Retrieval-Augmented Generation) systems
+- Document similarity and clustering
+- Knowledge base retrieval
+- Memory systems for AI agents
 
-- **@VectorQuery** - Zero-boilerplate vector search with auto-embedding
-- **@Cached** - Vector-aware intelligent caching with collection invalidation
-- **@Profiled** - Real-time performance monitoring and slow query detection
-- **@Retry** - Resilient operations with circuit breaker patterns
-- **@TenantAware** - Automatic tenant isolation for multi-tenant applications
+---
 
-### **🏢 Enterprise Multi-Tenancy**
+## Module Setup
 
-- **@TenantAware** - Automatic tenant isolation with flexible naming strategies
-- **@CrossTenant** - Secure cross-tenant administrative operations
-- **Security Policies** - GDPR, HIPAA, SOC2 compliance support
-- **Resource Limits** - Per-tenant quotas and monitoring
-- **Audit Logging** - Comprehensive operation tracking
-
-### **⚡ Performance & Reliability**
-
-- **Vector-Optimized Caching** - Embedding-aware cache strategies
-- **Smart Query Optimization** - Collection-aware cache invalidation
-- **Circuit Breaker** - Automatic failure handling and recovery
-- **Performance Metrics** - Sub-100ms operation tracking
-- **Health Monitoring** - Production-ready observability
-
-### **🔒 Type Safety & Security**
-
-- **Zero `any` Types** - Comprehensive TypeScript safety with runtime validation
-- **Type Guards** - Runtime validation for all external data
-- **Secure Multi-Tenancy** - Data isolation and access control
-- **Embedding Security** - Provider-agnostic security policies
-
-### **🛠️ Traditional Features (Enhanced)**
-
-- **Multi-Provider Embeddings** (OpenAI, HuggingFace, Cohere, Custom)
-- **Deterministic Chunking** with parent/child relationship tracking
-- **Strict Error Propagation** (embedding helpers throw; no silent skips)
-- **Startup Config Validation** (host, port, provider requirements)
-- **Metadata Relationship Docs** (stored without embeddings to save cost)
-- **Health Monitoring & Diagnostics**
-- **Batch-Oriented Operations** (encouraged over single-item API)
-- **Enhanced Type Safety** (zero `any` types, comprehensive validation)
-
-## Quick Start
-
-### Installation & Setup
-
-```bash
-npm install @hive-academy/nestjs-chromadb
-```
+### Basic Configuration
 
 ```typescript
-import { Module } from '@nestjs/common';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 
 @Module({
   imports: [
     ChromaDBModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 8000,
-        ssl: false,
-      },
-      embedding: {
-        provider: 'openai',
-        config: {
-          apiKey: process.env.OPENAI_API_KEY,
-          model: 'text-embedding-3-small',
-        },
+      url: process.env.CHROMADB_URL || 'http://localhost:8000',
+      auth: {
+        provider: 'token',
+        credentials: process.env.CHROMADB_TOKEN,
       },
     }),
   ],
@@ -89,1870 +43,853 @@ import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 export class AppModule {}
 ```
 
-## 🏗️ **TypeORM-Style Repository Pattern (Recommended - UPDATED 2025)**
-
-The module provides a **TypeORM-style repository pattern** with explicit constructor-based dependency injection, mirroring the Neo4j implementation from TASK_2025_004.
-
-### **Why Use This Pattern?**
-
-✅ **Explicit Constructor DI** - Clear, predictable dependency injection (no decorator magic)
-✅ **Type-Safe CRUD** - Full generic type propagation with zero `any` types
-✅ **Clean Architecture** - Composition pattern with ChromaDBService
-✅ **Zero Boilerplate** - Inherit 15+ CRUD methods automatically
-✅ **Extensible** - Add custom business methods while keeping CRUD
-✅ **Enterprise-Ready** - Production-tested, type-sound implementation
-
-### **Complete Example: Entity + Repository (TypeORM-Style)**
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import {
-  BaseDocument,
-  BaseChromaEntity,
-  ChromaEntity,
-  ChromaId,
-  ChromaProp,
-  ChromaDBRepository,
-  ChromaDBService,
-} from '@hive-academy/nestjs-chromadb';
-
-// ============================================
-// Step 1: Define Entity (Decorator-Based Class)
-// ============================================
-
-interface UserMetadata {
-  name: string;
-  email: string;
-  department: string;
-  skills: string[];
-}
-
-@ChromaEntity({
-  collection: 'users',
-  autoEmbed: true,
-  autoTimestamp: true,
-})
-export class UserEntity extends BaseChromaEntity<UserMetadata> {
-  @ChromaId()
-  id!: string;
-
-  @ChromaProp()
-  content!: string;
-
-  metadata!: UserMetadata;
-  embedding?: readonly number[];
-}
-
-// ============================================
-// Step 2: Create Repository with Explicit Constructor
-// ============================================
-
-@Injectable()
-export class UserRepository extends ChromaDBRepository<UserEntity> {
-  /**
-   * Explicit 3-parameter constructor (TypeORM-style)
-   *
-   * @param chromaDB - ChromaDBService injected by NestJS
-   */
-  constructor(chromaDB: ChromaDBService) {
-    super(
-      UserEntity, // Entity class (NOT interface - use actual class)
-      'users', // Collection name
-      chromaDB // ChromaDB service instance
-    );
-  }
-
-  // ✅ ALL 15+ CRUD methods inherited automatically from ChromaDBRepository<T>:
-  //
-  // READ Operations:
-  // - findById(id): Find single document by ID
-  // - findByIds(ids): Find multiple documents by IDs
-  // - findAll(options): Find with filtering, limits
-  // - count(where?, whereDocument?): Count documents
-  // - exists(id): Check if document exists
-  // - peek(limit?): Get first N documents
-  // - getCollectionInfo(): Get collection metadata
-  //
-  // WRITE Operations:
-  // - create(data): Create single document
-  // - createMany(data[]): Batch create
-  // - update(id, updates): Update existing document
-  // - updateMany(updates[]): Batch update
-  // - upsert(data): Create or update (requires id)
-  // - upsertMany(data[]): Batch upsert
-  //
-  // DELETE Operations:
-  // - delete(id): Delete by ID
-  // - deleteMany(ids[]): Batch delete
-  // - deleteByFilter(where?, whereDocument?): Delete by filter
-  // - clear(): Clear all documents
-  //
-  // SEARCH Operations:
-  // - search(query, options?): Semantic search
-  // - searchWithScores(query, options?): Search with similarity scores
-  // - searchSimilar(embedding, options?): Search by embedding vector
-
-  // ============================================
-  // Custom Business Methods
-  // ============================================
-
-  /**
-   * Find user by email (custom business logic)
-   * NOTE: ChromaDB's where clause filters metadata, so we filter in application layer
-   */
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    const allUsers = await this.findAll({ limit: 100 });
-    return allUsers.find((user) => user.metadata.email === email) || null;
-  }
-
-  /**
-   * Find all users in a department
-   * Uses application-level filtering for simple metadata queries
-   */
-  async findByDepartment(department: string): Promise<UserEntity[]> {
-    const allUsers = await this.findAll({ limit: 1000 });
-    return allUsers.filter((user) => user.metadata.department === department);
-  }
-
-  /**
-   * Semantic search by skills
-   * Combines vector search with post-filtering for complex queries
-   */
-  async searchBySkills(skills: string[]): Promise<UserEntity[]> {
-    const results = await this.search(skills.join(' '), { limit: 50 });
-    return results.filter((user) => user.metadata.skills.some((skill) => skills.includes(skill)));
-  }
-}
-```
-
-### **Module Registration (TypeORM-Style)**
-
-```typescript
-import { Module } from '@nestjs/common';
-import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
-import { UserRepository } from './repositories/user.repository';
-
-@Module({
-  imports: [
-    // Option 1: Auto-generate repository (simple use case)
-    ChromaDBModule.forFeature([UserEntity]),
-
-    // Option 2: Use custom repository (recommended)
-    ChromaDBModule.forRoot({
-      connection: { host: 'localhost', port: 8000 },
-      embedding: { provider: 'openai', config: { apiKey: '...' } },
-    }),
-  ],
-  providers: [
-    UserRepository, // Register your custom repository
-  ],
-  exports: [UserRepository],
-})
-export class UserModule {}
-```
-
-### **Service Usage**
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { UserRepository } from './repositories/user.repository';
-
-@Injectable()
-export class UserService {
-  constructor(private readonly userRepo: UserRepository) {}
-
-  async createUser(name: string, email: string) {
-    return this.userRepo.create({
-      content: `User profile for ${name}`,
-      metadata: { name, email, department: 'Engineering', skills: [] },
-    });
-  }
-
-  async searchUsers(query: string) {
-    return this.userRepo.search(query, { limit: 10 });
-  }
-
-  async findUserByEmail(email: string) {
-    return this.userRepo.findByEmail(email);
-  }
-}
-```
-
-### **Complete CRUD Method Reference**
-
-When you extend `ChromaDBRepository<T>`, you inherit all these type-safe methods:
-
-#### **CREATE Operations**
-
-```typescript
-// Create single document
-async create(
-  document: CreateDocumentInput<T>,
-  options?: RepositoryOperationOptions
-): Promise<T>
-
-// Example
-const user = await userRepo.create({
-  content: 'User profile...',
-  metadata: { name: 'John', email: 'john@example.com' }
-});
-
-// Create multiple documents (batch)
-async createMany(
-  documents: CreateDocumentInput<T>[],
-  options?: RepositoryOperationOptions
-): Promise<RepositoryOperationResult<T>>
-
-// Example
-const result = await userRepo.createMany([
-  { content: 'User 1', metadata: { name: 'John' } },
-  { content: 'User 2', metadata: { name: 'Jane' } }
-]);
-console.log(`Created ${result.successCount} users`);
-```
-
-#### **READ Operations**
-
-```typescript
-// Find by ID
-async findById(id: string, options?): Promise<T | null>
-
-// Find multiple by IDs
-async findByIds(ids: string[], options?): Promise<T[]>
-
-// Find all with filtering
-async findAll(options?: {
-  where?: Where;
-  whereDocument?: WhereDocument;
-  limit?: number;
-}): Promise<T[]>
-
-// Count documents
-async count(where?: Where, whereDocument?: WhereDocument): Promise<number>
-
-// Check if exists
-async exists(id: string): Promise<boolean>
-
-// Peek first N documents
-async peek(limit = 10): Promise<T[]>
-
-// Get collection info
-async getCollectionInfo(): Promise<{
-  name: string;
-  count: number;
-  metadata?: Record<string, unknown>;
-}>
-
-// Examples
-const user = await userRepo.findById('user-123');
-const activeUsers = await userRepo.findAll({ where: { status: 'active' } });
-const count = await userRepo.count({ department: 'Engineering' });
-```
-
-#### **UPDATE Operations**
-
-```typescript
-// Update single document
-async update(
-  id: string,
-  updates: Partial<T>,
-  options?: RepositoryOperationOptions
-): Promise<T | null>
-
-// Update multiple documents
-async updateMany(
-  updates: Array<{ id: string; data: Partial<T> }>,
-  options?: RepositoryOperationOptions
-): Promise<RepositoryOperationResult<T>>
-
-// Upsert (create or update)
-async upsert(
-  document: UpsertDocumentInput<T>,
-  options?: RepositoryOperationOptions
-): Promise<T>
-
-// Upsert multiple
-async upsertMany(
-  documents: UpsertDocumentInput<T>[],
-  options?: RepositoryOperationOptions
-): Promise<RepositoryOperationResult<T>>
-
-// Examples
-const updated = await userRepo.update('user-123', {
-  content: 'Updated profile...'
-});
-
-const upserted = await userRepo.upsert({
-  id: 'user-123',
-  content: 'New or updated content',
-  metadata: { name: 'John' }
-});
-```
-
-#### **DELETE Operations**
-
-```typescript
-// Delete by ID
-async delete(id: string, options?): Promise<boolean>
-
-// Delete multiple by IDs
-async deleteMany(
-  ids: string[],
-  options?: RepositoryOperationOptions
-): Promise<RepositoryOperationResult<never>>
-
-// Delete by filter
-async deleteByFilter(
-  where?: Where,
-  whereDocument?: WhereDocument,
-  options?: RepositoryOperationOptions
-): Promise<RepositoryOperationResult<never>>
-
-// Clear all documents
-async clear(): Promise<void>
-
-// Examples
-await userRepo.delete('user-123');
-await userRepo.deleteMany(['user-1', 'user-2']);
-await userRepo.deleteByFilter({ status: 'inactive' });
-```
-
-#### **SEARCH Operations (Vector/Semantic)**
-
-```typescript
-// Semantic search
-async search(
-  query: string,
-  options?: RepositorySearchOptions
-): Promise<T[]>
-
-// Search with similarity scores
-async searchWithScores(
-  query: string,
-  options?: RepositorySearchOptions
-): Promise<Array<{
-  document: T;
-  score: number;
-  distance?: number;
-}>>
-
-// Search by embedding vector
-async searchSimilar(
-  embedding: number[],
-  options?: RepositorySearchOptions
-): Promise<T[]>
-
-// Examples
-const results = await userRepo.search('machine learning expert', {
-  limit: 10,
-  where: { department: 'Engineering' }
-});
-
-const scoredResults = await userRepo.searchWithScores('AI researcher');
-scoredResults.forEach(r => {
-  console.log(`${r.document.id}: ${r.score}`);
-});
-```
-
-#### **Input Types**
-
-```typescript
-// Create input (id optional, auto-generated if not provided)
-type CreateDocumentInput<T extends BaseDocument> = {
-  content: string;
-  metadata: T extends BaseDocument<infer TMetadata> ? TMetadata : never;
-  embedding?: readonly number[];
-  id?: string;
-};
-
-// Upsert input (id required)
-type UpsertDocumentInput<T extends BaseDocument> = CreateDocumentInput<T> & {
-  id: string;
-};
-
-// Repository options
-interface RepositoryOperationOptions {
-  includeEmbeddings?: boolean;
-  includeMetadata?: boolean;
-  includeDocuments?: boolean;
-  metadata?: Record<string, unknown>;
-  timeout?: number;
-}
-
-interface RepositorySearchOptions extends RepositoryOperationOptions {
-  limit?: number;
-  minScore?: number;
-  where?: Where;
-  whereDocument?: WhereDocument;
-}
-```
-
-### **Migration from Old Pattern**
-
-**Before (❌ Manual Service-Based Pattern):**
-
-```typescript
-@Injectable()
-export class UserService {
-  constructor(private chromaDB: ChromaDBService) {}
-
-  async createUser(content: string, metadata: any) {
-    const doc = {
-      id: uuid(),
-      document: content,
-      metadata,
-    };
-    await this.chromaDB.addDocuments('users', [doc]);
-    return doc;
-  }
-
-  async findUser(id: string) {
-    const results = await this.chromaDB.getDocuments('users', { ids: [id] });
-    return results.documents?.[0];
-  }
-
-  async searchUsers(query: string) {
-    return this.chromaDB.searchDocuments('users', [query]);
-  }
-
-  // ❌ Need to implement all CRUD methods manually
-  // ❌ No type safety for metadata
-  // ❌ Repetitive boilerplate code
-}
-```
-
-**After (✅ TypeORM-Style Repository Pattern):**
-
-```typescript
-@ChromaEntity({ collection: 'users', autoEmbed: true })
-export class UserEntity extends BaseChromaEntity<UserMetadata> {
-  @ChromaId() id!: string;
-  @ChromaProp() content!: string;
-  metadata!: UserMetadata;
-}
-
-@Injectable()
-export class UserRepository extends ChromaDBRepository<UserEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(UserEntity, 'users', chromaDB); // ✅ NO CAST NEEDED
-  }
-
-  // ✅ All 15+ CRUD methods inherited automatically
-  // ✅ Full type safety with generic constraints
-  // ✅ Zero boilerplate - just extend and inject
-
-  // Add custom business methods as needed
-  async findByEmail(email: string): Promise<UserEntity | null> {
-    const users = await this.findAll({ limit: 100 });
-    return users.find((u) => u.metadata.email === email) || null;
-  }
-}
-```
-
-**Benefits:**
-
-- **90% Less Code**: CRUD methods inherited automatically
-- **Type Safety**: Full generic type propagation with zero `any` types
-- **Clean Architecture**: Explicit constructor DI (TypeORM-style)
-- **Extensible**: Add custom methods while keeping all CRUD functionality
-
-## 🎯 **Declarative Development Patterns**
-
-### **Declarative Vector Operations**
-
-Replace manual vector operations with decorators:
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { VectorQuery, Cached, Profiled, Retry } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class KnowledgeService {
-  /**
-   * Complete vector search with caching, monitoring, and resilience
-   */
-  @VectorQuery<KnowledgeDocument>({
-    collection: 'knowledge',
-    autoEmbed: true, // Auto-generate embeddings from query
-    defaultLimit: 10, // Default result limit
-    includeMetadata: true, // Include document metadata
-    includeDistances: true, // Include similarity scores
-    enableCaching: true, // Enable intelligent caching
-  })
-  @Cached({
-    ttl: 300000, // 5 minutes cache
-    keyStrategy: 'collection_aware',
-    collectionAware: true, // Collection-specific cache invalidation
-    invalidateOnMutation: true,
-  })
-  @Profiled({
-    slowQueryThreshold: 100, // Log queries > 100ms
-    logLevel: 'slow', // Only log slow queries
-    includeParameters: false, // Don't log query parameters in production
-  })
-  @Retry({
-    maxAttempts: 3,
-    strategy: 'exponential',
-    circuitBreaker: { enabled: true, failureThreshold: 5 },
-  })
-  async searchKnowledge(params: VectorQueryParams): Promise<KnowledgeDocument[]> {
-    // Implementation handled entirely by decorators
-    // Auto-generates embeddings, caches results, monitors performance
-    // Includes automatic retry with circuit breaker
-  }
-
-  /**
-   * RAG context retrieval with background cache refresh
-   */
-  @VectorQuery<KnowledgeDocument>({
-    collection: 'knowledge',
-    autoEmbed: true,
-    defaultLimit: 15,
-  })
-  @Cached({
-    ttl: 600000, // 10 minutes for RAG context
-    refreshStrategy: 'background',
-    refreshThreshold: 0.8, // Refresh when 80% of TTL reached
-  })
-  async getRAGContext(query: string, maxTokens = 4000): Promise<string> {
-    const results = await this.searchKnowledge({ query });
-    return this.truncateToTokenLimit(results, maxTokens);
-  }
-}
-```
-
-### **Enterprise Multi-Tenancy**
-
-Automatic tenant isolation with security policies:
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { TenantAware, CrossTenant } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class DocumentService {
-  constructor(private readonly chromaService: ChromaDBService) {}
-
-  /**
-   * Automatic tenant isolation
-   * Collection automatically becomes: 'tenant_{tenantId}_documents'
-   * Tenant extracted from JWT token, headers, or custom logic
-   */
-  @TenantAware({
-    namingStrategy: 'prefix', // 'prefix' | 'suffix' | 'separate' | 'custom'
-    tenantExtraction: 'jwt', // 'header' | 'query' | 'jwt' | 'context' | 'custom'
-    enableTenantCaching: true, // Tenant-specific cache isolation
-    enableAuditLog: true, // Comprehensive audit logging
-    strictValidation: true, // Validate tenant exists and is active
-  })
-  async searchDocuments(query: string): Promise<DocumentMetadata[]> {
-    // No tenant logic needed - completely handled by decorator
-    return this.chromaService.searchDocuments('documents', [query], undefined, {
-      nResults: 10,
-      includeMetadata: true,
-    });
-  }
-
-  /**
-   * Cross-tenant admin operations with permission validation
-   */
-  @CrossTenant({
-    requiredPermissions: ['admin', 'cross-tenant-read'],
-    auditLevel: 'detailed', // Enhanced audit logging for compliance
-    maxTenants: 50, // Safety limit for cross-tenant operations
-  })
-  async globalSearch(query: string): Promise<Array<{ tenantId: string; results: any[] }>> {
-    // Search across all tenant collections with comprehensive audit logging
-    const tenants = await this.getTenantList();
-    return this.searchAcrossTenants(query, tenants);
-  }
-}
-```
-
-## Core Services
-
-### ChromaDBService - Enhanced Core Service
-
-```typescript
-listCollections(): Promise<ChromaCollectionInfo[]>
-createCollection(...): Promise<Collection>
-getCollection(...): Promise<Collection>
-deleteCollection(name: string): Promise<void>
-collectionExists(name: string): Promise<boolean>
-addDocuments(collectionName: string, docs: ChromaDocument[], options?: ChromaBulkOptions): Promise<void>
-updateDocuments(...): Promise<void>
-upsertDocuments(...): Promise<void>
-deleteDocuments(...): Promise<void>
-getDocuments(...): Promise<GetResult>
-countDocuments(...): Promise<number>
-peekDocuments(...): Promise<GetResult>
-getCollectionMetadata(name: string): Promise<Record<string, any> | null>
-updateCollectionMetadata(...): Promise<void>
-searchDocuments(...): Promise<ChromaSearchResult>
-similaritySearch(...): Promise<{ ids: string[]; documents: (string | null)[]; metadatas: (Record<string, unknown> | null)[]; distances: number[] }>
-```
-
-Removed legacy single-item or semantic convenience methods from docs to reduce ambiguity.
-
-### CollectionService - Collection Management
-
-```typescript
-// Collection lifecycle
-createCollection(name: string, metadata?: ChromaMetadata): Promise<void>
-deleteCollection(name: string): Promise<void>
-collectionExists(name: string): Promise<boolean>
-listCollections(): Promise<readonly string[]>
-
-// Collection information
-getCollectionInfo(name: string): Promise<CollectionInfo>
-getCollectionCount(name: string): Promise<number>
-```
-
-### Complete Usage Example
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { ChromaDBService, ChromaDocument, ChromaBulkOptions } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class KnowledgeService {
-  constructor(private readonly chromaDB: ChromaDBService) {}
-
-  async indexKnowledgeBase(documents: Array<{ content: string; source: string }>) {
-    const chromaDocs: ChromaDocument[] = documents.map((doc, idx) => ({
-      id: `kb-${idx}`,
-      document: doc.content,
-      metadata: {
-        source: doc.source,
-        indexed_at: new Date().toISOString(),
-        type: 'knowledge',
-      },
-    }));
-
-    const bulkOptions: ChromaBulkOptions = {
-      batchSize: 100,
-      autoChunk: true,
-      chunkingStrategy: 'smart',
-      extractMetadata: true,
-      preserveChunkRelationships: true,
-    };
-
-    return this.chromaDB.addDocuments('knowledge', chromaDocs, bulkOptions);
-  }
-
-  async searchKnowledge(query: string, filters?: any) {
-    return this.chromaDB.searchDocuments('knowledge', [query], undefined, {
-      nResults: 10,
-      where: filters,
-      includeMetadata: true,
-      includeDistances: true,
-    });
-  }
-
-  async getRAGContext(query: string, maxTokens: number = 4000) {
-    const results = await this.chromaDB.similaritySearch('knowledge', query, {
-      limit: 15,
-    });
-
-    // Truncate to token limit for RAG context
-    return this.truncateToTokenLimit(results, maxTokens);
-  }
-}
-```
-
-## 🔧 **Enhanced Configuration**
-
-### **Multi-Tenant Configuration**
-
-Enterprise-grade multi-tenancy with compliance support:
-
-```typescript
-import { TENANT_CONSTANTS, DEFAULT_TENANT_CONFIG } from '@hive-academy/nestjs-chromadb';
-
-// Basic Multi-Tenancy
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'localhost',
-    port: 8000,
-    ssl: false,
-  },
-  embedding: {
-    provider: 'openai',
-    config: {
-      apiKey: process.env.OPENAI_API_KEY,
-      model: 'text-embedding-3-small',
-    },
-  },
-  multiTenant: {
-    isolation: TENANT_CONSTANTS.ISOLATION_CONFIGS.STANDARD,
-    enableRegistry: true,
-    enableResourceLimits: true,
-    defaultResourceLimits: TENANT_CONSTANTS.RESOURCE_LIMITS.pro,
-  },
-});
-
-// Enterprise Multi-Tenancy with Compliance
-ChromaDBModule.forRoot({
-  // ... connection and embedding config
-  multiTenant: {
-    isolation: TENANT_CONSTANTS.ISOLATION_CONFIGS.ENTERPRISE,
-    enableRegistry: true,
-    enableResourceLimits: true,
-    enableCrossTenantAdmin: true,
-    securityPolicies: [
-      TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE,
-      TENANT_CONSTANTS.SECURITY_POLICIES.SOC2_COMPLIANCE,
-      TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION,
-    ],
-    lifecycleHooks: {
-      onTenantCreate: async (tenant) => {
-        console.log(`New tenant created: ${tenant.tenantId}`);
-      },
-      onTenantDelete: async (tenantId) => {
-        console.log(`Tenant deleted: ${tenantId}`);
-      },
-    },
-  },
-});
-```
-
-### **Decorator Configuration Presets**
-
-Use optimized decorator combinations for different environments:
-
-```typescript
-import { DecoratorPresets, applyDecoratorPreset } from '@hive-academy/nestjs-chromadb';
-
-// Production-optimized configuration
-const productionConfig = DecoratorPresets.production;
-
-// Development-friendly configuration with detailed logging
-const devConfig = DecoratorPresets.development;
-
-// High-performance configuration with aggressive caching
-const performanceConfig = DecoratorPresets.performanceOptimized;
-
-// Custom preset with overrides
-const customConfig = applyDecoratorPreset('production', {
-  caching: { ttl: 1800000 }, // 30 minutes
-  profiling: { samplingRate: 0.1 }, // 10% sampling
-  tenantAware: {
-    namingStrategy: 'separate',
-    enableAuditLog: true,
-  },
-});
-```
-
-### **Comprehensive Async Configuration**
-
-Full async configuration with validation:
-
-```typescript
-ChromaDBModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: (configService: ConfigService) => {
-    const config = {
-      connection: {
-        host: configService.get('CHROMA_HOST', 'localhost'),
-        port: configService.get('CHROMA_PORT', 8000),
-        ssl: configService.get('CHROMA_SSL', false),
-        timeout: configService.get('CHROMA_TIMEOUT', 30000),
-      },
-      embedding: {
-        provider: configService.get('EMBEDDING_PROVIDER', 'openai'),
-        config: {
-          apiKey: configService.get('OPENAI_API_KEY'),
-          model: configService.get('EMBEDDING_MODEL', 'text-embedding-3-small'),
-        },
-      },
-      multiTenant: configService.get('ENABLE_MULTI_TENANT', false)
-        ? {
-            isolation: {
-              namingStrategy: configService.get('TENANT_NAMING_STRATEGY', 'separate'),
-              tenantExtraction: configService.get('TENANT_EXTRACTION', 'jwt'),
-              strictValidation: true,
-              enableTenantCaching: true,
-              enableAuditLog: configService.get('ENABLE_AUDIT_LOG', true),
-            },
-            enableRegistry: true,
-            enableResourceLimits: true,
-            defaultResourceLimits:
-              TENANT_CONSTANTS.RESOURCE_LIMITS[configService.get('DEFAULT_TENANT_TIER', 'pro')],
-          }
-        : undefined,
-      defaultCollection: 'documents',
-      batchSize: configService.get('CHROMA_BATCH_SIZE', 100),
-    };
-
-    // Configuration validation runs automatically at startup
-    return config;
-  },
-  inject: [ConfigService],
-});
-```
-
-### Basic Configuration
-
-```typescript
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'http://localhost',
-    port: 8000,
-    ssl: false,
-  },
-  embedding: {
-    provider: 'openai',
-    config: {
-      apiKey: process.env.OPENAI_API_KEY,
-      model: 'text-embedding-3-small',
-    },
-  },
-  defaultCollection: 'documents',
-  batchSize: 100,
-});
-```
-
 ### Async Configuration
 
 ```typescript
 ChromaDBModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: (configService: ConfigService) => ({
-    connection: {
-      host: configService.get('CHROMA_HOST', 'localhost'),
-      port: configService.get('CHROMA_PORT', 8000),
+  useFactory: async (configService: ConfigService) => ({
+    url: configService.get('CHROMADB_URL'),
+    auth: {
+      provider: 'token',
+      credentials: configService.get('CHROMADB_TOKEN'),
     },
-    embedding: {
-      provider: configService.get('EMBEDDING_PROVIDER', 'openai'),
-      config: {
-        apiKey: configService.get('OPENAI_API_KEY'),
-        model: configService.get('EMBEDDING_MODEL', 'text-embedding-3-small'),
-      },
-    },
+    defaultEmbeddingFunction: 'openai', // or 'transformer'
   }),
   inject: [ConfigService],
 });
 ```
 
-### Embedding Provider Configurations
+---
+
+## Entity Definition
+
+### Basic Entity
 
 ```typescript
-// OpenAI Configuration
-embedding: {
-  provider: 'openai',
-  config: {
-    apiKey: process.env.OPENAI_API_KEY,
-    model: 'text-embedding-3-small',
-    dimensions: 1536
-  }
-}
+import { BaseDocument, ChromaEntity, ChromaId, ChromaProp } from '@hive-academy/nestjs-chromadb';
 
-// HuggingFace Configuration
-embedding: {
-  provider: 'huggingface',
-  config: {
-    apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: 'sentence-transformers/all-MiniLM-L6-v2'
-  }
-}
+@ChromaEntity({ collection: 'tech-trends' })
+export class TechTrendEntity extends BaseDocument {
+  @ChromaId()
+  id!: string;
 
-// Cohere Configuration
-embedding: {
-  provider: 'cohere',
-  config: {
-    apiKey: process.env.COHERE_API_KEY,
-    model: 'embed-english-v3.0'
-  }
-}
-```
+  @ChromaProp()
+  name!: string;
 
-## Advanced Features
+  @ChromaProp()
+  category!: string;
 
-### Intelligent Document Chunking (embedding-safe)
+  @ChromaProp()
+  description!: string;
 
-```typescript
-// Smart chunking with relationship preservation
-const options: ChromaBulkOptions = {
-  autoChunk: true,
-  chunkingStrategy: 'smart', // 'recursive' | 'token' | 'semantic' | 'smart'
-  chunkSize: 1000,
-  chunkOverlap: 200,
-  preserveChunkRelationships: true,
-  extractMetadata: true,
-};
+  @ChromaProp()
+  popularity!: number;
 
-await this.chromaDB.addDocuments('documents', docs, options);
+  @ChromaProp()
+  tags!: string[];
 
-// Notes:
-// - Each chunk gets its own embedding (no parent reuse)
-// - Relationship summary docs are stored without embeddings
-// - autoChunk without TextSplitterService logs a warning
-```
-
-### Advanced Search Operations
-
-```typescript
-// Hybrid search with multiple filters
-const results = await this.chromaDB.searchDocuments('documents', ['AI development'], undefined, {
-  nResults: 20,
-  where: {
-    category: 'technical',
-    status: 'published',
-    author: { $in: ['john', 'jane'] },
-  },
-  whereDocument: {
-    $and: [{ $contains: 'NestJS' }, { $not_contains: 'deprecated' }],
-  },
-  includeMetadata: true,
-  includeDistances: true,
-});
-
-// Semantic similarity with threshold filtering
-const similarDocs = await this.chromaDB.findSimilarDocuments('documents', 'doc-123', 10);
-const filteredResults = similarDocs.documents?.filter(
-  (_, idx) => (similarDocs.distances?.[0][idx] || 0) < 0.8 // similarity threshold
-);
-```
-
-### Embedding Error Handling
-
-Embedding utilities throw on failure; wrap bulk operations in try/catch when graceful degradation is desired.
-
-### Metadata Management
-
-```typescript
-import {
-  sanitizeMetadata,
-  validateMetadata,
-  validateMetadataSchema,
-} from '@hive-academy/nestjs-chromadb';
-
-// Sanitize metadata for ChromaDB compatibility
-const sanitized = sanitizeMetadata({
-  tags: ['ai', 'ml'],
-  score: 0.95,
-  nested: { invalid: 'object' }, // Will be JSON stringified
-});
-
-// Validate with schema
-const schema = {
-  category: { type: 'string', required: true, enum: ['tech', 'business'] },
-  score: { type: 'number', min: 0, max: 1 },
-};
-const validation = validateMetadataSchema(metadata, schema);
-```
-
-## Dependency Injection
-
-```typescript
-import {
-  InjectChromaDB,
-  InjectChromaDBClient,
-  InjectCollection,
-} from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class DocumentService {
-  constructor(
-    @InjectChromaDB() private chromaDB: ChromaDBService,
-    @InjectChromaDBClient() private client: ChromaApi,
-    @InjectCollection('documents') private collection: Collection
-  ) {}
+  // Embedding is handled automatically
+  // Metadata is stored as flat key-value pairs
 }
 ```
 
-## Core Interfaces
+### Entity Decorators
 
-### ChromaDocument Structure
+- **`@ChromaEntity({ collection: string })`**: Marks class as ChromaDB entity
+- **`@ChromaId()`**: Marks field as document ID
+- **`@ChromaProp()`**: Marks field as document property (stored in metadata)
 
-```typescript
-interface ChromaDocument {
-  readonly id: string;
-  readonly document?: string;
-  readonly metadata?: ChromaMetadata;
-  readonly embedding?: readonly number[];
-}
-
-interface ChromaMetadata {
-  [key: string]: string | number | boolean;
-}
-```
-
-### Search Options
-
-```typescript
-interface ChromaSearchOptions {
-  nResults?: number;
-  where?: Where;
-  whereDocument?: WhereDocument;
-  includeMetadata?: boolean;
-  includeDocuments?: boolean;
-  includeDistances?: boolean;
-}
-
-interface ChromaBulkOptions {
-  batchSize?: number;
-  upsert?: boolean;
-  validateIds?: boolean;
-  autoChunk?: boolean;
-  chunkingStrategy?: 'recursive' | 'token' | 'character' | 'markdown' | 'semantic' | 'smart';
-  chunkSize?: number;
-  chunkOverlap?: number;
-  preserveChunkRelationships?: boolean;
-  extractMetadata?: boolean;
-  extractTopics?: boolean;
-  extractKeywords?: boolean;
-  analyzeComplexity?: boolean;
-  calculateReadingTime?: boolean;
-  detectCrossReferences?: boolean;
-  extractCodeMetadata?: boolean;
-}
-```
-
-## Health Monitoring
-
-```typescript
-import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class HealthService {
-  constructor(private chromaHealth: ChromaDBHealthIndicator) {}
-
-  async checkHealth() {
-    const basic = await this.chromaHealth.isHealthy('chromadb');
-    const detailed = await this.chromaHealth.isHealthyDetailed('chromadb');
-
-    return {
-      basic,
-      detailed: {
-        connection: detailed.connection,
-        collections: detailed.collections,
-        embedding: detailed.embedding,
-      },
-    };
-  }
-}
-```
-
-## Error Handling
-
-```typescript
-import {
-  ChromaDBConnectionError,
-  ChromaDBCollectionNotFoundError,
-  ChromaDBEmbeddingNotConfiguredError,
-} from '@hive-academy/nestjs-chromadb';
-
-try {
-  await this.chromaDB.addDocuments('collection', [document]);
-} catch (error) {
-  if (error instanceof ChromaDBConnectionError) {
-    // Handle connection issues
-    this.logger.error('ChromaDB connection failed', error.message);
-  } else if (error instanceof ChromaDBCollectionNotFoundError) {
-    this.logger.error('Collection not found', error.message);
-  } else if (error instanceof ChromaDBEmbeddingNotConfiguredError) {
-    // Handle missing embedding configuration
-    this.logger.error('Embedding provider not configured', error.message);
-  }
-}
-```
-
-## Testing
-
-### Unit Testing
-
-```typescript
-import { Test } from '@nestjs/testing';
-import { ChromaDBModule, ChromaDBService } from '@hive-academy/nestjs-chromadb';
-
-describe('DocumentService', () => {
-  let service: DocumentService;
-  let chromaDB: ChromaDBService;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      imports: [
-        ChromaDBModule.forRoot({
-          connection: { host: 'localhost', port: 8000 },
-          embedding: { provider: 'openai', config: { apiKey: 'test-key' } },
-        }),
-      ],
-      providers: [DocumentService],
-    }).compile();
-
-    service = module.get<DocumentService>(DocumentService);
-    chromaDB = module.get<ChromaDBService>(ChromaDBService);
-  });
-
-  it('should index documents with metadata', async () => {
-    const documents = [{ content: 'Test document', source: 'test' }];
-
-    await service.indexKnowledgeBase(documents);
-    const results = await chromaDB.getCollectionCount('knowledge');
-
-    expect(results).toBeGreaterThan(0);
-  });
-});
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Connection Timeouts
-
-```typescript
-// Solution: Increase timeout values
-connection: {
-  host: 'localhost',
-  port: 8000,
-  timeout: 60000, // Increase timeout
-  retries: 5      // Increase retries
-}
-```
-
-#### 2. Embedding Rate Limits
-
-```typescript
-// Solution: Implement batch processing with delays
-const options: ChromaBulkOptions = {
-  batchSize: 50, // Reduce batch size
-  delayBetweenBatches: 1000, // Add delay between batches
-};
-```
-
-#### 3. Memory Usage
-
-```typescript
-// Solution: Process documents in smaller chunks
-const chunkSize = 100;
-for (let i = 0; i < documents.length; i += chunkSize) {
-  const chunk = documents.slice(i, i + chunkSize);
-  await this.chromaDB.addDocuments('collection', chunk);
-}
-```
-
-## 📊 **Performance Monitoring & Observability**
-
-### **Real-Time Performance Metrics**
-
-Monitor vector operations with comprehensive metrics:
-
-```typescript
-import {
-  getPerformanceStatistics,
-  getCacheStatistics,
-  getRetryStatistics,
-} from '@hive-academy/nestjs-chromadb';
-
-// Performance monitoring
-const perfStats = await getPerformanceStatistics();
-console.log({
-  slowQueries: perfStats.slowQueries,
-  avgExecutionTime: perfStats.avgExecutionTime,
-  operationsPerSecond: perfStats.operationsPerSecond,
-  percentiles: {
-    p50: perfStats.percentiles.p50,
-    p95: perfStats.percentiles.p95,
-    p99: perfStats.percentiles.p99,
-  },
-});
-
-// Cache performance
-const cacheStats = await getCacheStatistics();
-console.log({
-  hitRate: cacheStats.hitRate,
-  missRate: cacheStats.missRate,
-  evictionRate: cacheStats.evictionRate,
-  avgResponseTime: cacheStats.avgResponseTime,
-  totalOperations: cacheStats.totalOperations,
-});
-
-// Retry and circuit breaker stats
-const retryStats = await getRetryStatistics();
-console.log({
-  totalRetries: retryStats.totalRetries,
-  successfulRetries: retryStats.successfulRetries,
-  circuitBreakerTrips: retryStats.circuitBreakerTrips,
-  avgRetryDelay: retryStats.avgRetryDelay,
-});
-```
-
-### **Health Monitoring & Diagnostics**
-
-Comprehensive health checking for production environments:
-
-```typescript
-import { ChromaDBHealthIndicator } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class HealthService {
-  constructor(private chromaHealth: ChromaDBHealthIndicator) {}
-
-  async getDetailedHealth() {
-    const health = await this.chromaHealth.isHealthyDetailed('chromadb');
-
-    return {
-      connection: health.connection,
-      collections: health.collections,
-      embedding: health.embedding,
-      cache: health.cache,
-      multiTenant: health.multiTenant,
-      performance: {
-        avgResponseTime: health.performance.avgResponseTime,
-        operationsPerSecond: health.performance.operationsPerSecond,
-        errorRate: health.performance.errorRate,
-        slowQueryCount: health.performance.slowQueryCount,
-      },
-      resourceUsage: {
-        memoryUsage: health.resourceUsage.memoryUsage,
-        diskUsage: health.resourceUsage.diskUsage,
-        networkLatency: health.resourceUsage.networkLatency,
-      },
-    };
-  }
-}
-```
-
-### **Tenant-Specific Monitoring**
-
-Track performance and usage per tenant:
-
-```typescript
-import { MultiTenantChromaService } from '@hive-academy/nestjs-chromadb';
-
-@Injectable()
-export class TenantMonitoringService {
-  constructor(private multiTenantService: MultiTenantChromaService) {}
-
-  async getTenantMetrics(tenantId: string) {
-    const metrics = await this.multiTenantService.getTenantMetrics(tenantId, {
-      start: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
-      end: new Date(),
-    });
-
-    return {
-      tenant: tenantId,
-      usage: {
-        totalOperations: metrics.metrics.totalOperations,
-        totalDocuments: metrics.metrics.totalDocuments,
-        storageUsed: metrics.metrics.storageUsed,
-        embeddingOperations: metrics.metrics.embeddingOperations,
-      },
-      performance: {
-        avgOperationTime: metrics.metrics.avgOperationTime,
-        errorRate: metrics.metrics.errorRate,
-      },
-      compliance: {
-        auditLogCount: metrics.auditLogCount,
-        securityViolations: metrics.securityViolations,
-      },
-    };
-  }
-}
-```
-
-## 🚀 **Migration Guide from Legacy ChromaDB Usage**
-
-### **Step 1: Identify Current Usage Patterns**
-
-Use the provided scanner to identify all ChromaDB usage in your application:
-
-```bash
-# Scan for ChromaDB usage patterns
-npx @hive-academy/nestjs-chromadb scan ./src --output=chromadb-usage-report.json
-```
-
-### **Step 2: Basic to Decorator Migration**
-
-**Before (Legacy Service Pattern):**
-
-```typescript
-@Injectable()
-export class DocumentService {
-  constructor(private chromaDB: ChromaDBService) {}
-
-  async searchDocuments(query: string, collection: string) {
-    try {
-      const results = await this.chromaDB.searchDocuments(collection, [query]);
-      return results;
-    } catch (error) {
-      this.logger.error('Search failed', error);
-      throw error;
-    }
-  }
-
-  async createDocument(data: any) {
-    const doc = { id: uuid(), document: JSON.stringify(data), metadata: data };
-    await this.chromaDB.addDocuments('documents', [doc]);
-    return doc;
-  }
-}
-```
-
-**After (Decorator Pattern):**
-
-```typescript
-@Injectable()
-export class DocumentService {
-  @VectorQuery<DocumentResult>({
-    collection: 'documents',
-    autoEmbed: true,
-    defaultLimit: 10,
-  })
-  @Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
-  @Profiled({ slowQueryThreshold: 100 })
-  @Retry({ maxAttempts: 3, strategy: 'exponential' })
-  async searchDocuments(params: VectorQueryParams): Promise<DocumentResult[]> {
-    // All functionality handled by decorators
-  }
-
-  @ChromaRepository<DocumentData>({
-    collection: 'documents',
-    autoEmbed: true,
-    enableValidation: true,
-  })
-  // Create method auto-generated by decorator
-}
-```
-
-### **Step 3: Repository Pattern Migration**
-
-**Before (Manual CRUD):**
-
-```typescript
-@Injectable()
-export class UserService {
-  constructor(private chromaDB: ChromaDBService) {}
-
-  async createUser(userData: any) {
-    const doc = { id: uuid(), document: JSON.stringify(userData), metadata: userData };
-    await this.chromaDB.addDocuments('users', [doc]);
-    return doc;
-  }
-
-  async findUser(id: string) {
-    const results = await this.chromaDB.getDocuments('users', { ids: [id] });
-    return results.documents[0];
-  }
-
-  async updateUser(id: string, updates: any) {
-    const existing = await this.findUser(id);
-    const updated = { ...existing, ...updates };
-    await this.chromaDB.updateDocuments('users', [updated]);
-    return updated;
-  }
-}
-```
-
-**After (TypeORM-Style Repository):**
-
-```typescript
-interface UserDocumentMetadata {
-  name: string;
-  email: string;
-  department: string;
-}
-
-@ChromaEntity({ collection: 'users', autoEmbed: true })
-export class UserDocument extends BaseChromaEntity<UserDocumentMetadata> {
-  @ChromaId() id!: string;
-  @ChromaProp() content!: string;
-  metadata!: UserDocumentMetadata;
-}
-
-@Injectable()
-export class UserRepository extends ChromaDBRepository<UserDocument> {
-  constructor(chromaDB: ChromaDBService) {
-    super(UserDocument, 'users', chromaDB); // ✅ NO CAST - class reference
-  }
-
-  // ✅ All CRUD methods inherited: create, findById, update, delete, search, etc.
-
-  // Add custom business methods
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    const users = await this.findAll({ limit: 100 });
-    return users.find((u) => u.metadata.email === email) || null;
-  }
-}
-```
-
-### **Step 4: Multi-Tenant Migration**
-
-**Before (Manual Tenant Handling):**
-
-```typescript
-async searchUserDocuments(userId: string, query: string) {
-  const collection = `user_${userId}_documents`;
-
-  // Manual tenant validation
-  if (!await this.validateUserAccess(userId)) {
-    throw new Error('Access denied');
-  }
-
-  // Manual audit logging
-  await this.logUserOperation(userId, 'search', query);
-
-  return this.chromaDB.searchDocuments(collection, [query]);
-}
-```
-
-**After (Tenant Decorator):**
-
-```typescript
-@TenantAware({
-  namingStrategy: 'prefix',
-  tenantExtraction: 'jwt',
-  enableAuditLog: true,
-  strictValidation: true,
-})
-async searchDocuments(query: string): Promise<Document[]> {
-  // Collection automatically becomes 'tenant_{tenantId}_documents'
-  // Tenant extracted from JWT automatically
-  // Validation and audit logging handled automatically
-  return this.chromaDB.searchDocuments('documents', [query]);
-}
-```
-
-### **Step 5: Performance Enhancement Migration**
-
-**Before (Manual Caching and Retry):**
-
-```typescript
-async searchWithCache(query: string) {
-  const cacheKey = `search:${hash(query)}`;
-
-  // Manual cache check
-  let result = await this.cache.get(cacheKey);
-  if (result) return result;
-
-  // Manual retry logic
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      result = await this.chromaDB.searchDocuments('docs', [query]);
-      await this.cache.set(cacheKey, result, 300000);
-      return result;
-    } catch (error) {
-      if (attempt === 3) throw error;
-      await this.delay(1000 * attempt);
-    }
-  }
-}
-```
-
-**After (Performance Decorators):**
-
-```typescript
-@VectorQuery({ collection: 'docs' })
-@Cached({ ttl: 300000, keyStrategy: 'collection_aware' })
-@Retry({ maxAttempts: 3, strategy: 'exponential' })
-@Profiled({ slowQueryThreshold: 100 })
-async searchDocuments(params: VectorQueryParams): Promise<Document[]> {
-  // All caching, retry, and monitoring handled automatically
-}
-```
-
-## 🔧 **Development Best Practices**
-
-### **Type Safety Guidelines**
-
-```typescript
-// ✅ CORRECT: Use proper type definitions
-interface UserDocument
-  extends BaseDocument<{
-    name: string;
-    email: string;
-    role: 'admin' | 'user';
-  }> {}
-
-// ❌ AVOID: Using any types
-const userData: any = { name: 'John' };
-
-// ✅ CORRECT: Use type guards for validation
-import { TypeSafeConverter, assertValidDocument } from '@hive-academy/nestjs-chromadb';
-
-const document = TypeSafeConverter.toDocument<UserDocument>(unknownData);
-assertValidDocument(document, 'Expected valid user document');
-```
-
-### **Performance Optimization**
-
-```typescript
-// ✅ CORRECT: Use appropriate cache strategies
-@Cached({
-  ttl: 300000,                    // 5 minutes for frequently accessed data
-  keyStrategy: 'collection_aware', // Collection-specific cache keys
-  refreshStrategy: 'background',   // Background refresh for hot data
-  collectionAware: true,          // Collection-specific invalidation
-})
-
-// ✅ CORRECT: Use appropriate batch sizes
-@ChromaRepository({
-  defaultBatchSize: 100,          // Optimal for most use cases
-  enableBatch: true,              // Enable batch operations
-})
-
-// ✅ CORRECT: Use sampling for high-frequency operations
-@Profiled({
-  samplingRate: 0.1,              // 10% sampling for production
-  slowQueryThreshold: 100,        // Log queries > 100ms
-})
-```
-
-### **Security Best Practices**
-
-```typescript
-// ✅ CORRECT: Enable comprehensive audit logging
-@TenantAware({
-  enableAuditLog: true,
-  strictValidation: true,
-  enableTenantCaching: true,
-})
-
-// ✅ CORRECT: Use appropriate security policies
-multiTenant: {
-  securityPolicies: [
-    TENANT_CONSTANTS.SECURITY_POLICIES.GDPR_COMPLIANCE,
-    TENANT_CONSTANTS.SECURITY_POLICIES.DATA_ENCRYPTION,
-    TENANT_CONSTANTS.SECURITY_POLICIES.ACCESS_CONTROL,
-  ],
-}
-
-// ✅ CORRECT: Validate cross-tenant operations
-@CrossTenant({
-  requiredPermissions: ['admin', 'cross-tenant-read'],
-  auditLevel: 'detailed',
-  maxTenants: 50,                 // Safety limit
-})
-```
-
-This comprehensive enterprise-grade module provides declarative, type-safe, and highly performant ChromaDB integration with advanced features for building sophisticated AI-powered applications with zero boilerplate code.
+**IMPORTANT**: All properties marked with `@ChromaProp()` are stored as **metadata** in ChromaDB, not as document content. The actual document content is typically derived from key fields during embedding.
 
 ---
 
-## Operation Queueing and Concurrency Control
+## Repository Pattern
 
-### Overview
-
-The ChromaDB module implements **semaphore-based operation queueing** to prevent database overwhelm and ensure stable performance under high concurrency. This feature provides automatic concurrency control with configurable limits and comprehensive observability.
-
-### Implementation (Completed: Commit 259ff7f)
-
-**Problem**: High concurrency operations could overwhelm ChromaDB, causing timeouts and connection failures
-
-**Solution**: Implemented semaphore-based queueing using `semaphore-promise` library to limit concurrent operations
-
-### Architecture
-
-**Key Components**:
-
-1. **Semaphore Wrapper**: All ChromaDB operations routed through `executeWithRetry()` method
-2. **Concurrency Limit**: Configurable via `maxConcurrentOperations` (default: 5)
-3. **Queue Metrics**: Real-time monitoring via `getQueueMetrics()` API
-4. **Retry Integration**: Semaphore works seamlessly with existing retry logic
-
-### Configuration
-
-**Basic Configuration** (default: 5 concurrent operations):
+### Creating a Repository
 
 ```typescript
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'localhost',
-    port: 8000,
-    ssl: false,
-    maxConcurrentOperations: 5, // Default: 5 concurrent ops
-  },
-  embedding: {
-    provider: 'openai',
-    config: { apiKey: process.env.OPENAI_API_KEY },
-  },
-});
-```
-
-**High-Throughput Configuration** (increase concurrency):
-
-```typescript
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'localhost',
-    port: 8000,
-    maxConcurrentOperations: 10, // Increase for high-performance deployments
-    timeout: 30000,
-    retryAttempts: 3,
-  },
-  embedding: { provider: 'openai', config: { apiKey: '...' } },
-});
-```
-
-**Conservative Configuration** (lower concurrency for stability):
-
-```typescript
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'localhost',
-    port: 8000,
-    maxConcurrentOperations: 3, // Lower for resource-constrained environments
-    timeout: 60000, // Longer timeout for queued operations
-  },
-  embedding: { provider: 'openai', config: { apiKey: '...' } },
-});
-```
-
-### How It Works
-
-**Semaphore Lifecycle** (chromadb-connection.service.ts:175-204):
-
-```typescript
-async executeWithRetry<T>(operation: () => Promise<T>): Promise<T> {
-  const operationId = `op-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const queueStart = Date.now();
-
-  this.queuedOperations++;
-
-  // 1. Acquire semaphore permit (blocks if at max concurrency)
-  const release = await this.semaphore.acquire();
-
-  this.queuedOperations--;
-  this.activeOperations++;
-
-  try {
-    const queueWaitTime = Date.now() - queueStart;
-
-    this.logger.debug(
-      `[${operationId}] Semaphore acquired after ${queueWaitTime}ms wait (active: ${this.activeOperations}, queued: ${this.queuedOperations})`
-    );
-
-    // 2. Execute with existing retry logic
-    return await this.executeWithRetryInternal(operation, operationId);
-  } finally {
-    this.activeOperations--;
-    // 3. Always release semaphore, even on error
-    release();
-    this.logger.debug(`[${operationId}] Semaphore released`);
-  }
-}
-```
-
-**Flow Diagram**:
-
-```
-Operation Request
-    ↓
-Increment queuedOperations counter
-    ↓
-Acquire Semaphore Permit
-  - If available: Proceed immediately
-  - If at max: Wait in queue (async blocking)
-    ↓
-Decrement queuedOperations counter
-Increment activeOperations counter
-    ↓
-Execute Operation (with retry logic)
-    ↓
-Decrement activeOperations counter
-Release Semaphore Permit
-    ↓
-Next Queued Operation Proceeds
-```
-
-### Queue Metrics API
-
-Monitor queue performance in real-time:
-
-```typescript
-import { ChromaDBConnectionService } from '@hive-academy/nestjs-chromadb';
+import { Injectable } from '@nestjs/common';
+import {
+  ChromaDBRepository,
+  ChromaDBService,
+  CollectionRegistryService,
+} from '@hive-academy/nestjs-chromadb';
 
 @Injectable()
-export class MonitoringService {
-  constructor(private chromaConnection: ChromaDBConnectionService) {}
-
-  async getOperationMetrics() {
-    const metrics = this.chromaConnection.getQueueMetrics();
-
-    return {
-      availablePermits: metrics.availablePermits, // Free slots for operations
-      queueDepth: metrics.queueDepth, // Operations waiting in queue
-      maxConcurrent: metrics.maxConcurrent, // Configured limit
-      utilizationRate: (metrics.maxConcurrent - metrics.availablePermits) / metrics.maxConcurrent,
-    };
+export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
+  constructor(chromaDB: ChromaDBService, collectionRegistry: CollectionRegistryService) {
+    super(
+      TechTrendEntity, // Entity class
+      'tech-trends', // Collection name
+      chromaDB, // ChromaDB service
+      collectionRegistry // Collection registry
+    );
   }
 
-  async checkQueueHealth() {
-    const metrics = this.chromaConnection.getQueueMetrics();
-
-    if (metrics.queueDepth > 10) {
-      this.logger.warn(`High queue depth detected: ${metrics.queueDepth} operations waiting`);
-    }
-
-    if (metrics.availablePermits === 0) {
-      this.logger.warn(`All permits exhausted - operations will queue`);
-    }
-
-    return {
-      status: metrics.queueDepth < 10 ? 'healthy' : 'degraded',
-      metrics,
-    };
-  }
+  // Custom methods below
 }
 ```
 
-**Queue Metrics Interface** (chromadb-connection.service.ts:466-475):
+### Available CRUD Methods
+
+#### findById(id: string)
 
 ```typescript
-interface QueueMetrics {
-  availablePermits: number; // maxConcurrent - activeOperations
-  queueDepth: number; // Operations waiting for permits
-  maxConcurrent: number; // Configured limit
-}
-
-getQueueMetrics(): QueueMetrics {
-  const maxConcurrent = this.config.maxConcurrentOperations || 5;
-  return {
-    availablePermits: maxConcurrent - this.activeOperations,
-    queueDepth: this.queuedOperations,
-    maxConcurrent,
-  };
+const trend = await repository.findById('trend-123');
+if (trend) {
+  console.log(trend.name, trend.popularity);
 }
 ```
 
-### Benefits
-
-**Performance**:
-
-- **Prevents Overwhelm**: ChromaDB stays within operational limits
-- **Graceful Degradation**: Operations queue instead of failing
-- **Predictable Latency**: Queue wait time monitored and logged
-
-**Reliability**:
-
-- **Error Recovery**: Semaphore released even on failures (finally block)
-- **Connection Stability**: Prevents connection pool exhaustion
-- **Timeout Protection**: Works with existing timeout mechanisms
-
-**Observability**:
-
-- **Detailed Logging**: Every operation logged with queue metrics
-- **Real-Time Metrics**: `getQueueMetrics()` API for monitoring
-- **Operation Tracing**: Unique operation IDs for debugging
-
-### Code References
-
-**Semaphore Initialization** (chromadb-connection.service.ts:49-59):
+#### findAll(options?: RepositoryFindOptions)
 
 ```typescript
-constructor(
-  @Inject(CHROMADB_CLIENT) private readonly client: ChromaClient,
-  @Inject('ConnectionConfig') private readonly config: ConnectionConfig
-) {
-  // Initialize semaphore with configurable concurrency limit
-  const maxConcurrent = this.config.maxConcurrentOperations || 5;
-  this.semaphore = new Semaphore(maxConcurrent);
-  this.logger.log(
-    `ChromaDB semaphore initialized: max ${maxConcurrent} concurrent operations`
+// Get all documents
+const all = await repository.findAll();
+
+// With filtering
+const emerging = await repository.findAll({
+  where: {
+    category: 'AI',
+    popularity: { $gte: 80 },
+  },
+  limit: 10,
+});
+
+// With pagination
+const page = await repository.findAll({
+  limit: 20,
+  offset: 40, // Skip first 40
+});
+```
+
+**Filter Operators:**
+
+- `$eq`: Equals (default if no operator)
+- `$ne`: Not equals
+- `$gt`: Greater than
+- `$gte`: Greater than or equal
+- `$lt`: Less than
+- `$lte`: Less than or equal
+- `$in`: In array
+- `$nin`: Not in array
+
+#### create(data: CreateDocumentInput<T>)
+
+```typescript
+const newTrend = await repository.create({
+  id: 'trend-456',
+  name: 'Edge Computing',
+  category: 'Infrastructure',
+  description: 'Computing at the network edge...',
+  popularity: 85,
+  tags: ['edge', 'distributed', 'iot'],
+});
+```
+
+**Automatic Embedding**: The repository automatically generates embeddings from the document content (typically concatenating key fields).
+
+#### update(id: string, updates: Partial<T>)
+
+```typescript
+const updated = await repository.update('trend-456', {
+  popularity: 90,
+  tags: ['edge', 'distributed', 'iot', 'serverless'],
+});
+```
+
+**Re-Embedding**: Updates trigger re-embedding if content fields change.
+
+#### delete(id: string)
+
+```typescript
+const deleted = await repository.delete('trend-456');
+console.log(deleted); // true if successful
+```
+
+#### upsert(data: UpsertDocumentInput<T>)
+
+```typescript
+const trend = await repository.upsert({
+  id: 'trend-789',
+  name: 'Quantum ML',
+  category: 'AI',
+  description: 'Quantum computing for ML...',
+  popularity: 95,
+  tags: ['quantum', 'ml', 'ai'],
+});
+// Creates if doesn't exist, updates if exists
+```
+
+#### search(query: string, options?: RepositorySearchOptions)
+
+**Semantic Search** - The core feature of vector databases:
+
+```typescript
+const results = await repository.search('AI and machine learning trends', {
+  nResults: 10,
+  where: { category: 'AI' },
+});
+
+// Results include similarity scores
+for (const result of results) {
+  console.log(
+    result.document.name,
+    result.score // Cosine similarity (0-1)
   );
 }
 ```
 
-**Operation Execution** (chromadb-connection.service.ts:175-204):
+**Search Options:**
 
-All ChromaDB operations use `executeWithRetry()` which wraps operations with semaphore control:
+- `nResults`: Number of results (default: 10)
+- `where`: Metadata filtering (same as findAll)
+- `whereDocument`: Filter by document content (uses ChromaDB's where_document)
 
-- `addDocuments()` → `executeWithRetry(() => collection.add(...))`
-- `searchDocuments()` → `executeWithRetry(() => collection.query(...))`
-- `updateDocuments()` → `executeWithRetry(() => collection.update(...))`
-- `deleteDocuments()` → `executeWithRetry(() => collection.delete(...))`
-
-### Usage Examples
-
-**Standard Usage** (automatic queueing):
+**Advanced Search:**
 
 ```typescript
-@Injectable()
-export class DocumentService {
-  constructor(private chromaDB: ChromaDBService) {}
-
-  async bulkIndex(documents: Document[]) {
-    // All operations automatically queued
-    await this.chromaDB.addDocuments('docs', documents);
-  }
-
-  async searchDocuments(query: string) {
-    // Queuing handled transparently
-    return this.chromaDB.searchDocuments('docs', [query]);
-  }
-}
-```
-
-**With Monitoring**:
-
-```typescript
-@Injectable()
-export class MonitoredDocumentService {
-  constructor(
-    private chromaDB: ChromaDBService,
-    private chromaConnection: ChromaDBConnectionService
-  ) {}
-
-  async bulkIndexWithMonitoring(documents: Document[]) {
-    const beforeMetrics = this.chromaConnection.getQueueMetrics();
-    this.logger.log(`Queue before: ${beforeMetrics.queueDepth} waiting`);
-
-    await this.chromaDB.addDocuments('docs', documents);
-
-    const afterMetrics = this.chromaConnection.getQueueMetrics();
-    this.logger.log(`Queue after: ${afterMetrics.queueDepth} waiting`);
-  }
-}
-```
-
-### Performance Tuning Guide
-
-**Determining Optimal Concurrency**:
-
-1. **Start Conservative**: Begin with default (5 concurrent operations)
-2. **Monitor Metrics**: Track queue depth and wait times
-3. **Increase Gradually**: Raise limit if queue depth consistently high
-4. **Watch for Errors**: Connection/timeout errors indicate limit too high
-
-**Typical Configurations**:
-
-| Environment        | Max Concurrent | Timeout | Retry Attempts | Use Case                     |
-| ------------------ | -------------- | ------- | -------------- | ---------------------------- |
-| Development        | 3              | 30000ms | 3              | Local ChromaDB, conservative |
-| Production (Small) | 5              | 30000ms | 3              | Standard deployment          |
-| Production (Large) | 10             | 30000ms | 5              | High-throughput needs        |
-| Resource-Limited   | 2              | 60000ms | 5              | Shared/constrained resources |
-
-### Best Practices
-
-1. **Monitor Queue Metrics**: Use `getQueueMetrics()` in health checks
-2. **Set Appropriate Limits**: Match ChromaDB server capacity
-3. **Increase Timeouts**: Allow for queue wait time in timeouts
-4. **Log Queue Depth**: Track queue performance in production
-5. **Alert on High Queue**: Set up alerts for queueDepth > threshold
-
-### Migration Guide
-
-No code changes required - semaphore queueing is automatic for all operations. Simply configure `maxConcurrentOperations` in your module setup:
-
-```typescript
-// Before (no queue control)
-ChromaDBModule.forRoot({
-  connection: { host: 'localhost', port: 8000 },
-  embedding: { provider: 'openai', config: { apiKey: '...' } },
+// Combine vector similarity with metadata filtering
+const techResults = await repository.search('distributed systems', {
+  nResults: 5,
+  where: {
+    category: 'Infrastructure',
+    popularity: { $gte: 75 },
+  },
 });
 
-// After (with queue control)
-ChromaDBModule.forRoot({
-  connection: {
-    host: 'localhost',
-    port: 8000,
-    maxConcurrentOperations: 5, // Add concurrency limit
-  },
-  embedding: { provider: 'openai', config: { apiKey: '...' } },
+// Search within specific document content
+const results = await repository.search('kubernetes', {
+  whereDocument: { $contains: 'container orchestration' },
 });
 ```
 
 ---
+
+## Decorators for Cross-Cutting Concerns
+
+### @Cached
+
+Caches method results in Redis or memory.
+
+```typescript
+import { Cached } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
+  @Cached({ ttl: 3600000 }) // Cache for 1 hour
+  async findPopularTrends(): Promise<TechTrendEntity[]> {
+    return this.findAll({
+      where: { popularity: { $gte: 80 } },
+      limit: 10,
+    });
+  }
+}
+```
+
+**Options:**
+
+- `ttl`: Time to live in milliseconds
+- `key`: Custom cache key (optional, auto-generated by default)
+- `namespace`: Cache namespace for organization
+
+### @Profiled
+
+Logs execution time and performance metrics.
+
+```typescript
+import { Profiled } from '@hive-academy/nestjs-chromadb';
+
+@Profiled({ slowQueryThreshold: 200 })
+async analyzeEmergingTechnologies(technologies: string[]): Promise<Analysis> {
+  // Logs warning if execution > 200ms
+  const results = await this.search(technologies.join(' '), {
+    nResults: 20
+  });
+
+  return this.analyzeResults(results);
+}
+```
+
+**Options:**
+
+- `slowQueryThreshold`: Log warning if exceeded (ms)
+- `logLevel`: 'debug' | 'info' | 'warn' | 'error'
+- `includeArgs`: Include method arguments in logs
+
+### @Retry
+
+Automatically retries failed operations.
+
+```typescript
+import { Retry } from '@hive-academy/nestjs-chromadb';
+
+@Retry({ maxAttempts: 3, strategy: 'exponential' })
+async unreliableOperation(): Promise<void> {
+  // Retries up to 3 times with exponential backoff
+  await this.externalService.call();
+}
+```
+
+**Options:**
+
+- `maxAttempts`: Max retry attempts (default: 3)
+- `strategy`: 'fixed' | 'exponential' | 'linear'
+- `delay`: Initial delay in ms (default: 1000)
+- `maxDelay`: Max delay for exponential backoff
+
+### @VectorQuery
+
+Auto-generates embeddings for query text in semantic search.
+
+```typescript
+import { VectorQuery } from '@hive-academy/nestjs-chromadb';
+
+@VectorQuery({ collection: 'knowledge-base' })
+async searchKnowledge(query: string): Promise<SearchResult[]> {
+  // Query is automatically embedded before search
+  return this.search(query, { nResults: 5 });
+}
+```
+
+---
+
+## Real-World Example
+
+From `apps/dev-brand-api/src/app/repositories/chromadb/tech-trends.repository.ts`:
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import {
+  ChromaDBRepository,
+  ChromaDBService,
+  CollectionRegistryService,
+  Cached,
+  Profiled,
+  Retry,
+} from '@hive-academy/nestjs-chromadb';
+import { TechTrendEntity } from '../entities/tech-trend.entity';
+
+@Injectable()
+export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
+  constructor(chromaDB: ChromaDBService, collectionRegistry: CollectionRegistryService) {
+    super(TechTrendEntity, 'tech-trends', chromaDB, collectionRegistry);
+  }
+
+  /**
+   * Analyze emerging technologies using semantic search
+   * Cache results for 1 hour, log if > 200ms, retry up to 3 times
+   */
+  @Cached({ ttl: 3600000 })
+  @Profiled({ slowQueryThreshold: 200 })
+  @Retry({ maxAttempts: 3, strategy: 'exponential' })
+  async analyzeEmergingTechnologies(technologies: string[]): Promise<TrendAnalysis> {
+    // Search for similar technologies using vector similarity
+    const searchResults = await this.search(technologies.join(' '), {
+      nResults: 20,
+      where: { category: 'emerging' },
+    });
+
+    // Analyze patterns from search results
+    const patterns = this.extractPatterns(searchResults);
+
+    // Find related trending topics
+    const related = await this.findRelatedTrends(searchResults);
+
+    // Generate recommendations
+    const recommendations = this.generateRecommendations(patterns, related);
+
+    return {
+      trends: searchResults.map((r) => ({
+        technology: r.document.name,
+        similarity: r.score,
+        category: r.document.category,
+        popularity: r.document.popularity,
+      })),
+      patterns,
+      recommendations,
+      metadata: {
+        totalAnalyzed: technologies.length,
+        resultsFound: searchResults.length,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Find popular technologies by category
+   */
+  async findPopularByCategory(category: string): Promise<TechTrendEntity[]> {
+    return this.findAll({
+      where: {
+        category,
+        popularity: { $gte: 70 },
+      },
+      limit: 10,
+    });
+  }
+
+  /**
+   * Find technologies by multiple tags
+   */
+  async findByTags(tags: string[]): Promise<TechTrendEntity[]> {
+    // Use semantic search for better tag matching
+    const results = await this.search(tags.join(' '), {
+      nResults: 15,
+      where: {
+        tags: { $in: tags },
+      },
+    });
+
+    return results.map((r) => r.document);
+  }
+
+  /**
+   * Get trending technologies (high growth rate)
+   */
+  async getTrendingTechnologies(limit = 10): Promise<TechTrendEntity[]> {
+    return this.findAll({
+      where: {
+        popularity: { $gte: 80 },
+      },
+      limit,
+    });
+  }
+
+  private extractPatterns(results: SearchResultWithScore<TechTrendEntity>[]) {
+    // Group by category
+    const byCategory = results.reduce((acc, r) => {
+      const cat = r.document.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(r);
+      return acc;
+    }, {} as Record<string, typeof results>);
+
+    // Find dominant categories
+    const categoryScores = Object.entries(byCategory).map(([category, items]) => ({
+      category,
+      count: items.length,
+      avgSimilarity: items.reduce((sum, item) => sum + item.score, 0) / items.length,
+    }));
+
+    return {
+      byCategory,
+      dominantCategories: categoryScores.sort((a, b) => b.count - a.count).slice(0, 3),
+    };
+  }
+
+  private async findRelatedTrends(
+    results: SearchResultWithScore<TechTrendEntity>[]
+  ): Promise<TechTrendEntity[]> {
+    // Extract tags from top results
+    const topTags = results.slice(0, 5).flatMap((r) => r.document.tags);
+
+    // Find other technologies with similar tags
+    return this.findByTags([...new Set(topTags)]);
+  }
+
+  private generateRecommendations(patterns: any, related: TechTrendEntity[]) {
+    return {
+      explore: related.slice(0, 5).map((t) => t.name),
+      focusAreas: patterns.dominantCategories.map((c: any) => c.category),
+      nextSteps: [
+        'Deep dive into dominant categories',
+        'Research emerging patterns',
+        'Monitor related technologies',
+      ],
+    };
+  }
+}
+
+interface TrendAnalysis {
+  trends: Array<{
+    technology: string;
+    similarity: number;
+    category: string;
+    popularity: number;
+  }>;
+  patterns: any;
+  recommendations: any;
+  metadata: any;
+}
+```
+
+---
+
+## Collection Initialization
+
+### Automatic Initialization
+
+Collections are automatically created on first use:
+
+```typescript
+@Injectable()
+export class MyRepository extends ChromaDBRepository<MyEntity> {
+  constructor(chromaDB: ChromaDBService, registry: CollectionRegistryService) {
+    super(
+      MyEntity,
+      'my-collection',
+      chromaDB,
+      registry,
+      { initializationStrategy: 'eager' } // Options: eager, lazy, manual
+    );
+  }
+}
+```
+
+**Strategies:**
+
+- **`eager`**: Creates collection immediately on repository instantiation
+- **`lazy`** (default): Creates collection on first operation
+- **`manual`**: You must call `ensureInitialized()` manually
+
+### Manual Initialization
+
+```typescript
+await repository.ensureInitialized();
+// Collection is now guaranteed to exist
+```
+
+### Graceful Degradation
+
+The repository handles missing collections gracefully:
+
+```typescript
+try {
+  const results = await repository.findAll();
+} catch (error) {
+  if (repository.isCollectionNotFoundError(error)) {
+    // Collection doesn't exist, initialize it
+    await repository.ensureInitialized();
+    const results = await repository.findAll();
+  }
+}
+```
+
+---
+
+## Multi-Tenancy
+
+### @TenantAware Decorator
+
+Automatically isolates data by tenant:
+
+```typescript
+import { TenantAware } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+@TenantAware()
+export class UserDataRepository extends ChromaDBRepository<UserDataEntity> {
+  // All operations automatically scoped to current tenant
+
+  async findUserData(userId: string): Promise<UserDataEntity[]> {
+    // Automatically filters by tenant
+    return this.findAll({ where: { userId } });
+  }
+}
+```
+
+**How It Works:**
+
+- Tenant ID is extracted from request context
+- Automatically added to all queries as metadata filter
+- Prevents cross-tenant data leakage
+
+### Tenant Context
+
+Set tenant context in your application:
+
+```typescript
+import { TenantContext } from '@hive-academy/nestjs-chromadb';
+
+@Injectable()
+export class TenantMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const tenantId = req.headers['x-tenant-id'] as string;
+    TenantContext.setTenant(tenantId);
+    next();
+  }
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Repository Pattern
+
+**✅ CORRECT**: Always extend `ChromaDBRepository<T>`
+
+```typescript
+@Injectable()
+export class MyRepository extends ChromaDBRepository<MyEntity> {
+  // Custom methods here
+}
+```
+
+**❌ WRONG**: Using `ChromaDBService` directly for CRUD
+
+```typescript
+@Injectable()
+export class MyService {
+  constructor(private chromaDB: ChromaDBService) {}
+
+  async getData() {
+    // Don't do this - use repository instead
+    return this.chromaDB.queryCollection(...);
+  }
+}
+```
+
+### 2. Semantic Search Optimization
+
+**Set appropriate `nResults`:**
+
+```typescript
+// ✅ CORRECT: Reasonable limit
+const results = await repository.search(query, { nResults: 10 });
+
+// ❌ WRONG: Too many results, slow
+const results = await repository.search(query, { nResults: 1000 });
+```
+
+**Combine with metadata filtering:**
+
+```typescript
+// ✅ CORRECT: Filter before vector search
+const results = await repository.search(query, {
+  nResults: 10,
+  where: { category: 'relevant-category' },
+});
+```
+
+### 3. Collection Naming
+
+Use kebab-case for collection names:
+
+```typescript
+// ✅ CORRECT
+@ChromaEntity({ collection: 'tech-trends' })
+
+// ❌ WRONG
+@ChromaEntity({ collection: 'TechTrends' })
+@ChromaEntity({ collection: 'tech_trends' })
+```
+
+### 4. Type Safety
+
+Extend `BaseDocument` for type safety:
+
+```typescript
+// ✅ CORRECT
+export class MyEntity extends BaseDocument {
+  @ChromaId() id!: string;
+  @ChromaProp() name!: string;
+}
+
+// ❌ WRONG
+export class MyEntity {
+  id?: string; // Missing proper typing
+  name?: string;
+}
+```
+
+### 5. Error Handling
+
+Handle collection-not-found errors:
+
+```typescript
+try {
+  const data = await repository.findAll();
+} catch (error) {
+  if (repository.isCollectionNotFoundError(error)) {
+    await repository.ensureInitialized();
+    return repository.findAll();
+  }
+  throw error;
+}
+```
+
+---
+
+## Common Patterns
+
+### RAG (Retrieval-Augmented Generation)
+
+```typescript
+async generateAnswer(question: string, userId: string): Promise<string> {
+  // 1. Retrieve relevant context from vector DB
+  const context = await this.knowledgeBase.search(question, {
+    nResults: 5,
+    where: { userId }
+  });
+
+  // 2. Format context for LLM
+  const contextText = context
+    .map(r => r.document.content)
+    .join('\n\n');
+
+  // 3. Generate answer with LLM
+  const llm = await this.llmProvider.getLLM();
+  const answer = await llm.invoke([
+    {
+      role: 'system',
+      content: `Answer based on this context:\n${contextText}`
+    },
+    {
+      role: 'user',
+      content: question
+    }
+  ]);
+
+  return answer.content;
+}
+```
+
+### Batch Operations
+
+```typescript
+async batchInsert(entities: TechTrendEntity[]): Promise<void> {
+  // Use Promise.all for parallel inserts
+  await Promise.all(
+    entities.map(entity => this.create(entity))
+  );
+}
+
+// Or chunk for rate limiting
+async batchInsertChunked(entities: TechTrendEntity[], chunkSize = 10): Promise<void> {
+  for (let i = 0; i < entities.length; i += chunkSize) {
+    const chunk = entities.slice(i, i + chunkSize);
+    await Promise.all(chunk.map(e => this.create(e)));
+
+    // Optional: Add delay between chunks
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
+```
+
+### Similarity Threshold Filtering
+
+```typescript
+async findSimilarDocuments(query: string, threshold = 0.7): Promise<TechTrendEntity[]> {
+  const results = await this.search(query, { nResults: 20 });
+
+  // Filter by similarity threshold
+  return results
+    .filter(r => r.score >= threshold)
+    .map(r => r.document);
+}
+```
+
+---
+
+## Performance Tips
+
+1. **Use Caching**: Apply `@Cached()` for expensive searches
+2. **Limit Results**: Set appropriate `nResults` to avoid excessive data transfer
+3. **Filter First**: Use `where` clauses to filter before vector search
+4. **Batch Operations**: Use `Promise.all()` for parallel operations
+5. **Index Optimization**: ChromaDB automatically indexes, but consider collection design
+
+---
+
+## Troubleshooting
+
+### Connection Issues
+
+```typescript
+// Check ChromaDB is running
+$ docker ps | grep chromadb
+
+// Test connection
+const health = await chromaDBService.heartbeat();
+console.log('ChromaDB health:', health);
+```
+
+### Collection Not Found
+
+```typescript
+// Manually initialize collection
+await repository.ensureInitialized();
+
+// Or set eager initialization
+super(Entity, 'collection', chromaDB, registry, {
+  initializationStrategy: 'eager',
+});
+```
+
+### Poor Search Results
+
+```typescript
+// Increase nResults
+const results = await repository.search(query, { nResults: 20 });
+
+// Check embedding quality
+console.log('Document content:', document.content);
+// Ensure content is meaningful for embedding
+
+// Try different query phrasing
+const results1 = await repository.search('machine learning AI');
+const results2 = await repository.search('artificial intelligence ML models');
+```
+
+---
+
+## Migration Guide
+
+### From Plain ChromaDB Client
+
+**Before:**
+
+```typescript
+const collection = await client.getCollection('my-data');
+const results = await collection.query({
+  queryTexts: ['search query'],
+  nResults: 10,
+});
+```
+
+**After:**
+
+```typescript
+@Injectable()
+export class MyRepository extends ChromaDBRepository<MyEntity> {
+  async searchData(query: string) {
+    return this.search(query, { nResults: 10 });
+  }
+}
+```
+
+---
+
+## Reference
+
+### Key Exports
+
+```typescript
+import {
+  // Core
+  ChromaDBModule,
+  ChromaDBService,
+  ChromaDBRepository,
+  CollectionRegistryService,
+
+  // Decorators
+  ChromaEntity,
+  ChromaId,
+  ChromaProp,
+  Cached,
+  Profiled,
+  Retry,
+  VectorQuery,
+  TenantAware,
+
+  // Types
+  BaseDocument,
+  CreateDocumentInput,
+  UpsertDocumentInput,
+  RepositoryFindOptions,
+  RepositorySearchOptions,
+  SearchResultWithScore,
+} from '@hive-academy/nestjs-chromadb';
+```

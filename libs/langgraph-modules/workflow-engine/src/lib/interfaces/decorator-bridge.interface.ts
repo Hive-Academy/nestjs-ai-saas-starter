@@ -11,10 +11,10 @@ import type {
 } from './workflow-engine.interface';
 
 /**
- * Functional workflow definition from decorator patterns
+ * Functional workflow definition from decorator patterns (Bridge Interface)
  * Matches the structure from functional-api without direct import
  */
-export interface FunctionalWorkflowDefinition {
+export interface BridgeFunctionalWorkflowDefinition {
   readonly name: string;
   readonly entrypoint: string;
   readonly tasks: Map<string, FunctionalTaskDefinition>;
@@ -54,7 +54,7 @@ export interface DeclarativeWorkflowDefinition<
  * Unified decorator definition that can handle both functional and declarative patterns
  */
 export type DecoratorDefinition<TState extends WorkflowState = WorkflowState> =
-  | FunctionalWorkflowDefinition
+  | BridgeFunctionalWorkflowDefinition
   | DeclarativeWorkflowDefinition<TState>;
 
 /**
@@ -64,7 +64,7 @@ export function isFunctionalDefinition<
   TState extends WorkflowState = WorkflowState
 >(
   definition: DecoratorDefinition<TState>
-): definition is FunctionalWorkflowDefinition {
+): definition is BridgeFunctionalWorkflowDefinition {
   return 'tasks' in definition && 'dependencies' in definition;
 }
 

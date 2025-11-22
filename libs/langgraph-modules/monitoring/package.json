@@ -2,6 +2,26 @@
   "name": "@hive-academy/langgraph-monitoring",
   "version": "0.0.1",
   "private": false,
+  "author": "Hive Academy",
+  "license": "MIT",
+  "description": "Monitoring and logging utilities for LangGraph modules with Neo4j integration",
+  "keywords": [
+    "nestjs",
+    "neo4j",
+    "graph-database",
+    "cypher",
+    "relationships",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/workflow-engine"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
   "types": "./src/index.d.ts",
@@ -32,7 +52,7 @@
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "reflect-metadata": "^0.1.13"
+    "@nestjs/common": "*",
+    "reflect-metadata": "*"
   }
 }

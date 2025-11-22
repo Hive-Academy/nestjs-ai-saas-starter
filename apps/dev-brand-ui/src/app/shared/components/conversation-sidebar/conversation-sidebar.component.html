@@ -1,0 +1,256 @@
+<!-- Conversation Sidebar Container -->
+<div
+  class="conversation-sidebar flex flex-col h-full bg-white border-r border-gray-200"
+  [class.collapsed]="collapsed$ | async"
+>
+  <!-- Header with Collapse Toggle -->
+  <div
+    class="sidebar-header flex items-center justify-between p-4 border-b border-gray-200"
+  >
+    <h2
+      class="text-lg font-semibold text-gray-900"
+      *ngIf="!(collapsed$ | async)"
+    >
+      Conversations
+    </h2>
+    <button
+      (click)="toggleCollapse()"
+      class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      [attr.aria-label]="
+        (collapsed$ | async) ? 'Expand sidebar' : 'Collapse sidebar'
+      "
+      type="button"
+    >
+      <svg
+        class="w-5 h-5 text-gray-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          [attr.d]="
+            (collapsed$ | async)
+              ? 'M13 5l7 7-7 7M5 5l7 7-7 7'
+              : 'M11 19l-7-7 7-7m8 14l-7-7 7-7'
+          "
+        />
+      </svg>
+    </button>
+  </div>
+
+  <!-- New Chat Button -->
+  <div class="p-4" *ngIf="!(collapsed$ | async)">
+    <button
+      (click)="onNewChat()"
+      [disabled]="loading$ | async"
+      class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      type="button"
+      aria-label="Create new conversation"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      <span>New Chat</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div
+    *ngIf="loading$ | async"
+    class="flex flex-col items-center justify-center p-8 space-y-4"
+    role="status"
+    aria-live="polite"
+  >
+    <div
+      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+    ></div>
+    <p class="text-sm text-gray-500" *ngIf="!(collapsed$ | async)">
+      Loading conversations...
+    </p>
+  </div>
+
+  <!-- Error State -->
+  <div
+    *ngIf="error$ | async as error"
+    class="p-4 bg-red-50 border border-red-200 rounded-lg m-4"
+    role="alert"
+    aria-live="assertive"
+  >
+    <p class="text-sm text-red-800">{{ error }}</p>
+    <button
+      (click)="loadConversations()"
+      class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+      type="button"
+    >
+      Retry
+    </button>
+  </div>
+
+  <!-- Conversation List -->
+  <div
+    class="conversation-list flex-1 overflow-y-auto"
+    *ngIf="!(loading$ | async) && !(error$ | async)"
+    role="list"
+    aria-label="Conversation history"
+  >
+    <!-- Empty State -->
+    <div
+      *ngIf="(conversations$ | async)?.length === 0"
+      class="flex flex-col items-center justify-center p-8 text-center"
+      role="status"
+    >
+      <svg
+        class="w-16 h-16 text-gray-300 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+        />
+      </svg>
+      <p class="text-gray-500" *ngIf="!(collapsed$ | async)">
+        No conversations yet.<br />Start a new chat!
+      </p>
+    </div>
+
+    <!-- Conversation Items -->
+    <div class="space-y-1 p-2">
+      <button
+        *ngFor="
+          let conversation of conversations$ | async;
+          trackBy: trackByThreadId
+        "
+        (click)="onSelectConversation(conversation.threadId)"
+        [class.active]="conversation.threadId === currentThreadId"
+        class="conversation-item w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-50"
+        type="button"
+        role="listitem"
+        [attr.aria-label]="
+          conversation.preview +
+          ', ' +
+          getRelativeTime(conversation.timestamp) +
+          ', ' +
+          getStatusLabel(conversation.status)
+        "
+      >
+        <!-- Collapsed View (Icon Only) -->
+        <div
+          *ngIf="collapsed$ | async"
+          class="flex items-center justify-center"
+        >
+          <svg
+            class="w-6 h-6 text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+        </div>
+
+        <!-- Expanded View (Full Details) -->
+        <div *ngIf="!(collapsed$ | async)">
+          <!-- Preview Text (max 60 chars) -->
+          <p class="text-sm font-medium text-gray-900 truncate mb-1">
+            {{ conversation.preview.substring(0, 60)
+            }}{{ conversation.preview.length > 60 ? '...' : '' }}
+          </p>
+
+          <!-- Metadata Row -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-500" [attr.title]="conversation.timestamp">
+              {{ getRelativeTime(conversation.timestamp) }}
+            </span>
+
+            <!-- Status Badge -->
+            <span
+              class="px-2 py-0.5 rounded-full text-xs font-medium"
+              [ngClass]="getStatusClass(conversation.status)"
+              role="status"
+            >
+              {{ getStatusLabel(conversation.status) }}
+            </span>
+          </div>
+
+          <!-- Waiting Badge (if applicable) -->
+          <div
+            *ngIf="conversation.status === 'waiting'"
+            class="mt-2 flex items-center gap-1 text-xs text-orange-600"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Waiting for approval</span>
+          </div>
+
+          <!-- Supervisor-specific: Current Agent & Progress -->
+          <div
+            *ngIf="
+              conversation.currentAgent ||
+              conversation.workflowProgress !== undefined
+            "
+            class="mt-2 space-y-1"
+          >
+            <div
+              *ngIf="conversation.currentAgent"
+              class="text-xs text-gray-600"
+            >
+              <span class="font-medium">Agent:</span>
+              {{ conversation.currentAgent }}
+            </div>
+            <div
+              *ngIf="conversation.workflowProgress !== undefined"
+              class="text-xs"
+            >
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-200 rounded-full h-1.5">
+                  <div
+                    class="bg-blue-600 h-1.5 rounded-full transition-all"
+                    [style.width.%]="conversation.workflowProgress"
+                  ></div>
+                </div>
+                <span class="text-gray-600"
+                  >{{ conversation.workflowProgress }}%</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

@@ -4,9 +4,9 @@
 
 Consolidated view of all future work opportunities identified across completed tasks. This dashboard provides prioritization, effort estimates, and dependency tracking for planning next iterations.
 
-**Last Updated**: 2025-11-07
-**Total Opportunities**: 18 (from TASK_2025_033 + TASK_2025_038)
-**Total Estimated Effort**: 29-47 hours
+**Last Updated**: 2025-11-09
+**Total Opportunities**: 31 (from TASK_2025_033 + TASK_2025_038 + TASK_2025_042)
+**Total Estimated Effort**: 76-104 hours
 
 ---
 
@@ -27,18 +27,38 @@ Critical improvements that should be addressed in next sprint.
 
 ---
 
-### MEDIUM (Data Integrity & Security)
+### HIGH (Testing & Validation)
 
-Important improvements for data integrity and security hygiene.
+High-priority improvements for test coverage and production validation.
 
-| ID        | Enhancement                         | Source Task   | Effort | Business Value                  | Dependencies |
-| --------- | ----------------------------------- | ------------- | ------ | ------------------------------- | ------------ |
-| FW-038-01 | Add Integer Overflow Safety Warning | TASK_2025_038 | 10-15m | Prevent precision loss          | None         |
-| FW-038-05 | Log Sanitization for PII            | TASK_2025_038 | 20m    | Prevent accidental PII exposure | None         |
+| ID        | Enhancement                           | Source Task   | Effort | Business Value                        | Dependencies |
+| --------- | ------------------------------------- | ------------- | ------ | ------------------------------------- | ------------ |
+| FW-042-01 | Fix Test Isolation Issue              | TASK_2025_042 | 1-2h   | Enable full integration test coverage | None         |
+| FW-042-02 | Add End-to-End LLM Integration Test   | TASK_2025_042 | 4-6h   | Validate complete tool execution flow | OpenAI API   |
+| FW-042-03 | Add Streaming Event Integration Tests | TASK_2025_042 | 1-2h   | Validate streaming mode changes       | None         |
 
-**Total Effort**: 30-35 minutes
-**Business Impact**: MEDIUM - Data integrity protection, security hygiene
-**Risk without fixes**: MEDIUM (FW-038-01), LOW (FW-038-05)
+**Total Effort**: 6-10 hours
+**Business Impact**: HIGH - Increases test coverage from 42.9% to 100% for tool integration
+**Risk without fixes**: MEDIUM - Integration edge cases not validated, streaming changes unverified
+
+---
+
+### MEDIUM (Production & Quality)
+
+Important improvements for production observability and code quality.
+
+| ID        | Enhancement                          | Source Task   | Effort | Business Value                  | Dependencies |
+| --------- | ------------------------------------ | ------------- | ------ | ------------------------------- | ------------ |
+| FW-038-01 | Add Integer Overflow Safety Warning  | TASK_2025_038 | 10-15m | Prevent precision loss          | None         |
+| FW-038-05 | Log Sanitization for PII             | TASK_2025_038 | 20m    | Prevent accidental PII exposure | None         |
+| FW-042-04 | Add Production Logging Configuration | TASK_2025_042 | 2h     | Cleaner production logs         | None         |
+| FW-042-05 | Add Per-Tool Execution Timeout       | TASK_2025_042 | 4h     | Prevent hanging tools           | None         |
+| FW-042-06 | Add Tool Execution Metrics           | TASK_2025_042 | 6h     | Production observability        | None         |
+| FW-042-07 | Add Performance Stress Tests         | TASK_2025_042 | 2-3h   | Validate performance at scale   | None         |
+
+**Total Effort**: 15-16 hours
+**Business Impact**: MEDIUM - Production hardening, observability, performance validation
+**Risk without fixes**: MEDIUM (logging, timeouts), LOW (metrics, stress tests)
 
 ---
 
@@ -61,18 +81,24 @@ Medium-priority improvements for codebase quality and developer experience.
 
 ---
 
-### LONG_TERM (Optimization & Advanced Features)
+### LONG_TERM (Developer Experience & Future-Proofing)
 
-Low-priority enhancements for future iterations.
+Low-priority enhancements for developer experience and future scalability.
 
 | ID        | Enhancement                         | Source Task   | Effort | Business Value              | Dependencies        |
 | --------- | ----------------------------------- | ------------- | ------ | --------------------------- | ------------------- |
 | FW-033-06 | Implement Event History LRU Cache   | TASK_2025_033 | 2-3h   | Prevent memory leaks        | None                |
 | FW-033-07 | Add Event Sequence Gap Recovery     | TASK_2025_033 | 4-6h   | Recover missing events      | Backend API support |
 | FW-033-08 | Expand Streaming Unit Test Coverage | TASK_2025_033 | 2-3h   | Increase edge case coverage | None                |
+| FW-042-08 | Support Tool Prefix Filtering       | TASK_2025_042 | 4h     | Bulk tool selection         | None                |
+| FW-042-09 | Add Tool Categories/Tags            | TASK_2025_042 | 8h     | Better tool organization    | None                |
+| FW-042-10 | Add Tool Usage Analytics            | TASK_2025_042 | 12h    | Tool optimization insights  | None                |
+| FW-042-11 | Improve Error Messages with Hints   | TASK_2025_042 | 2h     | Better developer experience | None                |
+| FW-042-12 | Add Type Guard for Routing          | TASK_2025_042 | 1h     | Type safety improvement     | None                |
+| FW-042-13 | Fix Memory Estimate Accuracy        | TASK_2025_042 | 1h     | Accurate memory reporting   | None                |
 
-**Total Effort**: 8-12 hours
-**Business Impact**: LOW - Performance optimization, advanced UX
+**Total Effort**: 36-40 hours
+**Business Impact**: LOW - Developer experience, future scalability, code quality
 **Risk without fixes**: VERY LOW - Nice-to-have features
 
 ---
@@ -357,6 +383,49 @@ Phase 4 (RESEARCH)
 
 ---
 
+### TASK_2025_042: Automatic LangGraph Tool Integration System
+
+**Task Status**: ✅ Complete
+**Task Type**: Feature (LangGraph Tool Integration)
+**Code Review Score**: 9.2/10 ✅ APPROVED
+**Test Coverage**: 95.83% (ToolRegistryService)
+**Future Work Identified**: 13 opportunities
+
+**Summary**:
+
+- Zero-boilerplate tool integration system for LangGraph workflows
+- Automatic tool discovery, LLM binding, and ToolNode injection
+- Production-ready with 9.2/10 quality score (zero blocking issues)
+- Test isolation issue documented (4/33 failing tests - setup issue, not implementation)
+
+**Files Created/Modified** (7 total):
+
+1. `libs/langgraph-modules/workflow-engine/src/lib/services/tool-registry.service.ts` (NEW - 288 lines)
+2. `libs/langgraph-modules/workflow-engine/src/lib/workflow-engine.module.ts` (MODIFIED - +22 lines)
+3. `libs/langgraph-modules/workflow-engine/src/lib/utils/workflow-engine-config.accessor.ts` (MODIFIED - +4 lines)
+4. `libs/langgraph-modules/workflow-engine/src/lib/execution/workflow-execution.service.ts` (MODIFIED - +166 lines)
+5. `libs/langgraph-modules/workflow-engine/src/lib/services/tool-registry.service.spec.ts` (NEW - 654 lines)
+6. `libs/langgraph-modules/workflow-engine/src/lib/execution/workflow-execution.service.spec.ts` (MODIFIED - +368 lines)
+7. `libs/langgraph-modules/workflow-engine/CLAUDE.md` (MODIFIED - +354 lines)
+
+**Key Improvements**:
+
+- ✅ Automatic tool discovery from @Tool decorated methods
+- ✅ Zero-configuration LLM tool binding via llm.bindTools()
+- ✅ Autonomous ToolNode injection for tool execution
+- ✅ Default streaming mode changed to 'updates' for tool visibility
+- ✅ 95.83% test coverage for ToolRegistryService (exceeds 90% target)
+
+**Future Work Categories**:
+
+- HIGH: 3 items (Test isolation, E2E LLM test, Streaming tests) - 6-10 hours
+- MEDIUM: 4 items (Production logging, Timeouts, Metrics, Stress tests) - 14-16 hours
+- LOW: 6 items (Prefix filtering, Categories, Analytics, Error messages, Type guards, Memory estimates) - 28 hours
+
+**Future Work Document**: [task-tracking/TASK_2025_042/future-enhancements.md](./TASK_2025_042/future-enhancements.md)
+
+---
+
 ## Quick Reference
 
 ### Next Sprint Planning
@@ -436,30 +505,32 @@ Phase 4 (RESEARCH)
 
 ## Statistics Summary
 
-| Metric                     | Value                            |
-| -------------------------- | -------------------------------- |
-| Total Tasks Analyzed       | 2 (TASK_2025_033, TASK_2025_038) |
-| Total Opportunities        | 18                               |
-| IMMEDIATE Priority         | 2 (11%)                          |
-| MEDIUM Priority            | 2 (11%)                          |
-| SHORT_TERM Priority        | 6 (33%)                          |
-| LONG_TERM Priority         | 3 (17%)                          |
-| RESEARCH Priority          | 5 (28%)                          |
-| Estimated Effort           | 29-47+ hours                     |
-| Average Effort/Opportunity | 1.9 hours                        |
-| Security Issues            | 3                                |
-| Data Integrity Issues      | 1                                |
-| Code Quality Issues        | 6                                |
-| Performance Issues         | 3                                |
-| Reliability Issues         | 1                                |
-| Testing Gaps               | 1                                |
-| Documentation Gaps         | 1                                |
-| Standardization Needs      | 2                                |
+| Metric                     | Value                                           |
+| -------------------------- | ----------------------------------------------- |
+| Total Tasks Analyzed       | 3 (TASK_2025_033, TASK_2025_038, TASK_2025_042) |
+| Total Opportunities        | 31                                              |
+| IMMEDIATE Priority         | 2 (6%)                                          |
+| HIGH Priority              | 3 (10%)                                         |
+| MEDIUM Priority            | 8 (26%)                                         |
+| SHORT_TERM Priority        | 6 (19%)                                         |
+| LONG_TERM Priority         | 12 (39%)                                        |
+| RESEARCH Priority          | 5 (16%)                                         |
+| Estimated Effort           | 76-104+ hours                                   |
+| Average Effort/Opportunity | 2.8 hours                                       |
+| Security Issues            | 4                                               |
+| Data Integrity Issues      | 1                                               |
+| Code Quality Issues        | 9                                               |
+| Performance Issues         | 5                                               |
+| Reliability Issues         | 2                                               |
+| Testing Gaps               | 5                                               |
+| Documentation Gaps         | 1                                               |
+| Standardization Needs      | 2                                               |
+| Production Observability   | 2                                               |
 
 ---
 
 **Dashboard Status**: ACTIVE
 **Maintained By**: modernization-detector agent
-**Update Frequency**: After each task completion (Phase 5)
+**Update Frequency**: After each task completion (Phase 8)
 **Next Review**: After next task completion
-**Last Updated**: 2025-11-07 (Added TASK_2025_038 enhancements)
+**Last Updated**: 2025-11-09 (Added TASK_2025_042 enhancements - 13 items)

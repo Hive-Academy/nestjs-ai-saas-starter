@@ -1,0 +1,122 @@
+<div class="research-chat-container">
+  <!-- Conversation History Sidebar -->
+  <div class="conversation-sidebar-column">
+    <app-conversation-sidebar
+      workflowType="researcher"
+      [userId]="userId"
+      [currentThreadId]="currentThreadId"
+      (conversationSelected)="onConversationSelected($event)"
+      (newConversationCreated)="onNewConversation($event)"
+    />
+  </div>
+
+  <!-- Phase 3: Agent Status Panel Sidebar -->
+  <div class="sidebar">
+    <app-agent-status-panel></app-agent-status-panel>
+  </div>
+
+  <!-- Main Chat Area -->
+  <div class="chat-area">
+    <!-- Chat Messages (NO HEADER per reference) -->
+    <div class="chat-messages">
+      @for (message of messages; track message.timestamp) {
+      <div [class]="getMessageClass(message)">
+        <!-- NO message-header per reference - just content -->
+        <div
+          class="message-content"
+          [class.streaming]="
+            message.role === 'assistant' &&
+            message.type === 'text' &&
+            isResearching
+          "
+          [innerHTML]="message.content | markdown | async"
+        ></div>
+        <!-- Phase 3: Streaming cursor indicator -->
+        @if (message.role === 'assistant' && message.type === 'text' &&
+        isResearching) {
+        <span class="streaming-cursor" aria-hidden="true">|</span>
+        } @if (message.metadata?.filename) {
+        <div class="message-metadata">
+          <span class="file-icon">📄</span>
+          <span>{{ message.metadata.filename }}</span>
+        </div>
+        }
+      </div>
+      } @if (isResearching) {
+      <div class="message message-assistant message-status">
+        <div class="loading-indicator">
+          <span>Researching</span>
+          <span class="loading-dots"></span>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Input Area with Icon Buttons (per reference) -->
+    <div class="chat-input-container">
+      <form (submit)="sendMessage()" class="chat-input-form">
+        <!-- Left icons -->
+        <div class="input-icons input-icons-left">
+          <button type="button" class="icon-button" title="Search">
+            <span>🔍</span>
+          </button>
+          <button type="button" class="icon-button" title="Cancel">
+            <span>❌</span>
+          </button>
+          <button type="button" class="icon-button" title="Location">
+            <span>📍</span>
+          </button>
+        </div>
+
+        <!-- Input field -->
+        <input
+          type="text"
+          [(ngModel)]="currentQuery"
+          name="query"
+          placeholder="Ask anything. Type @ for mentions and / for shortcuts."
+          [disabled]="isResearching"
+          class="chat-input"
+          autocomplete="off"
+        />
+
+        <!-- Right icons -->
+        <div class="input-icons input-icons-right">
+          <button type="button" class="icon-button" title="Web search">
+            <span>🌐</span>
+          </button>
+          <button type="button" class="icon-button" title="Emoji">
+            <span>😊</span>
+          </button>
+          <button type="button" class="icon-button" title="Attach file">
+            <span>📎</span>
+          </button>
+          <button type="button" class="icon-button" title="Voice input">
+            <span>🎤</span>
+          </button>
+          <button
+            type="submit"
+            [disabled]="!currentQuery.trim() || isResearching"
+            class="send-button"
+            title="Send message"
+          >
+            @if (isResearching) {
+            <span>⏳</span>
+            } @else {
+            <span>➜</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Approval Modal -->
+    <app-approval-modal
+      [visible]="showApprovalModal"
+      [reportDraft]="reportDraft"
+      (approve)="onApprovalDecision(true)"
+      (reject)="onApprovalDecision(false)"
+    />
+  </div>
+  <!-- End Chat Area -->
+</div>
+<!-- End Research Chat Container -->

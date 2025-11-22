@@ -1,10 +1,10 @@
-import type { BaseCheckpointMetadata } from '@hive-academy/langgraph-core';
+import type { CheckpointMetadata } from '@langchain/langgraph-checkpoint';
 
 /**
- * Base workflow metadata that extends LangGraph's BaseCheckpointMetadata
+ * Base workflow metadata that extends LangGraph's CheckpointMetadata
  * Provides core workflow execution context
  */
-export interface WorkflowExecutionMetadata extends BaseCheckpointMetadata {
+export interface WorkflowExecutionMetadata extends CheckpointMetadata {
   /** Unique workflow execution identifier */
   readonly executionId: string;
 

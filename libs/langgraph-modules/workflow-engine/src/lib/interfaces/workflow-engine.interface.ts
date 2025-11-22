@@ -84,6 +84,28 @@ export interface WorkflowNode<TState = WorkflowState> {
   handler: (state: TState) => Promise<Partial<TState> | Command<TState>>;
   requiresApproval?: boolean;
   config?: WorkflowNodeConfig;
+  /**
+   * Flag indicating if this node is an LLM task with tool calling
+   * @see @LLMTask decorator
+   */
+  isLLMTask?: boolean;
+  /**
+   * LLM task-specific options (only present if isLLMTask = true)
+   */
+  llmTaskOptions?: {
+    /**
+     * Tool names bound to this task
+     */
+    readonly tools: readonly string[];
+    /**
+     * Max tool execution iterations
+     */
+    readonly maxToolIterations: number;
+    /**
+     * Timeout per tool execution (ms)
+     */
+    readonly toolTimeout: number;
+  };
 }
 
 export interface WorkflowEdge<TState = WorkflowState> {

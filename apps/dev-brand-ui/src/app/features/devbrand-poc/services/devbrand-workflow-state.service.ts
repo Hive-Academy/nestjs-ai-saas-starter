@@ -10,7 +10,7 @@ import {
   ExecutionStatus,
 } from '../models/execution-state.model';
 import { AgentProgress, AgentStatus } from '../models/agent-progress.model';
-import { DevBrandWebSocketService } from './devbrand-websocket.service';
+import { DevBrandSseService } from './devbrand-sse.service';
 
 /**
  * AgentProgressMap Type
@@ -64,7 +64,7 @@ export interface HITLApproval {
  *
  * @remarks
  * **Purpose**:
- * - Subscribe to WebSocket event streams from DevBrandWebSocketService
+ * - Subscribe to SSE event streams from DevBrandSseService
  * - Process all 16 StreamEventType values with comprehensive event handlers
  * - Maintain ExecutionState, AgentProgressMap, HITL queue via signals
  * - Provide computed signals for derived state (progress, current agent, flags)
@@ -147,10 +147,10 @@ export interface HITLApproval {
 })
 export class DevBrandWorkflowStateService {
   /**
-   * WebSocket service for real-time event streaming
+   * SSE service for real-time event streaming
    * @private
    */
-  private readonly wsService = inject(DevBrandWebSocketService);
+  private readonly sseService = inject(DevBrandSseService);
 
   /**
    * Workflow execution state signal
@@ -322,7 +322,7 @@ export class DevBrandWorkflowStateService {
    * - Automatic cleanup on service destroy
    */
   constructor() {
-    this.subscribeToWebSocketEvents();
+    this.subscribeToSseEvents();
   }
 
   /**
@@ -340,15 +340,14 @@ export class DevBrandWorkflowStateService {
    * ```typescript
    * // After REST API call
    * apiService.executeWorkflow(request).subscribe(response => {
-   *   stateService.startExecution(response.executionId);
-   *   wsService.connect(response.websocketUrl);
-   *   wsService.subscribeToExecution(response.executionId);
+   *   stateService.startExecution(response.streamUrl);
+   *   sseService.connect(response.streamUrl);
    * });
    * ```
    *
    * @public
    */
-  startExecution(executionId: string): void {
+  startExecution(streamUrl: string): void {
     this._executionState.set({
       status: 'running',
       currentStep: 0,
@@ -376,52 +375,63 @@ export class DevBrandWorkflowStateService {
     // Clear history and queue
     this._eventHistory.next([]);
     this._hitlQueue.set([]);
+
+    // Connect to SSE stream and subscribe to events
+    this.sseService.connect(streamUrl);
+    this.subscribeToSseEvents();
   }
 
   /**
-   * Subscribe to WebSocket event streams
+   * Subscribe to SSE event streams
    * @private
    * @remarks
-   * - Processes streamUpdates$: workflow/node/progress/milestone/error events
-   * - Processes tokenUpdates$: LLM token streaming
-   * - Processes errors$: WebSocket connection errors
+   * - Processes workflowUpdates$: workflow/node/progress/milestone/error events
+   * - Processes errors$: SSE connection errors
    * - All subscriptions automatically managed by service lifecycle
    */
-  private subscribeToWebSocketEvents(): void {
+  private subscribeToSseEvents(): void {
     console.log(
-      '🎧 [DevBrandWorkflowStateService] Subscribing to WebSocket events...'
+      '🎧 [DevBrandWorkflowStateService] Subscribing to SSE events...'
     );
 
-    // Stream updates: all workflow events
-    this.wsService.streamUpdates$.subscribe((update) => {
-      console.log('📨 [DevBrandWorkflowStateService] Received streamUpdate');
+    // Workflow updates: all workflow events
+    this.sseService.workflowUpdates$.subscribe((update) => {
+      console.log('📨 [DevBrandWorkflowStateService] Received workflow update');
       console.log(
         '📊 [DevBrandWorkflowStateService] Update type:',
         update.type
       );
-      console.log(
-        '🔢 [DevBrandWorkflowStateService] Sequence:',
-        update.metadata.sequenceNumber
-      );
       console.log('📋 [DevBrandWorkflowStateService] Full update:', update);
-      this.processStreamUpdate(update);
-      this.addToEventHistory(update);
+
+      // Handle workflow_complete event
+      if (update.type === 'workflow_complete') {
+        console.log('🎉 [DevBrandWorkflowStateService] Workflow completed');
+        this._executionState.update((state) => ({
+          ...state,
+          status: 'completed',
+          endTime: new Date(),
+          currentStep: state.totalSteps,
+        }));
+        return;
+      }
+
+      // Handle regular workflow-update events
+      if (update.type === 'workflow-update') {
+        // Process the event (extract StreamUpdate from SSE event structure)
+        const streamUpdate = this.extractStreamUpdateFromSseEvent(update);
+        if (streamUpdate) {
+          this.processStreamUpdate(streamUpdate);
+          this.addToEventHistory(streamUpdate);
+        }
+      }
+
       console.log(
-        '✅ [DevBrandWorkflowStateService] Stream update processed and added to history'
+        '✅ [DevBrandWorkflowStateService] Workflow update processed'
       );
     });
 
-    // Token updates: LLM token streaming
-    this.wsService.tokenUpdates$.subscribe((token) => {
-      console.log(
-        '🔤 [DevBrandWorkflowStateService] Received tokenUpdate:',
-        token
-      );
-      this.processTokenUpdate(token);
-    });
-
-    // Errors: WebSocket connection/validation errors
-    this.wsService.errors$.subscribe((error) => {
+    // Errors: SSE connection errors
+    this.sseService.errors$.subscribe((error) => {
       console.error('❌ [DevBrandWorkflowStateService] Received error:', error);
       this._executionState.update((state) => ({
         ...state,
@@ -433,6 +443,57 @@ export class DevBrandWorkflowStateService {
         '🔄 [DevBrandWorkflowStateService] Execution state updated to error'
       );
     });
+  }
+
+  /**
+   * Extract StreamUpdate from SSE event structure
+   * SSE events wrap the actual workflow data
+   */
+  private extractStreamUpdateFromSseEvent(sseEvent: any): StreamUpdate | null {
+    try {
+      // SSE event structure: { type, executionId, nodeName, state, timestamp }
+      // We need to extract the state and convert it to StreamUpdate format
+      if (!sseEvent.state) {
+        console.warn('⚠️ No state in SSE event:', sseEvent);
+        return null;
+      }
+
+      // Create StreamUpdate from SSE event
+      const streamUpdate: StreamUpdate = {
+        type: this.mapNodeNameToEventType(sseEvent.nodeName),
+        data: sseEvent.state,
+        metadata: {
+          timestamp: new Date(sseEvent.timestamp),
+          sequenceNumber: Date.now(), // Use timestamp as sequence for now
+          executionId: sseEvent.executionId,
+        },
+      };
+
+      return streamUpdate;
+    } catch (error) {
+      console.error('❌ Failed to extract StreamUpdate from SSE event:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Map LangGraph node name to StreamEventType
+   */
+  private mapNodeNameToEventType(nodeName: string): StreamEventType {
+    // Map node execution to appropriate event types
+    if (nodeName?.includes('supervisor')) {
+      return 'supervisor:route' as StreamEventType;
+    }
+    if (nodeName?.includes('github')) {
+      return 'agent:start' as StreamEventType;
+    }
+    if (nodeName?.includes('brand')) {
+      return 'agent:start' as StreamEventType;
+    }
+    if (nodeName?.includes('content')) {
+      return 'agent:start' as StreamEventType;
+    }
+    return 'node:start' as StreamEventType;
   }
 
   /**

@@ -1,6 +1,4 @@
----
-
-**1. Design System Overview**
+# **1. Design System Overview**
 
 **Philosophy:**
 

@@ -27,8 +27,8 @@ import type { PersonalBrandMemoryService } from '../core/memory/personal-brand-m
 import type { GitHubService } from '../core/github/github.service';
 import type { BrandAnalysisService } from '../core/brand/brand-analysis.service';
 import type { ContentGenerationService } from '../core/content/content-generation.service';
-import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-multi-agent';
-import { WorkflowExecutionCoordinationService } from '@hive-academy/langgraph-multi-agent';
+import { MultiAgentCoordinatorService } from '@hive-academy/langgraph-workflow-engine';
+import { WorkflowExecutionCoordinationService } from '@hive-academy/langgraph-workflow-engine';
 
 describe('Unified Agent State - Metadata Flow Integration Tests', () => {
   let workflow: DevBrandSupervisorWorkflow;

@@ -4,14 +4,13 @@ import {
   Entrypoint,
   Task,
   WorkflowType,
-} from '@hive-academy/langgraph-functional-api';
+} from '@hive-academy/langgraph-workflow-engine';
 import type {
   TaskExecutionContext,
   TaskExecutionResult,
   FunctionalWorkflowState,
-} from '@hive-academy/langgraph-functional-api';
-import { StreamProgress, StreamToken } from '@hive-academy/langgraph-streaming';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+} from '@hive-academy/langgraph-workflow-engine';
+import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
 import { GitHubIntegrationTools } from '../core/tools/github-integration.tools';
 import { WebResearchTools } from '../core/tools/web-research.tools';
@@ -84,7 +83,6 @@ export class DevBrandChatWorkflow {
    * Entry point - Parse user message and analyze intent
    */
   @Entrypoint({ timeout: 10000 })
-  @StreamProgress({ enabled: true, includeETA: true })
   async parseUserMessage(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -141,7 +139,6 @@ Confidence: [0.0-1.0]`;
    * Step 2: Retrieve relevant context from personal brand memory
    */
   @Task({ dependsOn: ['parseUserMessage'] })
-  @StreamProgress({ enabled: true })
   async retrieveContext(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -183,8 +180,6 @@ Confidence: [0.0-1.0]`;
    * Note: Routing logic moved to conditional task dependencies
    */
   @Task({ dependsOn: ['retrieveContext'] })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   async executeGitHubAnalysis(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -260,8 +255,6 @@ Create a friendly, informative response highlighting key insights and suggestion
    * Content Creation Action - Generate social media content
    */
   @Task({ dependsOn: ['retrieveContext'] })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   async executeContentCreation(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -321,7 +314,6 @@ Generate engaging content that showcases technical expertise and personal brand.
    * Strategy Advice Action - Provide personalized brand strategy guidance
    */
   @Task({ dependsOn: ['retrieveContext'] })
-  @StreamProgress({ enabled: true })
   async executeStrategyAdvice(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -400,7 +392,6 @@ Provide actionable, specific advice for improving their personal brand as a deve
    * General Chat Action - Handle casual conversation
    */
   @Task({ dependsOn: ['retrieveContext'] })
-  @StreamProgress({ enabled: true })
   async executeGeneralChat(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -464,7 +455,6 @@ Provide a helpful, encouraging response and suggest ways I can help with their d
       'executeGeneralChat',
     ],
   })
-  @StreamProgress({ enabled: true })
   async finalizeConversation(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {

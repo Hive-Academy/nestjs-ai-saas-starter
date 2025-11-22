@@ -1,0 +1,198 @@
+/**
+ * ConversationSidebarComponent Styles
+ *
+ * Responsive layout strategy:
+ * - Desktop (>768px): Fixed width sidebar (280px normal, 64px collapsed)
+ * - Mobile (<768px): Slide-out drawer with backdrop overlay
+ *
+ * Features:
+ * - Smooth collapse/expand transitions (250ms)
+ * - Active conversation highlighting (blue accent)
+ * - Status-based visual indicators (green/orange/gray badges)
+ * - Hover effects for interactive elements
+ * - Mobile drawer slide animation
+ */
+
+.conversation-sidebar {
+  // Desktop default: Fixed width sidebar
+  width: 280px;
+  transition: width 250ms ease-in-out;
+
+  // Collapsed state (desktop)
+  &.collapsed {
+    width: 64px;
+
+    .sidebar-header h2,
+    .conversation-item p,
+    .conversation-item .text-xs {
+      display: none;
+    }
+  }
+
+  // Conversation item states
+  .conversation-item {
+    position: relative;
+
+    // Active conversation highlighting
+    &.active {
+      background-color: #eff6ff; // blue-50
+      border-left: 4px solid #3b82f6; // blue-500
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(to bottom, #3b82f6, #6366f1);
+        border-radius: 0 4px 4px 0;
+      }
+    }
+
+    // Hover effect (not on active)
+    &:not(.active):hover {
+      background-color: #f9fafb; // gray-50
+    }
+
+    // Focus state for keyboard navigation
+    &:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+  }
+
+  // Scrollbar styling
+  .conversation-list {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6; // gray-300 on gray-100
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f3f4f6; // gray-100
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #d1d5db; // gray-300
+      border-radius: 3px;
+
+      &:hover {
+        background: #9ca3af; // gray-400
+      }
+    }
+  }
+}
+
+/**
+ * Mobile Responsive Layout (<768px)
+ * Drawer pattern with slide-in animation and backdrop
+ */
+@media (max-width: 767px) {
+  .conversation-sidebar {
+    // Override desktop styles
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 250ms ease-in-out;
+    z-index: 1000;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+
+    // Open state (controlled by parent component)
+    &.open {
+      transform: translateX(0);
+    }
+
+    // Collapsed state doesn't apply on mobile
+    &.collapsed {
+      width: 280px; // Override desktop collapsed width
+      transform: translateX(-100%);
+
+      &.open {
+        transform: translateX(0);
+      }
+    }
+  }
+
+  // Backdrop overlay for mobile drawer
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease-in-out;
+
+    &.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+/**
+ * Tablet breakpoint (768px - 1024px)
+ * Sidebar remains visible but slightly narrower
+ */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .conversation-sidebar {
+    width: 240px;
+
+    &.collapsed {
+      width: 64px;
+    }
+  }
+}
+
+/**
+ * Animation utilities
+ */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/**
+ * Accessibility: High contrast mode support
+ */
+@media (prefers-contrast: high) {
+  .conversation-sidebar {
+    border-color: #000;
+
+    .conversation-item.active {
+      border-left-color: #000;
+      outline: 2px solid #000;
+    }
+  }
+}
+
+/**
+ * Accessibility: Reduced motion support
+ */
+@media (prefers-reduced-motion: reduce) {
+  .conversation-sidebar,
+  .conversation-item,
+  .sidebar-backdrop {
+    transition: none;
+  }
+}

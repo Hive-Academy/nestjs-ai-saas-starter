@@ -143,34 +143,12 @@ export class HealthController {
           version: '0.0.1',
           integration: 'configured',
         },
-        'langgraph-streaming': {
-          status: 'available',
-          version: '0.0.1',
-          integration: 'configured',
-        },
-        'langgraph-time-travel': {
-          status: 'available',
-          version: '0.0.1',
-          integration: 'configured',
-        },
         'langgraph-hitl': {
           status: 'available',
           version: '0.0.1',
           integration: 'configured',
         },
         'langgraph-workflow-engine': {
-          status: 'available',
-          version: '0.0.1',
-          integration: 'configured',
-        },
-      },
-      localLibraries: {
-        'devbrand-backend-feature': {
-          status: 'available',
-          version: '0.0.1',
-          integration: 'configured',
-        },
-        'devbrand-backend-data-access': {
           status: 'available',
           version: '0.0.1',
           integration: 'configured',
@@ -186,8 +164,7 @@ export class HealthController {
       responseTime: `${responseTime}ms`,
       totalLibraries:
         Object.keys(libraryStatus.coreLibraries).length +
-        Object.keys(libraryStatus.langgraphModules).length +
-        Object.keys(libraryStatus.localLibraries).length,
+        Object.keys(libraryStatus.langgraphModules).length,
       libraries: libraryStatus,
       buildSystemStatus: {
         webpack: 'operational',

@@ -5,7 +5,7 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../core"
+      "path": "../../nestjs-chromadb"
     },
     {
       "path": "./tsconfig.lib.json"

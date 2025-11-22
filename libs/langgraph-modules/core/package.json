@@ -1,6 +1,27 @@
 {
   "name": "@hive-academy/langgraph-core",
   "version": "0.0.1",
+  "description": "Core library for LangGraph modules providing essential interfaces and utilities",
+  "author": "Hive Academy Team",
+  "license": "MIT",
+  "keywords": [
+    "nestjs",
+    "langgraph",
+    "ai",
+    "hiveacademy",
+    "langchain",
+    "modules",
+    "core"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/core"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "private": false,
   "main": "./index.cjs.js",
   "module": "./index.esm.js",
@@ -29,15 +50,15 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "reflect-metadata": "^0.1.13",
-    "@langchain/langgraph": "^0.4.3",
-    "@langchain/core": "^0.3.68"
+    "@nestjs/common": "*",
+    "reflect-metadata": "*",
+    "@langchain/langgraph": "*",
+    "@langchain/core": "*"
   },
   "devDependencies": {
-    "rollup": "4.49.0",
-    "@rollup/plugin-typescript": "12.1.4",
-    "rollup-plugin-dts": "6.2.3",
-    "@nestjs/testing": "^11.0.0"
+    "rollup": "*",
+    "@rollup/plugin-typescript": "*",
+    "rollup-plugin-dts": "*",
+    "@nestjs/testing": "*"
   }
 }

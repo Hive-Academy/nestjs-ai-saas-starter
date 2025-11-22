@@ -3,6 +3,26 @@
   "version": "0.0.1",
   "description": "Central orchestration hub for LangGraph ecosystem - coordinates agents, tools, workflows with embedded streaming and state management",
   "author": "Hive Academy",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "nestjs",
+    "neo4j",
+    "graph-database",
+    "cypher",
+    "relationships",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/workflow-engine"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "license": "MIT",
   "private": false,
   "main": "./index.cjs.js",
@@ -29,21 +49,23 @@
     "!*.tsbuildinfo"
   ],
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@langchain/core": "^0.3.68",
-    "@nestjs/event-emitter": "^3.0.1",
-    "rxjs": "7.8.2",
-    "@langchain/langgraph": "^0.4.3",
-    "reflect-metadata": "^0.1.13",
-    "@hive-academy/langgraph-streaming": "0.0.1",
-    "@hive-academy/langgraph-core": "0.0.1",
-    "@hive-academy/langgraph-functional-api": "0.0.1",
-    "@nestjs/config": "4.0.2",
-    "@hive-academy/langgraph-memory": "0.0.1"
+    "@nestjs/common": "*",
+    "@langchain/core": "*",
+    "@nestjs/event-emitter": "*",
+    "@langchain/langgraph": "*",
+    "reflect-metadata": "*",
+    "@hive-academy/langgraph-core": "*",
+    "@nestjs/config": "*",
+    "zod": "*",
+    "@nestjs/core": "*",
+    "@langchain/langgraph-checkpoint": "*",
+    "@langchain/openai": "*",
+    "@langchain/anthropic": "*",
+    "@hive-academy/langgraph-memory": "*"
   },
   "devDependencies": {
-    "rollup": "4.49.0",
-    "@rollup/plugin-typescript": "12.1.4",
-    "rollup-plugin-dts": "6.2.3"
+    "rollup": "*",
+    "@rollup/plugin-typescript": "*",
+    "rollup-plugin-dts": "*"
   }
 }

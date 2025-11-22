@@ -3,5 +3,3 @@
  */
 
 export * from './neo4j';
-export * from './chromadb';
-export * from './services';
