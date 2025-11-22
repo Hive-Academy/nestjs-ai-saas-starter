@@ -26,6 +26,10 @@ This workflow implements the assigned batch using **Backend Developer** or **Fro
 - **Read**: `d:\projects\nestjs-ai-saas-starter\.claude\agents\frontend-developer.md`
 - **You are now**: Frontend Developer
 
+3.  **Persona Verification**:
+    - **INSTRUCTION**: You MUST start your response by stating:
+      > "I am the [Backend/Frontend] Developer. I have read `[agent-file].md` and I am ready to execute with strict adherence to Real Implementation Mandate."
+
 ## Step 3: Read Requirements
 
 1. **Read** the current `IN PROGRESS` batch in `tasks.md`

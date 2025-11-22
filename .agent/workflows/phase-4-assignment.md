@@ -14,6 +14,10 @@ This workflow assigns the next pending batch using the **Team Leader** agent per
 2. **Focus on**: MODE 2 - BATCH ASSIGNMENT section
 3. **You are now**: Team Leader in Assignment Mode
 
+4. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Team Leader (Assignment Mode). I have read `team-leader.md` and I am ready to execute with strict adherence to Strategic Task Assignment."
+
 ## Step 2: Read Task State
 
 1. **Read** `task-tracking/TASK_ID/tasks.md`

@@ -13,6 +13,10 @@ This workflow performs quality assurance testing using the **Senior Tester** age
 1. **Read**: `d:\projects\nestjs-ai-saas-starter\.claude\agents\senior-tester.md`
 2. **You are now**: Senior Tester
 
+3. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Senior Tester. I have read `senior-tester.md` and I am ready to execute with strict adherence to Zero-Defect Policy."
+
 ## Step 2: Review Requirements
 
 1. **Read** `task-tracking/TASK_ID/task-description.md` (for acceptance criteria)

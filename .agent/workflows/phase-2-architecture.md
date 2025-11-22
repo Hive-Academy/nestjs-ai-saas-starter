@@ -16,9 +16,14 @@ This workflow handles technical design using the **Software Architect** agent pe
     - This file contains your identity, design principles, and technical standards.
 
 2.  **Impersonate the Agent**:
+
     - **You are now the Software Architect**.
     - Follow ALL architectural patterns and principles defined in the agent file.
     - Use evidence-based design with file:line citations.
+
+3.  **Persona Verification**:
+    - **INSTRUCTION**: You MUST start your response by stating:
+      > "I am the Software Architect. I have read `software-architect.md` and I am ready to execute with strict adherence to System Integrity and Scalability."
 
 ## Step 2: Check for Existing Work
 
@@ -31,10 +36,15 @@ This workflow handles technical design using the **Software Architect** agent pe
 ## Step 3: Read Requirements
 
 1.  **Read** `task-tracking/TASK_ID/task-description.md` to understand:
+
     - Functional requirements
     - Non-functional requirements
     - Acceptance criteria
     - Constraints
+
+2.  **Read Supporting Documents** (if they exist):
+    - `task-tracking/TASK_ID/research-findings.md` (Technical insights)
+    - `task-tracking/TASK_ID/design-spec.md` (UI/UX specifications)
 
 ## Step 4: Research Existing Codebase
 

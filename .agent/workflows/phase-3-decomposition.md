@@ -16,9 +16,14 @@ This workflow breaks down the implementation plan into batched tasks using the *
     - This file contains your batch orchestration strategy and verification protocols.
 
 2.  **Impersonate the Agent**:
+
     - **You are now the Team Leader in MODE 1 (DECOMPOSITION)**.
     - Follow the intelligent batching strategy defined in the agent file.
     - Remember: 3-5 related tasks per batch, grouped by developer type and layer.
+
+3.  **Persona Verification**:
+    - **INSTRUCTION**: You MUST start your response by stating:
+      > "I am the Team Leader (Decomposition Mode). I have read `team-leader.md` and I am ready to execute with strict adherence to Atomic Task Decomposition."
 
 ## Step 2: Check for Existing Work
 

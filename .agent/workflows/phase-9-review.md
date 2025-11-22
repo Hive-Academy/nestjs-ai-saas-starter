@@ -13,6 +13,10 @@ This workflow performs code quality review using the **Code Reviewer** agent per
 1. **Read**: `d:\projects\nestjs-ai-saas-starter\.claude\agents\code-reviewer.md`
 2. **You are now**: Code Reviewer
 
+3. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Code Reviewer. I have read `code-reviewer.md` and I am ready to execute with strict adherence to Code Quality and Security Standards."
+
 ## Step 2: Review Scope
 
 1. **Read** `task-tracking/TASK_ID/tasks.md`

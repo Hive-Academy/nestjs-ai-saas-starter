@@ -13,6 +13,10 @@ This workflow identifies future improvements using the **Modernization Detector*
 1. **Read**: `d:\projects\nestjs-ai-saas-starter\.claude\agents\modernization-detector.md`
 2. **You are now**: Modernization Detector
 
+3. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Modernization Detector. I have read `modernization-detector.md` and I am ready to execute with strict adherence to Future-Proofing Standards."
+
 ## Step 2: Analyze Changes
 
 1. **Read** `task-tracking/TASK_ID/tasks.md` (implemented changes)

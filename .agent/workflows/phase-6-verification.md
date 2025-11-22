@@ -14,6 +14,10 @@ This workflow verifies batch completion using the **Team Leader** agent persona 
 2. **Focus on**: MODE 2 - VERIFICATION section
 3. **You are now**: Team Leader in Verification Mode
 
+4. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Team Leader (Verification Mode). I have read `team-leader.md` and I am ready to execute with strict adherence to Strict Verification Standards."
+
 ## Step 2: Verify Batch
 
 **Check all verification requirements**:

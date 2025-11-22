@@ -39,21 +39,24 @@ Analyze the contents of the `task-tracking/TASK_ID/` directory to determine the 
 **Phase Detection Logic**:
 
 1. **Read Directory Contents**: Check which files exist in `task-tracking/TASK_ID/`
-2. **Analyze State**: Determine current phase based on file existence and content
-3. **Provide Command**: Give exact command for next phase
+2. **Read `task-description.md`** (if exists): Check "Workflow Dependencies" section for "Research Needed: Yes" or "UI/UX Design Needed: Yes"
+3. **Analyze State**: Determine current phase based on file existence and content
+4. **Provide Command**: Give exact command for next phase
 
 **Routing Table**:
 
-| Condition                                                             | Current Phase                        | Target Workflow  | Command                           |
-| :-------------------------------------------------------------------- | :----------------------------------- | :--------------- | :-------------------------------- |
-| `task-description.md` is MISSING                                      | Initialization                       | Requirements     | `/phase-1-requirements TASK_ID`   |
-| `implementation-plan.md` is MISSING                                   | Requirements Done                    | Architecture     | `/phase-2-architecture TASK_ID`   |
-| `tasks.md` is MISSING                                                 | Architecture Done                    | Decomposition    | `/phase-3-decomposition TASK_ID`  |
-| `tasks.md` exists, has PENDING batches                                | Decomposition Done or Batch Complete | Batch Assignment | `/phase-4-assignment TASK_ID`     |
-| `tasks.md` latest batch is IN PROGRESS                                | Batch Assigned                       | Implementation   | `/phase-5-implementation TASK_ID` |
-| `tasks.md` latest batch shows COMPLETE (verified), more PENDING exist | Batch Verified                       | Next Assignment  | `/phase-4-assignment TASK_ID`     |
-| `tasks.md` all batches COMPLETE                                       | All Development Done                 | Final Completion | `/phase-7-completion TASK_ID`     |
-| `future-enhancements.md` exists                                       | Workflow Complete                    | -                | Task Complete ✅                  |
+| Condition                                                                    | Current Phase                        | Target Workflow  | Command                           |
+| :--------------------------------------------------------------------------- | :----------------------------------- | :--------------- | :-------------------------------- |
+| `task-description.md` is MISSING                                             | Initialization                       | Requirements     | `/phase-1-requirements TASK_ID`   |
+| `task-description.md` has "Research: Yes" AND `research-findings.md` MISSING | Requirements Done                    | Research         | `/phase-1-research TASK_ID`       |
+| `task-description.md` has "UI/UX: Yes" AND `design-spec.md` MISSING          | Req/Research Done                    | UI/UX Design     | `/phase-1-design TASK_ID`         |
+| `implementation-plan.md` is MISSING                                          | Pre-Arch Done                        | Architecture     | `/phase-2-architecture TASK_ID`   |
+| `tasks.md` is MISSING                                                        | Architecture Done                    | Decomposition    | `/phase-3-decomposition TASK_ID`  |
+| `tasks.md` exists, has PENDING batches                                       | Decomposition Done or Batch Complete | Batch Assignment | `/phase-4-assignment TASK_ID`     |
+| `tasks.md` latest batch is IN PROGRESS                                       | Batch Assigned                       | Implementation   | `/phase-5-implementation TASK_ID` |
+| `tasks.md` latest batch shows COMPLETE (verified), more PENDING exist        | Batch Verified                       | Next Assignment  | `/phase-4-assignment TASK_ID`     |
+| `tasks.md` all batches COMPLETE                                              | All Development Done                 | Final Completion | `/phase-7-completion TASK_ID`     |
+| `future-enhancements.md` exists                                              | Workflow Complete                    | -                | Task Complete ✅                  |
 
 ## Step 3: Execution
 
@@ -63,15 +66,14 @@ Analyze the contents of the `task-tracking/TASK_ID/` directory to determine the 
 
 > "📍 Task `TASK_2025_005` Status Analysis
 >
-> ✅ `task-description.md` exists
-> ✅ `implementation-plan.md` exists  
-> ✅ `tasks.md` exists (2 batches COMPLETE, 1 batch PENDING)
+> ✅ `task-description.md` exists (Flags: Research=No, UI/UX=Yes)
+> ❌ `design-spec.md` missing
 >
-> **Current Phase**: Batch Assignment
+> **Current Phase**: UI/UX Design
 >
 > **Next Command**:
 >
 > ````
-> /phase-4-assignment TASK_2025_005
+> /phase-1-design TASK_2025_005
 > ```"
 > ````

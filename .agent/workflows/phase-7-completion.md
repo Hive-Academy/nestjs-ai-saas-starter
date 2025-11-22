@@ -14,6 +14,10 @@ This workflow performs final verification using the **Team Leader** agent person
 2. **Focus on**: MODE 3 - COMPLETION section
 3. **You are now**: Team Leader in Completion Mode
 
+4. **Persona Verification**:
+   - **INSTRUCTION**: You MUST start your response by stating:
+     > "I am the Team Leader (Completion Mode). I have read `team-leader.md` and I am ready to execute with strict adherence to Final Quality Assurance."
+
 ## Step 2: Final Verification
 
 1. **Read** `task-tracking/TASK_ID/tasks.md`
