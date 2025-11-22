@@ -32,25 +32,46 @@ This workflow acts as the central router for the development process. It analyze
       1.  Verify `task-tracking/TASK_ID/context.md` exists.
     - **Next Step**: Proceed to **Step 2 (Routing)**.
 
-## Step 2: Route to Phase
+## Step 2: Intelligent Routing
 
 Analyze the contents of the `task-tracking/TASK_ID/` directory to determine the next phase.
 
-| Condition                                       | Status               | Target Workflow                            |
-| :---------------------------------------------- | :------------------- | :----------------------------------------- |
-| `task-description.md` is MISSING                | Planning Needed      | **Run Workflow**: `/phase-1-planning`      |
-| `implementation-plan.md` is MISSING             | Architecture Needed  | **Run Workflow**: `/phase-1-planning`      |
-| `tasks.md` is MISSING                           | Decomposition Needed | **Run Workflow**: `/phase-2-decomposition` |
-| `tasks.md` has "PENDING" or "IN PROGRESS" tasks | Execution Needed     | **Run Workflow**: `/phase-3-execution`     |
-| `tasks.md` has ALL "COMPLETE" tasks             | Completion Needed    | **Run Workflow**: `/phase-4-completion`    |
+**Phase Detection Logic**:
+
+1. **Read Directory Contents**: Check which files exist in `task-tracking/TASK_ID/`
+2. **Analyze State**: Determine current phase based on file existence and content
+3. **Provide Command**: Give exact command for next phase
+
+**Routing Table**:
+
+| Condition                                                             | Current Phase                        | Target Workflow  | Command                           |
+| :-------------------------------------------------------------------- | :----------------------------------- | :--------------- | :-------------------------------- |
+| `task-description.md` is MISSING                                      | Initialization                       | Requirements     | `/phase-1-requirements TASK_ID`   |
+| `implementation-plan.md` is MISSING                                   | Requirements Done                    | Architecture     | `/phase-2-architecture TASK_ID`   |
+| `tasks.md` is MISSING                                                 | Architecture Done                    | Decomposition    | `/phase-3-decomposition TASK_ID`  |
+| `tasks.md` exists, has PENDING batches                                | Decomposition Done or Batch Complete | Batch Assignment | `/phase-4-assignment TASK_ID`     |
+| `tasks.md` latest batch is IN PROGRESS                                | Batch Assigned                       | Implementation   | `/phase-5-implementation TASK_ID` |
+| `tasks.md` latest batch shows COMPLETE (verified), more PENDING exist | Batch Verified                       | Next Assignment  | `/phase-4-assignment TASK_ID`     |
+| `tasks.md` all batches COMPLETE                                       | All Development Done                 | Final Completion | `/phase-7-completion TASK_ID`     |
+| `future-enhancements.md` exists                                       | Workflow Complete                    | -                | Task Complete ✅                  |
 
 ## Step 3: Execution
 
-**INSTRUCTION**: Based on the table above, explicitly tell the user which workflow to run next.
+**INSTRUCTION**: Based on the table above, read the task directory and explicitly tell the user which workflow to run next.
 
 **Example Output**:
 
-> "Task `TASK_2025_005` is currently in the **Execution** phase.
-> Please run the following command to proceed:
+> "📍 Task `TASK_2025_005` Status Analysis
 >
-> `/phase-3-execution TASK_2025_005`"
+> ✅ `task-description.md` exists
+> ✅ `implementation-plan.md` exists  
+> ✅ `tasks.md` exists (2 batches COMPLETE, 1 batch PENDING)
+>
+> **Current Phase**: Batch Assignment
+>
+> **Next Command**:
+>
+> ````
+> /phase-4-assignment TASK_2025_005
+> ```"
+> ````
