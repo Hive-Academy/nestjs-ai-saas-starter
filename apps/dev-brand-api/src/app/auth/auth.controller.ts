@@ -10,6 +10,7 @@ import {
 import type { Request, Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './services/auth.service';
+import { TicketService } from './services/ticket.service';
 
 /**
  * Authentication Controller
@@ -25,7 +26,10 @@ import { AuthService } from './services/auth.service';
  */
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly ticketService: TicketService
+  ) {}
 
   /**
    * Initiate WorkOS login flow
@@ -129,5 +133,44 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   getMe(@Req() req: Request) {
     return req.user;
+  }
+
+  /**
+   * Generate short-lived ticket for SSE authentication
+   *
+   * Protected endpoint that generates a 30-second ticket for opening SSE connections.
+   * Workaround for EventSource API limitation (cannot set custom headers).
+   *
+   * **Flow**:
+   * 1. Client authenticates with JWT (cookie or header)
+   * 2. Client requests ticket via this endpoint
+   * 3. Client opens SSE connection with ticket in query string
+   * 4. Server validates ticket and establishes SSE connection
+   *
+   * **Security**:
+   * - Requires JWT authentication
+   * - Ticket valid for 30 seconds only
+   * - Single-use enforcement (consumed on first use)
+   * - Cryptographically secure random token
+   *
+   * @example
+   * POST /auth/stream/ticket
+   * Cookie: access_token=<jwt>
+   * → Returns: { ticket: "abc123..." }
+   *
+   * Then use:
+   * new EventSource('/api/stream?token=abc123...')
+   *
+   * Evidence: implementation-plan.md:454-495
+   */
+  @Post('stream/ticket')
+  @UseGuards(JwtAuthGuard)
+  async generateStreamTicket(@Req() req: Request) {
+    const user = req.user as any;
+    const ticket = await this.ticketService.create(
+      user.userId || user.id,
+      user.tenantId
+    );
+    return { ticket };
   }
 }

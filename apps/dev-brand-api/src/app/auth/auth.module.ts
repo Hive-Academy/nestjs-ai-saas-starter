@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './services/auth.service';
+import { TicketService } from './services/ticket.service';
 
 /**
  * Authentication Module
@@ -62,7 +63,7 @@ import { AuthService } from './services/auth.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard],
-  exports: [AuthService, JwtAuthGuard], // Export for use in other modules
+  providers: [AuthService, JwtAuthGuard, TicketService],
+  exports: [AuthService, JwtAuthGuard, TicketService], // Export for use in other modules
 })
 export class AuthModule {}
