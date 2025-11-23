@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { ToolRegistryService } from '../services/tool-registry.service';
-import { Agent } from '../decorators/multi-agent/agent.decorator';
+import {
+  Agent,
+  AGENT_METADATA_KEY,
+} from '../decorators/multi-agent/agent.decorator';
 import { Tool } from '../decorators/multi-agent/tool.decorator';
 import { z } from 'zod';
 
@@ -215,7 +218,7 @@ describe('LangGraph Tool Integration', () => {
 
     // Verify agent has tools configured
     const agentConfig = Reflect.getMetadata(
-      'agent:metadata',
+      AGENT_METADATA_KEY,
       TestCalculatorAgent
     );
     expect(agentConfig).toBeDefined();
@@ -249,7 +252,10 @@ describe('LangGraph Tool Integration', () => {
     expect(registeredTools[0].name).toBe('test-search');
 
     // Verify agent has tools configured
-    const agentConfig = Reflect.getMetadata('agent:metadata', TestSearchAgent);
+    const agentConfig = Reflect.getMetadata(
+      AGENT_METADATA_KEY,
+      TestSearchAgent
+    );
     expect(agentConfig).toBeDefined();
     expect(agentConfig.tools).toContain('test-search');
 
@@ -271,7 +277,7 @@ describe('LangGraph Tool Integration', () => {
    */
   it('should handle tool execution errors gracefully', async () => {
     const toolRegistry = module.get(ToolRegistryService);
-    await toolRegistry.onModuleInit();
+    // onModuleInit already called in beforeEach
 
     // Test error tool registration
     const registeredTools = toolRegistry.getTools(['failing-tool']);
@@ -295,7 +301,7 @@ describe('LangGraph Tool Integration', () => {
     }
 
     // Verify agent has error tool configured
-    const agentConfig = Reflect.getMetadata('agent:metadata', TestErrorAgent);
+    const agentConfig = Reflect.getMetadata(AGENT_METADATA_KEY, TestErrorAgent);
     expect(agentConfig).toBeDefined();
     expect(agentConfig.tools).toContain('failing-tool');
 
@@ -309,7 +315,7 @@ describe('LangGraph Tool Integration', () => {
    */
   it('should provide tool registry statistics', async () => {
     const toolRegistry = module.get(ToolRegistryService);
-    await toolRegistry.onModuleInit();
+    // onModuleInit already called in beforeEach
 
     const stats = toolRegistry.getStats();
 

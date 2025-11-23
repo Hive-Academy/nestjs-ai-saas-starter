@@ -1,10 +1,10 @@
 # Development Tasks - TASK_2025_054
 
 **Task Type**: Backend (Security-Critical)
-**Total Tasks**: 22
-**Total Batches**: 6
-**Batching Strategy**: Layer-based (Cleanup → Decorators → Services → Controllers → Tests)
-**Status**: 2/6 batches complete (33.33%)
+**Total Tasks**: 28
+**Total Batches**: 8
+**Batching Strategy**: Layer-based (Cleanup → Decorators → Services → Enforcement → Integration → Controllers → Tests)
+**Status**: 5/8 batches complete (62.5%)
 
 ---
 
@@ -95,7 +95,7 @@
 **Assigned To**: backend-developer
 **Tasks in Batch**: 2
 **Dependencies**: Batch 1 complete
-**Git Commit**: PENDING
+**Git Commit**: cef2a366
 **Completion Date**: 2025-11-23
 
 ### Task 2.1: Add Auth to EntrypointOptions Interface ✅ COMPLETE
@@ -150,14 +150,15 @@
 
 ---
 
-## Batch 3: @RequiresApproval Approver Authorization (CRITICAL) ⏸️ PENDING
+## Batch 3: @RequiresApproval Approver Authorization (CRITICAL) ✅ COMPLETE
 
 **Assigned To**: backend-developer
 **Tasks in Batch**: 2
 **Dependencies**: Batch 2 complete
-**Estimated Commits**: 1
+**Git Commit**: 85f86678
+**Completion Date**: 2025-11-23
 
-### Task 3.1: Add Approver Auth to @RequiresApproval Decorator ⏸️ PENDING
+### Task 3.1: Add Approver Auth to @RequiresApproval Decorator ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\hitl\src\lib\decorators\approval.decorator.ts`
 **Specification Reference**: implementation-plan.md:241-379
@@ -191,7 +192,7 @@
 
 ---
 
-### Task 3.2: Implement Approver Validation in HumanApprovalService ⏸️ PENDING
+### Task 3.2: Implement Approver Validation in HumanApprovalService ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\hitl\src\lib\services\human-approval.service.ts`
 **Dependencies**: Task 3.1 (must complete first)
@@ -224,24 +225,25 @@
 
 ---
 
-**Batch 3 Verification Requirements**:
+**Batch 3 Verification Results**:
 
 - ✅ Decorator accepts config and stores approver auth
-- ✅ Service validates approver before processing
-- ✅ One git commit for entire batch
+- ✅ Service validates approver before processing (already implemented lines 198-256)
+- ✅ One git commit for entire batch (85f86678)
 - ✅ Build passes: `npx nx build @hive-academy/langgraph-hitl`
 - ✅ No compilation errors
 
 ---
 
-## Batch 4: SSE Authentication Infrastructure ⏸️ PENDING
+## Batch 4: SSE Authentication Infrastructure ✅ COMPLETE
 
 **Assigned To**: backend-developer
 **Tasks in Batch**: 4
 **Dependencies**: Batch 3 complete
-**Estimated Commits**: 1
+**Git Commit**: 3e5023b4
+**Completion Date**: 2025-11-23
 
-### Task 4.1: Create TicketService ⏸️ PENDING
+### Task 4.1: Create TicketService ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\auth\services\ticket.service.ts`
 **Specification Reference**: implementation-plan.md:386-451
@@ -270,7 +272,7 @@
 
 ---
 
-### Task 4.2: Register TicketService in AuthModule ⏸️ PENDING
+### Task 4.2: Register TicketService in AuthModule ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\auth\auth.module.ts`
 **Dependencies**: Task 4.1 (must complete first)
@@ -286,7 +288,7 @@
 
 ---
 
-### Task 4.3: Add Stream Ticket Endpoint to AuthController ⏸️ PENDING
+### Task 4.3: Add Stream Ticket Endpoint to AuthController ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\auth\auth.controller.ts`
 **Dependencies**: Task 4.2 (must complete first)
@@ -313,7 +315,7 @@
 
 ---
 
-### Task 4.4: Enhance QueryTokenAuthGuard with Ticket Validation ⏸️ PENDING
+### Task 4.4: Enhance QueryTokenAuthGuard with Ticket Validation ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\auth\guards\query-token.guard.ts`
 **Dependencies**: Task 4.3 (must complete first)
@@ -341,24 +343,27 @@
 
 ---
 
-**Batch 4 Verification Requirements**:
+**Batch 4 Verification Results**:
 
-- ✅ TicketService created and registered
-- ✅ Ticket endpoint protected by JwtAuthGuard
-- ✅ QueryTokenAuthGuard validates tickets
-- ✅ One git commit for entire batch
+- ✅ TicketService created with in-memory Map storage (30s TTL)
+- ✅ TicketService registered in AuthModule (providers + exports)
+- ✅ POST /auth/stream/ticket endpoint protected by JwtAuthGuard
+- ✅ QueryTokenAuthGuard validates tickets (dual-mode: tickets + JWT fallback)
+- ✅ One git commit for entire batch (3e5023b4)
 - ✅ Build passes: `npx nx build dev-brand-api`
+- ✅ Security: crypto-secure tokens, single-use enforcement, auto-expiration
 
 ---
 
-## Batch 5: Enhanced Decorator Auth (Tool & Agent) ⏸️ PENDING
+## Batch 5: Enhanced Decorator Auth (Tool & Agent) ✅ COMPLETE
 
 **Assigned To**: backend-developer
 **Tasks in Batch**: 2
 **Dependencies**: Batch 4 complete
-**Estimated Commits**: 1
+**Git Commit**: 8cd4102a
+**Completion Date**: 2025-11-23
 
-### Task 5.1: Add Tier-Based Auth to @Tool Decorator ⏸️ PENDING
+### Task 5.1: Add Tier-Based Auth to @Tool Decorator ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\decorators\multi-agent\tool.decorator.ts`
 **Specification Reference**: implementation-plan.md:622-677
@@ -386,7 +391,7 @@
 
 ---
 
-### Task 5.2: Add Tier-Based Auth to @Agent Decorator ⏸️ PENDING
+### Task 5.2: Add Tier-Based Auth to @Agent Decorator ✅ COMPLETE
 
 **File(s)**: `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\decorators\multi-agent\agent.decorator.ts`
 **Dependencies**: Task 5.1 (must complete first)
@@ -405,12 +410,249 @@
 
 ---
 
-**Batch 5 Verification Requirements**:
+**Batch 5 Verification Results**:
 
-- ✅ Both decorators support auth field
-- ✅ Tier-based restrictions implemented
+- ✅ Both decorators support auth field (roles, permissions, tiers)
+- ✅ Tier-based restrictions defined in interfaces
+- ✅ One git commit for entire batch (8cd4102a)
+- ✅ Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
+
+**⚠️ CRITICAL GAP IDENTIFIED**: Enforcement logic missing from tasks.md!
+
+- Tool auth enforcement (graph-compiler.service.ts) - NO TASK EXISTS
+- Agent auth enforcement (multi-agent coordinator) - NO TASK EXISTS
+- Batch 6 Task 6.6 expects enforcement to exist, but no batch implements it
+- **SOLUTION**: Create Batch 5.5 (enforcement) + Batch 5.6 (integration + SSE auth)
+
+---
+
+## Batch 5.5: Auth Enforcement Implementation ✅ COMPLETE
+
+**Assigned To**: backend-developer
+**Tasks in Batch**: 2
+**Dependencies**: Batch 5 complete
+**Estimated Commits**: 1
+
+### Task 5.5.1: Implement Tool Auth Enforcement ✅ COMPLETE
+
+**File(s)**:
+
+- `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\strategies\functional-task-graph.strategy.ts`
+- `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\execution\strategies\functional-node-graph.strategy.ts`
+
+**Specification Reference**: implementation-plan.md:622-677, decorator-analysis-addendum.md:263-286
+**Pattern to Follow**: decorator-analysis-addendum.md:263-286 (tool auth enforcement pattern)
+**Expected Commit Pattern**: `feat(langgraph): implement tool auth enforcement in workflow strategies`
+
+**Quality Requirements**:
+
+- ✅ Wrap ToolNode creation with auth validation
+- ✅ Extract user from RunnableConfig using WorkflowAuthContextService
+- ✅ Validate roles, permissions, and tiers against tool.auth metadata
+- ✅ Return LLM-friendly error messages on auth failure (don't crash workflow)
+- ✅ Support all auth fields: required, roles, tiers, permissions
+
+**Implementation Details**:
+
+- **Location**: Where `new ToolNode(tools)` is called (lines ~210 in task strategy, ~107 in node strategy)
+- **Pattern**: Wrap each tool function with auth validation before passing to ToolNode
+- **Error Handling**: Return `{ error: string, name: string }` instead of throwing
+- **Imports to Add**: `WorkflowAuthContextService`, `getToolMetadata`
+- **Example**:
+  ```typescript
+  // Wrap tools with auth validation
+  const authValidatedTools = tools.map((tool) => {
+    const toolMetadata = getToolMetadata(tool);
+    return async (input: any, config: RunnableConfig) => {
+      if (toolMetadata.auth?.required) {
+        const user = WorkflowAuthContextService.extractUserContext(config);
+        if (!user) {
+          return { error: 'Tool requires authentication', name: toolMetadata.name };
+        }
+        // Validate roles, tiers, permissions...
+      }
+      return tool(input, config);
+    };
+  });
+  const toolNode = new ToolNode(authValidatedTools);
+  ```
+
+---
+
+### Task 5.5.2: Implement Agent Auth Enforcement ✅ COMPLETE
+
+**File(s)**: `d:\projects\nestjs-ai-saas-starter\libs\langgraph-modules\workflow-engine\src\lib\services\multi-agent\builders\supervisor-graph-builder.ts`
+**Dependencies**: Task 5.5.1 (must complete first)
+**Specification Reference**: implementation-plan.md:680-730, decorator-analysis-addendum.md:152-167
+
+**Quality Requirements**:
+
+- ✅ Validate agent auth before routing in supervisor
+- ✅ Extract user from RunnableConfig
+- ✅ Check agent.auth metadata (roles, tiers, permissions)
+- ✅ Throw UnauthorizedException or route to free alternative
+- ✅ Log attempted premium agent access
+
+**Implementation Details**:
+
+- **Location**: In supervisor node function, before routing to agent (around line 300-400)
+- **Pattern**: Check agent config auth before creating worker tool
+- **Imports to Add**: `WorkflowAuthContextService`, `getAgentConfig`
+- **Example**:
+  ```typescript
+  // In createWorkerTool() or supervisor node
+  const agentConfig = getAgentConfig(agentClass);
+  if (agentConfig.auth?.required) {
+    const user = WorkflowAuthContextService.extractUserContext(config);
+    if (!user) {
+      throw new UnauthorizedException('Agent requires authentication');
+    }
+    if (agentConfig.auth.tiers && !agentConfig.auth.tiers.includes(user.tier)) {
+      throw new UnauthorizedException(`Agent requires ${agentConfig.auth.tiers.join('/')} tier`);
+    }
+  }
+  ```
+
+---
+
+**Batch 5.5 Verification Requirements**:
+
+- ✅ Tool auth enforcement implemented in both strategies
+- ✅ Agent auth enforcement implemented in supervisor
 - ✅ One git commit for entire batch
 - ✅ Build passes: `npx nx build @hive-academy/langgraph-workflow-engine`
+- ✅ No compilation errors
+
+---
+
+## Batch 5.6: Auth Integration & SSE Protection ⏸️ PENDING
+
+**Assigned To**: backend-developer
+**Tasks in Batch**: 4
+**Dependencies**: Batch 5.5 complete
+**Estimated Commits**: 1
+
+### Task 5.6.1: Create Example Protected Tool ⏸️ PENDING
+
+**File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\tools\premium-analytics.tool.ts` (NEW)
+**Specification Reference**: decorator-analysis-addendum.md:393-410
+**Expected Commit Pattern**: `feat(dev-brand-api): add example tier-restricted tool`
+
+**Quality Requirements**:
+
+- ✅ Create new tool class with @Tool decorator
+- ✅ Use auth field with tier restrictions (pro/enterprise)
+- ✅ Demonstrate real premium functionality
+- ✅ Register in ToolRegistry
+
+**Implementation Details**:
+
+- **Create**: New file for premium analytics tool
+- **Decorator**: `@Tool({ name: 'premium_analytics', auth: { required: true, tiers: ['pro', 'enterprise'] } })`
+- **Functionality**: Real analytics operation (e.g., advanced GitHub metrics)
+- **Registration**: Add to tools module exports
+
+---
+
+### Task 5.6.2: Create Example Tier-Restricted Agent ⏸️ PENDING
+
+**File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\agents\premium-strategy.agent.ts` (NEW)
+**Dependencies**: Task 5.6.1 (must complete first)
+**Specification Reference**: decorator-analysis-addendum.md:444-475
+
+**Quality Requirements**:
+
+- ✅ Create new agent class with @Agent decorator
+- ✅ Use auth field with tier restrictions
+- ✅ Demonstrate premium agent capabilities
+- ✅ Register in AgentRegistry
+
+**Implementation Details**:
+
+- **Create**: New file for premium strategy agent
+- **Decorator**: `@Agent({ description: 'Premium brand strategy generator', auth: { required: true, tiers: ['pro', 'enterprise'] } })`
+- **Functionality**: Advanced brand strategy generation
+- **Tools**: Reference premium_analytics tool
+
+---
+
+### Task 5.6.3: Apply QueryTokenAuthGuard to SSE Endpoints ⏸️ PENDING
+
+**File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\controllers\research-chat.controller.ts`
+**Dependencies**: Task 5.6.2 (must complete first)
+**Specification Reference**: implementation-plan.md:567-615
+
+**Quality Requirements**:
+
+- ✅ Add @UseGuards(QueryTokenAuthGuard) to all @Sse() endpoints
+- ✅ Verify user ownership of execution/thread ID
+- ✅ Extract user from req.user (populated by guard)
+- ✅ Throw UnauthorizedException if ownership check fails
+
+**Implementation Details**:
+
+- **Endpoints to Protect**: All @Sse() decorated methods
+- **Guard Import**: `import { QueryTokenAuthGuard } from '../../auth/guards/query-token.guard';`
+- **Ownership Verification**: Check thread metadata userId matches req.user.userId
+- **Pattern**:
+  ```typescript
+  @Sse('stream/:id')
+  @UseGuards(QueryTokenAuthGuard)
+  async streamWorkflow(@Param('id') executionId: string, @Request() req) {
+    const user = req.user;
+    const metadata = this.threadRegistry.getMetadata(executionId);
+    if (metadata.userId !== user.userId) {
+      throw new UnauthorizedException('Unauthorized access to execution');
+    }
+    // Stream events...
+  }
+  ```
+
+---
+
+### Task 5.6.4: Update Existing Workflows with Auth Examples ⏸️ PENDING
+
+**File(s)**: `d:\projects\nestjs-ai-saas-starter\apps\dev-brand-api\src\app\business-workflows\workflows\devbrand-chat.workflow.ts`
+**Dependencies**: Task 5.6.3 (must complete first)
+
+**Quality Requirements**:
+
+- ✅ Add auth requirements to existing workflow tasks/nodes
+- ✅ Demonstrate role-based restrictions
+- ✅ Show tier-based tool access
+- ✅ Document auth patterns in comments
+
+**Implementation Details**:
+
+- **Add Auth to Tasks**: Use @Task({ auth: { required: true, roles: ['user'] } })
+- **Reference Premium Tools**: Show conditional tool usage based on user tier
+- **Comments**: Add inline documentation explaining auth patterns
+- **Example**:
+  ```typescript
+  @Task({
+    auth: { required: true, roles: ['user'] },
+    dependsOn: ['parseUserMessage']
+  })
+  async generateStrategy(context: TaskExecutionContext) {
+    const user = WorkflowAuthContextService.extractUserContext(context.config);
+    // Use premium tools if user has pro/enterprise tier
+    if (user.tier === 'pro' || user.tier === 'enterprise') {
+      // Call premium_analytics tool
+    }
+  }
+  ```
+
+---
+
+**Batch 5.6 Verification Requirements**:
+
+- ✅ Premium tool created and registered
+- ✅ Premium agent created and registered
+- ✅ SSE endpoints protected with QueryTokenAuthGuard
+- ✅ Existing workflows updated with auth examples
+- ✅ One git commit for entire batch
+- ✅ Build passes: `npx nx build dev-brand-api`
+- ✅ All controllers compile without errors
 
 ---
 

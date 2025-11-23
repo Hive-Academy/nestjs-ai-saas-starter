@@ -1,11 +1,16 @@
 import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { DynamicStructuredTool } from '@langchain/core/tools';
+import {
+  DynamicStructuredTool,
+  tool,
+  ToolRuntime,
+} from '@langchain/core/tools';
 import { z } from 'zod';
 import {
   getClassTools,
   ToolMetadata,
 } from '../decorators/multi-agent/tool.decorator';
+import { WorkflowAuthContext } from '../interfaces/auth-context.interface';
 
 /**
  * ToolRegistryService
@@ -162,11 +167,67 @@ export class ToolRegistryService implements OnModuleInit {
     metadata: ToolMetadata,
     instance: any
   ): DynamicStructuredTool {
-    return new DynamicStructuredTool({
-      name: metadata.name,
-      description: metadata.description,
-      schema: metadata.schema || z.object({}),
-      func: async (input: any) => {
+    // Use tool() helper to get ToolRuntime support for auth context
+    return tool(
+      async (input: any, runtime: ToolRuntime<any, WorkflowAuthContext>) => {
+        // AUTH ENFORCEMENT
+        if (metadata.auth?.required) {
+          const user = runtime.context?.user;
+
+          if (!user) {
+            return {
+              error: true,
+              message: 'Authentication required',
+              tool: metadata.name,
+              timestamp: new Date().toISOString(),
+            };
+          }
+
+          // Role validation
+          if (metadata.auth.roles?.length) {
+            const hasRole = metadata.auth.roles.some((r) =>
+              user.roles.includes(r)
+            );
+            if (!hasRole) {
+              return {
+                error: true,
+                message: `Requires role: ${metadata.auth.roles.join(' or ')}`,
+                tool: metadata.name,
+                timestamp: new Date().toISOString(),
+              };
+            }
+          }
+
+          // Tier validation
+          if (metadata.auth.tiers?.length) {
+            if (!metadata.auth.tiers.includes(user.tier)) {
+              return {
+                error: true,
+                message: `Requires ${metadata.auth.tiers.join(' or ')} tier`,
+                tool: metadata.name,
+                timestamp: new Date().toISOString(),
+              };
+            }
+          }
+
+          // Permission validation
+          if (metadata.auth.permissions?.length) {
+            const hasAllPerms = metadata.auth.permissions.every((p) =>
+              user.permissions.includes(p)
+            );
+            if (!hasAllPerms) {
+              return {
+                error: true,
+                message: `Missing permissions: ${metadata.auth.permissions.join(
+                  ', '
+                )}`,
+                tool: metadata.name,
+                timestamp: new Date().toISOString(),
+              };
+            }
+          }
+        }
+
         try {
           // Bind instance context when invoking tool method
           const result = await instance[metadata.methodName](input);
@@ -190,7 +251,12 @@ export class ToolRegistryService implements OnModuleInit {
           };
         }
       },
-    });
+      {
+        name: metadata.name,
+        description: metadata.description,
+        schema: metadata.schema || z.object({}),
+      }
+    ) as any as DynamicStructuredTool;
   }
 
   /**
@@ -276,11 +342,13 @@ export class ToolRegistryService implements OnModuleInit {
    */
   getStats(): {
     totalTools: number;
+    toolClasses: number;
     toolNames: string[];
     memoryEstimate: string;
   } {
     return {
       totalTools: this.tools.size,
+      toolClasses: this.toolClasses.size,
       toolNames: Array.from(this.tools.keys()),
       memoryEstimate: `~${this.tools.size * 50}KB`, // Rough estimate
     };

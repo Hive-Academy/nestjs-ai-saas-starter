@@ -2,8 +2,13 @@ import { Injectable, Logger, Type } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { StateGraph, END } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import { DynamicStructuredTool } from '@langchain/core/tools';
+import {
+  DynamicStructuredTool,
+  tool,
+  ToolRuntime,
+} from '@langchain/core/tools';
 import { z } from 'zod';
+import { WorkflowAuthContext } from '../../../interfaces/auth-context.interface';
 import type {
   MultiAgentConfig,
   SupervisorConfig,
@@ -345,14 +350,60 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
         });
 
         // 3. Create DynamicStructuredTool wrapping agent execution
-        const tool = new DynamicStructuredTool({
-          name: agentConfig.id,
-          description: this.generateToolDescription(agentConfig),
-          schema: toolSchema,
-          func: async (input: {
-            task: string;
-            context?: Record<string, any>;
-          }) => {
+        // 3. Create DynamicStructuredTool wrapping agent execution
+        const agentTool = tool(
+          async (
+            input: {
+              task: string;
+              context?: Record<string, any>;
+            },
+            runtime: ToolRuntime<any, WorkflowAuthContext>
+          ) => {
+            // AUTH ENFORCEMENT
+            if (agentConfig.auth?.required) {
+              const user = runtime.context?.user;
+
+              if (!user) {
+                return JSON.stringify({
+                  error: true,
+                  message: 'Authentication required',
+                  agent: agentConfig.id,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+
+              // Role validation
+              if (agentConfig.auth.roles?.length) {
+                const hasRole = agentConfig.auth.roles.some((r) =>
+                  user.roles.includes(r)
+                );
+                if (!hasRole) {
+                  return JSON.stringify({
+                    error: true,
+                    message: `Requires role: ${agentConfig.auth.roles.join(
+                      ' or '
+                    )}`,
+                    agent: agentConfig.id,
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              }
+
+              // Tier validation
+              if (agentConfig.auth.tiers?.length) {
+                if (!agentConfig.auth.tiers.includes(user.tier)) {
+                  return JSON.stringify({
+                    error: true,
+                    message: `Requires ${agentConfig.auth.tiers.join(
+                      ' or '
+                    )} tier`,
+                    agent: agentConfig.id,
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              }
+            }
+
             this.logger.debug(
               `Executing worker tool: ${agentConfig.id} with task: "${input.task}"`
             );
@@ -415,10 +466,15 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
               });
             }
           },
-        });
+          {
+            name: agentConfig.id,
+            description: this.generateToolDescription(agentConfig),
+            schema: toolSchema,
+          }
+        ) as any as DynamicStructuredTool;
 
-        tools.push(tool);
-        this.logger.debug(`Created worker tool: ${tool.name}`);
+        tools.push(agentTool);
+        this.logger.debug(`Created worker tool: ${agentTool.name}`);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
