@@ -12,8 +12,11 @@ import type {
 } from '@hive-academy/langgraph-workflow-engine';
 import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
+import { UnauthorizedException } from '@nestjs/common';
+import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 import { GitHubIntegrationTools } from '../core/tools/github-integration.tools';
 import { WebResearchTools } from '../core/tools/web-research.tools';
+import { PremiumAnalyticsTool } from '../tools/premium-analytics.tool';
 
 /**
  * DevBrand Chat Workflow - Simple Functional API Example for Chat Interface
@@ -76,7 +79,8 @@ export class DevBrandChatWorkflow {
     private readonly llmProvider: LlmProviderService,
     private readonly brandMemory: PersonalBrandMemoryService,
     private readonly githubTools: GitHubIntegrationTools,
-    private readonly webTools: WebResearchTools
+    private readonly webTools: WebResearchTools,
+    private readonly premiumAnalytics: PremiumAnalyticsTool
   ) {}
 
   /**
@@ -313,7 +317,14 @@ Generate engaging content that showcases technical expertise and personal brand.
   /**
    * Strategy Advice Action - Provide personalized brand strategy guidance
    */
-  @Task({ dependsOn: ['retrieveContext'] })
+  /**
+   * Strategy Advice Action - Provide personalized brand strategy guidance
+   * Demonstrates tier-based tool access
+   */
+  @Task({
+    dependsOn: ['retrieveContext'],
+    auth: { required: true, roles: ['user'] }, // Example: Require 'user' role
+  })
   async executeStrategyAdvice(
     context: TaskExecutionContext
   ): Promise<TaskExecutionResult> {
@@ -342,6 +353,28 @@ Generate engaging content that showcases technical expertise and personal brand.
         } catch (error) {
           competitiveInsights =
             'Based on your current online presence, you have opportunities to increase visibility in your core technologies.';
+          competitiveInsights =
+            'Based on your current online presence, you have opportunities to increase visibility in your core technologies.';
+        }
+      }
+
+      // DEMO: Tier-based Premium Tool Usage
+      // Check if user has access to premium analytics
+      const user = WorkflowAuthContextService.extractUserContext(
+        context.config
+      );
+      if (user && (user.tier === 'pro' || user.tier === 'enterprise')) {
+        try {
+          // Use premium tool for deeper analysis
+          const premiumAnalysis = await this.premiumAnalytics.analyze({
+            target: chatState.entities.githubUsername || 'self',
+            depth: 'deep',
+          });
+          competitiveInsights += `\n\nPREMIUM INSIGHT: ${
+            JSON.parse(premiumAnalysis).analysis.insights[0]
+          }`;
+        } catch (e) {
+          console.warn('Premium analytics failed', e);
         }
       }
 

@@ -67,12 +67,14 @@ import { ContentCreatorAgent } from './business-workflows/agents/content-creator
 import { GitHubCodeAnalyzerAgent } from './business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
 import { PersonalBrandStrategistAgent } from './business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
 import { ResearcherAgent } from './business-workflows/agents/researcher.agent';
+import { PremiumStrategyAgent } from './business-workflows/agents/premium-strategy.agent';
 import { PersonalBrandMemoryService } from './business-workflows/core';
 import { BrandStrategistTools } from './business-workflows/core/tools/brand-strategist.tools';
 import { ContentCreatorTools } from './business-workflows/core/tools/content-creator.tools';
 import { FileOperationTools } from './business-workflows/core/tools/file-operation.tools';
 import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
 import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
+import { PremiumAnalyticsTool } from './business-workflows/tools/premium-analytics.tool';
 import { ResearchChatController } from './business-workflows/controllers/research-chat.controller';
 
 import { DevBrandChatWorkflow } from './business-workflows/workflows/devbrand-chat.workflow';
@@ -192,7 +194,8 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
             WebResearchTools,
             ContentCreatorTools,
             FileOperationTools,
-          ], // Register 5 tool class TYPES (not instances)
+            PremiumAnalyticsTool,
+          ], // Register 6 tool class TYPES (not instances)
         };
       },
       inject: [], // No injection needed - we're passing class types directly
@@ -227,6 +230,7 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
     PersonalBrandStrategistAgent, // Reference implementation with workflow-agent type
     ContentCreatorAgent,
     ResearcherAgent, // Standalone research agent with HITL
+    PremiumStrategyAgent, // Premium tier agent
 
     // MVP Functional-API Workflows
     DevBrandSupervisorWorkflow, // Multi-agent coordination
@@ -241,6 +245,7 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
     BrandStrategistTools, // Brand strategy and optimization tools
     ContentCreatorTools,
     FileOperationTools, // Local report management
+    PremiumAnalyticsTool, // Premium tier tool
   ],
 })
 export class AppModule {}

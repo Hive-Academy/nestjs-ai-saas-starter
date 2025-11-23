@@ -42,6 +42,7 @@ import {
   type ThreadMetadata,
 } from '@hive-academy/langgraph-memory';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { QueryTokenAuthGuard } from '../../auth/guards/query-token.guard';
 import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 
 /**
@@ -195,10 +196,21 @@ export class ResearchChatController {
    */
   @Get('stream/:executionId')
   @Sse()
+  @UseGuards(QueryTokenAuthGuard)
   streamWorkflow(
-    @Param('executionId') executionId: string
+    @Param('executionId') executionId: string,
+    @Req() req: Request
   ): Observable<MessageEvent> {
     this.logger.log(`📡 SSE stream connected for ${executionId}`);
+
+    // Verify ownership
+    const user = req.user as any;
+    const metadata = this.workflowAuthContext.parseThreadId(executionId);
+
+    // If we can parse the thread ID, verify ownership
+    if (metadata && metadata.userId !== user.userId) {
+      throw new UnauthorizedException('Unauthorized access to execution');
+    }
 
     return new Observable((subscriber) => {
       const stream = this.activeStreams.get(executionId);
