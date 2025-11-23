@@ -4,7 +4,7 @@ import type { AgentDefinition } from './agent.types';
  * Workflow definition interface
  * Defines a complete workflow with execution logic
  */
-export interface WorkflowDefinition {
+export interface MultiAgentWorkflowSpec {
   /**
    * Unique workflow identifier
    */
@@ -62,7 +62,7 @@ export interface WorkflowDefinition {
 export type WorkflowExecuteFunction = (
   input: any,
   context: WorkflowContext
-) => Promise<WorkflowResult>;
+) => Promise<MultiAgentWorkflowResult>;
 
 /**
  * Workflow execution context
@@ -156,7 +156,7 @@ export interface WorkflowConfig {
 /**
  * Workflow execution result
  */
-export interface WorkflowResult {
+export interface MultiAgentWorkflowResult {
   /**
    * Execution success status
    */
@@ -228,7 +228,7 @@ export interface WorkflowInstance {
   /**
    * Current result (if any)
    */
-  result?: WorkflowResult;
+  result?: MultiAgentWorkflowResult;
 
   /**
    * Creation timestamp

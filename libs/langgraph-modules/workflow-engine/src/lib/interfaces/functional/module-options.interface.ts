@@ -1,5 +1,5 @@
-import type { ModuleMetadata, Type } from '@nestjs/common';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import type { LlmModuleOptions } from '../llm-config.interface';
 
 /**
  * Async module factory type (moved from langgraph-core)
@@ -7,67 +7,25 @@ import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
 export type AsyncModuleFactory<T> = (...args: any[]) => Promise<T> | T;
 
 /**
- * Workflow provider type for explicit registration
+ * Configuration options for the WorkflowEngineModule
  */
-export type WorkflowProvider = new (...args: any[]) => any;
-
-/**
- * Configuration options for the Functional API module (PURE CONFIGURATION)
- * NOTE: Registration is now handled by WorkflowEngineModule centrally
- */
-export interface FunctionalApiModuleOptions {
-  /**
-   * CENTRALIZED REGISTRATION: Workflow providers registered by WorkflowEngineModule
-   * This array is populated by the workflow engine's workflow registration system
-   */
-  readonly workflows?: WorkflowProvider[];
-
-  /**
-   * Default timeout for task execution in milliseconds
-   * @default 30000
-   */
-  readonly defaultTimeout?: number;
-
-  /**
-   * Default number of retry attempts for failed tasks
-   * @default 3
-   */
-  readonly defaultRetryCount?: number;
-
-  /**
-   * Enable automatic checkpointing
-   * @default true
-   */
-  readonly enableCheckpointing?: boolean;
-
-  /**
-   * Checkpoint interval in milliseconds
-   * @default 5000
-   */
-  readonly checkpointInterval?: number;
-
-  /**
-   * Enable streaming events
-   * @default false
-   */
-  readonly enableStreaming?: boolean;
-
-  /**
-   * Maximum number of concurrent task executions
-   * @default 10
-   */
-  readonly maxConcurrentTasks?: number;
-
-  /**
-   * Enable cycle detection in workflow dependencies
-   * @default true
-   */
-  readonly enableCycleDetection?: boolean;
-
-  /**
-   * Global metadata to be included in all workflow executions
-   */
-  readonly globalMetadata?: Record<string, unknown>;
+export interface WorkflowEngineModuleOptions {
+  compilation?: {
+    cacheEnabled?: boolean;
+    cacheTTL?: number;
+    optimizeGraphs?: boolean;
+  };
+  execution?: {
+    defaultTimeout?: number;
+    streamingEnabled?: boolean;
+    parallelExecution?: boolean;
+    maxConcurrency?: number;
+  };
+  debugging?: {
+    enabled?: boolean;
+    logLevel?: string;
+    traceExecution?: boolean;
+  };
 
   /**
    * LangGraph native checkpoint saver (RedisSaver, SqliteSaver, PostgresSaver, etc.)
@@ -83,25 +41,19 @@ export interface FunctionalApiModuleOptions {
    * // Testing with in-memory
    * checkpointer: new MemorySaver()
    */
-  readonly checkpointer?: BaseCheckpointSaver;
-}
+  checkpointer?: BaseCheckpointSaver;
 
-/**
- * Options factory interface for async module configuration
- */
-export interface FunctionalApiOptionsFactory {
-  createFunctionalApiOptions: () =>
-    | Promise<FunctionalApiModuleOptions>
-    | FunctionalApiModuleOptions;
-}
+  /**
+   * Tool classes to register with the workflow engine.
+   * These tools will be automatically discovered and made available to agents.
+   * @example
+   * tools: [GithubToolsService, SearchToolsService]
+   */
+  tools?: any[];
 
-/**
- * Async module options
- */
-export interface FunctionalApiModuleAsyncOptions
-  extends Pick<ModuleMetadata, 'imports'> {
-  useExisting?: Type<FunctionalApiOptionsFactory>;
-  useClass?: Type<FunctionalApiOptionsFactory>;
-  useFactory?: AsyncModuleFactory<FunctionalApiModuleOptions>;
-  inject?: Array<Type | string | symbol>;
+  /**
+   * LLM configuration for LlmProviderService
+   * Required for agents that use LLM functionality
+   */
+  llm?: LlmModuleOptions;
 }

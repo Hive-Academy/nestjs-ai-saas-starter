@@ -16,10 +16,14 @@ console.log('🔧 Encapsulated environment loaded:', {
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Cookie parser middleware (MUST be before CORS and other middleware)
+  app.use(cookieParser());
 
   // Global prefix
   const globalPrefix = 'api';

@@ -31,7 +31,7 @@ export interface ToolResult {
   metadata?: Record<string, any>;
 }
 
-export interface ToolCall {
+export interface MultiAgentToolCall {
   id: string;
   name: string;
   arguments: any;

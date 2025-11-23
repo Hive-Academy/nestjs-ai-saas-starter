@@ -4,6 +4,8 @@ description: Review phase - Code Reviewer persona performs comprehensive code qu
 
 # Phase 9: Code Review - Code Reviewer Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/code-reviewer.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: code-reviewer  
 > **Core Mission**: Comprehensive code quality review with actionable feedback  
 > **Quality Standard**: SOLID principles, best practices, security compliance

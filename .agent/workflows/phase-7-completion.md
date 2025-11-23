@@ -4,6 +4,8 @@ description: Completion phase - Team Leader MODE 3 performs final verification w
 
 # Phase 7: Completion - Team Leader MODE 3 Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/team-leader.md`. Internalize the persona, operating principles, and critical mandates defined there. Focus on MODE 3: COMPLETION. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: team-leader (MODE 3: COMPLETION)  
 > **Core Mission**: Final verification that all tasks completed successfully  
 > **Quality Standard**: All commits verified, all files exist, build passes

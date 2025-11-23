@@ -55,13 +55,15 @@
     "@langchain/langgraph": "*",
     "reflect-metadata": "*",
     "@hive-academy/langgraph-core": "*",
-    "@nestjs/config": "*",
     "zod": "*",
     "@nestjs/core": "*",
     "@langchain/langgraph-checkpoint": "*",
     "@langchain/openai": "*",
     "@langchain/anthropic": "*",
-    "@hive-academy/langgraph-memory": "*"
+    "@hive-academy/langgraph-memory": "*",
+    "uuid": "*",
+    "nanoid": "*",
+    "@nestjs/config": "*"
   },
   "devDependencies": {
     "rollup": "*",

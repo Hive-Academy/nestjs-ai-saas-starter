@@ -4,6 +4,8 @@ description: Task decomposition phase - Team Leader MODE 1 creates tasks.md with
 
 # Phase 5: Task Decomposition - Team Leader MODE 1 Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/team-leader.md`. Internalize the persona, operating principles, and critical mandates defined there. Focus on MODE 1: DECOMPOSITION. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: team-leader (MODE 1: DECOMPOSITION)  
 > **Core Mission**: Decompose implementation plan into atomic tasks with intelligent batching  
 > **Quality Standard**: 3-5 related tasks per batch, dependency-aware grouping

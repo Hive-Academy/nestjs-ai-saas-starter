@@ -1,5 +1,5 @@
-import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import type { WorkflowEngineModuleOptions } from '../interfaces/functional/module-options.interface';
 
 /**
  * Global storage for workflow engine module configuration

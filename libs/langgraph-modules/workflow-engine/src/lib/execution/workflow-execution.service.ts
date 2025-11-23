@@ -12,13 +12,13 @@ import type {
   WorkflowDefinition,
   WorkflowState,
 } from '../interfaces/workflow-engine.interface';
-import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 import { MultiAgentGraphBuilderService } from '../services/multi-agent/multi-agent-graph-builder.service';
 import {
   FunctionalTaskGraphStrategy,
   FunctionalNodeGraphStrategy,
 } from './strategies';
 import { WorkflowResumptionService } from '../services/workflow-resumption.service';
+import type { WorkflowEngineModuleOptions } from '../interfaces/functional/module-options.interface';
 
 /**
  * WorkflowExecutionService

@@ -14,7 +14,9 @@ import {
   InternalServerErrorException,
   Inject,
   Optional,
+  UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
 import { ResearcherAgent } from '../agents/researcher.agent';
@@ -39,6 +41,8 @@ import {
   type IThreadRegistryStore,
   type ThreadMetadata,
 } from '@hive-academy/langgraph-memory';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * 🔬 RESEARCH CHAT CONTROLLER - WITH NATIVE SSE STREAMING
@@ -92,6 +96,7 @@ export class ResearchChatController {
     private readonly fileTools: FileOperationTools,
     private readonly workflowExecutionService: WorkflowExecutionService,
     private readonly workflowResumptionService: WorkflowResumptionService,
+    private readonly workflowAuthContext: WorkflowAuthContextService,
     @Optional()
     @Inject(THREAD_REGISTRY_TOKEN)
     private readonly threadRegistry?: IThreadRegistryStore
@@ -107,14 +112,15 @@ export class ResearchChatController {
    * Start research workflow (non-blocking)
    * Returns executionId immediately for SSE subscription
    */
+  @UseGuards(JwtAuthGuard)
   @Post('chat')
   async startResearch(
     @Body()
     body: {
-      userId: string;
       query: string;
       researchDepth?: 'summary' | 'detailed' | 'comprehensive';
-    }
+    },
+    @Req() request: Request
   ): Promise<{
     executionId: string;
     status: string;
@@ -132,18 +138,26 @@ export class ResearchChatController {
         );
       }
 
-      if (!body.userId) {
-        throw new HttpException('User ID is required', HttpStatus.BAD_REQUEST);
-      }
+      const user = request.user!;
+      const workflowType = 'researcher';
 
-      const executionId = `research-${Date.now()}`;
+      // Generate secure, user-scoped thread ID
+      const executionId = this.workflowAuthContext.createThreadId(
+        user.tenantId,
+        user.id,
+        workflowType
+      );
+
+      // Create user context configuration
+      const config = this.workflowAuthContext.createUserConfig(user);
 
       // Create async generator for streaming
       const stream = this.researcherAgent.executeWithStreaming({
-        userId: body.userId,
+        userId: user.id,
         query: body.query.trim(),
         researchDepth: body.researchDepth || 'detailed',
         executionId,
+        config, // Pass user context
       });
 
       // Store stream for SSE endpoint
@@ -338,6 +352,7 @@ export class ResearchChatController {
    *
    * Implementation: TASK_2025_048 - BATCH 2, Task 2.2
    */
+  @UseGuards(JwtAuthGuard)
   @Post('approve/:executionId')
   async approveReport(
     @Param('executionId') executionId: string,
@@ -345,7 +360,8 @@ export class ResearchChatController {
     body: {
       approved: boolean;
       feedback?: string;
-    }
+    },
+    @Req() request: Request
   ): Promise<{ status: string; message: string; result?: any }> {
     this.logger.log(
       `📝 Approval received for ${executionId}: ${
@@ -354,12 +370,23 @@ export class ResearchChatController {
     );
 
     try {
+      const user = request.user!;
+
+      // Verify thread ownership
+      const metadata = this.workflowAuthContext.parseThreadId(executionId);
+      if (metadata && metadata.userId !== user.id) {
+        throw new UnauthorizedException(
+          'You do not have permission to approve this report'
+        );
+      }
+
       // Prepare approval state to inject into workflow
       const approvalState = {
         metadata: {
           userApproval: body.approved ? 'approved' : 'rejected',
           approvalFeedback: body.feedback,
           approvalTimestamp: new Date().toISOString(),
+          approvedBy: user.id, // Track who approved
         },
       };
 
@@ -423,6 +450,7 @@ export class ResearchChatController {
   /**
    * List all saved research reports
    */
+  @UseGuards(JwtAuthGuard)
   @Get('reports')
   async listReports(): Promise<{
     reports: Array<{
@@ -437,6 +465,7 @@ export class ResearchChatController {
     this.logger.log('📋 Listing all research reports');
 
     try {
+      // TODO: Filter reports by user.tenantId
       const result = await this.fileTools.listReports();
       return result;
     } catch (error: any) {
@@ -451,8 +480,12 @@ export class ResearchChatController {
   /**
    * Read specific report by filename
    */
+  @UseGuards(JwtAuthGuard)
   @Get('reports/:filename')
-  async readReport(@Param('filename') filename: string): Promise<{
+  async readReport(
+    @Param('filename') filename: string,
+    @Req() request: Request
+  ): Promise<{
     content: string;
     metadata: Record<string, any>;
     filename: string;
@@ -472,6 +505,15 @@ export class ResearchChatController {
         throw new HttpException(
           result.error || 'Report not found',
           HttpStatus.NOT_FOUND
+        );
+      }
+
+      // Security: Check if user owns the report
+      const user = request.user!;
+      if (result.metadata?.userId && result.metadata.userId !== user.id) {
+        // Allow if admin or same tenant? For now strict user check
+        throw new UnauthorizedException(
+          'You do not have permission to view this report'
         );
       }
 
@@ -500,20 +542,28 @@ export class ResearchChatController {
    */
 
   /**
-   * Get conversation list for authenticated user
+   * Get conversation list for current user
    * @route GET /research/conversation/list
-   * @returns Last 10 conversations with preview, status, metadata
+   * @returns Array of conversation summaries with metadata
    *
-   * Implementation: TASK_2025_050 - TASK 2
-   * Reference: implementation-plan.md:156-278
+   * Implementation: TASK_2025_050 - TASK 1
+   * Reference: implementation-plan.md:280-406, controller-implementation-guide.md:13-86
+   *
+   * Data Flow:
+   * 1. Extract userId from JWT (JwtAuthGuard)
+   * 2. Query ThreadRegistryStore.listThreads(userId)
+   * 3. Map ThreadMetadata[] → ConversationSummaryDto[]
+   *    - threadId → threadId
+   *    - title || createdAt → preview
+   *    - lastMessageAt → timestamp
+   *    - metadata → metadata (researchStatus, reportTitle, etc.)
    */
+  @UseGuards(JwtAuthGuard)
   @Get('conversation/list')
   async getConversationList(
-    @Req() request: any
+    @Req() request: Request
   ): Promise<ConversationListResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    // In production, this would come from JwtAuthGuard: request.user.id
-    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+    const userId = request.user!.id;
 
     this.logger.log(`📋 Retrieving conversation list for user: ${userId}`);
 
@@ -578,14 +628,15 @@ export class ResearchChatController {
    *
    * Implementation: TASK_2025_050 - TASK 2
    * Reference: implementation-plan.md:280-406, controller-implementation-guide.md:88-157
+   * Security: User-thread ownership validated via ThreadRegistryStore
    */
+  @UseGuards(JwtAuthGuard)
   @Get('conversation/history/:threadId')
   async getConversationHistory(
     @Param('threadId') threadId: string,
-    @Req() request: any
+    @Req() request: Request
   ): Promise<ConversationHistoryResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+    const userId = request.user!.id;
 
     this.logger.log(
       `📖 Retrieving conversation history for thread: ${threadId}, user: ${userId}`
@@ -602,7 +653,9 @@ export class ResearchChatController {
 
       // Security: Verify thread ownership
       // Reference: controller-implementation-guide.md:113-118
-      const threadUserId = stateSnapshot.values.metadata?.userId;
+      const threadUserId = stateSnapshot.values.metadata?.userId as
+        | string
+        | undefined;
       if (threadUserId && threadUserId !== userId) {
         throw new UnauthorizedException(
           `User ${userId} cannot access thread ${threadId}`
@@ -663,19 +716,19 @@ export class ResearchChatController {
 
   /**
    * Create new conversation thread
-   * @route POST /research/conversation/new
-   * @returns New thread ID and conversation URL
+   * @route POST /research/conversation
+   * @returns New conversation metadata with threadId
    *
-   * Implementation: TASK_2025_050 - TASK 2
-   * Reference: implementation-plan.md:408-481
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:280-406, controller-implementation-guide.md:159-212
    */
-  @Post('conversation/new')
+  @UseGuards(JwtAuthGuard)
+  @Post('conversation')
   async createNewConversation(
     @Body() dto: NewConversationDto,
-    @Req() request: any
+    @Req() request: Request
   ): Promise<NewConversationResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    const userId = request.headers['x-user-id'] || 'test-researcher-001';
+    const userId = request.user!.id;
 
     this.logger.log(
       `🆕 Creating new conversation for user: ${userId}${
@@ -688,7 +741,12 @@ export class ResearchChatController {
 
       // Generate unique thread ID using standardized utility from core
       // Format: thread_{workflowType}_{uuid-12-chars}
-      const threadId = generateThreadId(workflowType);
+      // ✅ UPDATED: Use WorkflowAuthContextService for scoped ID
+      const threadId = this.workflowAuthContext.createThreadId(
+        request.user!.tenantId,
+        userId,
+        workflowType
+      );
 
       // Create thread in ThreadRegistryStore
       if (this.threadRegistry) {

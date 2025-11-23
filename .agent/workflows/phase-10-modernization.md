@@ -4,6 +4,8 @@ description: Modernization phase - Modernization Detector analyzes codebase for 
 
 # Phase 10: Modernization Analysis - Modernization Detector Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/modernization-detector.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: modernization-detector  
 > **Core Mission**: Identify future enhancement opportunities and technical debt  
 > **Quality Standard**: Evidence-based recommendations with ROI analysis

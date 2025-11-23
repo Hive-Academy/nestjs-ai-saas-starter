@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import { WORKFLOW_NODES_KEY } from '@hive-academy/langgraph-core';
 import { getFunctionalApiConfigWithDefaults } from '../../utils/functional/functional-api-config.accessor';
 import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
+import { WorkflowAuthContextService } from '../../services/auth-context.service';
+import { UnauthorizedException } from '@nestjs/common';
 
 /**
  * Options for @Node decorator
@@ -33,6 +35,15 @@ export interface NodeOptions {
     | 'aggregator';
   /** Tags for categorization */
   tags?: string[];
+  /** Authentication requirements */
+  auth?: {
+    /** Whether authentication is required for this node */
+    required?: boolean;
+    /** Roles required to execute this node */
+    roles?: string[];
+    /** Permissions required to execute this node */
+    permissions?: string[];
+  };
 }
 
 /**
@@ -55,7 +66,8 @@ export interface NodeMetadata extends NodeOptions {
  *   @Node({
  *     requiresApproval: true,
  *     confidenceThreshold: 0.8,
- *     type: 'llm'
+ *     type: 'llm',
+ *     auth: { required: true, roles: ['admin'] }
  *   })
  *   async analyzeInput(state: WorkflowState) {
  *     // Node logic with automatic approval routing
@@ -130,6 +142,31 @@ export function Node(optionsOrId?: NodeOptions | string): MethodDecorator {
       // Log node execution
       if (this.logger) {
         this.logger.debug(`Executing node: ${nodeMetadata.id}`);
+      }
+
+      // 🔒 AUTHENTICATION CHECK
+      if (nodeMetadata.auth?.required) {
+        // LangGraph passes (state, config) to nodes
+        const config = args[1];
+        const user = WorkflowAuthContextService.extractUserContext(config);
+
+        if (!user) {
+          throw new UnauthorizedException(
+            `Node ${nodeMetadata.id} requires authentication but no user context found`
+          );
+        }
+
+        // Check roles if specified
+        if (nodeMetadata.auth.roles && nodeMetadata.auth.roles.length > 0) {
+          const hasRole = nodeMetadata.auth.roles.some((role) =>
+            user.roles.includes(role)
+          );
+          if (!hasRole) {
+            throw new UnauthorizedException(
+              `User missing required roles for node ${nodeMetadata.id}`
+            );
+          }
+        }
       }
 
       // Add node context to state if available

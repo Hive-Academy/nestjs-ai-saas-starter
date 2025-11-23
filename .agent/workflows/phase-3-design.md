@@ -4,6 +4,8 @@ description: UI/UX Design phase - UI/UX Designer persona creates visual specific
 
 # Phase 3: UI/UX Design - UI/UX Designer Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/ui-ux-designer.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: ui-ux-designer  
 > **Core Mission**: Create comprehensive visual design specifications with Canva assets and 3D configurations  
 > **Quality Standard**: Production-ready designs with complete implementation handoff

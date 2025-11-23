@@ -45,6 +45,7 @@ import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
+import { AuthModule } from './auth/auth.module';
 import { DevBrandController } from './controllers/devbrand.controller';
 import { HealthController } from './controllers/health.controller';
 import { PerformanceController } from './controllers/performance.controller';
@@ -73,6 +74,7 @@ import { FileOperationTools } from './business-workflows/core/tools/file-operati
 import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
 import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
 import { ResearchChatController } from './business-workflows/controllers/research-chat.controller';
+
 import { DevBrandChatWorkflow } from './business-workflows/workflows/devbrand-chat.workflow';
 import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbrand-supervisor.workflow';
 
@@ -81,6 +83,9 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Authentication Module - JWT with WorkOS
+    AuthModule,
 
     // CRITICAL: Global EventEmitter - provided once for entire app
     // Increased maxListeners from 10 to 20 to prevent false-positive warnings

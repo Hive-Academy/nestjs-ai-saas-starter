@@ -2,9 +2,11 @@
 description: Frontend execution phase - Team Leader MODE 2 + Frontend Developer execute frontend tasks in batches with git verification
 ---
 
-# Phase 6: Frontend Execution - Team Leader MODE 2 + Frontend Developer Edition
+# Phase 6: Frontend Execution - Frontend Developer Edition
 
-> **Agent Personas**: team-leader (MODE 2) + frontend-developer  
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/frontend-developer.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
+> **Agent Persona**: frontend-developer  
 > **Core Mission**: Execute frontend task batches with atomic verification  
 > **Quality Standard**: One commit per batch, all components verified before next batch
 

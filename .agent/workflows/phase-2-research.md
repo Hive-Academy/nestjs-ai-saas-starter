@@ -4,6 +4,8 @@ description: Research phase - Researcher Expert persona investigates technical u
 
 # Phase 2: Research & Investigation - Researcher Expert Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/researcher-expert.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: researcher-expert  
 > **Core Mission**: Investigate technical unknowns and provide evidence-based recommendations  
 > **Quality Standard**: Minimum 5 authoritative sources, production case studies required

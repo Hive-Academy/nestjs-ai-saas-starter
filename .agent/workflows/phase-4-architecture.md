@@ -4,6 +4,8 @@ description: Architecture phase - Software Architect persona creates evidence-ba
 
 # Phase 4: Architecture & Design - Software Architect Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/software-architect.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: software-architect  
 > **Core Mission**: Create evidence-based implementation plans with file-level specifications  
 > **Quality Standard**: Every file change must cite existing codebase patterns

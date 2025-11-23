@@ -504,6 +504,7 @@ Remember: Call create-report LAST when research is complete!`;
     query: string;
     researchDepth?: 'summary' | 'detailed' | 'comprehensive';
     executionId?: string;
+    config?: any; // RunnableConfig
   }): AsyncGenerator<
     | {
         type: 'workflow-update';
@@ -540,6 +541,16 @@ Remember: Call create-report LAST when research is complete!`;
       },
     };
 
+    // Merge provided config with defaults
+    const runConfig = {
+      ...input.config,
+      configurable: {
+        ...input.config?.configurable,
+        thread_id: executionId,
+      },
+      streamMode: ['updates', 'messages', 'custom'],
+    };
+
     // Stream via WorkflowExecutionService
     // 🔑 Use multiple modes for comprehensive streaming:
     // - 'updates': Node-level state changes + tool execution events
@@ -548,10 +559,7 @@ Remember: Call create-report LAST when research is complete!`;
     const stream = this.workflowExecutionService.streamWorkflow(
       ResearcherAgent,
       initialState,
-      {
-        configurable: { thread_id: executionId },
-        streamMode: ['updates', 'messages', 'custom'], // ✅ Add messages + custom modes
-      }
+      runConfig
     );
 
     // ✅ NEW: Use StreamEventParser and StreamEventTransformer for robust parsing

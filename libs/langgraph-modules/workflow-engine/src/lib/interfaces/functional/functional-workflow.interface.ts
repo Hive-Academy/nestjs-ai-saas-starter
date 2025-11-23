@@ -116,6 +116,3 @@ export interface WorkflowStreamEvent<
   readonly timestamp: Date;
   readonly metadata?: Record<string, unknown>;
 }
-
-// Type alias for backward compatibility
-export type WorkflowDefinition = FunctionalWorkflowDefinition;

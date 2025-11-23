@@ -4,6 +4,8 @@ description: Testing phase - Senior Tester persona creates comprehensive test re
 
 # Phase 8: Testing - Senior Tester Edition
 
+> **⚠️ CRITICAL - READ FIRST**: Before executing this workflow, you MUST read and fully impersonate the agent system prompt at `.claude/agents/senior-tester.md`. Internalize the persona, operating principles, and critical mandates defined there. This workflow provides execution steps; the agent file defines WHO you are.
+
 > **Agent Persona**: senior-tester  
 > **Core Mission**: Comprehensive testing with automated + manual verification  
 > **Quality Standard**: 80%+ coverage, all critical paths tested
@@ -76,6 +78,7 @@ npx nx e2e {project}-e2e
    ```
 
 2. **Test each feature**
+
    ```markdown
    # For each requirement in task-description.md
 

@@ -1,6 +1,7 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata, UnauthorizedException } from '@nestjs/common';
 import { getFunctionalApiConfigWithDefaults } from '../../utils/functional/functional-api-config.accessor';
 import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
+import { WorkflowAuthContextService } from '../../services/auth-context.service';
 
 /**
  * Metadata key for task decorator
@@ -40,6 +41,18 @@ export interface TaskOptions {
    * Additional metadata for the task
    */
   readonly metadata?: Record<string, unknown>;
+
+  /**
+   * Authentication requirements
+   */
+  readonly auth?: {
+    /** Whether authentication is required for this task */
+    required?: boolean;
+    /** Roles required to execute this task */
+    roles?: string[];
+    /** Permissions required to execute this task */
+    permissions?: string[];
+  };
 }
 
 /**
@@ -62,7 +75,8 @@ export interface TaskMetadata
  * export class MyWorkflow {
  *   @Task({
  *     dependsOn: ['startWorkflow'],
- *     timeout: 10000
+ *     timeout: 10000,
+ *     auth: { required: true, roles: ['admin'] }
  *   })
  *   async processData(context: TaskExecutionContext): Promise<TaskExecutionResult> {
  *     const data = context.state.data;
@@ -100,6 +114,7 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
       retryCount: options.retryCount ?? moduleConfig.defaultRetryCount,
       errorHandler: options.errorHandler ?? '',
       metadata: options.metadata ?? {},
+      auth: options.auth ?? {},
     };
 
     // Use direct Reflect.defineMetadata instead of SetMetadata for better compatibility
@@ -108,6 +123,45 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
 
     // Also use SetMetadata for NestJS compatibility (belt and suspenders approach)
     SetMetadata(TASK_METADATA_KEY, metadata)(target, propertyKey, descriptor);
+
+    // Wrap the original method to add auth checks
+    const originalMethod = descriptor.value;
+    descriptor.value = async function (this: any, ...args: any[]) {
+      // 🔒 AUTHENTICATION CHECK
+      if (metadata.auth?.required) {
+        // Task execution context usually passed as args[0]
+        // We need to check where config is passed in TaskExecutionContext
+        // Assuming TaskExecutionContext has a config property or we can access it
+
+        // In FunctionalTaskGraphStrategy, tasks are called with (context)
+        // context = { state, config, ... }
+
+        const context = args[0];
+        const config = context?.config || args[1]; // Fallback if passed as 2nd arg
+
+        const user = WorkflowAuthContextService.extractUserContext(config);
+
+        if (!user) {
+          throw new UnauthorizedException(
+            `Task ${metadata.name} requires authentication but no user context found`
+          );
+        }
+
+        // Check roles if specified
+        if (metadata.auth.roles && metadata.auth.roles.length > 0) {
+          const hasRole = metadata.auth.roles.some((role) =>
+            user.roles.includes(role)
+          );
+          if (!hasRole) {
+            throw new UnauthorizedException(
+              `User missing required roles for task ${metadata.name}`
+            );
+          }
+        }
+      }
+
+      return originalMethod.apply(this, args);
+    };
 
     return descriptor;
   };
