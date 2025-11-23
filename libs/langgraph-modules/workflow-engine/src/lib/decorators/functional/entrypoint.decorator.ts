@@ -1,5 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata, UnauthorizedException } from '@nestjs/common';
 import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
+import { WorkflowAuthContextService } from '../../services/auth-context.service';
 
 /**
  * Metadata key for entrypoint decorator
@@ -34,6 +35,18 @@ export interface EntrypointOptions {
    * Additional metadata for the entrypoint
    */
   readonly metadata?: Record<string, unknown>;
+
+  /**
+   * Authentication requirements
+   */
+  readonly auth?: {
+    /** Whether authentication is required for this entrypoint */
+    required?: boolean;
+    /** Roles required to execute this entrypoint */
+    roles?: string[];
+    /** Permissions required to execute this entrypoint */
+    permissions?: string[];
+  };
 }
 
 /**
@@ -85,6 +98,7 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
       retryCount: options.retryCount ?? 3,
       errorHandler: options.errorHandler ?? '',
       metadata: options.metadata ?? {},
+      auth: options.auth ?? {},
     };
 
     // Use direct Reflect.defineMetadata instead of SetMetadata for better compatibility
@@ -102,6 +116,51 @@ export function Entrypoint(options: EntrypointOptions = {}): MethodDecorator {
       propertyKey,
       descriptor
     );
+
+    // Wrap the original method to add auth checks
+    const originalMethod = descriptor.value;
+    descriptor.value = async function (this: any, ...args: any[]) {
+      // 🔒 AUTHENTICATION CHECK
+      if (metadata.auth?.required) {
+        // Task execution context usually passed as args[0]
+        const context = args[0];
+        const config = context?.config || args[1]; // Fallback if passed as 2nd arg
+
+        const user = WorkflowAuthContextService.extractUserContext(config);
+
+        if (!user) {
+          throw new UnauthorizedException(
+            `Entrypoint ${metadata.name} requires authentication but no user context found`
+          );
+        }
+
+        // Check roles if specified
+        if (metadata.auth.roles && metadata.auth.roles.length > 0) {
+          const hasRole = metadata.auth.roles.some((role) =>
+            user.roles.includes(role)
+          );
+          if (!hasRole) {
+            throw new UnauthorizedException(
+              `User missing required roles for entrypoint ${metadata.name}`
+            );
+          }
+        }
+
+        // Check permissions if specified
+        if (metadata.auth.permissions && metadata.auth.permissions.length > 0) {
+          const hasPermission = metadata.auth.permissions.every((permission) =>
+            user.permissions?.includes(permission)
+          );
+          if (!hasPermission) {
+            throw new UnauthorizedException(
+              `User missing required permissions for entrypoint ${metadata.name}`
+            );
+          }
+        }
+      }
+
+      return originalMethod.apply(this, args);
+    };
 
     return descriptor;
   };
