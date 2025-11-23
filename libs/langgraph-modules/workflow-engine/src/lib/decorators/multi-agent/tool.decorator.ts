@@ -31,6 +31,44 @@ export interface ToolOptions {
   tags?: string[];
   /** Tool version */
   version?: string;
+  /**
+   * Tool-level authentication and authorization requirements
+   * Controls who can invoke this tool
+   *
+   * @example
+   * ```typescript
+   * @Tool({
+   *   name: 'database_write',
+   *   auth: {
+   *     required: true,
+   *     roles: ['admin'],
+   *     permissions: ['db:write']
+   *   }
+   * })
+   * async writeToDatabase(query: string) {}
+   *
+   * @Tool({
+   *   name: 'premium_analytics',
+   *   auth: {
+   *     required: true,
+   *     tiers: ['pro', 'enterprise']
+   *   }
+   * })
+   * async runAnalytics(data: any) {}
+   * ```
+   *
+   * Evidence: decorator-analysis-addendum.md:206-287
+   */
+  auth?: {
+    /** Require authentication to call this tool */
+    required?: boolean;
+    /** Roles required to use this tool */
+    roles?: string[];
+    /** Tier restrictions (free, pro, enterprise) */
+    tiers?: ('free' | 'pro' | 'enterprise')[];
+    /** Permissions required */
+    permissions?: string[];
+  };
 }
 
 /**

@@ -260,6 +260,46 @@ export interface AgentConfig {
    * Maintained for backward compatibility
    */
   workflowConfig?: WorkflowAgentConfig;
+
+  /**
+   * Agent-level authentication and authorization requirements
+   * Controls who can invoke this agent in multi-agent workflows
+   *
+   * @example
+   * ```typescript
+   * @Agent({
+   *   description: 'Premium strategy generator',
+   *   auth: {
+   *     required: true,
+   *     tiers: ['pro', 'enterprise'],
+   *     roles: ['user']
+   *   }
+   * })
+   * export class PremiumStrategyAgent {}
+   *
+   * @Agent({
+   *   description: 'Admin-only database agent',
+   *   auth: {
+   *     required: true,
+   *     roles: ['admin'],
+   *     permissions: ['db:write']
+   *   }
+   * })
+   * export class DatabaseAgent {}
+   * ```
+   *
+   * Evidence: decorator-analysis-addendum.md:106-168
+   */
+  auth?: {
+    /** Require authentication to invoke this agent */
+    required?: boolean;
+    /** Roles required to use this agent */
+    roles?: string[];
+    /** Tier restrictions (free, pro, enterprise) */
+    tiers?: ('free' | 'pro' | 'enterprise')[];
+    /** Permissions required */
+    permissions?: string[];
+  };
 }
 
 /**
