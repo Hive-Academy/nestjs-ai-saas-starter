@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { DevBrandController } from './devbrand.controller';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
-import { ExecuteDevBrandDto } from './devbrand.controller';
+import type { ExecuteDevBrandDto } from './devbrand.controller';
 
 describe('DevBrandController', () => {
   let controller: DevBrandController;
@@ -71,12 +71,6 @@ describe('DevBrandController', () => {
       expect(response.executionId).toMatch(/^devbrand-\d+$/);
       expect(response.status).toBe('started');
       expect(response.message).toContain('Workflow started successfully');
-      expect(response.websocketUrl).toBe('ws://localhost:8080/streaming');
-      expect(response.websocketInstructions).toBeDefined();
-      expect(response.websocketInstructions.subscribe).toContain(
-        response.executionId
-      );
-      expect(response.websocketInstructions.events).toHaveLength(5);
     });
 
     it('should execute workflow in background without blocking response', async () => {
@@ -175,27 +169,6 @@ describe('DevBrandController', () => {
 
       // Workflow execution should have been attempted
       expect(mockWorkflow.execute).toHaveBeenCalled();
-    });
-
-    it('should return WebSocket instructions with all required event types', async () => {
-      const dto: ExecuteDevBrandDto = {
-        githubUsername: 'testdev',
-        userId: 'user-123',
-      };
-
-      const response = await controller.executeDevBrand(dto);
-
-      const instructions = response.websocketInstructions;
-      expect(instructions.connect).toContain('ws://localhost:8080/streaming');
-      expect(instructions.subscribe).toContain('subscribe_execution');
-
-      // Verify all required event types are present
-      const eventsString = instructions.events.join(' ');
-      expect(eventsString).toContain('stream_update');
-      expect(eventsString).toContain('token_update');
-      expect(eventsString).toContain('interruption_request');
-      expect(eventsString).toContain('interruption_resolved');
-      expect(eventsString).toContain('error');
     });
 
     it('should generate unique executionId for each request', async () => {

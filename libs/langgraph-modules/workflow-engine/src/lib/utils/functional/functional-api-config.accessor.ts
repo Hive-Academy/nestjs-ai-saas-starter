@@ -1,17 +1,17 @@
-import type { FunctionalApiModuleOptions } from '../../interfaces/functional/module-options.interface';
+import type { WorkflowEngineModuleOptions } from '../../interfaces/functional/module-options.interface';
 
 /**
  * Global storage for functional API module configuration
  * Set when FunctionalApiModule.forRoot() is called
  */
-let storedFunctionalApiConfig: FunctionalApiModuleOptions | null = null;
+let storedFunctionalApiConfig: WorkflowEngineModuleOptions | null = null;
 
 /**
  * Store functional API configuration for decorator access
  * Called by FunctionalApiModule.forRoot()
  */
 export function setFunctionalApiConfig(
-  config: FunctionalApiModuleOptions
+  config: WorkflowEngineModuleOptions
 ): void {
   storedFunctionalApiConfig = { ...config };
 }
@@ -20,7 +20,7 @@ export function setFunctionalApiConfig(
  * Get stored functional API configuration for decorators
  * Returns the config passed to FunctionalApiModule.forRoot()
  */
-export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
+export function getFunctionalApiConfig(): WorkflowEngineModuleOptions {
   return storedFunctionalApiConfig || {};
 }
 
@@ -29,21 +29,17 @@ export function getFunctionalApiConfig(): FunctionalApiModuleOptions {
  * Used by decorators to inherit module configuration
  */
 export function getFunctionalApiConfigWithDefaults(): Required<
-  Omit<FunctionalApiModuleOptions, 'checkpointer'>
+  Omit<WorkflowEngineModuleOptions, 'checkpointer'>
 > &
-  Pick<FunctionalApiModuleOptions, 'checkpointer'> {
+  Pick<WorkflowEngineModuleOptions, 'checkpointer'> {
   const config = getFunctionalApiConfig();
 
   return {
-    workflows: config.workflows ?? [],
-    defaultTimeout: config.defaultTimeout ?? 30000,
-    defaultRetryCount: config.defaultRetryCount ?? 3,
-    enableCheckpointing: config.enableCheckpointing ?? true,
-    checkpointInterval: config.checkpointInterval ?? 5000,
-    enableStreaming: config.enableStreaming ?? false,
-    maxConcurrentTasks: config.maxConcurrentTasks ?? 10,
-    enableCycleDetection: config.enableCycleDetection ?? true,
-    globalMetadata: config.globalMetadata ?? {},
+    compilation: config.compilation ?? {},
+    debugging: config.debugging ?? {},
+    execution: config.execution ?? {},
+    llm: config.llm ?? {},
+    tools: config.tools ?? [],
     checkpointer: config.checkpointer,
   };
 }

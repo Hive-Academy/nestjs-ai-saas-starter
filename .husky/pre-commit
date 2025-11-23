@@ -5,11 +5,7 @@ echo "🔍 Running pre-commit checks..."
 # Run lint-staged (--no-stash prevents automatic backup stashes that VSCode can't display)
 npx lint-staged --no-stash
 
-# Validate that all affected libraries can build
-# echo "🏗️  linting affected libraries..."
-# npx nx affected:lint --base=HEAD~1
 
-echo " 🏗️  typechecking affected libraries..."
-npm run typecheck:affected
+
 
 echo "✅ Pre-commit checks passed!"

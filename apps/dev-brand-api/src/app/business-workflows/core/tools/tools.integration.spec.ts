@@ -10,7 +10,7 @@
  * - Tools are accessible for agent injection
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { GitHubIntegrationTools } from './github-integration.tools';
 import { WebResearchTools } from './web-research.tools';
 import { BrandStrategistTools } from './brand-strategist.tools';

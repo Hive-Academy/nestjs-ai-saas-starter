@@ -10,7 +10,6 @@ import type {
 
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { LangGraphCommandService } from './langgraph-command.service';
-import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
 import type { WorkflowDefinition } from '../interfaces/workflow-engine.interface';
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import { BASE_STORE_TOKEN } from '@hive-academy/langgraph-memory';
@@ -18,6 +17,7 @@ import {
   FunctionalTaskGraphStrategy,
   FunctionalNodeGraphStrategy,
 } from '../execution/strategies';
+import type { WorkflowEngineModuleOptions } from '../interfaces/functional/module-options.interface';
 
 /**
  * SanitizedStateSnapshot

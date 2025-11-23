@@ -1,6 +1,6 @@
 import { DevBrandSupervisorWorkflow } from './devbrand-supervisor.workflow';
-import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
-import { PersonalBrandMemoryService } from '../../services/personal-brand-memory.service';
+import type { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
+import type { PersonalBrandMemoryService } from '../../services/personal-brand-memory.service';
 
 describe('DevBrandSupervisorWorkflow - Streaming', () => {
   let workflow: DevBrandSupervisorWorkflow;
