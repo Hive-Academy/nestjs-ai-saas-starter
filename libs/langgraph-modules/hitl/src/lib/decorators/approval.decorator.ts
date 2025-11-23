@@ -2,12 +2,14 @@ import 'reflect-metadata';
 
 import type { WorkflowState } from '@hive-academy/langgraph-core';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { UnauthorizedException } from '@nestjs/common';
 
 import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
 import type { ApprovalChainService } from '../services/approval-chain.service';
 import { getHitlConfigWithDefaults } from '../utils/hitl-config.accessor';
 import { getApprovalEvaluatorService } from '../utils/approval-service.locator';
+import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * Risk level enumeration for approval decisions
@@ -198,6 +200,30 @@ export function RequiresApproval(
             `ApprovalEvaluatorService not initialized. ` +
               `Ensure HitlModule.forRoot() is imported in your root module.`
           );
+        }
+
+        // ✅ TASK 3.1: Extract user context from RunnableConfig
+        // Evidence: hitl-auth-analysis.md:129-153
+        // This enables skip condition validation and stores approver auth for service validation
+        const user = WorkflowAuthContextService.extractUserContext(config);
+
+        if (!user) {
+          throw new UnauthorizedException(
+            `Approval operations require authentication`
+          );
+        }
+
+        // ✅ TASK 3.1: Store approver auth requirements in state for later validation
+        // Evidence: hitl-auth-analysis.md:147-153
+        // HumanApprovalService.processApprovalResponse() will validate against this
+        if (mergedOptions.approverAuth) {
+          // Store in state metadata for approval service validation
+          // Type assertion needed as WorkflowState has readonly index signature
+          (state as any)._approvalContext = {
+            requesterId: user.userId,
+            requesterRoles: user.roles,
+            approverAuth: mergedOptions.approverAuth,
+          };
         }
 
         // Get other services from DI container (for advanced evaluation)
