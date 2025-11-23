@@ -5,10 +5,14 @@ import {
   OnModuleDestroy,
   Inject,
   Optional,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowState } from '@hive-academy/langgraph-core';
-import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
+import {
+  WorkflowResumptionService,
+  UserContext,
+} from '@hive-academy/langgraph-workflow-engine';
 // Removed unused imports - services delegated to HitlApprovalRequestService
 import { ApprovalProcessingService } from './approval-processing.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
@@ -16,6 +20,7 @@ import { ApprovalStreamingService } from './approval-streaming.service';
 import { UserInterruptionService } from './user-interruption.service';
 import { HitlValidationService } from './hitl-validation.service';
 import { HitlApprovalRequestService } from './hitl-approval-request.service';
+import { ApprovalChainService } from './approval-chain.service';
 // User interruption interfaces - removed as using direct service access
 import { HITL_EVENTS } from '../constants';
 import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
@@ -57,6 +62,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     private readonly userInterruptionService: UserInterruptionService,
     private readonly hitlValidationService: HitlValidationService,
     private readonly hitlApprovalRequestService: HitlApprovalRequestService,
+    private readonly approvalChainService: ApprovalChainService,
     @Inject(IHitlStorageService)
     private readonly hitlStorage: IHitlStorageService, // Required
 
@@ -157,13 +163,15 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
    *
    * @param requestId - Approval request identifier
    * @param response - User's approval decision
+   * @param approverContext - Context of the user approving the request (for auth validation)
    * @returns Approval result + workflow resumption status
    *
    * Evidence: task-description.md:410-461 (Command Class Integration with HITL)
    */
   async processApprovalResponse(
     requestId: string,
-    response: HumanApprovalResponse
+    response: HumanApprovalResponse,
+    approverContext?: UserContext
   ): Promise<{
     success: boolean;
     nextState?: Partial<WorkflowState>;
@@ -185,6 +193,66 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
         success: false,
         error: `Approval request ${requestId} not found`,
       };
+    }
+
+    // Step 1.5: Validate Approver Authorization
+    if (request.options.approverAuth) {
+      if (!approverContext) {
+        throw new UnauthorizedException(
+          'Approval requires authenticated user context'
+        );
+      }
+
+      const { roles, permissions, tiers, requireChainMembership } =
+        request.options.approverAuth;
+
+      // Validate Roles
+      if (roles && roles.length > 0) {
+        const hasRole = roles.some((role) =>
+          approverContext.roles.includes(role)
+        );
+        if (!hasRole) {
+          throw new UnauthorizedException(
+            `User does not have required roles: ${roles.join(', ')}`
+          );
+        }
+      }
+
+      // Validate Permissions
+      if (permissions && permissions.length > 0) {
+        const hasPermission = permissions.some((perm) =>
+          approverContext.permissions?.includes(perm)
+        );
+        if (!hasPermission) {
+          throw new UnauthorizedException(
+            `User does not have required permissions: ${permissions.join(', ')}`
+          );
+        }
+      }
+
+      // Validate Tiers
+      if (tiers && tiers.length > 0) {
+        if (!tiers.includes(approverContext.tier)) {
+          throw new UnauthorizedException(
+            `User tier '${
+              approverContext.tier
+            }' not allowed. Required: ${tiers.join(', ')}`
+          );
+        }
+      }
+
+      // Validate Chain Membership
+      if (requireChainMembership && request.chainId) {
+        const isMember = await this.approvalChainService.isUserInChain(
+          request.chainId,
+          approverContext.userId
+        );
+        if (!isMember) {
+          throw new UnauthorizedException(
+            'User is not a member of the required approval chain'
+          );
+        }
+      }
     }
 
     // Step 2: Clear timeout (same as before)

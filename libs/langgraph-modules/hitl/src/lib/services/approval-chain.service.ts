@@ -736,4 +736,25 @@ export class ApprovalChainService implements OnModuleInit {
     // ✅ CORRECT: Use storage adapter for comprehensive search
     return await this.chainStorage.getPendingApprovalsForApprover(approverId);
   }
+
+  /**
+   * Check if a user is a member of an approval chain
+   */
+  async isUserInChain(chainId: string, userId: string): Promise<boolean> {
+    let chain = this.chainCache.get(chainId);
+    if (!chain) {
+      chain = (await this.chainStorage.getApprovalChain(chainId)) || undefined;
+      if (chain) {
+        this.chainCache.set(chainId, chain);
+      }
+    }
+
+    if (!chain) {
+      return false;
+    }
+
+    return chain.some((level) =>
+      level.approvers.some((approver) => approver.id === userId)
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 
 import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { RunnableConfig } from '@langchain/core/runnables';
 
 import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
@@ -103,6 +104,14 @@ export interface RequiresApprovalOptions {
     /** Post-approval hook */
     afterApproval?: (state: WorkflowState, approved: boolean) => Promise<void>;
   };
+
+  /** Approver authorization requirements */
+  approverAuth?: {
+    roles?: string[];
+    permissions?: string[];
+    tiers?: ('free' | 'pro' | 'enterprise')[];
+    requireChainMembership?: boolean;
+  };
 }
 
 /**
@@ -126,6 +135,10 @@ export interface RequiresApprovalOptions {
  *   skipConditions: {
  *     highConfidence: 0.95,
  *     userRole: ['admin', 'lead-developer']
+ *   },
+ *   approverAuth: {
+ *     roles: ['admin', 'manager'],
+ *     tiers: ['enterprise']
  *   }
  * })
  * async performRiskyOperation(state: WorkflowState) {
@@ -172,7 +185,8 @@ export function RequiresApproval(
 
     descriptor.value = async function (
       this: any,
-      state: WorkflowState
+      state: WorkflowState,
+      config?: RunnableConfig
     ): Promise<any> {
       try {
         // ✅ REFACTORED: Get ApprovalEvaluatorService from service locator
@@ -213,7 +227,7 @@ export function RequiresApproval(
               )} - skip conditions met`
             );
           }
-          return originalMethod.call(this, state);
+          return originalMethod.call(this, state, config);
         }
 
         // Check if already approved
@@ -226,7 +240,7 @@ export function RequiresApproval(
               `Approval already received for ${String(propertyKey)}`
             );
           }
-          return originalMethod.call(this, state);
+          return originalMethod.call(this, state, config);
         }
 
         // ✅ REFACTORED: Use service delegation for approval evaluation
@@ -250,7 +264,7 @@ export function RequiresApproval(
         }
 
         // Execute the original method
-        const result = await originalMethod.call(this, state);
+        const result = await originalMethod.call(this, state, config);
 
         // Run post-approval hook if defined
         if (mergedOptions.handlers?.afterApproval) {
