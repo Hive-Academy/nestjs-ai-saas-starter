@@ -1,4 +1,5 @@
 import type { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -17,9 +18,8 @@ export const routes: Routes = [
   {
     path: 'devbrand-poc',
     loadChildren: () =>
-      import('./features/devbrand-poc/devbrand-poc.routes').then(
-        (m) => m.DEVBRAND_POC_ROUTES
-      ),
+      import('./features/devbrand-poc/devbrand-poc.routes').then(),
+    canActivate: [authGuard],
     title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
   },
   {
@@ -28,6 +28,7 @@ export const routes: Routes = [
       import('./features/research-chat/research-chat.component').then(
         (m) => m.ResearchChatComponent
       ),
+    canActivate: [authGuard],
     title: 'Research Chat - Autonomous AI Research Agent',
   },
 
