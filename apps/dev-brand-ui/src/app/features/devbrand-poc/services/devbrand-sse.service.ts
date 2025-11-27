@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { AuthService } from '../../../core/services/auth.service';
 import { Subject } from 'rxjs';
 
 /**
@@ -68,6 +69,7 @@ export class DevBrandSseService {
    * @private
    */
   private eventSource?: EventSource;
+  private readonly authService = inject(AuthService);
 
   /**
    * Connection state signal
@@ -177,12 +179,41 @@ export class DevBrandSseService {
       status: 'connecting',
     }));
 
-    // Create EventSource
-    console.log('🚀 [DevBrandSseService] Creating EventSource...');
-    this.eventSource = new EventSource(streamUrl);
+    // Get SSE ticket first
+    console.log('🎫 [DevBrandSseService] Requesting SSE ticket...');
+    this.authService.getSseTicket().subscribe({
+      next: (ticket) => {
+        console.log('✅ [DevBrandSseService] Ticket obtained');
 
-    // Register EventSource event listeners
-    this.registerEventListeners();
+        // Append ticket to URL
+        const urlWithToken = streamUrl.includes('?')
+          ? `${streamUrl}&token=${ticket}`
+          : `${streamUrl}?token=${ticket}`;
+
+        // Create EventSource
+        console.log('🚀 [DevBrandSseService] Creating EventSource...');
+        this.eventSource = new EventSource(urlWithToken);
+
+        // Register EventSource event listeners
+        this.registerEventListeners();
+      },
+      error: (error) => {
+        console.error(
+          '❌ [DevBrandSseService] Failed to get SSE ticket:',
+          error
+        );
+        this._connectionState.update((state) => ({
+          ...state,
+          status: 'error',
+          lastError: 'Authentication failed: Could not obtain SSE ticket',
+        }));
+
+        this._errors.next({
+          message: 'Authentication failed: Could not obtain SSE ticket',
+          timestamp: new Date(),
+        });
+      },
+    });
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, switchMap } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 
 /**
  * 🔬 RESEARCH SERVICE
@@ -52,7 +53,7 @@ export interface ResearchReport {
 export class ResearchService {
   private apiUrl = '/api/research';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   /**
    * Start new research workflow
@@ -85,105 +86,125 @@ export class ResearchService {
    * Updated to match NestJS @Sse() endpoint format
    */
   streamWorkflow(executionId: string): Observable<ResearchWorkflowEvent> {
-    return new Observable((observer) => {
-      const eventSource = new EventSource(
-        `${this.apiUrl}/stream/${executionId}`
-      );
+    return this.authService.getSseTicket().pipe(
+      switchMap(
+        (ticket) =>
+          new Observable<ResearchWorkflowEvent>((observer) => {
+            const eventSource = new EventSource(
+              `${this.apiUrl}/stream/${executionId}?token=${ticket}`
+            );
 
-      // Listen for workflow-update events (node execution)
-      eventSource.addEventListener('workflow-update', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          observer.next({
-            type: 'state_update',
-            timestamp: data.timestamp,
-            workflowId: executionId,
-            nodeName: data.nodeName, // Track which node emitted the event
-            state: data.state,
-          } as ResearchWorkflowEvent);
-        } catch (error) {
-          console.error('Failed to parse workflow-update event:', error);
-        }
-      });
+            // Listen for workflow-update events (node execution)
+            eventSource.addEventListener(
+              'workflow-update',
+              (event: MessageEvent) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  observer.next({
+                    type: 'state_update',
+                    timestamp: data.timestamp,
+                    workflowId: executionId,
+                    nodeName: data.nodeName, // Track which node emitted the event
+                    state: data.state,
+                  } as ResearchWorkflowEvent);
+                } catch (error) {
+                  console.error(
+                    'Failed to parse workflow-update event:',
+                    error
+                  );
+                }
+              }
+            );
 
-      // Listen for tool-execution events (NEW)
-      eventSource.addEventListener('tool-execution', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
+            // Listen for tool-execution events (NEW)
+            eventSource.addEventListener(
+              'tool-execution',
+              (event: MessageEvent) => {
+                try {
+                  const data = JSON.parse(event.data);
 
-          // Extract tool information from LangGraph message structure
-          const messages = data.toolData?.messages || [];
-          const lastMessage = messages[messages.length - 1];
+                  // Extract tool information from LangGraph message structure
+                  const messages = data.toolData?.messages || [];
+                  const lastMessage = messages[messages.length - 1];
 
-          observer.next({
-            type: 'tool_execution',
-            timestamp: data.timestamp,
-            workflowId: executionId,
-            toolData: {
-              toolName: lastMessage?.name || 'unknown-tool',
-              toolInput: lastMessage?.tool_calls?.[0]?.args,
-              toolOutput: lastMessage?.content,
-              messages: messages,
-            },
-          } as ResearchWorkflowEvent);
-        } catch (error) {
-          console.error('Failed to parse tool-execution event:', error);
-        }
-      });
+                  observer.next({
+                    type: 'tool_execution',
+                    timestamp: data.timestamp,
+                    workflowId: executionId,
+                    toolData: {
+                      toolName: lastMessage?.name || 'unknown-tool',
+                      toolInput: lastMessage?.tool_calls?.[0]?.args,
+                      toolOutput: lastMessage?.content,
+                      messages: messages,
+                    },
+                  } as ResearchWorkflowEvent);
+                } catch (error) {
+                  console.error('Failed to parse tool-execution event:', error);
+                }
+              }
+            );
 
-      // Listen for interruption_request events (HITL)
-      eventSource.addEventListener(
-        'interruption_request',
-        (event: MessageEvent) => {
-          try {
-            const data = JSON.parse(event.data);
-            observer.next({
-              type: 'interrupt',
-              timestamp: data.timestamp,
-              workflowId: executionId,
-              state: {
-                reportDraft: data.reportDraft,
-                userApproval: 'pending',
-              },
-            } as ResearchWorkflowEvent);
-          } catch (error) {
-            console.error('Failed to parse interruption_request event:', error);
-          }
-        }
-      );
+            // Listen for interruption_request events (HITL)
+            eventSource.addEventListener(
+              'interruption_request',
+              (event: MessageEvent) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  observer.next({
+                    type: 'interrupt',
+                    timestamp: data.timestamp,
+                    workflowId: executionId,
+                    state: {
+                      reportDraft: data.reportDraft,
+                      userApproval: 'pending',
+                    },
+                  } as ResearchWorkflowEvent);
+                } catch (error) {
+                  console.error(
+                    'Failed to parse interruption_request event:',
+                    error
+                  );
+                }
+              }
+            );
 
-      // Listen for workflow_complete events
-      eventSource.addEventListener(
-        'workflow_complete',
-        (event: MessageEvent) => {
-          try {
-            const data = JSON.parse(event.data);
-            observer.next({
-              type: 'workflow_complete',
-              timestamp: data.timestamp,
-              workflowId: executionId,
-              state: data.finalState,
-            } as ResearchWorkflowEvent);
-            eventSource.close();
-            observer.complete();
-          } catch (error) {
-            console.error('Failed to parse workflow_complete event:', error);
-          }
-        }
-      );
+            // Listen for workflow_complete events
+            eventSource.addEventListener(
+              'workflow_complete',
+              (event: MessageEvent) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  observer.next({
+                    type: 'workflow_complete',
+                    timestamp: data.timestamp,
+                    workflowId: executionId,
+                    state: data.finalState,
+                  } as ResearchWorkflowEvent);
+                  eventSource.close();
+                  observer.complete();
+                } catch (error) {
+                  console.error(
+                    'Failed to parse workflow_complete event:',
+                    error
+                  );
+                }
+              }
+            );
 
-      // Handle errors
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        observer.error(error);
-        eventSource.close();
-      };
+            // Handle errors
+            eventSource.onerror = (error) => {
+              console.error('SSE connection error:', error);
+              observer.error(error);
+              eventSource.close();
+            };
 
-      // Cleanup on unsubscribe
-      return () => {
-        eventSource.close();
-      };
-    });
+            // Cleanup on unsubscribe
+            return () => {
+              eventSource.close();
+            };
+          })
+      )
+    );
   }
 
   /**
