@@ -60,8 +60,8 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
       <span class="text-xs opacity-70 ml-2">Click to switch</span>
     </button>
 
-    <!-- Auth UI (Top Right) -->
-    <div class="fixed top-4 left-6 z-[1000] flex items-center gap-3">
+    <!-- Auth UI (Top Left - Below navigation area) -->
+    <div class="fixed top-20 left-6 z-[1000] flex items-center gap-3">
       <app-login-button />
       <app-user-profile />
     </div>
