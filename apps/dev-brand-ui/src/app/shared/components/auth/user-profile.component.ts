@@ -44,47 +44,6 @@ import { TierBadgeComponent } from './tier-badge.component';
       .profile-container {
         position: relative;
         display: inline-block;
-      }
-
-      .profile-button {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 0.5rem;
-        transition: background-color 0.2s;
-      }
-
-      .profile-button:hover {
-        background-color: #f3f4f6;
-      }
-
-      .avatar {
-        width: 2rem;
-        height: 2rem;
-        background-color: #6366f1;
-        color: white;
-        border-radius: 9999px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 0.875rem;
-      }
-
-      .email {
-        font-size: 0.875rem;
-        color: #374151;
-        font-weight: 500;
-      }
-
-      .dropdown {
-        position: absolute;
-        right: 0;
-        top: 100%;
         margin-top: 0.5rem;
         width: 12rem;
         background-color: white;
