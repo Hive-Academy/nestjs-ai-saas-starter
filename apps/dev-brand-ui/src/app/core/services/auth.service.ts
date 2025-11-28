@@ -130,13 +130,14 @@ export class AuthService {
     return this.http
       .post<SseTicketResponse>('/api/auth/stream/ticket', {})
       .pipe(
-        tap((response) => console.log('SSE ticket obtained:', response.ticket)),
+        // Extract ticket from response FIRST
+        map((response) => response.ticket),
+        // Then log the ticket string
+        tap((ticket) => console.log('SSE ticket obtained:', ticket)),
         catchError((error: HttpErrorResponse) => {
           console.error('Failed to get SSE ticket:', error);
           return throwError(() => 'Failed to obtain SSE ticket');
-        }),
-        // Extract ticket from response
-        map((response) => response.ticket)
+        })
       );
   }
 
