@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, catchError, map, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError, EMPTY } from 'rxjs';
 import { Router } from '@angular/router';
 import type { User, SseTicketResponse } from '../models/auth';
 
@@ -75,8 +75,9 @@ export class AuthService {
       tap((user) => this._user.set(user)),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
-          // Not authenticated
+          // Not authenticated - this is a valid state, just clear user
           this._user.set(null);
+          return EMPTY; // Return empty observable, don't throw
         }
         return throwError(() => error);
       })
