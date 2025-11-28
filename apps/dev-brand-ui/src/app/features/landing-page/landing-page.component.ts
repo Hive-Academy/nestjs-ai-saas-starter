@@ -15,6 +15,8 @@ import { WorkflowExamplesSectionComponent } from './sections/workflow-examples-s
 import { CapabilitiesMatrixSectionComponent } from './sections/capabilities-matrix-section.component';
 import { DeveloperExperienceSectionComponent } from './sections/developer-experience-section.component';
 import { CTASectionComponent } from './sections/cta-section.component';
+import { LoginButtonComponent } from '../../shared/components/auth/login-button.component';
+import { UserProfileComponent } from '../../shared/components/auth/user-profile.component';
 
 /**
  * Landing Page Component
@@ -41,6 +43,8 @@ import { CTASectionComponent } from './sections/cta-section.component';
     CapabilitiesMatrixSectionComponent,
     DeveloperExperienceSectionComponent,
     CTASectionComponent,
+    LoginButtonComponent,
+    UserProfileComponent,
   ],
   template: ` <div
     class="w-full min-h-screen bg-white opacity-0 transition-opacity duration-700 ease-in-out relative"
@@ -55,6 +59,12 @@ import { CTASectionComponent } from './sections/cta-section.component';
       {{ useSpaceHero() ? '🌌 Space' : '☀️ Sky' }} Hero
       <span class="text-xs opacity-70 ml-2">Click to switch</span>
     </button>
+
+    <!-- Auth UI (Top Right) -->
+    <div class="fixed top-4 left-6 z-[1000] flex items-center gap-3">
+      <app-login-button />
+      <app-user-profile />
+    </div>
 
     <main class="w-full " role="main">
       <div id="hero" class="section-container">
