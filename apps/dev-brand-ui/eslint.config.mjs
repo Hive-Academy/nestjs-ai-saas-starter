@@ -77,9 +77,6 @@ export default [
   },
   {
     files: ['**/*.html'],
-    plugins: {
-      '@angular-eslint/template': angularTemplate,
-    },
     rules: {
       // Modern Control Flow (Angular 17+)
       '@angular-eslint/template/prefer-control-flow': 'error',
