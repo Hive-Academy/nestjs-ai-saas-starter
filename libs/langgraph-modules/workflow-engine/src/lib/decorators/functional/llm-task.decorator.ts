@@ -15,7 +15,6 @@ export const LLM_TASK_METADATA_KEY = Symbol('functional_workflow_llm_task');
  *
  * **Key Features**:
  * - Task-specific tool routing: tools_${taskId} → taskId loop
- * - Automatic tool binding to LLM at graph compilation time
  * - Max iteration limits to prevent infinite loops
  * - Tool validation against ToolRegistry
  *
@@ -209,8 +208,6 @@ export function LLMTask(options: LLMTaskOptions): MethodDecorator {
     const taskOptions: TaskOptions = {
       name: options.name,
       dependsOn: options.dependsOn,
-      timeout: options.timeout,
-      retryCount: options.retryCount,
       errorHandler: options.errorHandler,
       metadata: {
         ...options.metadata,

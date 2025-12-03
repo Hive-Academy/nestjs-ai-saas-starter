@@ -12,7 +12,6 @@ import type {
 } from '@hive-academy/langgraph-workflow-engine';
 import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
 import { PersonalBrandMemoryService } from '../core/memory/personal-brand-memory.service';
-import { UnauthorizedException } from '@nestjs/common';
 import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 import { GitHubIntegrationTools } from '../core/tools/github-integration.tools';
 import { WebResearchTools } from '../core/tools/web-research.tools';

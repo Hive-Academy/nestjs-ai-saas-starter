@@ -1,14 +1,13 @@
-import 'reflect-metadata';
-import { SetMetadata } from '@nestjs/common';
 import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
 import {
   type WorkflowStateAnnotation,
+  WORKFLOW_EDGES_KEY,
   WORKFLOW_METADATA_KEY,
   WORKFLOW_NODES_KEY,
-  WORKFLOW_EDGES_KEY,
   WORKFLOW_TOOLS_KEY,
 } from '@hive-academy/langgraph-core';
-import { getFunctionalApiConfigWithDefaults } from '../../utils/functional/functional-api-config.accessor';
+import { SetMetadata } from '@nestjs/common';
+import 'reflect-metadata';
 
 /**
  * Workflow type enumeration
@@ -99,14 +98,10 @@ export function FunctionalWorkflow(
   options: WorkflowOptions = {}
 ): ClassDecorator {
   return (target: any) => {
-    // Get module config with defaults for zero-config experience
-    // Handle case where module hasn't been initialized yet during class loading
-    const moduleConfig = getFunctionalApiConfigWithDefaults();
-
     // Merge options with module config defaults
     const mergedOptions: WorkflowOptions = {
       ...options,
-      streaming: options.streaming ?? moduleConfig.enableStreaming,
+      streaming: options.streaming ?? false,
       cache: options.cache ?? true, // Enable caching by default for performance
     };
 

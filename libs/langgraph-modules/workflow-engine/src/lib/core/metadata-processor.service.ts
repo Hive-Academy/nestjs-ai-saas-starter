@@ -202,11 +202,33 @@ export class MetadataProcessorService {
         ) as EntrypointMetadata;
         if (entrypointMeta) {
           const nodeId = entrypointMeta.name || methodName;
+          const originalHandler = prototype[methodName];
+
+          // Wrap handler to provide TaskExecutionContext with config
+          const wrappedHandler = async function (
+            this: any,
+            state: any,
+            config: any
+          ) {
+            const context = {
+              state,
+              taskName: nodeId,
+              workflowId: workflowOptions.name || workflowClass.name,
+              executionId: state.executionId || 'unknown',
+              previousTask: undefined,
+              metadata: {},
+              config,
+            };
+
+            const result = await originalHandler.call(this, context);
+            return result.state || {};
+          };
+
           nodes.push({
             id: nodeId,
             methodName,
             name: entrypointMeta.name || methodName,
-            handler: prototype[methodName],
+            handler: wrappedHandler,
             type: 'standard',
             timeout: entrypointMeta.timeout,
             maxRetries: entrypointMeta.retryCount,
@@ -228,15 +250,36 @@ export class MetadataProcessorService {
             methodName
           ) as TaskMetadata;
           const nodeId = taskMeta.name || methodName;
+          const originalHandler = prototype[methodName];
+
+          // Wrap handler to provide TaskExecutionContext with config
+          const wrappedHandler = async function (
+            this: any,
+            state: any,
+            config: any
+          ) {
+            const context = {
+              state,
+              taskName: nodeId,
+              workflowId: workflowOptions.name || workflowClass.name,
+              executionId: state.executionId || 'unknown',
+              previousTask: state.currentTask,
+              metadata: {},
+              config,
+            };
+
+            const result = await originalHandler.call(this, context);
+            return result.state || {};
+          };
+
           // Store LLM task metadata as an extended node object
           const llmTaskNode: any = {
             id: nodeId,
             methodName,
             name: taskMeta.name || methodName,
-            handler: prototype[methodName],
+            handler: wrappedHandler,
             type: 'llm' as const, // LLM task uses 'llm' type
-            timeout: taskMeta.timeout,
-            maxRetries: taskMeta.retryCount,
+
             // 🔑 NEW: Include LLM task metadata for tool routing
             llmTaskMetadata: {
               tools: llmTaskMeta.tools,
@@ -257,14 +300,36 @@ export class MetadataProcessorService {
         ) as TaskMetadata;
         if (taskMeta) {
           const nodeId = taskMeta.name || methodName;
+          const originalHandler = prototype[methodName];
+
+          // Wrap handler to provide TaskExecutionContext with config
+          // LangGraph calls nodes with (state, config), but tasks expect TaskExecutionContext
+          const wrappedHandler = async function (
+            this: any,
+            state: any,
+            config: any
+          ) {
+            const context = {
+              state,
+              taskName: nodeId,
+              workflowId: workflowOptions.name || workflowClass.name,
+              executionId: state.executionId || 'unknown',
+              previousTask: state.currentTask,
+              metadata: {},
+              config, // ✅ Pass RunnableConfig from LangGraph
+            };
+
+            const result = await originalHandler.call(this, context);
+            // Return state update (result.state) for LangGraph
+            return result.state || {};
+          };
+
           nodes.push({
             id: nodeId,
             methodName,
             name: taskMeta.name || methodName,
-            handler: prototype[methodName],
+            handler: wrappedHandler,
             type: 'standard',
-            timeout: taskMeta.timeout,
-            maxRetries: taskMeta.retryCount,
           });
           taskDependencies.set(nodeId, taskMeta.dependsOn || []);
         }

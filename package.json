@@ -85,6 +85,7 @@
     "maath": "0.10.8",
     "marked": "16.4.2",
     "neo4j-driver": "^5.28.1",
+    "nestjs-cls": "6.1.0",
     "ngx-markdown": "20.1.0",
     "openai": "^5.12.2",
     "postprocessing": "6.37.8",

@@ -17,8 +17,10 @@ export const routes: Routes = [
   },
   {
     path: 'devbrand-poc',
-    loadChildren: () =>
-      import('./features/devbrand-poc/devbrand-poc.routes').then(),
+    loadComponent: () =>
+      import('./features/devbrand-poc/pages/devbrand-poc-page.component').then(
+        (m) => m.DevbrandPocPageComponent
+      ),
     canActivate: [authGuard],
     title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
   },

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Tool } from '@hive-academy/langgraph-workflow-engine';
+import { z } from 'zod';
 
 @Injectable()
 export class PremiumAnalyticsTool {
@@ -7,22 +8,18 @@ export class PremiumAnalyticsTool {
     name: 'premium_analytics',
     description:
       'Generates advanced analytics reports for premium users (Pro/Enterprise only)',
-    schema: {
-      type: 'object',
-      properties: {
-        target: {
-          type: 'string',
-          description:
-            'Target entity to analyze (e.g., "competitor_x", "market_y")',
-        },
-        depth: {
-          type: 'string',
-          enum: ['basic', 'deep', 'comprehensive'],
-          description: 'Depth of analysis',
-        },
-      },
-      required: ['target'],
-    },
+    schema: z.object({
+      target: z
+        .string()
+        .describe(
+          'Target entity to analyze (e.g., "competitor_x", "market_y")'
+        ),
+      depth: z
+        .enum(['basic', 'deep', 'comprehensive'])
+        .optional()
+        .default('basic')
+        .describe('Depth of analysis'),
+    }),
     auth: {
       required: true,
       tiers: ['pro', 'enterprise'],

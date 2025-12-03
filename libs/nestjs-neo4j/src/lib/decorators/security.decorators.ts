@@ -10,12 +10,8 @@
  * - Multi-tenant isolation
  */
 
-import {
-  SetMetadata,
-  type ExecutionContext,
-  UnauthorizedException,
-  Logger,
-} from '@nestjs/common';
+import { SetMetadata, UnauthorizedException, Logger } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 import { DECORATOR_METADATA_KEYS } from '../interfaces/decorator-metadata.interface';
 
 /**
@@ -661,79 +657,43 @@ const securityLogger = new Logger('Neo4jSecurity');
  * @returns Promise<AuthContext> - Real user authentication context
  * @throws UnauthorizedException - When authentication context is unavailable
  */
-async function getExecutionContext(instance: any): Promise<AuthContext> {
+async function getExecutionContext(_instance: any): Promise<AuthContext> {
   try {
-    // Extract execution context from various sources
-    let executionContext: ExecutionContext | undefined;
-    let request: any;
+    const cls = ClsServiceManager.getClsService();
+    const user = cls.get<RequestUser>('user');
 
-    // Strategy 1: Direct execution context (from guards/interceptors)
-    if (
-      instance.context &&
-      typeof instance.context.switchToHttp === 'function'
-    ) {
-      executionContext = instance.context;
-      request = executionContext?.switchToHttp().getRequest();
-    }
-    // Strategy 2: Request object directly attached
-    else if (instance.request || instance.req) {
-      request = instance.request || instance.req;
-    }
-    // Strategy 3: Look for context in method parameters or service injection
-    else if (instance.httpArgumentsHost) {
-      request = instance.httpArgumentsHost.getRequest();
-    }
-
-    if (!request) {
-      securityLogger.error('No request context available for authentication');
+    if (!user) {
+      securityLogger.error(
+        'No user found in ClsService. Ensure ClsModule is configured and guards set user context.'
+      );
       throw new UnauthorizedException(
-        'Request context not available for authentication'
+        'Authentication required. User not found in async context (ClsService).'
       );
     }
 
-    // CWE-285 FIX: Real authentication context extraction (REQUIREMENT 2)
-    const user = await extractUserFromRequest(request);
-
-    if (!user) {
-      throw new UnauthorizedException('User authentication required');
-    }
-
-    // Validate required user fields
+    // Build AuthContext from CLS user
     const userId = user.id || user.userId;
     if (!userId) {
-      securityLogger.error('User ID missing from authenticated user context');
       throw new UnauthorizedException('User ID is required for authentication');
     }
 
-    // Extract tenant information (required for multi-tenancy)
-    const tenantId = await extractTenantFromUser(user, request);
+    const tenantId = user.tenantId || user.organizationId;
     if (!tenantId) {
-      securityLogger.warn(`No tenant context available for user ${userId}`);
       throw new UnauthorizedException(
         'Tenant context is required for authorization'
       );
     }
 
-    // Extract user permissions (from roles or direct permissions)
-    const permissions = await getUserPermissions(user);
-
-    // Extract client IP for audit logging
-    const ipAddress = extractClientIP(request);
-
-    // Extract session information
-    const sessionId =
-      request.sessionID || request.session?.id || `session_${Date.now()}`;
-
     const authContext: AuthContext = {
       userId,
       tenantId,
       roles: user.roles || [],
-      permissions,
-      ipAddress,
+      permissions: await getUserPermissions(user),
+      ipAddress: cls.get('ipAddress'), // Optional - set by middleware
       timestamp: new Date(),
       userEmail: user.email,
       organizationName: user.organizationId,
-      sessionId,
+      sessionId: cls.get('sessionId') || `session_${Date.now()}`,
     };
 
     securityLogger.debug(
@@ -747,51 +707,12 @@ async function getExecutionContext(instance: any): Promise<AuthContext> {
 
     const errorMessage = error instanceof Error ? error.message : String(error);
     securityLogger.error(
-      `Authentication context extraction failed: ${errorMessage}`
+      `Failed to get authentication context from ClsService: ${errorMessage}`
     );
     throw new UnauthorizedException(
-      `Authentication context extraction failed: ${errorMessage}`
+      `Authentication context unavailable. Ensure ClsModule is configured in your application. Error: ${errorMessage}`
     );
   }
-}
-
-/**
- * Extract tenant ID from authenticated user context
- *
- * @param user - Authenticated user object
- * @param request - HTTP request object for additional context
- * @returns Promise<string> - Tenant ID
- */
-async function extractTenantFromUser(
-  user: RequestUser,
-  request: any
-): Promise<string | null> {
-  // Strategy 1: Direct tenant ID from user object
-  if (user.tenantId) {
-    return user.tenantId;
-  }
-
-  // Strategy 2: Organization ID as tenant ID
-  if (user.organizationId) {
-    return user.organizationId;
-  }
-
-  // Strategy 3: Extract from headers (for API keys or service-to-service calls)
-  const headerTenantId =
-    request.headers['x-tenant-id'] ||
-    request.headers['tenant-id'] ||
-    request.headers['X-Tenant-ID'];
-  if (headerTenantId) {
-    return String(headerTenantId);
-  }
-
-  // Strategy 4: Extract from query parameters (fallback)
-  const queryTenantId = request.query?.tenantId || request.query?.tenant_id;
-  if (queryTenantId) {
-    return String(queryTenantId);
-  }
-
-  return null;
 }
 
 /**
@@ -873,23 +794,6 @@ function getTierPermissions(tier: 'free' | 'pro' | 'enterprise'): string[] {
   };
 
   return tierPermissionMap[tier] || [];
-}
-
-/**
- * Extract client IP address from request
- *
- * @param request - HTTP request object
- * @returns string - Client IP address
- */
-function extractClientIP(request: any): string {
-  return (
-    request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    request.headers['x-real-ip'] ||
-    request.connection?.remoteAddress ||
-    request.socket?.remoteAddress ||
-    request.ip ||
-    '127.0.0.1'
-  );
 }
 
 // Authorization check
@@ -1102,33 +1006,4 @@ function containsSuspiciousPatterns(input: string): boolean {
   ];
 
   return patterns.some((pattern) => pattern.test(input));
-}
-
-// CWE-285 FIX: Real authentication context extraction helper function (REQUIREMENT 2)
-
-/**
- * Extract real user from request context
- * This replaces placeholder implementation with actual NestJS authentication
- */
-async function extractUserFromRequest(request: any): Promise<RequestUser> {
-  // Check multiple sources for user authentication
-  if (request.user) {
-    return request.user;
-  }
-
-  // Check JWT token in Authorization header
-  const authHeader = request.headers?.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    // In real implementation, verify JWT and extract user
-    throw new UnauthorizedException(
-      'JWT verification not implemented - requires real authentication service'
-    );
-  }
-
-  // Check session-based authentication
-  if (request.session?.user) {
-    return request.session.user;
-  }
-
-  throw new UnauthorizedException('No valid authentication found in request');
 }

@@ -59,6 +59,7 @@
     "cohere-ai": "*",
     "langchain": "*",
     "neo4j-driver": "*",
+    "nestjs-cls": "*",
     "openai": "*",
     "reflect-metadata": "*",
     "rxjs": "*",

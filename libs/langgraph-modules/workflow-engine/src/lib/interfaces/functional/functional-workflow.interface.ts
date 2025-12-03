@@ -1,3 +1,5 @@
+import type { RunnableConfig } from '@langchain/core/runnables';
+
 /**
  * Base state interface for functional workflows
  */
@@ -21,6 +23,7 @@ export interface TaskExecutionContext<
   readonly executionId: string;
   readonly previousTask?: string;
   readonly metadata: Record<string, unknown>;
+  readonly config?: RunnableConfig;
 }
 
 /**

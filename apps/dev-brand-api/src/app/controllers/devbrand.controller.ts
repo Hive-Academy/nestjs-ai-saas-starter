@@ -15,7 +15,10 @@ import {
   InternalServerErrorException,
   Inject,
   Optional,
+  UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -306,13 +309,12 @@ export class DevBrandController {
    * Implementation: TASK_2025_050 - TASK 3
    * Reference: implementation-plan.md:483-507
    */
+  @UseGuards(JwtAuthGuard)
   @Get('conversation/list')
   async getConversationList(
-    @Req() request: any
+    @Req() request: Request
   ): Promise<ConversationListResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    // In production, this would come from JwtAuthGuard: request.user.id
-    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+    const userId = request.user!.id;
 
     this.logger.log(
       `📋 Retrieving supervisor conversation list for user: ${userId}`
@@ -381,13 +383,13 @@ export class DevBrandController {
    * Implementation: TASK_2025_050 - TASK 3
    * Reference: implementation-plan.md:509-594, controller-implementation-guide.md:393-485
    */
+  @UseGuards(JwtAuthGuard)
   @Get('conversation/history/:threadId')
   async getSupervisorConversationHistory(
     @Param('threadId') threadId: string,
-    @Req() request: any
+    @Req() request: Request
   ): Promise<SupervisorConversationHistoryResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+    const userId = request.user!.id;
 
     this.logger.log(
       `📖 Retrieving supervisor conversation history for thread: ${threadId}, user: ${userId}`
@@ -479,13 +481,13 @@ export class DevBrandController {
    * Implementation: TASK_2025_050 - TASK 3
    * Reference: implementation-plan.md:596-601
    */
+  @UseGuards(JwtAuthGuard)
   @Post('conversation/new')
   async createNewConversation(
     @Body() dto: NewConversationDto,
-    @Req() request: any
+    @Req() request: Request
   ): Promise<NewConversationResponseDto> {
-    // CRITICAL: For POC, extract userId from header (mock JWT)
-    const userId = request.headers['x-user-id'] || 'test-devbrand-001';
+    const userId = request.user!.id;
 
     this.logger.log(
       `🆕 Creating new supervisor conversation for user: ${userId}${

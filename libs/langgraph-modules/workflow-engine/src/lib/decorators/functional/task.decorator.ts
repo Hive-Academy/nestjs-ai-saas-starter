@@ -1,7 +1,6 @@
 import { SetMetadata, UnauthorizedException } from '@nestjs/common';
-import { getFunctionalApiConfigWithDefaults } from '../../utils/functional/functional-api-config.accessor';
-import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
 import { WorkflowAuthContextService } from '../../services/auth-context.service';
+import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
 
 /**
  * Metadata key for task decorator
@@ -21,16 +20,6 @@ export interface TaskOptions {
    * Names of tasks this task depends on
    */
   readonly dependsOn?: readonly string[];
-
-  /**
-   * Task timeout in milliseconds
-   */
-  readonly timeout?: number;
-
-  /**
-   * Number of retry attempts on failure
-   */
-  readonly retryCount?: number;
 
   /**
    * Name of error handler method
@@ -102,16 +91,11 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
       target.constructor.name
     );
 
-    // Get module config with defaults for zero-config experience
-    const moduleConfig = getFunctionalApiConfigWithDefaults();
-
     const metadata: TaskMetadata = {
       name: options.name ?? methodName,
       methodName,
       dependsOn: options.dependsOn ?? [],
       isEntrypoint: false,
-      timeout: options.timeout ?? moduleConfig.defaultTimeout,
-      retryCount: options.retryCount ?? moduleConfig.defaultRetryCount,
       errorHandler: options.errorHandler ?? '',
       metadata: options.metadata ?? {},
       auth: options.auth ?? {},
@@ -132,9 +116,6 @@ export function Task(options: TaskOptions = {}): MethodDecorator {
         // Task execution context usually passed as args[0]
         // We need to check where config is passed in TaskExecutionContext
         // Assuming TaskExecutionContext has a config property or we can access it
-
-        // In FunctionalTaskGraphStrategy, tasks are called with (context)
-        // context = { state, config, ... }
 
         const context = args[0];
         const config = context?.config || args[1]; // Fallback if passed as 2nd arg

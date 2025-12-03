@@ -1,9 +1,8 @@
-import 'reflect-metadata';
 import { WORKFLOW_NODES_KEY } from '@hive-academy/langgraph-core';
-import { getFunctionalApiConfigWithDefaults } from '../../utils/functional/functional-api-config.accessor';
-import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
-import { WorkflowAuthContextService } from '../../services/auth-context.service';
 import { UnauthorizedException } from '@nestjs/common';
+import 'reflect-metadata';
+import { WorkflowAuthContextService } from '../../services/auth-context.service';
+import { validateDecoratorPattern } from '../../utils/functional/decorator-validator';
 
 /**
  * Options for @Node decorator
@@ -52,7 +51,7 @@ export interface NodeOptions {
 export interface NodeMetadata extends NodeOptions {
   id: string;
   methodName: string;
-  handler: () => Promise<any>;
+  handler: (state: any, config?: any) => Promise<any>;
 }
 
 /**
@@ -106,17 +105,12 @@ export function Node(optionsOrId?: NodeOptions | string): MethodDecorator {
     const options: NodeOptions =
       typeof optionsOrId === 'string' ? { id: optionsOrId } : optionsOrId || {};
 
-    // Get module config with defaults for zero-config experience
-    const moduleConfig = getFunctionalApiConfigWithDefaults();
-
-    // Create node metadata with module config defaults
+    // Create node metadata
     const nodeMetadata: NodeMetadata = {
       ...options,
       id: options.id || String(propertyKey),
       methodName: String(propertyKey),
       handler: descriptor.value,
-      maxRetries: options.maxRetries ?? moduleConfig.defaultRetryCount,
-      timeout: options.timeout ?? moduleConfig.defaultTimeout,
     };
 
     // Get existing nodes or initialize
@@ -336,9 +330,6 @@ export function getAllStreamingMetadata(
   target: any,
   methodName?: string
 ): Record<string, any> {
-  // Get configuration from module options
-  const config = getFunctionalApiConfigWithDefaults();
-
   // Get workflow nodes metadata if available
   const nodes: Map<string, NodeMetadata> =
     Reflect.getMetadata(WORKFLOW_NODES_KEY, target) ||
@@ -372,17 +363,8 @@ export function getAllStreamingMetadata(
           name: nodeMetadata.name,
           type: nodeMetadata.type || 'standard',
           requiresApproval: nodeMetadata.requiresApproval || false,
-          timeout: nodeMetadata.timeout || config.defaultTimeout,
         }
       : null,
-
-    // Configuration from module
-    configuration: {
-      streamingEnabled: config.enableStreaming || false,
-      checkpointingEnabled: config.enableCheckpointing || false,
-      defaultTimeout: config.defaultTimeout || 30000,
-      defaultRetryCount: config.defaultRetryCount || 3,
-    },
 
     // Available nodes
     availableNodes: nodeEntries.map(([name, meta]) => ({

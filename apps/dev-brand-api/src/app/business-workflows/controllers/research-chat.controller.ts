@@ -28,7 +28,6 @@ import {
   WorkflowExecutionService,
   WorkflowResumptionService,
 } from '@hive-academy/langgraph-workflow-engine';
-import { generateThreadId } from '@hive-academy/langgraph-core';
 import {
   ConversationListResponseDto,
   ConversationHistoryResponseDto,
@@ -41,6 +40,7 @@ import {
   type IThreadRegistryStore,
   type ThreadMetadata,
 } from '@hive-academy/langgraph-memory';
+import type { UserContext } from '@hive-academy/langgraph-workflow-engine';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { QueryTokenAuthGuard } from '../../auth/guards/query-token.guard';
 import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
@@ -149,8 +149,19 @@ export class ResearchChatController {
         workflowType
       );
 
+      // Map RequestUser to UserContext
+      const userContext: UserContext = {
+        userId: user.id,
+        tenantId: user.tenantId,
+        roles: user.roles,
+        tier: user.tier,
+        permissions: user.permissions,
+        email: user.email,
+        organizationId: user.organizationId,
+      };
+
       // Create user context configuration
-      const config = this.workflowAuthContext.createUserConfig(user);
+      const config = this.workflowAuthContext.createUserConfig(userContext);
 
       // Create async generator for streaming
       const stream = this.researcherAgent.executeWithStreaming({
