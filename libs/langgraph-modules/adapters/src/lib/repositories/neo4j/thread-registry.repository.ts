@@ -1,5 +1,4 @@
-import { Injectable, Logger, Scope, Inject } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Neo4jRepositoryBase,
   NeogmaService,
@@ -32,16 +31,15 @@ import type {
  * - createThread(): Create new thread with metadata
  * - updateThread(): Update thread fields
  * - deleteThread(): Delete thread by ID
+ *
+ * Note: Security context is now obtained via ClsService in security decorators.
+ * This repository is a singleton for better performance.
  */
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
   private readonly logger = new Logger(ThreadRegistryRepository.name);
 
-  constructor(
-    neogma: NeogmaService,
-    crud: Neo4jCrudService,
-    @Inject(REQUEST) public readonly request: any
-  ) {
+  constructor(neogma: NeogmaService, crud: Neo4jCrudService) {
     super(Thread, 'Thread', neogma, crud);
   }
 
