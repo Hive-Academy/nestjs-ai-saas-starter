@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ClsModule } from 'nestjs-cls';
 
 // Core library imports
 import {
@@ -99,6 +100,28 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
       maxListeners: 20,
       verboseMemoryLeak: false,
       ignoreErrors: false,
+    }),
+
+    // ClsModule for async context propagation - used by security decorators
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        setup: (cls, req) => {
+          // Set user from request (populated by auth guard)
+          if (req.user) {
+            cls.set('user', req.user);
+          }
+          // Set additional context for audit logging
+          cls.set(
+            'ipAddress',
+            req.ip ||
+              req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+              req.connection?.remoteAddress
+          );
+          cls.set('sessionId', req.sessionID || req.session?.id);
+        },
+      },
     }),
 
     // Core database modules - Enhanced with decorator and performance support
