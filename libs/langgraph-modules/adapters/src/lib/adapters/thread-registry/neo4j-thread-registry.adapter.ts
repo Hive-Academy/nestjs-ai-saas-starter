@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, Scope } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { getRepositoryToken } from '@hive-academy/nestjs-neo4j';
 import {
   IThreadRegistryStore,
@@ -18,8 +18,11 @@ import { Thread } from '../../entities/neo4j/thread.entity';
  *
  * Architecture Pattern: Adapter → Repository Delegation
  * Reference: Neo4jHitlStorageAdapter (neo4j-hitl-storage.adapter.ts:24-191)
+ *
+ * Note: This adapter is a singleton. Security context is obtained via ClsService
+ * in the underlying repository's security decorators.
  */
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class Neo4jThreadRegistryAdapter extends IThreadRegistryStore {
   private readonly logger = new Logger(Neo4jThreadRegistryAdapter.name);
 
