@@ -19,7 +19,7 @@
     "docs:generate": "nx run-many -t docs --exclude dev-brand-api",
     "docs:serve": "npx http-server docs/api -p 8080 -o",
     "docs:build-site": "npm run docs:generate && node scripts/build-docs-site.js",
-    "prepare": "husky install",
+    "prepare": "husky",
     "lint:fix": "nx run-many -t lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
