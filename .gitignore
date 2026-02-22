@@ -53,3 +53,4 @@ tsconfig.lib.tsbuildinfo
 /.roo
 /.roomodes
 /apps/dev-brand-api/data
+.claude/**

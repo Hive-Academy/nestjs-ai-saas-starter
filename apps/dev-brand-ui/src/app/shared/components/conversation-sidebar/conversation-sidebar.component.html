@@ -8,9 +8,7 @@
     class="sidebar-header flex items-center justify-between p-4 border-b border-gray-200"
   >
     @if ((collapsed$ | async) === false) {
-      <h2 class="text-lg font-semibold text-gray-900">
-        Conversations
-      </h2>
+    <h2 class="text-lg font-semibold text-gray-900">Conversations</h2>
     }
     <button
       (click)="toggleCollapse()"
@@ -42,83 +40,122 @@
 
   <!-- New Chat Button -->
   @if ((collapsed$ | async) === false) {
-    <div class="p-4">
-      <button
-        (click)="onNewChat()"
-        [disabled]="loading$ | async"
-        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        type="button"
-        aria-label="Create new conversation"
+  <div class="p-4">
+    <button
+      (click)="onNewChat()"
+      [disabled]="loading$ | async"
+      class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      type="button"
+      aria-label="Create new conversation"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        <span>New Chat</span>
-      </button>
-    </div>
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      <span>New Chat</span>
+    </button>
+  </div>
   }
 
   <!-- Loading State -->
   @if (loading$ | async) {
+  <div
+    class="flex flex-col items-center justify-center p-8 space-y-4"
+    role="status"
+    aria-live="polite"
+  >
     <div
-      class="flex flex-col items-center justify-center p-8 space-y-4"
-      role="status"
-      aria-live="polite"
-    >
-      <div
-        class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
-      ></div>
-      @if ((collapsed$ | async) === false) {
-        <p class="text-sm text-gray-500">
-          Loading conversations...
-        </p>
-      }
-    </div>
+      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+    ></div>
+    @if ((collapsed$ | async) === false) {
+    <p class="text-sm text-gray-500">Loading conversations...</p>
+    }
+  </div>
   }
 
   <!-- Error State -->
   @if (error$ | async; as error) {
-    <div
-      class="p-4 bg-red-50 border border-red-200 rounded-lg m-4"
-      role="alert"
-      aria-live="assertive"
+  <div
+    class="p-4 bg-red-50 border border-red-200 rounded-lg m-4"
+    role="alert"
+    aria-live="assertive"
+  >
+    <p class="text-sm text-red-800">{{ error }}</p>
+    <button
+      (click)="loadConversations()"
+      class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+      type="button"
     >
-      <p class="text-sm text-red-800">{{ error }}</p>
-      <button
-        (click)="loadConversations()"
-        class="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-        type="button"
-      >
-        Retry
-      </button>
-    </div>
+      Retry
+    </button>
+  </div>
   }
 
   <!-- Conversation List -->
   @if ((loading$ | async) === false && (error$ | async) === null) {
+  <div
+    class="conversation-list flex-1 overflow-y-auto"
+    role="list"
+    aria-label="Conversation history"
+  >
+    <!-- Empty State -->
+    @if ((conversations$ | async)?.length === 0) {
     <div
-      class="conversation-list flex-1 overflow-y-auto"
-      role="list"
-      aria-label="Conversation history"
+      class="flex flex-col items-center justify-center p-8 text-center"
+      role="status"
     >
-      <!-- Empty State -->
-      @if ((conversations$ | async)?.length === 0) {
-        <div
-          class="flex flex-col items-center justify-center p-8 text-center"
-          role="status"
-        >
+      <svg
+        class="w-16 h-16 text-gray-300 mb-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+        />
+      </svg>
+      @if ((collapsed$ | async) === false) {
+      <p class="text-gray-500">No conversations yet.<br />Start a new chat!</p>
+      }
+    </div>
+    }
+
+    <!-- Conversation Items -->
+    <div class="space-y-1 p-2">
+      @for (conversation of conversations$ | async; track conversation.threadId)
+      {
+      <button
+        (click)="onSelectConversation(conversation.threadId)"
+        [class.active]="conversation.threadId === currentThreadId()"
+        class="conversation-item w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-50"
+        type="button"
+        role="listitem"
+        [attr.aria-label]="
+          conversation.preview +
+          ', ' +
+          getRelativeTime(conversation.timestamp) +
+          ', ' +
+          getStatusLabel(conversation.status)
+        "
+      >
+        <!-- Collapsed View (Icon Only) -->
+        @if (collapsed$ | async) {
+        <div class="flex items-center justify-center">
           <svg
-            class="w-16 h-16 text-gray-300 mb-4"
+            class="w-6 h-6 text-gray-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -131,130 +168,85 @@
               d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
             />
           </svg>
-          @if ((collapsed$ | async) === false) {
-            <p class="text-gray-500">
-              No conversations yet.<br />Start a new chat!
-            </p>
+        </div>
+        }
+
+        <!-- Expanded View (Full Details) -->
+        @if ((collapsed$ | async) === false) {
+        <div>
+          <!-- Preview Text (max 60 chars) -->
+          <p class="text-sm font-medium text-gray-900 truncate mb-1">
+            {{ conversation.preview.substring(0, 60)
+            }}{{ conversation.preview.length > 60 ? '...' : '' }}
+          </p>
+
+          <!-- Metadata Row -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-500" [attr.title]="conversation.timestamp">
+              {{ getRelativeTime(conversation.timestamp) }}
+            </span>
+
+            <!-- Status Badge -->
+            <span
+              class="px-2 py-0.5 rounded-full text-xs font-medium"
+              [ngClass]="getStatusClass(conversation.status)"
+              role="status"
+            >
+              {{ getStatusLabel(conversation.status) }}
+            </span>
+          </div>
+
+          <!-- Waiting Badge (if applicable) -->
+          @if (conversation.status === 'waiting') {
+          <div class="mt-2 flex items-center gap-1 text-xs text-orange-600">
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Waiting for approval</span>
+          </div>
+          }
+
+          <!-- Supervisor-specific: Current Agent & Progress -->
+          @if ( conversation.currentAgent || conversation.workflowProgress !==
+          undefined ) {
+          <div class="mt-2 space-y-1">
+            @if (conversation.currentAgent) {
+            <div class="text-xs text-gray-600">
+              <span class="font-medium">Agent:</span>
+              {{ conversation.currentAgent }}
+            </div>
+            } @if (conversation.workflowProgress !== undefined) {
+            <div class="text-xs">
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-200 rounded-full h-1.5">
+                  <div
+                    class="bg-blue-600 h-1.5 rounded-full transition-all"
+                    [style.width.%]="conversation.workflowProgress"
+                  ></div>
+                </div>
+                <span class="text-gray-600"
+                  >{{ conversation.workflowProgress }}%</span
+                >
+              </div>
+            </div>
+            }
+          </div>
           }
         </div>
-      }
-
-      <!-- Conversation Items -->
-      <div class="space-y-1 p-2">
-        @for (conversation of conversations$ | async; track conversation.threadId) {
-          <button
-            (click)="onSelectConversation(conversation.threadId)"
-            [class.active]="conversation.threadId === currentThreadId()"
-            class="conversation-item w-full text-left p-3 rounded-lg transition-colors hover:bg-gray-50"
-            type="button"
-            role="listitem"
-            [attr.aria-label]="
-              conversation.preview +
-              ', ' +
-              getRelativeTime(conversation.timestamp) +
-              ', ' +
-              getStatusLabel(conversation.status)
-            "
-          >
-            <!-- Collapsed View (Icon Only) -->
-            @if (collapsed$ | async) {
-              <div class="flex items-center justify-center">
-                <svg
-                  class="w-6 h-6 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                  />
-                </svg>
-              </div>
-            }
-
-            <!-- Expanded View (Full Details) -->
-            @if ((collapsed$ | async) === false) {
-              <div>
-                <!-- Preview Text (max 60 chars) -->
-                <p class="text-sm font-medium text-gray-900 truncate mb-1">
-                  {{ conversation.preview.substring(0, 60)
-                  }}{{ conversation.preview.length > 60 ? '...' : '' }}
-                </p>
-
-                <!-- Metadata Row -->
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-500" [attr.title]="conversation.timestamp">
-                    {{ getRelativeTime(conversation.timestamp) }}
-                  </span>
-
-                  <!-- Status Badge -->
-                  <span
-                    class="px-2 py-0.5 rounded-full text-xs font-medium"
-                    [ngClass]="getStatusClass(conversation.status)"
-                    role="status"
-                  >
-                    {{ getStatusLabel(conversation.status) }}
-                  </span>
-                </div>
-
-                <!-- Waiting Badge (if applicable) -->
-                @if (conversation.status === 'waiting') {
-                  <div class="mt-2 flex items-center gap-1 text-xs text-orange-600">
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>Waiting for approval</span>
-                  </div>
-                }
-
-                <!-- Supervisor-specific: Current Agent & Progress -->
-                @if (
-                  conversation.currentAgent ||
-                  conversation.workflowProgress !== undefined
-                ) {
-                  <div class="mt-2 space-y-1">
-                    @if (conversation.currentAgent) {
-                      <div class="text-xs text-gray-600">
-                        <span class="font-medium">Agent:</span>
-                        {{ conversation.currentAgent }}
-                      </div>
-                    }
-                    @if (conversation.workflowProgress !== undefined) {
-                      <div class="text-xs">
-                        <div class="flex items-center gap-2">
-                          <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-                            <div
-                              class="bg-blue-600 h-1.5 rounded-full transition-all"
-                              [style.width.%]="conversation.workflowProgress"
-                            ></div>
-                          </div>
-                          <span class="text-gray-600"
-                            >{{ conversation.workflowProgress }}%</span
-                          >
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </button>
         }
-      </div>
+      </button>
+      }
     </div>
+  </div>
   }
 </div>
