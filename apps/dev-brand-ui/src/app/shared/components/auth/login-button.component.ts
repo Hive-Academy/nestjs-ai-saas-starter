@@ -1,11 +1,11 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login-button',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!authService.isAuthenticated$()) {

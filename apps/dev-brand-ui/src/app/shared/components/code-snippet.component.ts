@@ -16,13 +16,12 @@
  * ```
  */
 
-import { CommonModule } from '@angular/common';
 import { Component, input, signal } from '@angular/core';
 
 @Component({
   selector: 'app-code-snippet',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="relative group">
       <!-- Code Block - Clean and Minimal -->

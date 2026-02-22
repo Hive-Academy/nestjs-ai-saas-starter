@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 import { CountUpDirective } from '../directives/count-up.directive';
 
@@ -24,7 +24,7 @@ import { CountUpDirective } from '../directives/count-up.directive';
 @Component({
   selector: 'app-capabilities-matrix-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective, CountUpDirective],
+  imports: [ScrollAnimationDirective, CountUpDirective],
   template: `
     <section
       class="relative bg-gradient-to-b from-white via-gray-50 to-white py-20 md:py-32"

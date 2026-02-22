@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
 import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
@@ -36,7 +36,7 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
 @Component({
   selector: 'app-event-stream',
   standalone: true,
-  imports: [CommonModule, ScrollingModule],
+  imports: [ScrollingModule],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">

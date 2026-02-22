@@ -35,13 +35,13 @@ import {
   signal,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MarkdownModule } from 'ngx-markdown';
 
 @Component({
   selector: 'app-token-stream-display',
   standalone: true,
-  imports: [CommonModule, MarkdownModule],
+  imports: [MarkdownModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="token-stream-container">

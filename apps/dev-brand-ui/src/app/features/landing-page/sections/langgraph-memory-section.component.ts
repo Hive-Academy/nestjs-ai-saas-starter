@@ -1,4 +1,4 @@
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 import { HijackedScrollTimelineComponent } from '../../../shared/components/hijacked-scroll-timeline.component';
@@ -29,7 +29,6 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
   selector: 'app-langgraph-memory-section',
   standalone: true,
   imports: [
-    CommonModule,
     NgOptimizedImage,
     HijackedScrollTimelineComponent,
     HijackedScrollItemDirective,

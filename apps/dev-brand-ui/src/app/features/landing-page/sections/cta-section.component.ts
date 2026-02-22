@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { CTASceneGraphComponent } from './scene-graphs/cta-scene-graph.component';
@@ -23,12 +22,7 @@ import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-a
 @Component({
   selector: 'app-cta-section',
   standalone: true,
-  imports: [
-    CommonModule,
-    Scene3dComponent,
-    CTASceneGraphComponent,
-    ScrollAnimationDirective,
-  ],
+  imports: [Scene3dComponent, CTASceneGraphComponent, ScrollAnimationDirective],
   template: `
     <section
       class="relative min-h-[700px] bg-gradient-to-b from-white via-gray-50 to-white py-20 md:py-32"

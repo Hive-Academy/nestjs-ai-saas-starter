@@ -4,14 +4,14 @@ import {
   signal,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { TierBadgeComponent } from './tier-badge.component';
 
 @Component({
   selector: 'app-user-profile',
   standalone: true,
-  imports: [CommonModule, TierBadgeComponent],
+  imports: [TierBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (authService.isAuthenticated$(); as user) {

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, input, signal } from '@angular/core';
 import { CodeSnippetComponent } from './code-snippet.component';
 import { HijackedScrollDirective } from '../../core/gsap-animations/hijacked-scroll.directive';
@@ -25,7 +24,6 @@ import {
   selector: 'app-scrolling-code-timeline',
   standalone: true,
   imports: [
-    CommonModule,
     CodeSnippetComponent,
     HijackedScrollDirective,
     HijackedScrollItemDirective,

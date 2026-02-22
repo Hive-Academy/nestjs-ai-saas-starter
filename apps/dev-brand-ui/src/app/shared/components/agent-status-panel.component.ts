@@ -33,7 +33,7 @@
  */
 
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ProgressIndicatorComponent } from './progress-indicator.component';
 import type { CustomStreamEvent } from '../../features/devbrand-poc/models/stream-events.model';
 
@@ -50,7 +50,7 @@ export interface AgentStatus {
 @Component({
   selector: 'app-agent-status-panel',
   standalone: true,
-  imports: [CommonModule, ProgressIndicatorComponent],
+  imports: [ProgressIndicatorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="agent-status-panel">

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { SpaceThemeStore } from '../../../core/stores/space-theme.store';
@@ -7,7 +6,7 @@ import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.compone
 @Component({
   selector: 'brand-hero-section-space',
   standalone: true,
-  imports: [CommonModule, Scene3dComponent, HeroSpaceSceneComponent],
+  imports: [Scene3dComponent, HeroSpaceSceneComponent],
   template: `
     <div
       class="relative w-full h-screen flex flex-col overflow-hidden"

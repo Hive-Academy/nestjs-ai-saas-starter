@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
@@ -10,7 +9,7 @@ import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-a
 @Component({
   selector: 'app-problem-solution-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective],
+  imports: [ScrollAnimationDirective],
   template: `
     <section
       class="relative m-h-screen p-16 bg-white overflow-hidden flex items-center"

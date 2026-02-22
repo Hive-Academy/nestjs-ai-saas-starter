@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DevBrandApiService } from '../services/devbrand-api.service';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
@@ -75,7 +75,7 @@ import { ExecuteDevBrandRequest } from '../models';
 @Component({
   selector: 'app-execution-control',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h3 class="text-lg font-semibold text-gray-900 mb-4">

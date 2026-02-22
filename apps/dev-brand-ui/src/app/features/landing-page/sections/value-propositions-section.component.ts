@@ -7,7 +7,7 @@ import {
   signal,
   HostListener,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 import { SectionStickyDirective } from '../../../core/gsap-animations/section-sticky.directive';
 import type { ValueProposition } from '../interfaces';
@@ -31,7 +31,6 @@ import { ValuePropositions3DSceneComponent } from './scene-graphs/value-proposit
   selector: 'app-value-propositions-section',
   standalone: true,
   imports: [
-    CommonModule,
     ScrollAnimationDirective,
     SectionStickyDirective,
     Scene3dComponent,

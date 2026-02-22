@@ -1,4 +1,4 @@
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { Component } from '@angular/core';
 import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.component';
@@ -8,7 +8,6 @@ import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-a
   selector: 'brand-hero-section',
   standalone: true,
   imports: [
-    CommonModule,
     NgOptimizedImage,
     Scene3dComponent,
     HeroSceneGraphComponent,

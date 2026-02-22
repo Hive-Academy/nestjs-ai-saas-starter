@@ -33,7 +33,6 @@
  */
 
 import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface ProgressData {
   readonly agent?: string;
@@ -45,7 +44,7 @@ export interface ProgressData {
 @Component({
   selector: 'app-progress-indicator',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (progress(); as p) {

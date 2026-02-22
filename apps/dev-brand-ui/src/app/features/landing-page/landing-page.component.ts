@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -36,7 +35,6 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
   selector: 'brand-landing-page',
   standalone: true,
   imports: [
-    CommonModule,
     HeroSectionComponent,
     HeroSectionSpaceComponent,
     MetaballHeroSectionComponent,

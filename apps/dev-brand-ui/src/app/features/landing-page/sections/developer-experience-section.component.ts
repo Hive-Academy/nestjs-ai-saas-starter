@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
 /**
@@ -20,7 +20,7 @@ import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-a
 @Component({
   selector: 'app-developer-experience-section',
   standalone: true,
-  imports: [CommonModule, ScrollAnimationDirective],
+  imports: [ScrollAnimationDirective],
   template: `
     <section
       class="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 py-20 md:py-32"
