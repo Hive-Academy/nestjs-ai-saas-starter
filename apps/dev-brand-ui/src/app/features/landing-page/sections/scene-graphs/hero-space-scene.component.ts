@@ -20,7 +20,7 @@
  * Theme switching handled automatically via SpaceThemeStore injection.
  */
 
-import { Component, CUSTOM_ELEMENTS_SCHEMA, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { OrbitControls } from 'three-stdlib';
 
 // Import space primitives
@@ -30,7 +30,6 @@ import { NebulaVolumetricComponent } from '../../../../core/angular-3d/component
 import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
 import { SmokeParticleTextComponent } from '../../../../core/angular-3d/components/primitives/smoke-particle-text.component';
 import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
-import { GlowParticleTextComponent } from '../../../../core/angular-3d/components/primitives/glow-particle-text.component';
 import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
 
 // Import theme store and types
@@ -404,10 +403,10 @@ export class HeroSpaceSceneComponent {
   readonly colors = Colors3D;
 
   // ✅ Store orbit controls reference for scroll coordinator
-  orbitControlsInstance?: OrbitControls;
+  public orbitControlsInstance?: OrbitControls;
 
   // ✅ Reactive zoom enable/disable for scroll coordination
-  isZoomEnabled = true;
+  public isZoomEnabled = true;
 
   // ✅ Viewport positioner for CSS-like positioning in 3D
   // Camera is at Z=20, elements positioned at Z=0 plane (viewport plane)

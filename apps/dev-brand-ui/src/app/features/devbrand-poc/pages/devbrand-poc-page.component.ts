@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, effect } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { ExecutionControlComponent } from '../components/execution-control.component';
 import { ProgressVisualizationComponent } from '../components/progress-visualization.component';
 import { EventStreamComponent } from '../components/event-stream.component';

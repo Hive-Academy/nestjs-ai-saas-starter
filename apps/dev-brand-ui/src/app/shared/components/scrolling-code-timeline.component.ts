@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { CodeSnippetComponent } from './code-snippet.component';
 import { HijackedScrollDirective } from '../../core/angular-3d/directives/hijacked-scroll.directive';
 import {
@@ -38,7 +38,7 @@ import {
       [animationDuration]="0.3"
       (currentStepChange)="currentStep.set($event)"
     >
-      @for (step of timeline(); track step.id; let i = $index) {
+      @for (step of timelineData(); track step.id; let i = $index) {
       <!-- Each step is managed by hijackedScrollItem directive -->
       <div
         hijackedScrollItem
@@ -127,12 +127,7 @@ import {
   ],
 })
 export class ScrollingCodeTimelineComponent {
-  @Input({ required: true })
-  set timelineData(value: TimelineStep[]) {
-    this.timeline.set(value);
-  }
-
-  readonly timeline = signal<TimelineStep[]>([]);
+  readonly timelineData = input.required<TimelineStep[]>();
   readonly currentStep = signal<number>(0);
 
   /**

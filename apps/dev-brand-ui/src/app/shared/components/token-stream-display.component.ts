@@ -47,7 +47,7 @@ import { MarkdownModule } from 'ngx-markdown';
     <div class="token-stream-container">
       <!-- Streaming tokens with typewriter effect -->
       <div class="streaming-content" [class.streaming]="isStreaming()">
-        <markdown [data]="displayContent()"></markdown>
+        <markdown [data]="displayContent()" />
         @if (isStreaming()) {
         <span class="cursor" aria-hidden="true">|</span>
         }

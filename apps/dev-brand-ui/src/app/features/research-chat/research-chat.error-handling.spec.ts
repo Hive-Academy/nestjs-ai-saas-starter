@@ -307,7 +307,7 @@ describe('ResearchChatComponent - Error Handling Tests', () => {
       // Assert: Should handle gracefully
       // Agent status panel may or may not be updated
       expect(() => {
-        const agents = component.agentStatusPanel?.agents() || [];
+        void (component.agentStatusPanel?.agents() || []);
         // No error should occur
       }).not.toThrow();
     }));
@@ -687,7 +687,6 @@ describe('ResearchChatComponent - Error Handling Tests', () => {
 
     it('should handle rapid error recovery', fakeAsync(() => {
       // Arrange
-      const executionId1 = 'edge-test-recovery-1';
       const executionId2 = 'edge-test-recovery-2';
 
       // First request fails

@@ -11,7 +11,7 @@ import {
 } from './services/research.service';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { provideExperimentalZonelessChangeDetection } from '@angular/core';
-import { of, from, throwError, concat, delay } from 'rxjs';
+import { of, from, concat, delay } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
 import type {
   MessageStreamEvent,

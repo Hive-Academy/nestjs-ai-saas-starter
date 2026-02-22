@@ -79,7 +79,8 @@ export class OrbitControlsComponent {
   protected glDomElement = this.store.select('gl', 'domElement');
 
   // Reference to controls element for update() calls
-  private controlsRef = viewChild<ElementRef<OrbitControls>>('controls');
+  private readonly controlsRef =
+    viewChild<ElementRef<OrbitControls>>('controls');
 
   // Target point to orbit around (typically [0, 0, 0] for planet center)
   readonly target = input<[number, number, number]>([0, 0, 0]);

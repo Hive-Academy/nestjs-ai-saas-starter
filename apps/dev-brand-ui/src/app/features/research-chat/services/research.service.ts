@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject, switchMap } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 
 /**
@@ -52,8 +52,8 @@ export interface ResearchReport {
 })
 export class ResearchService {
   private apiUrl = '/api/research';
-
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
 
   /**
    * Start new research workflow

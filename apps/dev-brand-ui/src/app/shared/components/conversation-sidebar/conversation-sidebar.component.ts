@@ -47,7 +47,7 @@
 
 import {
   Component,
-  Input,
+  input,
   Output,
   EventEmitter,
   OnInit,
@@ -84,18 +84,18 @@ export class ConversationSidebarComponent implements OnInit {
    * Workflow type: researcher or supervisor
    * Determines which API endpoints to use
    */
-  @Input() workflowType: 'researcher' | 'supervisor' = 'researcher';
+  readonly workflowType = input<'researcher' | 'supervisor'>('researcher');
 
   /**
    * User ID for conversation filtering
    * Used in API requests for conversation list
    */
-  @Input() userId = '';
+  readonly userId = input<string>('');
 
   /**
    * Currently active thread ID for highlighting
    */
-  @Input() currentThreadId?: string;
+  readonly currentThreadId = input<string | undefined>();
 
   /**
    * Emitted when user selects a conversation
@@ -142,13 +142,13 @@ export class ConversationSidebarComponent implements OnInit {
     this.updateState({ loading: true, error: null });
 
     const apiCall =
-      this.workflowType === 'researcher'
-        ? this.conversationApi.getResearcherConversationList(this.userId)
-        : this.conversationApi.getSupervisorConversationList(this.userId);
+      this.workflowType() === 'researcher'
+        ? this.conversationApi.getResearcherConversationList(this.userId())
+        : this.conversationApi.getSupervisorConversationList(this.userId());
 
     apiCall
       .pipe(
-        catchError((error) => {
+        catchError((_error) => {
           this.updateState({
             loading: false,
             error: 'Failed to load conversations. Please try again.',
@@ -180,13 +180,13 @@ export class ConversationSidebarComponent implements OnInit {
     this.updateState({ loading: true, error: null });
 
     const apiCall =
-      this.workflowType === 'researcher'
-        ? this.conversationApi.createNewResearcherConversation(this.userId)
-        : this.conversationApi.createNewSupervisorConversation(this.userId);
+      this.workflowType() === 'researcher'
+        ? this.conversationApi.createNewResearcherConversation(this.userId())
+        : this.conversationApi.createNewSupervisorConversation(this.userId());
 
     apiCall
       .pipe(
-        catchError((error) => {
+        catchError((_error) => {
           this.updateState({
             loading: false,
             error: 'Failed to create new conversation. Please try again.',

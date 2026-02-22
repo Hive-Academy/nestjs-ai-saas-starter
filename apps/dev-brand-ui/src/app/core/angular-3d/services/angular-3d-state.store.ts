@@ -387,7 +387,8 @@ export class Angular3DStateStore {
       const scene = state.scenes[sceneId];
       if (!scene || !scene.objects[objectId]) return state;
 
-      const { [objectId]: removed, ...remainingObjects } = scene.objects;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [objectId]: _removed, ...remainingObjects } = scene.objects;
 
       return {
         ...state,
@@ -443,7 +444,8 @@ export class Angular3DStateStore {
 
   removeLight(lightId: string) {
     this._state.update((state) => {
-      const { [lightId]: removed, ...remainingLights } = state.lights;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [lightId]: _removed, ...remainingLights } = state.lights;
       return {
         ...state,
         lights: remainingLights,

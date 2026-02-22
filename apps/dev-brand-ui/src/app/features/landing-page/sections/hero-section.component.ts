@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Component } from '@angular/core';
 import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
 import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.component';
@@ -7,7 +7,12 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
 @Component({
   selector: 'brand-hero-section',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
+  imports: [
+    CommonModule,
+    NgOptimizedImage,
+    Scene3DComponent,
+    ScrollAnimationDirective,
+  ],
   template: `
     <div
       class="relative w-full h-screen bg-gradient-to-br from-sky-300 via-white to-sky-600 flex flex-col"
@@ -89,9 +94,10 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             >
               <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
                 <img
-                  src="/assets/icons/libraries/icon-chromadb.svg"
+                  ngSrc="/assets/icons/libraries/icon-chromadb.svg"
                   alt="ChromaDB"
                   class="w-full h-full object-contain animate-float drop-shadow-md"
+                  fill
                 />
               </div>
               <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">
@@ -114,9 +120,10 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             >
               <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
                 <img
-                  src="/assets/icons/libraries/icon-multi-agent.svg"
+                  ngSrc="/assets/icons/libraries/icon-multi-agent.svg"
                   alt="Multi-Agent"
                   class="w-full h-full object-contain animate-float animation-delay-200 drop-shadow-md"
+                  fill
                 />
               </div>
               <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">
@@ -139,9 +146,10 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
             >
               <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
                 <img
-                  src="/assets/icons/libraries/icon-monitoring.svg"
+                  ngSrc="/assets/icons/libraries/icon-monitoring.svg"
                   alt="Monitoring"
                   class="w-full h-full object-contain animate-float animation-delay-400 drop-shadow-md"
+                  fill
                 />
               </div>
               <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">

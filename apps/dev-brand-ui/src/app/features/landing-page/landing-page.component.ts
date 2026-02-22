@@ -4,7 +4,7 @@ import {
   Component,
   ElementRef,
   signal,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 
 import { HeroSectionComponent } from './sections/hero-section.component';
@@ -124,8 +124,8 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
   ],
 })
 export class LandingPageComponent implements AfterViewInit {
-  @ViewChild('landingContainer', { static: true })
-  landingContainer!: ElementRef<HTMLElement>;
+  readonly landingContainer =
+    viewChild.required<ElementRef<HTMLElement>>('landingContainer');
   readonly showNavigationDots = signal(true);
   readonly smoothScrollEnabled = signal(true);
   readonly useSpaceHero = signal(true);

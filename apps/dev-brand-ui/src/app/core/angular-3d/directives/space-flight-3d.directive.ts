@@ -91,20 +91,6 @@ export interface SpaceFlightConfig {
 }
 
 /**
- * Default flight path: Classic space flyby
- */
-const DEFAULT_FLIGHT_PATH: SpaceFlightWaypoint[] = [
-  // Phase 1: Approach from distance
-  { position: [-5, -1, 5], duration: 8, ease: 'easeInOut' },
-  // Phase 2: Arc across screen
-  { position: [8, 3, 2], duration: 6, ease: 'easeInOut' },
-  // Phase 3: Retreat into distance
-  { position: [-3, 0, -15], duration: 7, ease: 'easeIn' },
-  // Phase 4: Return to start
-  { position: [7, 2, -10], duration: 5, ease: 'easeOut' },
-];
-
-/**
  * Easing functions for smooth interpolation
  */
 const easingFunctions = {

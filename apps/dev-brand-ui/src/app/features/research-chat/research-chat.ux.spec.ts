@@ -391,7 +391,7 @@ describe('ResearchChatComponent - UX Validation Tests', () => {
     it('should have sufficient color contrast for status badges', () => {
       // Note: This is typically verified through visual testing tools
       // We can verify that status types are properly set
-      const executionId = 'a11y-test-contrast';
+      // a11y-test-contrast scenario
 
       // Assert: Component should use different status types with distinct colors
       // (active, completed, error, idle) as defined in AgentStatusPanelComponent

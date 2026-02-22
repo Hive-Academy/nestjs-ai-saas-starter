@@ -77,13 +77,13 @@ export class Scene3DComponent {
    * Scene graph component to render (e.g., HeroSceneGraphComponent)
    * Pattern: Pass component class, Angular Three handles instantiation
    */
-  sceneGraph = input.required<any>();
+  readonly sceneGraph = input.required<any>();
 
   /**
    * Camera configuration
    * Default: Perspective camera at [0, 0, 12] with 75° FOV (Three.js human scale)
    */
-  camera = input<CameraConfig>({
+  readonly camera = input<CameraConfig>({
     position: [0, 0, 12],
     fov: 75,
   });
@@ -92,7 +92,7 @@ export class Scene3DComponent {
    * WebGL renderer configuration
    * Default: High-performance with antialiasing and alpha
    */
-  gl = input<WebGLRendererConfig>({
+  readonly gl = input<WebGLRendererConfig>({
     antialias: true,
     alpha: true,
     powerPreference: 'high-performance',
@@ -102,5 +102,5 @@ export class Scene3DComponent {
    * Enable shadow rendering
    * Default: true
    */
-  shadows = input<boolean>(true);
+  readonly shadows = input<boolean>(true);
 }

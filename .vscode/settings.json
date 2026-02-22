@@ -1,5 +1,16 @@
 {
   "nxConsole.generateAiAgentRules": true,
   "postman.settings.dotenv-detection-notification-visibility": false,
-  "ptah.model.selected": "opus"
+  "ptah.model.selected": "default",
+  "ptah.authMethod": "oauth",
+  "ptah.claudeOAuthToken": "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",
+  "ptah.openrouter.modelTier.sonnet": "z-ai/glm-4.5-air:free",
+  "ptah.openrouter.modelTier.opus": "moonshotai/kimi-k2.5",
+  "ptah.openrouter.modelTier.haiku": "qwen/qwen3-coder:free",
+  "ptah.anthropicProviderId": "moonshot",
+  "ptah.provider.moonshot.modelTier.sonnet": "kimi-k2.5",
+  "ptah.provider.moonshot.modelTier.opus": "kimi-k2.5",
+  "ptah.provider.moonshot.modelTier.haiku": "kimi-k2.5",
+  "ptah.provider.openrouter.modelTier.sonnet": "z-ai/glm-4.5-air:free",
+  "ptah.provider.openrouter.modelTier.opus": "z-ai/glm-4.5-air:free"
 }

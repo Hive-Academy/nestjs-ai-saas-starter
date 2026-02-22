@@ -63,10 +63,6 @@ import {
 } from 'three';
 import { Float3dDirective } from '../../directives/float-3d.directive';
 import { Performance3dDirective } from '../../directives/performance-3d.directive';
-import {
-  SpaceFlight3dDirective,
-  type SpaceFlightWaypoint,
-} from '../../directives/space-flight-3d.directive';
 import { Colors3D } from '../../config/colors.config';
 
 @Component({
@@ -181,13 +177,13 @@ export class SVGIconComponent implements OnInit {
       if (!group || !this.isInitialized) return;
 
       // Trigger material update when any material input changes
-      const color = this.color();
-      const emissive = this.emissive();
-      const emissiveIntensity = this.emissiveIntensity();
-      const metalness = this.metalness();
-      const roughness = this.roughness();
-      const transparent = this.transparent();
-      const opacity = this.opacity();
+      this.color();
+      this.emissive();
+      this.emissiveIntensity();
+      this.metalness();
+      this.roughness();
+      this.transparent();
+      this.opacity();
 
       this.applyMaterialUpdates(group);
     });

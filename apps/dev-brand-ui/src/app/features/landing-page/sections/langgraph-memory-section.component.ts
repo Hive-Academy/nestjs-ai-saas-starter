@@ -1,9 +1,8 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { HijackedScrollTimelineComponent } from '../../../shared/components/hijacked-scroll-timeline.component';
 import { HijackedScrollItemDirective } from '../../../core/angular-3d/directives/hijacked-scroll-item.directive';
-import { CodeSnippetComponent } from '../../../shared/components/code-snippet.component';
 import { DecorativePatternComponent } from '../../../shared/components/decorative-patterns.component';
 import type { TimelineStep } from '../../../shared/components/scrolling-code-timeline.component';
 
@@ -31,6 +30,7 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
   standalone: true,
   imports: [
     CommonModule,
+    NgOptimizedImage,
     HijackedScrollTimelineComponent,
     HijackedScrollItemDirective,
     DecorativePatternComponent,
@@ -309,10 +309,10 @@ import type { TimelineStep } from '../../../shared/components/scrolling-code-tim
                     @if (step.language === 'image') {
                     <div class="relative group pt-5">
                       <img
-                        [src]="step.code"
+                        [ngSrc]="step.code"
                         [alt]="step.title"
                         class="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-                        loading="lazy"
+                        fill
                       />
                     </div>
                     }

@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  inject,
   OnDestroy,
   OnInit,
   signal,
@@ -285,9 +286,9 @@ import { ValuePropositions3DSceneComponent } from './scene-graphs/value-proposit
 })
 export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
   // Active section tracking
-  activeIndex = signal(0);
+  readonly activeIndex = signal(0);
   // Scroll progress within active section (0-1)
-  scrollProgress = signal(0);
+  readonly scrollProgress = signal(0);
 
   readonly rendererConfig = {
     antialias: true,
@@ -303,8 +304,7 @@ export class ValuePropositionsSectionComponent implements OnInit, OnDestroy {
     ValuePropositions3DSceneComponent;
 
   private observer?: IntersectionObserver;
-
-  constructor(private elementRef: ElementRef) {}
+  private readonly elementRef = inject(ElementRef);
 
   ngOnInit(): void {
     this.setupIntersectionObserver();

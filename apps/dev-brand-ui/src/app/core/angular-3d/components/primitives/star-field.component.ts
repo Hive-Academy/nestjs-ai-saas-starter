@@ -30,7 +30,6 @@ import {
 import { NgtsPointMaterial } from 'angular-three-soba/materials';
 import { NgtsPointsBuffer } from 'angular-three-soba/performances';
 import { random } from 'maath';
-import { NgtSelect } from 'angular-three';
 
 @Component({
   selector: 'app-star-field',

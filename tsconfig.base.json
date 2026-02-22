@@ -30,7 +30,8 @@
       "@hive-academy/langgraph-platform": ["libs/langgraph-modules/platform/src/index.ts"],
       "@hive-academy/langgraph-workflow-engine": ["libs/langgraph-modules/workflow-engine/src/index.ts"],
       "@hive-academy/nestjs-chromadb": ["libs/nestjs-chromadb/src/index.ts"],
-      "@hive-academy/nestjs-neo4j": ["libs/nestjs-neo4j/src/index.ts"]
+      "@hive-academy/nestjs-neo4j": ["libs/nestjs-neo4j/src/index.ts"],
+      "@hive-academy/nestjs-workos": ["libs/nestjs-workos/src/index.ts"]
     }
   }
 }

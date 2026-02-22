@@ -164,7 +164,7 @@ export class Float3dDirective implements AfterViewInit, OnDestroy {
     import('gsap').then(({ gsap }) => {
       if (!this.mesh || !this.originalPosition) return;
 
-      const [_x, y, _z] = this.originalPosition;
+      const [, y] = this.originalPosition;
 
       // Create a seamless continuous loop timeline
       // Instead of yoyo (which causes sudden drops), we create a smooth cycle:

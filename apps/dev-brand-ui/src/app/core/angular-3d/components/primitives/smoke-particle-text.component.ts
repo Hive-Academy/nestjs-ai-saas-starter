@@ -32,6 +32,7 @@ import {
   signal,
   viewChild,
   ElementRef,
+  OnDestroy,
 } from '@angular/core';
 import { extend, injectBeforeRender } from 'angular-three';
 import {
@@ -67,7 +68,7 @@ interface ParticleData {
     </ngt-group>
   `,
 })
-export class SmokeParticleTextComponent {
+export class SmokeParticleTextComponent implements OnDestroy {
   // Template refs
   readonly groupRef = viewChild.required<ElementRef<Group>>('groupRef');
 

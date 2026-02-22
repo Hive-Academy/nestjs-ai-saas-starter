@@ -58,7 +58,6 @@ import {
   Camera,
   AdditiveBlending,
   NormalBlending,
-  type Blending,
 } from 'three';
 import { random } from 'maath';
 import { Colors3D } from '../../config/colors.config';

@@ -45,22 +45,22 @@ export class AuthService {
   /**
    * Public readonly user signal
    */
-  readonly user$ = this._user.asReadonly();
+  public readonly user$ = this._user.asReadonly();
 
   /**
    * Computed authentication status
    */
-  readonly isAuthenticated$ = computed(() => this.user$() !== null);
+  public readonly isAuthenticated$ = computed(() => this.user$() !== null);
 
   /**
    * Computed user tier
    */
-  readonly userTier$ = computed(() => this.user$()?.tier ?? 'free');
+  public readonly userTier$ = computed(() => this.user$()?.tier ?? 'free');
 
   /**
    * Computed user roles
    */
-  readonly userRoles$ = computed(() => this.user$()?.roles ?? []);
+  public readonly userRoles$ = computed(() => this.user$()?.roles ?? []);
 
   /**
    * Load current user from backend
@@ -70,7 +70,7 @@ export class AuthService {
    *
    * @returns Observable<User>
    */
-  loadUser(): Observable<User> {
+  public loadUser(): Observable<User> {
     return this.http.get<User>('/api/auth/me').pipe(
       tap((user) => this._user.set(user)),
       catchError((error: HttpErrorResponse) => {
@@ -89,7 +89,7 @@ export class AuthService {
    *
    * Redirects browser to /auth/login (WorkOS OAuth)
    */
-  login(): void {
+  public login(): void {
     // Store return URL before redirect
     const returnUrl = this.router.url;
     sessionStorage.setItem('auth_return_url', returnUrl);
@@ -103,7 +103,7 @@ export class AuthService {
    *
    * Clears user state and redirects to landing page
    */
-  logout(): void {
+  public logout(): void {
     // Call backend logout endpoint (clears cookie)
     this.http.post('/api/auth/logout', {}).subscribe({
       next: () => {

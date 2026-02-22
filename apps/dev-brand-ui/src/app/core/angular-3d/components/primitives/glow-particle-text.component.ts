@@ -29,9 +29,9 @@ import {
   CUSTOM_ELEMENTS_SCHEMA,
   input,
   effect,
-  signal,
   viewChild,
   ElementRef,
+  OnDestroy,
 } from '@angular/core';
 import { extend, injectBeforeRender } from 'angular-three';
 import {
@@ -66,7 +66,7 @@ interface GlowParticleData {
     </ngt-group>
   `,
 })
-export class GlowParticleTextComponent {
+export class GlowParticleTextComponent implements OnDestroy {
   // Template refs
   readonly groupRef = viewChild.required<ElementRef<Group>>('groupRef');
 

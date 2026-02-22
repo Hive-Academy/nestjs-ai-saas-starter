@@ -425,7 +425,7 @@ export class AnimationService {
     target: ElementAnimationTarget,
     config: AnimationConfig
   ): void {
-    const { object3D, domElement: _domElement } = target;
+    const { object3D } = target;
     const duration = config.duration / 1000; // Convert to seconds
 
     switch (config.type) {
@@ -484,7 +484,7 @@ export class AnimationService {
     }
   }
 
-  private syncWithThreeStore(store: any): void {
+  private syncWithThreeStore(_store: any): void {
     // Implement synchronization with Angular Three store state
     // This would depend on the specific store structure
   }

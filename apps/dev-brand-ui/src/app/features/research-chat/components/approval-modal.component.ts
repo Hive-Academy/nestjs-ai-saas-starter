@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    @if (visible) {
+    @if (visible()) {
     <div class="modal-overlay" (click)="onOverlayClick($event)">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <!-- Header -->
@@ -30,7 +30,7 @@ import { FormsModule } from '@angular/forms';
           </div>
 
           <div class="report-preview">
-            <pre>{{ reportDraft }}</pre>
+            <pre>{{ reportDraft() }}</pre>
           </div>
         </div>
 
@@ -252,8 +252,8 @@ import { FormsModule } from '@angular/forms';
   ],
 })
 export class ApprovalModalComponent {
-  @Input() visible = false;
-  @Input() reportDraft = '';
+  readonly visible = input<boolean>(false);
+  readonly reportDraft = input<string>('');
   @Output() approve = new EventEmitter<void>();
   @Output() reject = new EventEmitter<void>();
 
@@ -265,7 +265,7 @@ export class ApprovalModalComponent {
     this.reject.emit();
   }
 
-  onOverlayClick(event: MouseEvent): void {
+  onOverlayClick(_event: MouseEvent): void {
     // Close modal when clicking overlay (but not modal content)
     this.onReject();
   }

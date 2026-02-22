@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
 import { CountUpDirective } from '../directives/count-up.directive';

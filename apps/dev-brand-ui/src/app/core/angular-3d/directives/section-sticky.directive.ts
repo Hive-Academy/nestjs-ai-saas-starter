@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
   output,
+  OnDestroy,
 } from '@angular/core';
 
 /**
@@ -61,23 +62,15 @@ import {
   selector: '[sectionSticky]',
   standalone: true,
 })
-export class SectionStickyDirective {
+export class SectionStickyDirective implements OnDestroy {
   // Modern signal-based inputs (Angular 18+)
-  readonly threshold = input<number>(0.0, {
-    alias: 'stickyThreshold',
-  });
+  readonly stickyThreshold = input<number>(0.0);
 
-  readonly rootMargin = input<string>('0px', {
-    alias: 'stickyRootMargin',
-  });
+  readonly stickyRootMargin = input<string>('0px');
 
-  readonly debounce = input<number>(50, {
-    alias: 'stickyDebounce',
-  });
+  readonly stickyDebounce = input<number>(50);
 
-  readonly debug = input<boolean>(false, {
-    alias: 'stickyDebug',
-  });
+  readonly stickyDebug = input<boolean>(false);
 
   // Signal output for reactive state changes
   readonly inViewChange = output<boolean>();
@@ -103,8 +96,8 @@ export class SectionStickyDirective {
 
     // React to input changes using effect
     effect(() => {
-      const currentThreshold = this.threshold();
-      const currentRootMargin = this.rootMargin();
+      const currentThreshold = this.stickyThreshold();
+      const currentRootMargin = this.stickyRootMargin();
       const initialized = this.isInitialized();
 
       // Only recreate observer if initialized and inputs changed
@@ -113,7 +106,7 @@ export class SectionStickyDirective {
           this.reconnectObserver();
         });
 
-        if (this.debug()) {
+        if (this.stickyDebug()) {
           console.log('[SectionStickyDirective] Config updated:', {
             threshold: currentThreshold,
             rootMargin: currentRootMargin,
@@ -146,8 +139,8 @@ export class SectionStickyDirective {
 
     const options: IntersectionObserverInit = {
       root: null, // viewport
-      rootMargin: this.rootMargin(),
-      threshold: this.threshold(),
+      rootMargin: this.stickyRootMargin(),
+      threshold: this.stickyThreshold(),
     };
 
     this.observer = new IntersectionObserver((entries) => {
@@ -160,11 +153,11 @@ export class SectionStickyDirective {
     // Start observing the section element
     this.observer.observe(this.elementRef.nativeElement);
 
-    if (this.debug()) {
+    if (this.stickyDebug()) {
       console.log('[SectionStickyDirective] Observer initialized', {
         element: this.elementRef.nativeElement.tagName,
-        threshold: this.threshold(),
-        rootMargin: this.rootMargin(),
+        threshold: this.stickyThreshold(),
+        rootMargin: this.stickyRootMargin(),
       });
     }
   }
@@ -179,7 +172,7 @@ export class SectionStickyDirective {
       clearTimeout(this.debounceTimer);
     }
 
-    const debounceMs = this.debounce();
+    const debounceMs = this.stickyDebounce();
 
     if (debounceMs > 0) {
       this.debounceTimer = setTimeout(() => {
@@ -203,7 +196,7 @@ export class SectionStickyDirective {
       this.renderer.removeClass(element, 'section-in-view');
     }
 
-    if (this.debug()) {
+    if (this.stickyDebug()) {
       console.log('[SectionStickyDirective] State updated:', {
         isIntersecting,
         element: element.tagName,

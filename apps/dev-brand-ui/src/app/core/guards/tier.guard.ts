@@ -1,4 +1,4 @@
-import { CanActivateFn, Router } from '@angular/router';
+import { type CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import type { UserTier } from '../models/auth';

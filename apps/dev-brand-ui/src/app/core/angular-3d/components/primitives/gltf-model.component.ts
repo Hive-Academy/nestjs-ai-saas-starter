@@ -198,11 +198,11 @@ export class GLTFModelComponent implements OnInit {
       if (!scene) return;
 
       // Trigger material update when any material input changes
-      const colorOverride = this.colorOverride();
-      const emissiveColor = this.emissiveColor();
-      const emissiveIntensity = this.emissiveIntensity();
-      const metalness = this.metalness();
-      const roughness = this.roughness();
+      this.colorOverride();
+      this.emissiveColor();
+      this.emissiveIntensity();
+      this.metalness();
+      this.roughness();
 
       this.applyMaterialOverrides(scene);
     });

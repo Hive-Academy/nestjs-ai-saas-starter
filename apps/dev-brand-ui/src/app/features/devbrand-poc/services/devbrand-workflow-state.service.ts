@@ -583,7 +583,7 @@ export class DevBrandWorkflowStateService {
    * Handle WORKFLOW_START event
    * @private
    */
-  private handleWorkflowStart(update: StreamUpdate): void {
+  private handleWorkflowStart(_update: StreamUpdate): void {
     this._executionState.update((state) => ({
       ...state,
       status: 'running',
@@ -595,7 +595,7 @@ export class DevBrandWorkflowStateService {
    * Handle WORKFLOW_END event
    * @private
    */
-  private handleWorkflowEnd(update: StreamUpdate): void {
+  private handleWorkflowEnd(_update: StreamUpdate): void {
     this._executionState.update((state) => ({
       ...state,
       status: 'completed',
@@ -941,7 +941,7 @@ export class DevBrandWorkflowStateService {
    *
    * @private
    */
-  private processTokenUpdate(token: TokenUpdate): void {
+  private processTokenUpdate(_token: TokenUpdate): void {
     // Determine which agent is generating tokens
     const agentId = this.currentAgent();
     if (!agentId) {

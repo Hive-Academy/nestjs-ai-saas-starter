@@ -34,10 +34,7 @@
 
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  ProgressIndicatorComponent,
-  type ProgressData,
-} from './progress-indicator.component';
+import { ProgressIndicatorComponent } from './progress-indicator.component';
 import type { CustomStreamEvent } from '../../features/devbrand-poc/models/stream-events.model';
 
 export type AgentStatusType = 'idle' | 'active' | 'completed' | 'error';

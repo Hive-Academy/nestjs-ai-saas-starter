@@ -279,17 +279,17 @@ export class ValuePropositions3DSceneComponent {
   /**
    * Active library index (0-10) from parent component
    */
-  activeLibraryIndex = input<number>(0);
+  readonly activeLibraryIndex = input<number>(0);
 
   /**
    * Scroll progress within current library section (0-1)
    */
-  scrollProgress = input<number>(0);
+  readonly scrollProgress = input<number>(0);
 
   /**
    * Show wireframe overlay for extra detail
    */
-  showWireframe = input<boolean>(true);
+  readonly showWireframe = input<boolean>(true);
 
   // Color constants using Colors3D configuration
   readonly indigoColor = Colors3D.neon.indigo.hex; // ChromaDB

@@ -390,7 +390,7 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
 
         // Dynamic imports may not be caught by no-restricted-imports
         // This is expected behavior and should be documented
-      } catch (error: unknown) {
+      } catch {
         // If caught, that's fine too
       }
     });
@@ -408,7 +408,7 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
           stdio: 'pipe',
           encoding: 'utf-8',
         });
-      } catch (error: unknown) {
+      } catch {
         // Behavior documented
       }
     });

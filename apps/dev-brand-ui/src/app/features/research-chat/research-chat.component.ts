@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, viewChild } from '@angular/core';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -72,15 +72,11 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
   private currentStreamingMessage = '';
 
   // ViewChild references for new components
-  @ViewChild(AgentStatusPanelComponent)
-  agentStatusPanel?: AgentStatusPanelComponent;
+  readonly agentStatusPanel = viewChild(AgentStatusPanelComponent);
 
   private streamSubscription?: Subscription;
-
-  constructor(
-    private researchService: ResearchService,
-    private conversationApi: ConversationApiService
-  ) {}
+  private readonly researchService = inject(ResearchService);
+  private readonly conversationApi = inject(ConversationApiService);
 
   ngOnInit(): void {
     this.addSystemMessage(
@@ -323,8 +319,9 @@ export class ResearchChatComponent implements OnInit, OnDestroy {
    */
   private handleCustomProgress(event: CustomStreamEvent): void {
     // Update agent status panel
-    if (this.agentStatusPanel) {
-      this.agentStatusPanel.updateAgentStatus(event);
+    const panel = this.agentStatusPanel();
+    if (panel) {
+      panel.updateAgentStatus(event);
     }
 
     // Also show as status message in chat

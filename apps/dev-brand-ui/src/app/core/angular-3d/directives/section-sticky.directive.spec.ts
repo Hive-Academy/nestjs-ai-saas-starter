@@ -20,8 +20,6 @@ class TestComponent {}
 describe('SectionStickyDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
   let sectionElement: DebugElement;
-  let targetElement: HTMLElement;
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestComponent],

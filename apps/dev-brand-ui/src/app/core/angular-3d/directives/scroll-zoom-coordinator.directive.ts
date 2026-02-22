@@ -284,7 +284,7 @@ export class ScrollZoomCoordinatorDirective
     // Monitor distance in animation loop for smooth updates
     const monitor = () => {
       if (this.controls) {
-        const state = this.getCurrentState();
+        this.getCurrentState();
 
         // Auto-enable/disable zoom based on state and scroll direction
         // If we're at a limit and not actively page scrolling, re-enable zoom
