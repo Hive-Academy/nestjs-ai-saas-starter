@@ -63,7 +63,7 @@ export default [
         { argsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/explicit-member-accessibility': [
-        'warn',
+        'off',
         { accessibility: 'explicit' },
       ],
     },

@@ -21,7 +21,7 @@
     "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
   },
   "peerDependencies": {
-    "@nx/angular": "21.5.1"
+    "@nx/angular": ">=21.0.0"
   },
   "sideEffects": false
 }

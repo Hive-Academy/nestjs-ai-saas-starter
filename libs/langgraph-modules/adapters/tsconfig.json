@@ -5,18 +5,6 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../../nestjs-neo4j"
-    },
-    {
-      "path": "../../nestjs-chromadb"
-    },
-    {
-      "path": "../memory"
-    },
-    {
-      "path": "../hitl"
-    },
-    {
       "path": "./tsconfig.lib.json"
     }
   ]

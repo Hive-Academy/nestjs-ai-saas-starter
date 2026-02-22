@@ -5,12 +5,6 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../memory"
-    },
-    {
-      "path": "../core"
-    },
-    {
       "path": "./tsconfig.lib.json"
     }
   ]

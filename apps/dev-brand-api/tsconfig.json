@@ -5,33 +5,6 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../../libs/langgraph-modules/adapters"
-    },
-    {
-      "path": "../../libs/nestjs-neo4j"
-    },
-    {
-      "path": "../../libs/nestjs-chromadb"
-    },
-    {
-      "path": "../../libs/langgraph-modules/workflow-engine"
-    },
-    {
-      "path": "../../libs/langgraph-modules/platform"
-    },
-    {
-      "path": "../../libs/langgraph-modules/monitoring"
-    },
-    {
-      "path": "../../libs/langgraph-modules/memory"
-    },
-    {
-      "path": "../../libs/langgraph-modules/hitl"
-    },
-    {
-      "path": "../../libs/langgraph-modules/core"
-    },
-    {
       "path": "./tsconfig.app.json"
     }
   ]
