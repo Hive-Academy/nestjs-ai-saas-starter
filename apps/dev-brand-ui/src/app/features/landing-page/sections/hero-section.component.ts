@@ -1,8 +1,8 @@
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Component } from '@angular/core';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.component';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
 @Component({
   selector: 'brand-hero-section',
@@ -10,7 +10,8 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
   imports: [
     CommonModule,
     NgOptimizedImage,
-    Scene3DComponent,
+    Scene3dComponent,
+    HeroSceneGraphComponent,
     ScrollAnimationDirective,
   ],
   template: `
@@ -19,7 +20,9 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
       style="perspective: 1000px;"
     >
       <!-- 3D Background Scene (spheres + cubes) -->
-      <app-scene-3d class="absolute inset-0" [sceneGraph]="heroSceneGraph" />
+      <a3d-scene-3d class="absolute inset-0">
+        <app-hero-scene-graph />
+      </a3d-scene-3d>
 
       <!-- DOM Content Overlay - Compact with breathing room for 3D depth -->
       <div

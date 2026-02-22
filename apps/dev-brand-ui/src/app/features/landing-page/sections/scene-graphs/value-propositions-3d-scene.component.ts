@@ -1,11 +1,18 @@
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+
 import {
-  ChangeDetectionStrategy,
-  Component,
-  CUSTOM_ELEMENTS_SCHEMA,
-  input,
-} from '@angular/core';
-import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
-import { NgtArgs } from 'angular-three';
+  BoxComponent,
+  SphereComponent,
+  CylinderComponent,
+  TorusComponent,
+  PolyhedronComponent,
+  GroupComponent,
+  AmbientLightComponent,
+  DirectionalLightComponent,
+  PointLightComponent,
+} from '@hive-academy/angular-3d';
+
+import { Colors3D } from '../../../../core/config/colors.config';
 
 /**
  * Value Propositions 3D Scene - Scroll-Driven Geometry Showcase
@@ -17,32 +24,42 @@ import { NgtArgs } from 'angular-three';
  * - Smooth transitions between geometries
  *
  * Geometry Mapping:
- * 01. ChromaDB     → Cube (vector storage)
- * 02. Neo4j        → Icosahedron (graph nodes)
- * 03. Memory       → Torus (circular context)
- * 04. Checkpoint   → Octahedron (state snapshots)
- * 05. Functional   → Tetrahedron (declarative structure)
- * 06. Multi-Agent  → Dodecahedron (coordination complexity)
- * 07. Platform     → Cylinder (cloud platform)
- * 08. Time-Travel  → Torus Knot (timeline loops)
- * 09. Monitoring   → Sphere (360° observability)
- * 10. HITL         → Cone (approval funnel)
- * 11. Streaming    → Capsule (data flow)
+ * 01. ChromaDB     -> Box (vector storage)
+ * 02. Neo4j        -> Icosahedron (graph nodes)
+ * 03. Memory       -> Torus (circular context)
+ * 04. Checkpoint   -> Octahedron (state snapshots)
+ * 05. Functional   -> Tetrahedron (declarative structure)
+ * 06. Multi-Agent  -> Dodecahedron (coordination complexity)
+ * 07. Platform     -> Cylinder (cloud platform)
+ * 08. Time-Travel  -> Torus (timeline loops - substitute for torus knot)
+ * 09. Monitoring   -> Sphere (360 observability)
+ * 10. HITL         -> Cylinder (approval funnel - cone substitute)
+ * 11. Streaming    -> Sphere (data flow - capsule substitute)
  */
 @Component({
   selector: 'app-value-propositions-3d-scene',
   standalone: true,
-  imports: [NgtArgs],
+  imports: [
+    BoxComponent,
+    SphereComponent,
+    CylinderComponent,
+    TorusComponent,
+    PolyhedronComponent,
+    GroupComponent,
+    AmbientLightComponent,
+    DirectionalLightComponent,
+    PointLightComponent,
+  ],
   template: `
-    <ngt-group>
+    <a3d-group>
       <!-- Ambient Light -->
-      <ngt-ambient-light [intensity]="0.4" />
+      <a3d-ambient-light [intensity]="0.4" />
 
       <!-- Directional Light -->
-      <ngt-directional-light [position]="[5, 5, 5]" [intensity]="1.2" />
+      <a3d-directional-light [position]="[5, 5, 5]" [intensity]="1.2" />
 
       <!-- Point Light (accent) -->
-      <ngt-point-light
+      <a3d-point-light
         [position]="[-5, 3, 0]"
         [intensity]="0.8"
         [color]="indigoColor"
@@ -50,229 +67,232 @@ import { NgtArgs } from 'angular-three';
 
       <!-- Active Library Geometry -->
       @switch (activeLibraryIndex()) { @case (0) {
-      <!-- ChromaDB: Cube -->
-      <ngt-mesh
+      <!-- ChromaDB: Box -->
+      <a3d-box
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-box-geometry *args="[2, 2, 2]" />
-        <ngt-mesh-standard-material
-          [color]="indigoColor"
-          [emissive]="indigoColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[2, 2, 2]"
+        [color]="indigoColor"
+        [emissive]="indigoColor"
+        [emissiveIntensity]="0.2"
+      />
       } @case (1) {
-      <!-- Neo4j: Icosahedron (graph nodes) -->
-      <ngt-mesh
+      <!-- Neo4j: Icosahedron (wireframe graph nodes) -->
+      <a3d-polyhedron
+        type="icosahedron"
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-icosahedron-geometry *args="[1.5, 0]" />
-        <ngt-mesh-standard-material
-          [color]="purpleColor"
-          [emissive]="purpleColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-          [wireframe]="true"
-        />
-      </ngt-mesh>
+        [args]="[1.5, 0]"
+        [color]="purpleColor"
+        [wireframe]="true"
+      />
       } @case (2) {
       <!-- Memory: Torus (circular context) -->
-      <ngt-mesh
+      <a3d-torus
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-torus-geometry *args="[1.2, 0.4, 16, 100]" />
-        <ngt-mesh-standard-material
-          [color]="cyanColor"
-          [emissive]="cyanColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.2, 0.4, 16, 100]"
+        [color]="cyanColor"
+        [emissive]="cyanColor"
+        [emissiveIntensity]="0.2"
+      />
       } @case (3) {
       <!-- Checkpoint: Octahedron (state snapshots) -->
-      <ngt-mesh
+      <a3d-polyhedron
+        type="octahedron"
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-octahedron-geometry *args="[1.5, 0]" />
-        <ngt-mesh-standard-material
-          [color]="greenColor"
-          [emissive]="greenColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.5, 0]"
+        [color]="greenColor"
+      />
       } @case (4) {
       <!-- Functional: Tetrahedron (declarative structure) -->
-      <ngt-mesh
+      <a3d-polyhedron
+        type="tetrahedron"
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-tetrahedron-geometry *args="[1.5, 0]" />
-        <ngt-mesh-standard-material
-          [color]="amberColor"
-          [emissive]="amberColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.5, 0]"
+        [color]="amberColor"
+      />
       } @case (5) {
       <!-- Multi-Agent: Dodecahedron (coordination) -->
-      <ngt-mesh
+      <a3d-polyhedron
+        type="dodecahedron"
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-dodecahedron-geometry *args="[1.5, 0]" />
-        <ngt-mesh-standard-material
-          [color]="pinkColor"
-          [emissive]="pinkColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.5, 0]"
+        [color]="pinkColor"
+      />
       } @case (6) {
       <!-- Platform: Cylinder (cloud platform) -->
-      <ngt-mesh
+      <a3d-cylinder
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-cylinder-geometry *args="[1, 1, 2, 32]" />
-        <ngt-mesh-standard-material
-          [color]="blueColor"
-          [emissive]="blueColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1, 1, 2, 32]"
+        [color]="blueColor"
+      />
       } @case (7) {
-      <!-- Time-Travel: Torus Knot (timeline loops) -->
-      <ngt-mesh
+      <!-- Time-Travel: Torus (timeline loops - substitute for torus knot) -->
+      <a3d-torus
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-torus-knot-geometry *args="[1, 0.3, 100, 16]" />
-        <ngt-mesh-standard-material
-          [color]="violetColor"
-          [emissive]="violetColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1, 0.3, 100, 16]"
+        [color]="violetColor"
+        [emissive]="violetColor"
+        [emissiveIntensity]="0.2"
+      />
       } @case (8) {
-      <!-- Monitoring: Sphere (360° observability) -->
-      <ngt-mesh
+      <!-- Monitoring: Sphere (360 observability) -->
+      <a3d-sphere
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-sphere-geometry *args="[1.5, 32, 32]" />
-        <ngt-mesh-standard-material
-          [color]="tealColor"
-          [emissive]="tealColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.5, 32, 32]"
+        [color]="tealColor"
+        [emissive]="tealColor"
+        [emissiveIntensity]="0.2"
+        [metalness]="0.3"
+        [roughness]="0.4"
+      />
       } @case (9) {
-      <!-- HITL: Cone (approval funnel) -->
-      <ngt-mesh
+      <!-- HITL: Cylinder with zero top radius (cone substitute) -->
+      <a3d-cylinder
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-cone-geometry *args="[1.2, 2.5, 32]" />
-        <ngt-mesh-standard-material
-          [color]="redColor"
-          [emissive]="redColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[0, 1.2, 2.5, 32]"
+        [color]="redColor"
+      />
       } @case (10) {
-      <!-- Streaming: Capsule (data flow) -->
-      <ngt-mesh
+      <!-- Streaming: Sphere (data flow - capsule substitute) -->
+      <a3d-sphere
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
         [scale]="getScale()"
-      >
-        <ngt-capsule-geometry *args="[0.6, 2, 4, 8]" />
-        <ngt-mesh-standard-material
-          [color]="cyanBrightColor"
-          [emissive]="cyanBrightColor"
-          [emissiveIntensity]="0.2"
-          [metalness]="0.3"
-          [roughness]="0.4"
-        />
-      </ngt-mesh>
+        [args]="[1.2, 32, 32]"
+        [color]="cyanBrightColor"
+        [emissive]="cyanBrightColor"
+        [emissiveIntensity]="0.2"
+        [metalness]="0.3"
+        [roughness]="0.4"
+      />
       } }
 
       <!-- Wireframe Overlay for Extra Detail -->
-      @if (showWireframe()) {
-      <ngt-mesh
+      @if (showWireframe()) { @switch (activeLibraryIndex()) { @case (0) {
+      <a3d-box
         [position]="[0, 0, 9.5]"
         [rotation]="getRotation()"
-        [scale]="[
-          getScale()[0] * 1.02,
-          getScale()[1] * 1.02,
-          getScale()[2] * 1.02
-        ]"
-      >
-        @switch (activeLibraryIndex()) { @case (0) {
-        <ngt-box-geometry *args="[2, 2, 2]" />
-        } @case (1) {
-        <ngt-icosahedron-geometry *args="[1.5, 0]" />
-        } @case (2) {
-        <ngt-torus-geometry *args="[1.2, 0.4, 16, 100]" />
-        } @case (3) {
-        <ngt-octahedron-geometry *args="[1.5, 0]" />
-        } @case (4) {
-        <ngt-tetrahedron-geometry *args="[1.5, 0]" />
-        } @case (5) {
-        <ngt-dodecahedron-geometry *args="[1.5, 0]" />
-        } @case (6) {
-        <ngt-cylinder-geometry *args="[1, 1, 2, 32]" />
-        } @case (7) {
-        <ngt-torus-knot-geometry *args="[1, 0.3, 100, 16]" />
-        } @case (8) {
-        <ngt-sphere-geometry *args="[1.5, 32, 32]" />
-        } @case (9) {
-        <ngt-cone-geometry *args="[1.2, 2.5, 32]" />
-        } @case (10) {
-        <ngt-capsule-geometry *args="[0.6, 2, 4, 8]" />
-        } }
-        <ngt-mesh-basic-material
-          [color]="whiteColor"
-          [wireframe]="true"
-          [opacity]="0.1"
-          [transparent]="true"
-        />
-      </ngt-mesh>
-      }
-    </ngt-group>
+        [scale]="getWireframeScale()"
+        [args]="[2, 2, 2]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (1) {
+      <a3d-polyhedron
+        type="icosahedron"
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.5, 0]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (2) {
+      <a3d-torus
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.2, 0.4, 16, 100]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (3) {
+      <a3d-polyhedron
+        type="octahedron"
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.5, 0]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (4) {
+      <a3d-polyhedron
+        type="tetrahedron"
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.5, 0]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (5) {
+      <a3d-polyhedron
+        type="dodecahedron"
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.5, 0]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (6) {
+      <a3d-cylinder
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1, 1, 2, 32]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (7) {
+      <a3d-torus
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1, 0.3, 100, 16]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (8) {
+      <a3d-sphere
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.5, 32, 32]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (9) {
+      <a3d-cylinder
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[0, 1.2, 2.5, 32]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } @case (10) {
+      <a3d-sphere
+        [position]="[0, 0, 9.5]"
+        [rotation]="getRotation()"
+        [scale]="getWireframeScale()"
+        [args]="[1.2, 32, 32]"
+        [color]="whiteColor"
+        [wireframe]="true"
+      />
+      } } }
+    </a3d-group>
   `,
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ValuePropositions3DSceneComponent {
@@ -311,12 +331,12 @@ export class ValuePropositions3DSceneComponent {
    */
   getRotation(): [number, number, number] {
     const progress = this.scrollProgress();
-    const baseRotation = this.activeLibraryIndex() * 0.5; // Offset per library
+    const baseRotation = this.activeLibraryIndex() * 0.5;
 
     return [
-      Math.PI * 0.2 + progress * Math.PI * 0.3, // X: gentle tilt + scroll
-      baseRotation + progress * Math.PI * 2, // Y: full rotation with scroll
-      Math.PI * 0.1, // Z: slight tilt
+      Math.PI * 0.2 + progress * Math.PI * 0.3,
+      baseRotation + progress * Math.PI * 2,
+      Math.PI * 0.1,
     ];
   }
 
@@ -326,9 +346,16 @@ export class ValuePropositions3DSceneComponent {
    */
   getScale(): [number, number, number] {
     const progress = this.scrollProgress();
-    // Breathing: 0.8 → 1.2 → 0.8
     const breathe = 0.8 + Math.sin(progress * Math.PI) * 0.4;
 
     return [breathe, breathe, breathe];
+  }
+
+  /**
+   * Get wireframe overlay scale (slightly larger than main geometry)
+   */
+  getWireframeScale(): [number, number, number] {
+    const scale = this.getScale();
+    return [scale[0] * 1.02, scale[1] * 1.02, scale[2] * 1.02];
   }
 }

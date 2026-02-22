@@ -6,15 +6,17 @@
  *
  * Features:
  * - Central planet with rotation
- * - Multi-layer star field (NgtsPointsBuffer)
- * - Nebula clouds (NgtsPointsBuffer)
+ * - Multi-layer star field
+ * - Nebula clouds
  * - Themed gradient background
  * - Customizable lighting setup
  * - Reactive theme switching via SpaceThemeStore
  *
  * Usage:
  * ```html
- * <app-scene-3d [sceneGraph]="HeroSpaceSceneComponent" />
+ * <a3d-scene-3d [cameraPosition]="[0, 0, 15]">
+ *   <app-hero-space-scene />
+ * </a3d-scene-3d>
  * ```
  *
  * Theme switching handled automatically via SpaceThemeStore injection.
@@ -23,63 +25,64 @@
 import { Component, inject } from '@angular/core';
 import { OrbitControls } from 'three-stdlib';
 
-// Import space primitives
-import { BloomEffectComponent } from '../../../../core/angular-3d/components/effects/bloom-effect.component';
-import { OrbitControlsComponent } from '../../../../core/angular-3d/components/orbit-controls.component';
-import { NebulaVolumetricComponent } from '../../../../core/angular-3d/components/primitives/nebula-volumetric.component';
-import { PlanetComponent } from '../../../../core/angular-3d/components/primitives/planet.component';
-import { SmokeParticleTextComponent } from '../../../../core/angular-3d/components/primitives/smoke-particle-text.component';
-import { StarFieldEnhancedComponent } from '../../../../core/angular-3d/components/primitives/star-field-enhanced.component';
-import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
-
-// Import theme store and types
-import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
-import { SpaceThemeStore } from '../../../../core/angular-3d/services/space-theme.store';
-import type { SpaceTheme } from '../../../../core/angular-3d/types/space-theme.types';
-import type { SceneLighting } from '../../../../core/angular-3d/types/scene-lighting.types';
-
-import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
-import type { SpaceFlightWaypoint } from '../../../../core/angular-3d';
-import { NebulaComponent } from '../../../../core/angular-3d/components/primitives/nebula.component';
-import { SVGIconComponent } from '../../../../core/angular-3d/components/primitives/svg-icon.component';
-import { ViewportPositioner } from '../../../../core/angular-3d/utils/viewport-3d-positioning';
-import { InstancedParticleTextComponent } from '../../../../core/angular-3d/components/primitives';
-import { Rotate3dDirective } from '../../../../core/angular-3d/directives/rotate-3d.directive';
+// Import 3D primitives, directives, and lights from the library
 import {
+  BloomEffectComponent,
+  OrbitControlsComponent,
+  NebulaVolumetricComponent,
+  PlanetComponent,
+  SmokeTroikaTextComponent,
+  StarFieldComponent,
+  GltfModelComponent,
+  NebulaComponent,
+  SvgIconComponent,
+  ParticleTextComponent,
+  Rotate3dDirective,
   ScrollZoomCoordinatorDirective,
-  type ScrollZoomState,
-} from '../../../../core/angular-3d/directives';
+  Float3dDirective,
+  SpaceFlight3dDirective,
+  AmbientLightComponent,
+  DirectionalLightComponent,
+} from '@hive-academy/angular-3d';
+
+import type {
+  SpaceFlightWaypoint,
+  ScrollZoomDetailedState,
+  OrbitControlsChangeEvent,
+} from '@hive-academy/angular-3d';
+
+// Import local-only modules (relocated from angular-3d)
+import { Colors3D } from '../../../../core/config/colors.config';
+import { SpaceThemeStore } from '../../../../core/stores/space-theme.store';
+import type { SpaceTheme } from '../../../../core/types/space-theme.types';
+import { ViewportPositioner } from '../../../../core/utils/viewport-3d-positioning';
 
 @Component({
   selector: 'app-hero-space-scene',
   standalone: true,
   imports: [
     PlanetComponent,
-    StarFieldEnhancedComponent,
+    StarFieldComponent,
     NebulaVolumetricComponent,
     BloomEffectComponent,
     OrbitControlsComponent,
     NebulaComponent,
-    GLTFModelComponent,
-    SmokeParticleTextComponent,
-    SVGIconComponent,
-    SceneLightingComponent,
-    InstancedParticleTextComponent,
+    GltfModelComponent,
+    SmokeTroikaTextComponent,
+    SvgIconComponent,
+    ParticleTextComponent,
     Rotate3dDirective,
     ScrollZoomCoordinatorDirective,
+    Float3dDirective,
+    SpaceFlight3dDirective,
+    AmbientLightComponent,
+    DirectionalLightComponent,
   ],
   template: `
     <!-- ================================ -->
-    <!-- SCENE BACKGROUND COLOR -->
-    <!-- ================================ -->
-    <!-- <ngt-color attach="background" *args="[backgroundColorHex]" /> -->
-
-    <!-- ================================ -->
     <!-- CAMERA CONTROLS (OrbitControls with Scroll Coordination) -->
     <!-- ================================ -->
-    <!-- Click and drag to orbit around viewport center, scroll to zoom -->
-    <!-- When max zoom distance is reached, additional scroll triggers page scroll -->
-    <app-orbit-controls
+    <a3d-orbit-controls
       scrollZoomCoordinator
       [orbitControls]="orbitControlsInstance"
       [target]="[0, 0, 0]"
@@ -92,7 +95,7 @@ import {
       [enablePan]="false"
       [scrollThreshold]="0.5"
       (controlsChange)="onControlsChange($event)"
-      (stateChange)="onScrollZoomStateChange($event)"
+      (detailedStateChange)="onScrollZoomStateChange($event)"
       (scrollTransition)="onScrollTransition($event)"
       (zoomEnabledChange)="onZoomEnabledChange($event)"
     />
@@ -100,51 +103,58 @@ import {
     <!-- ================================ -->
     <!-- LIGHTING SETUP (Theme-based) -->
     <!-- ================================ -->
-    <app-scene-lighting [config]="spaceLighting" />
+    <a3d-ambient-light
+      [color]="ambientLightColor"
+      [intensity]="ambientLightIntensity"
+    />
+    <a3d-directional-light
+      [color]="directionalLightColor"
+      [intensity]="directionalLightIntensity"
+      [position]="[30, 15, 25]"
+      [castShadow]="true"
+    />
 
-    <!-- Mini Robot #1 - Flying through space (Smaller scale for new viewport) -->
-    <app-gltf-model
+    <!-- Mini Robot #1 - Flying through space -->
+    <a3d-gltf-model
       [modelPath]="'/assets/3d/mini_robot.glb'"
       [position]="[3, 6, -8]"
       [scale]="0.05"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [emissiveIntensity]="0.2"
       [metalness]="0.4"
       [roughness]="0.6"
-      [spaceFlightPath]="robot1FlightPath"
-      [spaceFlightRotations]="4"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
+      a3dSpaceFlight3d
+      [flightPath]="robot1FlightPath"
+      [rotationsPerCycle]="4"
+      [autoStart]="true"
+      [loop]="true"
     />
 
-    <!-- Robo Head - Flying through space (Smaller scale for new viewport) -->
-    <app-gltf-model
+    <!-- Robo Head - Flying through space -->
+    <a3d-gltf-model
       [modelPath]="'/assets/3d/robo_head/scene.gltf'"
       [position]="[4, 6, -6]"
       [scale]="1"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [emissiveIntensity]="0.3"
       [metalness]="0.5"
       [roughness]="0.5"
-      [spaceFlightPath]="robot2FlightPath"
-      [spaceFlightRotations]="4"
-      [spaceFlightAutoStart]="true"
-      [spaceFlightLoop]="true"
+      a3dSpaceFlight3d
+      [flightPath]="robot2FlightPath"
+      [rotationsPerCycle]="4"
+      [autoStart]="true"
+      [loop]="true"
     />
 
     <!-- ================================ -->
-    <!-- REALISTIC EARTH PLANET (COMMENTED OUT - Replaced with 3D Text) -->
+    <!-- REALISTIC EARTH PLANET -->
     <!-- ================================ -->
-
-    <app-gltf-model
+    <a3d-gltf-model
       [modelPath]="'/assets/3d/planet_earth/scene.gltf'"
       [position]="planetPosition"
       [scale]="2.3"
       [rotation]="[0, 0, 0]"
       [useDraco]="false"
-      [emissiveIntensity]="0.05"
       [metalness]="0.2"
       [roughness]="0.8"
       rotate3d
@@ -156,22 +166,20 @@ import {
       }"
     />
 
-    <app-planet
+    <a3d-planet
       [position]="moonPosition"
       [radius]="darkPlanetRadius"
       [segments]="150"
       [textureUrl]="'assets/moon.jpg'"
-      [baseColor]="darkPlanetBaseColor"
-      [emissiveColor]="darkPlanetEmissiveColor"
+      [color]="darkPlanetBaseColor"
+      [emissive]="darkPlanetEmissiveColor"
       [emissiveIntensity]="darkPlanetEmissiveIntensity"
       [glowColor]="darkPlanetGlowColor"
       [glowIntensity]="darkPlanetGlowIntensity"
       [glowDistance]="20"
-      [rotationSpeed]="0.9"
-      [rotationAxis]="'y'"
     />
 
-    <app-instanced-particle-text
+    <a3d-particle-text
       text="Build Production Grade AI Apps"
       [position]="topTextPosition"
       [fontSize]="25"
@@ -185,7 +193,7 @@ import {
       [pulseSpeed]="0.005"
     />
 
-    <app-instanced-particle-text
+    <a3d-particle-text
       text="With Typescript Patterns"
       [position]="textCenterPosition"
       [fontSize]="25"
@@ -199,7 +207,7 @@ import {
       [pulseSpeed]="0.005"
     />
 
-    <app-instanced-particle-text
+    <a3d-particle-text
       text="You Already Know"
       [position]="bottomTextPosition"
       [fontSize]="25"
@@ -213,41 +221,35 @@ import {
       [pulseSpeed]="0.005"
     />
 
-    <!-- colors.accent.blueViolet.hex -->
-
-    <!-- Center Text: "With TypeScript Patterns" (White Smoke)-->
-    <app-smoke-particle-text
+    <!-- Center Text: "Hive Academy" (White Smoke) -->
+    <a3d-smoke-troika-text
       text="Hive Academy"
       [position]="hiveAcademyPosition"
       [fontSize]="40"
-      [particleDensity]="60"
-      [particleSize]="0.05"
       [smokeColor]="colors.material.white.hex"
-      [opacity]="0.9"
-      [driftSpeed]="0.015"
-      [driftAmount]="0.04"
+      [fillOpacity]="0.9"
+      [flowSpeed]="0.015"
+      [edgeSoftness]="0.04"
     />
 
     <!-- ================================ -->
     <!-- TECH STACK LOGOS (SVG Icons) -->
     <!-- ================================ -->
-    <!-- Circular orbit pattern around the center -->
 
-    <!-- NestJS Logo - Top Right (Official Red) - Much bigger and rotated -->
-    <app-svg-icon
+    <!-- NestJS Logo -->
+    <a3d-svg-icon
       [svgPath]="'/assets/images/logos/nestjs.svg'"
       [position]="logoPositions.nestjs"
       [scale]="0.05"
       [rotation]="[Math.PI, 0, 0]"
-      [extrudeDepth]="0.5"
-      [colorOverride]="true"
+      [depth]="0.5"
+      [useNativeColors]="false"
       [color]="colors.brand.nestjs.hex"
       [emissive]="colors.brand.nestjs.hex"
       [emissiveIntensity]="0.3"
       [metalness]="0.2"
       [roughness]="0.6"
-      [castShadow]="true"
-      [receiveShadow]="true"
+      float3d
       [floatConfig]="{
         height: 0.2,
         speed: 2000,
@@ -257,21 +259,20 @@ import {
       }"
     />
 
-    <!-- LangChain Logo - Top Left (Dark Green with Emerald Glow) - Extra large and rotated -->
-    <app-svg-icon
+    <!-- LangChain Logo -->
+    <a3d-svg-icon
       [svgPath]="'/assets/images/logos/langchain.svg'"
       [position]="logoPositions.langchain"
       [scale]="0.2"
       [rotation]="[Math.PI, 0, 0]"
-      [extrudeDepth]="0.5"
-      [colorOverride]="true"
+      [depth]="0.5"
+      [useNativeColors]="false"
       [color]="colors.brand.langchain.hex"
       [emissive]="colors.accent.emerald.hex"
       [emissiveIntensity]="0.4"
       [metalness]="0.2"
       [roughness]="0.6"
-      [castShadow]="true"
-      [receiveShadow]="true"
+      float3d
       [floatConfig]="{
         height: 0.2,
         speed: 2000,
@@ -281,18 +282,17 @@ import {
       }"
     />
 
-    <!-- ChromaDB Logo - Bottom Left (Multi-color: Blue, Yellow, Red) - Much bigger and rotated -->
-    <app-svg-icon
+    <!-- ChromaDB Logo -->
+    <a3d-svg-icon
       [svgPath]="'/assets/images/logos/chroma.svg'"
       [position]="logoPositions.chroma"
       [scale]="1"
       [rotation]="[Math.PI, 0, 0]"
-      [extrudeDepth]="0.5"
+      [depth]="0.5"
       [emissiveIntensity]="0.5"
       [metalness]="0.1"
       [roughness]="0.7"
-      [castShadow]="true"
-      [receiveShadow]="true"
+      float3d
       [floatConfig]="{
         height: 0.2,
         speed: 2000,
@@ -302,21 +302,20 @@ import {
       }"
     />
 
-    <!-- Neo4j Logo - Bottom Right (Official Blue) - Much bigger and rotated -->
-    <app-svg-icon
+    <!-- Neo4j Logo -->
+    <a3d-svg-icon
       [svgPath]="'/assets/images/logos/neo4j.svg'"
       [position]="logoPositions.neo4j"
       [scale]="0.05"
       [rotation]="[Math.PI, 0, 0]"
-      [extrudeDepth]="0.5"
-      [colorOverride]="true"
+      [depth]="0.5"
+      [useNativeColors]="false"
       [color]="colors.brand.neo4j.hex"
       [emissive]="colors.brand.neo4j.hex"
       [emissiveIntensity]="0.3"
       [metalness]="0.2"
       [roughness]="0.6"
-      [castShadow]="true"
-      [receiveShadow]="true"
+      float3d
       [floatConfig]="{
         height: 0.2,
         speed: 2000,
@@ -329,46 +328,31 @@ import {
     <!-- ================================ -->
     <!-- ENHANCED STAR FIELD (Multi-size with glow) -->
     <!-- ================================ -->
-    <!-- Background stars (distant) - Parallax from camera movement -->
-    <app-star-field-enhanced
-      [starCount]="3000"
-      [radius]="50"
-      [enableTwinkle]="true"
-    />
+    <a3d-star-field [starCount]="3000" [radius]="50" [enableTwinkle]="true" />
 
-    <!-- Midground stars (brighter) - Natural depth parallax -->
-    <app-star-field-enhanced
-      [starCount]="2000"
-      [radius]="40"
-      [enableTwinkle]="false"
-    />
+    <a3d-star-field [starCount]="2000" [radius]="40" [enableTwinkle]="false" />
 
-    <!-- Foreground stars (closest, brightest) - Depth-based parallax -->
-    <app-star-field-enhanced
-      [starCount]="2500"
-      [radius]="30"
-      [enableTwinkle]="true"
-    />
+    <a3d-star-field [starCount]="2500" [radius]="30" [enableTwinkle]="true" />
 
-    <!-- MAIN NEBULA - Far background layer (much further back) -->
-    <app-nebula
-      [particleCount]="60"
+    <!-- MAIN NEBULA -->
+    <a3d-nebula
+      [cloudCount]="60"
       [radius]="20"
       [colorPalette]="['#ffffff', '#cccccc']"
       [minSize]="5"
       [maxSize]="20"
-      [flow]="false"
+      [enableFlow]="false"
       [position]="nebulaPosition"
     />
 
-    <app-nebula-volumetric
+    <a3d-nebula-volumetric
       [width]="60"
       [height]="20"
       [layers]="2"
       [opacity]="0.9"
-      [primaryColor]="'#0088ff'"
-      [secondaryColor]="'#00d4ff'"
-      [tertiaryColor]="'#ff6bd4'"
+      [primaryColor]="34047"
+      [secondaryColor]="54527"
+      [tertiaryColor]="16739284"
       [enableFlow]="false"
       [flowSpeed]="0.8"
       [noiseScale]="0.03"
@@ -383,73 +367,44 @@ import {
     <!-- ================================ -->
     <!-- BLOOM POST-PROCESSING -->
     <!-- ================================ -->
-    <!-- Very subtle bloom to prevent eye strain -->
-    <app-bloom-effect
-      [kernelSize]="3"
-      [luminanceThreshold]="0.8"
-      [luminanceSmoothing]="0.5"
-      [intensity]="0.5"
-    />
+    <a3d-bloom-effect [threshold]="0.8" [strength]="0.5" [radius]="0.4" />
   `,
 })
 export class HeroSpaceSceneComponent {
-  // ✅ Inject theme store for reactive theme support
+  // Inject theme store for reactive theme support
   private readonly themeStore = inject(SpaceThemeStore);
 
-  // ✅ Math constant for template
+  // Math constant for template
   readonly Math = Math;
 
-  // ✅ Color configuration for 3D elements
+  // Color configuration for 3D elements
   readonly colors = Colors3D;
 
-  // ✅ Store orbit controls reference for scroll coordinator
+  // Store orbit controls reference for scroll coordinator
   public orbitControlsInstance?: OrbitControls;
 
-  // ✅ Reactive zoom enable/disable for scroll coordination
+  // Reactive zoom enable/disable for scroll coordination
   public isZoomEnabled = true;
 
-  // ✅ Viewport positioner for CSS-like positioning in 3D
-  // Camera is at Z=20, elements positioned at Z=0 plane (viewport plane)
+  // Viewport positioner for CSS-like positioning in 3D
   private readonly positioner = new ViewportPositioner({
     fov: 75,
     cameraZ: 20,
     viewportZ: 0,
   });
 
-  // ✅ Computed getter for current theme
+  // Computed getter for current theme
   get theme(): SpaceTheme {
     return this.themeStore.currentTheme();
   }
 
-  // ✅ Scene lighting configuration (reactive to theme)
-  get spaceLighting(): SceneLighting {
-    return {
-      ambient: {
-        color: this.ambientLightColor,
-        intensity: this.ambientLightIntensity,
-      },
-      directional: [
-        {
-          color: this.directionalLightColor,
-          intensity: this.directionalLightIntensity,
-          position: [30, 15, 25],
-          castShadow: true,
-          shadowMapSize: 2048,
-        },
-      ],
-    };
-  }
-
   // ================================
   // TEXT POSITIONS (Viewport-mapped)
-  // Hero section centered layout with 3 lines - closer together
   // ================================
 
   readonly nebulaPosition = this.positioner.getPosition('top-right');
-
   readonly nebulaVolumetricPosition = this.positioner.getPosition('top-right');
 
-  /** Top text: "Build Production Grade AI Apps" - positioned at 38% from top */
   readonly topTextPosition = this.positioner.getPosition({
     x: '50%',
     y: '38%',
@@ -460,13 +415,11 @@ export class HeroSpaceSceneComponent {
     y: '50%',
   });
 
-  /** Bottom text: "You Already Know" - positioned at 62% from top */
   readonly bottomTextPosition = this.positioner.getPosition({
     x: '50%',
     y: '62%',
   });
 
-  /** Center text: "Hive Academy" - positioned at center (50%) */
   readonly hiveAcademyPosition = this.positioner.getPosition(
     { x: '100%', y: '50%' },
     { offsetZ: -5 }
@@ -481,80 +434,54 @@ export class HeroSpaceSceneComponent {
     offsetX: 10,
     offsetY: -5,
   });
+
   // ================================
   // LOGO POSITIONS (Viewport-mapped)
   // ================================
-
-  /**
-   * Logo positions using viewport percentages
-   * Positioned in corners of the viewport for clear visibility
-   */
   readonly logoPositions = {
     nestjs: this.positioner.getPosition(
       { x: '20%', y: '85%' },
       { offsetZ: -15 }
-    ), // Top right
+    ),
     langchain: this.positioner.getPosition(
       { x: '40%', y: '85%' },
       { offsetZ: -15 }
-    ), // Top left
+    ),
     chroma: this.positioner.getPosition(
       { x: '60%', y: '85%' },
       { offsetZ: -15 }
-    ), // Bottom left
+    ),
     neo4j: this.positioner.getPosition(
       { x: '80%', y: '85%' },
       { offsetZ: -15 }
-    ), // Bottom right
+    ),
   };
 
   // ================================
   // ROBOT FLIGHT PATHS
   // ================================
-
-  /**
-   * Robot 1 (Mini Robot - Orange) - HIGH ALTITUDE PATH
-   * Flies in upper regions with dramatic height changes
-   * Stays mostly above the earth, diving and climbing
-   */
   readonly robot1FlightPath: SpaceFlightWaypoint[] = [
-    // Phase 1: High approach from far upper left
-    { position: [-12, 8, -8], duration: 10, ease: 'easeInOut' },
-    // Phase 2: Soar across the top, very high
-    { position: [10, 12, -5], duration: 8, ease: 'easeInOut' },
-    // Phase 3: Dramatic dive toward viewer
-    { position: [-6, 4, 10], duration: 9, ease: 'easeIn' },
-    // Phase 4: Climb back up and away
-    { position: [8, 10, -12], duration: 11, ease: 'easeOut' },
-    // Phase 5: High arc return to start
-    { position: [-12, 8, -8], duration: 8, ease: 'easeInOut' },
+    { position: [-12, 8, -8], duration: 10, easing: 'easeInOut' },
+    { position: [10, 12, -5], duration: 8, easing: 'easeInOut' },
+    { position: [-6, 4, 10], duration: 9, easing: 'easeIn' },
+    { position: [8, 10, -12], duration: 11, easing: 'easeOut' },
+    { position: [-12, 8, -8], duration: 8, easing: 'easeInOut' },
   ];
 
-  /**
-   * Robot 2 (Robo Head - Cyan) - LOW DEPTH PATH
-   * Flies in lower regions with deep forward/backward movement
-   * Stays mostly below earth level, exploring depth
-   */
   readonly robot2FlightPath: SpaceFlightWaypoint[] = [
-    // Phase 1: Start deep behind and low
-    { position: [4, -3, -8], duration: 9, ease: 'easeOut' },
-    // Phase 2: Emerge from behind, moving left and forward
-    { position: [-8, -5, -5], duration: 10, ease: 'easeInOut' },
-    // Phase 3: Cross low to the right side
-    { position: [12, -4, 16], duration: 8, ease: 'easeInOut' },
-    // Phase 4: Dive deep and right
-    { position: [10, -6, -15], duration: 11, ease: 'easeIn' },
-    // Phase 5: Low sweep back to center-left
-    { position: [-6, -5, -10], duration: 9, ease: 'easeInOut' },
-    // Phase 6: Return to deep starting position
-    { position: [4, -3, -20], duration: 8, ease: 'easeInOut' },
+    { position: [4, -3, -8], duration: 9, easing: 'easeOut' },
+    { position: [-8, -5, -5], duration: 10, easing: 'easeInOut' },
+    { position: [12, -4, 16], duration: 8, easing: 'easeInOut' },
+    { position: [10, -6, -15], duration: 11, easing: 'easeIn' },
+    { position: [-6, -5, -10], duration: 9, easing: 'easeInOut' },
+    { position: [4, -3, -20], duration: 8, easing: 'easeInOut' },
   ];
 
   // ================================
   // LIGHTING (Theme-based getters)
   // ================================
   get ambientLightIntensity(): number {
-    return this.theme.lights.ambient.intensity * 0.05; // Very low for space atmosphere
+    return this.theme.lights.ambient.intensity * 0.05;
   }
 
   get ambientLightColor(): number {
@@ -562,7 +489,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get directionalLightIntensity(): number {
-    return this.theme.lights.directional.intensity * 0.3; // Much lower to prevent eye strain
+    return this.theme.lights.directional.intensity * 0.3;
   }
 
   get directionalLightColor(): number {
@@ -612,32 +539,31 @@ export class HeroSpaceSceneComponent {
   }
 
   get backgroundColorHex(): string {
-    // Use darkest background color for scene background
     const color =
       this.theme.background.colors[this.theme.background.colors.length - 1];
     return `#${color.toString(16).padStart(6, '0')}`;
   }
 
-  readonly darkPlanetRadius = 3.0; // Human-scale units for 55% viewport coverage
+  readonly darkPlanetRadius = 3.0;
 
   get darkPlanetBaseColor(): number {
-    return Colors3D.material.white.hex; // White base to let texture colors show naturally
+    return Colors3D.material.white.hex;
   }
 
   get darkPlanetEmissiveColor(): number {
-    return Colors3D.planet.orchid.hex; // Subtle blue atmospheric glow
+    return Colors3D.planet.orchid.hex;
   }
 
   get darkPlanetEmissiveIntensity(): number {
-    return 0.3; // Very subtle emissive for atmospheric rim lighting
+    return 0.3;
   }
 
   get darkPlanetGlowColor(): number {
-    return Colors3D.planet.atmosphereCyan.hex; // Cyan/blue atmospheric glow (like Earth's atmosphere)
+    return Colors3D.planet.atmosphereCyan.hex;
   }
 
   get darkPlanetGlowIntensity(): number {
-    return 0.2; // Moderate glow for realistic atmospheric halo
+    return 0.2;
   }
 
   // ================================
@@ -648,7 +574,7 @@ export class HeroSpaceSceneComponent {
   }
 
   get starSize(): number {
-    return this.theme.stars.sizes.min; // Tiny pinpoints for realistic star appearance
+    return this.theme.stars.sizes.min;
   }
 
   get starOpacity(): number {
@@ -674,53 +600,25 @@ export class HeroSpaceSceneComponent {
   // SCROLL-ZOOM COORDINATION
   // ================================
 
-  /**
-   * Captures the OrbitControls instance from the controls component
-   * This is needed to pass it to the scroll coordinator directive
-   */
-  onControlsChange(event: { distance: number; controls: OrbitControls }): void {
-    // Store controls instance on first change event
+  onControlsChange(event: OrbitControlsChangeEvent): void {
     if (!this.orbitControlsInstance) {
       this.orbitControlsInstance = event.controls;
-      console.log('✅ OrbitControls instance captured for scroll coordinator');
     }
   }
 
-  /**
-   * Handles scroll-zoom state changes from the coordinator directive
-   * Logs state for debugging and can be used for UI feedback
-   */
-  onScrollZoomStateChange(state: ScrollZoomState): void {
-    // Optional: Add visual feedback when at zoom limits
+  onScrollZoomStateChange(state: ScrollZoomDetailedState): void {
     if (state.atMaxDistance) {
-      console.log('📏 At max zoom distance - page scroll enabled');
+      console.log('At max zoom distance - page scroll enabled');
     } else if (state.atMinDistance) {
-      console.log('📏 At min zoom distance - page scroll enabled');
+      console.log('At min zoom distance - page scroll enabled');
     }
-
-    // Optional: Store state for UI indicators
-    // this.currentZoomState = state;
   }
 
-  /**
-   * Handles transitions from 3D zoom to page scroll
-   * Can be used to trigger visual effects or analytics
-   */
   onScrollTransition(event: { direction: 'up' | 'down' }): void {
-    console.log(`🔄 Transitioning to page scroll: ${event.direction}`);
-
-    // Optional: Add visual feedback or analytics
-    // if (event.direction === 'down') {
-    //   this.showScrollHint = true;
-    // }
+    console.log(`Transitioning to page scroll: ${event.direction}`);
   }
 
-  /**
-   * Handles zoom enable/disable changes from the scroll coordinator
-   * Updates the reactive property that's bound to [enableZoom]
-   */
   onZoomEnabledChange(enabled: boolean): void {
     this.isZoomEnabled = enabled;
-    console.log(`🎮 Zoom ${enabled ? 'enabled' : 'disabled'} via binding`);
   }
 }

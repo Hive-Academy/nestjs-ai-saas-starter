@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   Component,
+  computed,
   ElementRef,
   signal,
   viewChild,
@@ -9,6 +10,7 @@ import {
 
 import { HeroSectionComponent } from './sections/hero-section.component';
 import { HeroSectionSpaceComponent } from './sections/hero-section-space.component';
+import { MetaballHeroSectionComponent } from './sections/metaball-hero-section.component';
 import { ProblemSolutionSectionComponent } from './sections/problem-solution-section.component';
 import { ValuePropositionsSectionComponent } from './sections/value-propositions-section.component';
 import { WorkflowExamplesSectionComponent } from './sections/workflow-examples-section.component';
@@ -37,6 +39,7 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
     CommonModule,
     HeroSectionComponent,
     HeroSectionSpaceComponent,
+    MetaballHeroSectionComponent,
     ProblemSolutionSectionComponent,
     ValuePropositionsSectionComponent,
     WorkflowExamplesSectionComponent,
@@ -53,10 +56,11 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
   >
     <!-- Hero Section Toggle Button (Top Left) -->
     <button
-      (click)="toggleHeroVersion()"
+      (click)="cycleHeroVersion()"
       class="fixed top-4 right-6 z-[1000] px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/20 text-white text-sm font-medium hover:bg-black/60 transition-all duration-300 shadow-lg"
+      aria-label="Switch hero section variant"
     >
-      {{ useSpaceHero() ? '🌌 Space' : '☀️ Sky' }} Hero
+      {{ heroLabel() }} Hero
       <span class="text-xs opacity-70 ml-2">Click to switch</span>
     </button>
 
@@ -68,8 +72,9 @@ import { UserProfileComponent } from '../../shared/components/auth/user-profile.
 
     <main class="w-full " role="main">
       <div id="hero" class="section-container">
-        @if (useSpaceHero()) { <brand-hero-section-space /> } @else {
-        <brand-hero-section /> }
+        @switch (heroVariant()) { @case ('metaball') {
+        <brand-metaball-hero-section /> } @case ('space') {
+        <brand-hero-section-space /> } @default { <brand-hero-section /> } }
       </div>
       <div id="problem-solution" class="section-container">
         <app-problem-solution-section />
@@ -128,7 +133,18 @@ export class LandingPageComponent implements AfterViewInit {
     viewChild.required<ElementRef<HTMLElement>>('landingContainer');
   readonly showNavigationDots = signal(true);
   readonly smoothScrollEnabled = signal(true);
-  readonly useSpaceHero = signal(true);
+  readonly heroVariant = signal<'metaball' | 'space' | 'sky'>('metaball');
+  readonly heroLabel = computed(() => {
+    const labels: Record<string, string> = {
+      metaball: 'Metaball',
+      space: 'Space',
+      sky: 'Sky',
+    };
+    return labels[this.heroVariant()];
+  });
+
+  /** @deprecated kept for backward compat with any external refs */
+  readonly useSpaceHero = computed(() => this.heroVariant() === 'space');
   readonly isLoaded = signal(false);
   readonly loadingProgress = signal(0);
   readonly sections = signal([
@@ -203,6 +219,18 @@ export class LandingPageComponent implements AfterViewInit {
   }
 
   toggleHeroVersion(): void {
-    this.useSpaceHero.update((useSpace) => !useSpace);
+    this.cycleHeroVersion();
+  }
+
+  cycleHeroVersion(): void {
+    const variants: Array<'metaball' | 'space' | 'sky'> = [
+      'metaball',
+      'space',
+      'sky',
+    ];
+    this.heroVariant.update((current) => {
+      const idx = variants.indexOf(current);
+      return variants[(idx + 1) % variants.length];
+    });
   }
 }

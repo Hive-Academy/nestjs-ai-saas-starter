@@ -3,55 +3,48 @@
  *
  * Renders minimal 3D background elements for the CTA section:
  * - Ambient + directional lighting
- * - 3-5 floating spheres with subtle animations
- * - Low opacity (30-40%) for background layer effect
+ * - 3 floating polyhedrons with subtle animations
  * - Slow animations (4000-5000ms) for calm, professional feel
  *
  * Key Differences from Hero Scene:
- * - Fewer elements: 3 spheres (vs 200+ particles)
- * - Smaller spheres: radius 0.3-0.5 (vs 0.6-1.0)
- * - Lower glow intensity: 0.1-0.2 (vs default)
+ * - Fewer elements: 3 polyhedrons (vs 200+ particles)
+ * - Smaller shapes: radius 0.3-0.5 (vs 0.6-1.0)
  * - No particle system or background cubes
  * - Slower animations: 4000-5000ms (vs 3000ms)
  */
 
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import {
-  Component,
-  CUSTOM_ELEMENTS_SCHEMA,
-  ChangeDetectionStrategy,
-} from '@angular/core';
-import { extend } from 'angular-three';
-import { AmbientLight, DirectionalLight } from 'three';
-import { PolyhedronComponent } from '../../../../core/angular-3d/components/primitives/polyhedron.component';
-import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
-
-// Register Three.js lights as Angular Three components
-extend({ AmbientLight, DirectionalLight });
+  PolyhedronComponent,
+  AmbientLightComponent,
+  DirectionalLightComponent,
+  Float3dDirective,
+} from '@hive-academy/angular-3d';
+import { Colors3D } from '../../../../core/config/colors.config';
 
 @Component({
   selector: 'app-cta-scene-graph',
   standalone: true,
-  imports: [PolyhedronComponent],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  imports: [
+    PolyhedronComponent,
+    AmbientLightComponent,
+    DirectionalLightComponent,
+    Float3dDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- Subtle Lighting Setup -->
-    <ngt-ambient-light [intensity]="0.4" />
-    <ngt-directional-light [position]="[10, 10, 5]" [intensity]="0.6" />
+    <a3d-ambient-light [intensity]="0.4" />
+    <a3d-directional-light [position]="[10, 10, 5]" [intensity]="0.6" />
 
     <!-- Floating Sphere 1 - Left Side (Icosahedron) -->
-    <app-polyhedron
+    <a3d-polyhedron
       type="icosahedron"
       [position]="[-2, 1, -4]"
       [rotation]="[0.2, 0.3, 0]"
-      [radius]="0.4"
+      [args]="[0.4, 0]"
       [color]="accentColor"
-      [emissive]="accentColor"
-      [emissiveIntensity]="0.15"
-      [metalness]="0.6"
-      [roughness]="0.4"
-      [transparent]="true"
-      [opacity]="0.35"
+      float3d
       [floatConfig]="{
         height: 0.3,
         speed: 4500,
@@ -62,18 +55,13 @@ extend({ AmbientLight, DirectionalLight });
     />
 
     <!-- Floating Sphere 2 - Right Side (Octahedron) -->
-    <app-polyhedron
+    <a3d-polyhedron
       type="octahedron"
       [position]="[2, -1, -5]"
       [rotation]="[0.1, 0.5, 0.2]"
-      [radius]="0.3"
+      [args]="[0.3, 0]"
       [color]="accentColor"
-      [emissive]="accentColor"
-      [emissiveIntensity]="0.12"
-      [metalness]="0.6"
-      [roughness]="0.4"
-      [transparent]="true"
-      [opacity]="0.3"
+      float3d
       [floatConfig]="{
         height: 0.3,
         speed: 5000,
@@ -84,18 +72,13 @@ extend({ AmbientLight, DirectionalLight });
     />
 
     <!-- Floating Sphere 3 - Center Background (Dodecahedron) -->
-    <app-polyhedron
+    <a3d-polyhedron
       type="dodecahedron"
       [position]="[0, 0, -6]"
       [rotation]="[0.3, 0.2, 0.1]"
-      [radius]="0.5"
+      [args]="[0.5, 0]"
       [color]="accentColor"
-      [emissive]="accentColor"
-      [emissiveIntensity]="0.18"
-      [metalness]="0.6"
-      [roughness]="0.4"
-      [transparent]="true"
-      [opacity]="0.4"
+      float3d
       [floatConfig]="{
         height: 0.4,
         speed: 4000,

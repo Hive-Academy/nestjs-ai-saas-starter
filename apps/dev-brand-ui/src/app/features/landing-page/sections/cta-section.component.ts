@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
+import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { CTASceneGraphComponent } from './scene-graphs/cta-scene-graph.component';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
 /**
  * CTA Section - Modern Conversion-Focused Design
@@ -23,7 +23,12 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
 @Component({
   selector: 'app-cta-section',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
+  imports: [
+    CommonModule,
+    Scene3dComponent,
+    CTASceneGraphComponent,
+    ScrollAnimationDirective,
+  ],
   template: `
     <section
       class="relative min-h-[700px] bg-gradient-to-b from-white via-gray-50 to-white py-20 md:py-32"
@@ -31,7 +36,9 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
     >
       <!-- 3D Background Layer (40% opacity for more depth) -->
       <div class="absolute inset-0 z-0 opacity-40">
-        <app-scene-3d [sceneGraph]="ctaSceneGraph" />
+        <a3d-scene-3d>
+          <app-cta-scene-graph />
+        </a3d-scene-3d>
       </div>
 
       <!-- Content Layer -->

@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { SpaceThemeStore } from '../../../core/angular-3d/services/space-theme.store';
+import { Scene3dComponent } from '@hive-academy/angular-3d';
+import { SpaceThemeStore } from '../../../core/stores/space-theme.store';
 import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.component';
 
 @Component({
   selector: 'brand-hero-section-space',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent],
+  imports: [CommonModule, Scene3dComponent, HeroSpaceSceneComponent],
   template: `
     <div
       class="relative w-full h-screen flex flex-col overflow-hidden"
@@ -15,12 +15,17 @@ import { HeroSpaceSceneComponent } from './scene-graphs/hero-space-scene.compone
       style="perspective: 1000px;"
     >
       <!-- 3D Space Background Scene -->
-      <app-scene-3d
+      <a3d-scene-3d
         class="absolute inset-0"
-        [sceneGraph]="sceneGraph"
-        [camera]="cameraConfig"
-        [gl]="rendererConfig"
-      />
+        [cameraPosition]="cameraConfig.position"
+        [cameraFov]="cameraConfig.fov"
+        [cameraNear]="cameraConfig.near"
+        [cameraFar]="cameraConfig.far"
+        [enableAntialiasing]="rendererConfig.antialias"
+        [alpha]="rendererConfig.alpha"
+      >
+        <app-hero-space-scene />
+      </a3d-scene-3d>
 
       <!-- Theme Switcher - Top Right Corner -->
       <div

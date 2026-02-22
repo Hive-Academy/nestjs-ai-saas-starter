@@ -42,7 +42,7 @@
  */
 
 import { Component, input, output } from '@angular/core';
-import { HijackedScrollDirective } from '../../core/angular-3d/directives/hijacked-scroll.directive';
+import { HijackedScrollDirective } from '../../core/gsap-animations/hijacked-scroll.directive';
 
 @Component({
   selector: 'app-hijacked-scroll-timeline',

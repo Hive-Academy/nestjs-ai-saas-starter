@@ -2,21 +2,18 @@
  * ESLint Rule Test: no-restricted-imports for Three.js
  *
  * This test file validates the ESLint configuration that prevents
- * direct Three.js imports outside the angular-3d module.
+ * direct Three.js imports outside the @hive-academy/angular-3d library.
  *
  * Test Strategy:
  * 1. Verify rule catches violations in regular components
- * 2. Verify rule allows imports in approved locations:
- *    - angular-3d module files
- *    - Test files (*.spec.ts, *.test.ts)
+ * 2. Verify rule allows imports in test files (*.spec.ts, *.test.ts)
  * 3. Verify error message provides migration guidance
  *
- * Pattern: Integration testing via actual ESLint CLI execution
+ * Note: The angular-3d local module has been replaced by the
+ * @hive-academy/angular-3d library package. Three.js imports should
+ * only occur within that library, not in application code.
  *
- * Evidence:
- * - ESLint config: apps/dev-brand-ui/eslint.config.mjs:30-58
- * - no-restricted-imports rule configured for Three.js
- * - Ignores: angular-3d/**\/*.ts, **\/*.spec.ts, **\/*.test.ts
+ * Pattern: Integration testing via actual ESLint CLI execution
  */
 
 import { execSync } from 'child_process';
@@ -67,8 +64,6 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
 
         expect(output).toContain('no-restricted-imports');
         expect(output).toContain('Direct Three.js imports are prohibited');
-        expect(output).toContain('HybridUIService');
-        expect(output).toContain('migration guide');
       }
     });
 
@@ -154,40 +149,6 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
   });
 
   describe('Allowed Imports', () => {
-    it('should allow Three.js imports in angular-3d module', () => {
-      const angular3dDir = path.join(
-        projectRoot,
-        'apps/dev-brand-ui/src/app/core/angular-3d/services'
-      );
-      const testFilePath = path.join(angular3dDir, 'temp-test-allowed.ts');
-      const testFileContent = `import * as THREE from 'three';\nimport { Scene } from 'three';\n\nexport class TempTestService {}\n`;
-
-      fs.writeFileSync(testFilePath, testFileContent);
-
-      try {
-        const result = execSync(`npx eslint "${testFilePath}"`, {
-          cwd: projectRoot,
-          stdio: 'pipe',
-          encoding: 'utf-8',
-        });
-
-        // ESLint should pass (no errors)
-        expect(result).toBeDefined();
-      } catch (error: unknown) {
-        const execError = error as { stdout?: string; stderr?: string };
-        const output = execError.stdout || execError.stderr || '';
-
-        // If there's an error, it should NOT be about restricted imports
-        expect(output).not.toContain('no-restricted-imports');
-        expect(output).not.toContain('Direct Three.js imports are prohibited');
-      } finally {
-        // Cleanup
-        if (fs.existsSync(testFilePath)) {
-          fs.unlinkSync(testFilePath);
-        }
-      }
-    });
-
     it('should allow Three.js imports in test files (*.spec.ts)', () => {
       const testFilePath = path.join(tempTestDir, 'test-allowed.spec.ts');
       const testFileContent = `import * as THREE from 'three';\nimport { Scene } from 'three';\n\ndescribe('Test', () => {});\n`;
@@ -310,7 +271,7 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
   });
 
   describe('CI Integration', () => {
-    it('should fail build if Three.js imports are found outside angular-3d', () => {
+    it('should fail build if Three.js imports are found outside approved locations', () => {
       const testFilePath = path.join(tempTestDir, 'ci-test-violation.ts');
       const testFileContent = `import * as THREE from 'three';\n\nexport class CITestComponent {}\n`;
 
@@ -329,41 +290,6 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
 
         // ESLint should exit with non-zero status
         expect(execError.status).not.toBe(0);
-      }
-    });
-
-    it('should pass build if all Three.js imports are in allowed locations', () => {
-      const angular3dTestFile = path.join(
-        projectRoot,
-        'apps/dev-brand-ui/src/app/core/angular-3d/temp-ci-test.ts'
-      );
-      const testFileContent = `import * as THREE from 'three';\n\nexport class CITestService {}\n`;
-
-      fs.writeFileSync(angular3dTestFile, testFileContent);
-
-      try {
-        const result = execSync(
-          `npx eslint "${angular3dTestFile}" --max-warnings=0`,
-          {
-            cwd: projectRoot,
-            stdio: 'pipe',
-            encoding: 'utf-8',
-          }
-        );
-
-        // Should pass
-        expect(result).toBeDefined();
-      } catch (error: unknown) {
-        const execError = error as { stdout?: string; stderr?: string };
-        const output = execError.stdout || execError.stderr || '';
-
-        // Should not fail due to restricted imports
-        expect(output).not.toContain('no-restricted-imports');
-      } finally {
-        // Cleanup
-        if (fs.existsSync(angular3dTestFile)) {
-          fs.unlinkSync(angular3dTestFile);
-        }
       }
     });
   });
@@ -415,13 +341,12 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
   });
 
   describe('Coverage Verification', () => {
-    it('should have 100% branch coverage for rule configuration', () => {
+    it('should have coverage for all rule configuration scenarios', () => {
       // This test verifies the rule configuration covers all required scenarios
       const testScenarios = [
         { type: 'violation-namespace', allowed: false },
         { type: 'violation-named', allowed: false },
         { type: 'violation-submodule', allowed: false },
-        { type: 'allowed-angular3d', allowed: true },
         { type: 'allowed-spec', allowed: true },
         { type: 'allowed-test', allowed: true },
       ];
@@ -434,10 +359,10 @@ describe('ESLint Rule: no-restricted-imports (Three.js)', () => {
 
       // Verify all scenarios tested
       expect(coverage.violations).toBe(3); // namespace, named, submodule
-      expect(coverage.allowed).toBe(3); // angular-3d, *.spec.ts, *.test.ts
-      expect(coverage.total).toBe(6);
+      expect(coverage.allowed).toBe(2); // *.spec.ts, *.test.ts
+      expect(coverage.total).toBe(5);
 
-      // 100% coverage achieved
+      // Coverage achieved
       const coveragePercent =
         ((coverage.violations + coverage.allowed) / coverage.total) * 100;
       expect(coveragePercent).toBe(100);

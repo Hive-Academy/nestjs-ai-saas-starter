@@ -10,7 +10,7 @@
  *
  * Usage:
  * ```typescript
- * import { Colors3D } from '@core/angular-3d/config/colors.config';
+ * import { Colors3D } from '@core/config/colors.config';
  *
  * // In component:
  * [glowColor]="Colors3D.neon.cyan.hex"

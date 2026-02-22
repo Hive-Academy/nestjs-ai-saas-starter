@@ -8,12 +8,10 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
-import { SectionStickyDirective } from '../../../core/angular-3d/directives/section-sticky.directive';
-// import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-// import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
+import { SectionStickyDirective } from '../../../core/gsap-animations/section-sticky.directive';
 import type { ValueProposition } from '../interfaces';
-import { Scene3DComponent } from '../../../core/angular-3d';
+import { Scene3dComponent } from '@hive-academy/angular-3d';
 import { ValuePropositions3DSceneComponent } from './scene-graphs/value-propositions-3d-scene.component';
 
 /**
@@ -36,7 +34,8 @@ import { ValuePropositions3DSceneComponent } from './scene-graphs/value-proposit
     CommonModule,
     ScrollAnimationDirective,
     SectionStickyDirective,
-    Scene3DComponent,
+    Scene3dComponent,
+    ValuePropositions3DSceneComponent,
   ],
   template: `
     <section
@@ -95,16 +94,16 @@ import { ValuePropositions3DSceneComponent } from './scene-graphs/value-proposit
               class="flex items-center justify-center bg-gray-800/30 rounded-2xl border border-gray-700/50 min-h-[500px]"
             >
               <div class="text-center text-gray-600 p-8">
-                <app-scene-3d
-                  [sceneGraph]="ValuePropositions3DSceneComponent"
-                  [camera]="{
-                    position: [0, 0, 12],
-                    fov: 75,
-                    near: 0.1,
-                    far: 1000
-                  }"
-                  [gl]="rendererConfig"
-                />
+                <a3d-scene-3d
+                  [cameraPosition]="[0, 0, 12]"
+                  [cameraFov]="75"
+                  [cameraNear]="0.1"
+                  [cameraFar]="1000"
+                  [enableAntialiasing]="rendererConfig.antialias"
+                  [alpha]="rendererConfig.alpha"
+                >
+                  <app-value-propositions-3d-scene />
+                </a3d-scene-3d>
               </div>
             </div>
 

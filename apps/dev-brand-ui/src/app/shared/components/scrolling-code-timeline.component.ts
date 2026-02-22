@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, input, signal } from '@angular/core';
 import { CodeSnippetComponent } from './code-snippet.component';
-import { HijackedScrollDirective } from '../../core/angular-3d/directives/hijacked-scroll.directive';
+import { HijackedScrollDirective } from '../../core/gsap-animations/hijacked-scroll.directive';
 import {
   HijackedScrollItemDirective,
   type SlideDirection,
-} from '../../core/angular-3d/directives/hijacked-scroll-item.directive';
+} from '../../core/gsap-animations/hijacked-scroll-item.directive';
 
 /**
  * Progressive code revelation timeline with side-by-side layout

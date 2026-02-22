@@ -3,26 +3,32 @@
  *
  * Renders the 3D background elements for the hero section:
  * - Lighting setup (ambient + directional + point + spotlight)
- * - Floating spheres with GSAP animations
+ * - Floating polyhedrons with GSAP animations
  * - Animated background cubes via BackgroundCubesComponent
  * - Mini Robot GLTF model (center stage)
- * - Particle system
+ * - Floating tech keyword text labels
  *
  * DOM content (text, badges, buttons) is rendered as HTML overlay, not 3D meshes.
  */
 
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component } from '@angular/core';
 
-import { PolyhedronComponent } from '../../../../core/angular-3d/components/primitives/polyhedron.component';
-import { CylinderComponent } from '../../../../core/angular-3d/components/primitives/cylinder.component';
-import { TorusComponent } from '../../../../core/angular-3d/components/primitives/torus.component';
-import { BoxComponent } from '../../../../core/angular-3d/components/primitives/box.component';
-import { Text3DComponent } from '../../../../core/angular-3d/components/primitives/text-3d.component';
-import { BackgroundCubesComponent } from '../../../../core/angular-3d/components/primitives/background-cubes.component';
-import { GLTFModelComponent } from '../../../../core/angular-3d/components/primitives/gltf-model.component';
-import { SceneLightingComponent } from '../../../../core/angular-3d/components/primitives/scene-lighting.component';
-import { Colors3D } from '../../../../core/angular-3d/config/colors.config';
-import type { SceneLighting } from '../../../../core/angular-3d/types/scene-lighting.types';
+import {
+  PolyhedronComponent,
+  CylinderComponent,
+  TorusComponent,
+  BoxComponent,
+  ExtrudedText3DComponent,
+  BackgroundCubesComponent,
+  GltfModelComponent,
+  PointLightComponent,
+  SpotLightComponent,
+  AmbientLightComponent,
+  DirectionalLightComponent,
+  Float3dDirective,
+} from '@hive-academy/angular-3d';
+
+import { Colors3D } from '../../../../core/config/colors.config';
 
 @Component({
   selector: 'app-hero-scene-graph',
@@ -32,29 +38,55 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
     CylinderComponent,
     TorusComponent,
     BoxComponent,
-    Text3DComponent,
+    ExtrudedText3DComponent,
     BackgroundCubesComponent,
-    GLTFModelComponent,
-    SceneLightingComponent,
+    GltfModelComponent,
+    PointLightComponent,
+    SpotLightComponent,
+    AmbientLightComponent,
+    DirectionalLightComponent,
+    Float3dDirective,
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <!-- Scene Lighting Configuration -->
-    <app-scene-lighting [config]="heroLighting" />
+    <a3d-ambient-light [color]="whiteColor" [intensity]="1.2" />
+    <a3d-directional-light
+      [color]="whiteColor"
+      [intensity]="2.0"
+      [position]="[10, 10, 10]"
+      [castShadow]="true"
+    />
+    <!-- Purple accent light from left -->
+    <a3d-point-light
+      [color]="purpleColor"
+      [intensity]="1.5"
+      [position]="[-10, 5, 5]"
+      [castShadow]="true"
+    />
+    <!-- Pink accent light from right -->
+    <a3d-point-light
+      [color]="pinkColor"
+      [intensity]="1.5"
+      [position]="[10, 5, 5]"
+      [castShadow]="true"
+    />
+    <!-- Cyan bottom light for depth -->
+    <a3d-point-light
+      [color]="cyanColor"
+      [intensity]="1.0"
+      [position]="[0, -5, 8]"
+    />
 
     <!-- Tech Shapes - Using dedicated primitive components + Text Labels + Glow Effects -->
 
     <!-- AI Brain (Icosahedron) - TOP LEFT EDGE -->
-    <app-polyhedron
+    <a3d-polyhedron
       type="icosahedron"
       [position]="[-12, 6, 1]"
       [rotation]="[0.3, 0.5, 0]"
-      [radius]="0.7"
+      [args]="[0.7, 0]"
       [color]="purpleColor"
-      [emissive]="purpleColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      float3d
       [floatConfig]="{
         height: 1.0,
         speed: 3500,
@@ -64,7 +96,7 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Subtle glow light -->
-    <ngt-point-light
+    <a3d-point-light
       [position]="[-12, 6, 2]"
       [intensity]="1.2"
       [color]="purpleColor"
@@ -73,16 +105,13 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
     />
 
     <!-- Network Node (Octahedron) - TOP RIGHT EDGE -->
-    <app-polyhedron
+    <a3d-polyhedron
       type="octahedron"
       [position]="[12, 6, -1]"
       [rotation]="[0.2, 0.8, 0.1]"
-      [radius]="0.7"
+      [args]="[0.7, 0]"
       [color]="pinkColor"
-      [emissive]="pinkColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      float3d
       [floatConfig]="{
         height: 1.0,
         speed: 3200,
@@ -92,7 +121,7 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Subtle glow light -->
-    <ngt-point-light
+    <a3d-point-light
       [position]="[12, 6, 2]"
       [intensity]="1.2"
       [color]="pinkColor"
@@ -101,16 +130,11 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
     />
 
     <!-- Database Stack (Cylinder) - BOTTOM LEFT EDGE -->
-    <app-cylinder
+    <a3d-cylinder
       [position]="[-12, -6, 1]"
-      [radiusTop]="0.6"
-      [radiusBottom]="0.6"
-      [height]="1.2"
+      [args]="[0.6, 0.6, 1.2, 32]"
       [color]="cyanColor"
-      [emissive]="cyanColor"
-      [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      float3d
       [floatConfig]="{
         height: 1.0,
         speed: 3000,
@@ -120,7 +144,7 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Subtle glow light -->
-    <ngt-point-light
+    <a3d-point-light
       [position]="[-12, -6, 2]"
       [intensity]="1.2"
       [color]="cyanColor"
@@ -129,16 +153,14 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
     />
 
     <!-- Cloud/Connectivity (Torus) - BOTTOM RIGHT EDGE -->
-    <app-torus
+    <a3d-torus
       [position]="[12, -6, 1]"
       [rotation]="[0.5, 0.3, 0.2]"
-      [radius]="0.6"
-      [tube]="0.22"
+      [args]="[0.6, 0.22, 16, 100]"
       [color]="greenColor"
       [emissive]="greenColor"
       [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      float3d
       [floatConfig]="{
         height: 1.0,
         speed: 2800,
@@ -148,7 +170,7 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Subtle glow light -->
-    <ngt-point-light
+    <a3d-point-light
       [position]="[12, -6, 2]"
       [intensity]="1.2"
       [color]="greenColor"
@@ -157,17 +179,14 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
     />
 
     <!-- Microchip (Box) - LEFT MID EDGE -->
-    <app-box
+    <a3d-box
       [position]="[-13, 0, 1]"
       [rotation]="[0.4, 0.6, 0.1]"
-      [width]="1.2"
-      [height]="1.2"
-      [depth]="0.25"
+      [args]="[1.2, 1.2, 0.25]"
       [color]="goldColor"
       [emissive]="goldColor"
       [emissiveIntensity]="0.3"
-      [metalness]="0.7"
-      [roughness]="0.3"
+      float3d
       [floatConfig]="{
         height: 1.0,
         speed: 3400,
@@ -177,7 +196,7 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Subtle glow light -->
-    <ngt-point-light
+    <a3d-point-light
       [position]="[-13, 0, 2]"
       [intensity]="1.2"
       [color]="goldColor"
@@ -185,32 +204,21 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       [decay]="2"
     />
 
-    <!-- Animated Background Cubes (avoiding large center area for clean focus) -->
-    <app-background-cubes
+    <!-- Animated Background Cubes -->
+    <a3d-background-cubes
       [count]="200"
       [colorPalette]="cubeColors"
       [exclusionZone]="{ x: 14, y: 10 }"
       [sizeRange]="{ min: 0.5, max: 2.0 }"
-      [transparent]="true"
-      [opacity]="0.6"
-      [floatAnimation]="{
-        heightMin: 0.8,
-        heightMax: 2.0,
-        speedMin: 2500,
-        speedMax: 5000,
-        ease: 'sine.inOut'
-      }"
     />
 
     <!-- Mini Robot GLTF Model - CENTER STAGE -->
-    <app-gltf-model
+    <a3d-gltf-model
       [modelPath]="'/assets/3d/mini_robot.glb'"
       [position]="[0, -1, -5]"
       [scale]="0.005"
       [rotation]="[0, 0, 0]"
-      [castShadow]="true"
-      [receiveShadow]="true"
-      [autoCenter]="false"
+      float3d
       [floatConfig]="{
         height: 0.2,
         speed: 2000,
@@ -220,128 +228,120 @@ import type { SceneLighting } from '../../../../core/angular-3d/types/scene-ligh
       }"
     />
     <!-- Spotlight for the robot -->
-    <ngt-spot-light
+    <a3d-spot-light
       [position]="[0, 5, 0]"
       [intensity]="1.5"
       [color]="whiteColor"
       [angle]="0.6"
       [penumbra]="0.5"
       [castShadow]="true"
-      [target-position]="[0, -1, -5]"
+      [target]="[0, -1, -5]"
     />
 
     <!-- ================================ -->
     <!-- FLOATING TECH KEYWORDS (Far Background Layer) -->
-    <!-- Positioned much further back (z: -15 to -20) and near edges for depth -->
     <!-- ================================ -->
 
-    <!-- AI - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="AI"
       [position]="[-12, 4, -7]"
       [fontSize]="0.7"
       [color]="purpleColor"
-      [emissive]="purpleColor"
+      [emissiveColor]="purpleColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.15"
+      [depth]="0.15"
       [bevelEnabled]="true"
       [bevelSize]="0.015"
       [bevelThickness]="0.025"
     />
 
-    <!-- LangChain - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="LangChain"
       [position]="[15, 12, -20]"
       [fontSize]="0.7"
       [color]="pinkColor"
-      [emissive]="pinkColor"
+      [emissiveColor]="pinkColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.12"
+      [depth]="0.12"
       [bevelEnabled]="true"
       [bevelSize]="0.012"
       [bevelThickness]="0.02"
     />
 
-    <!-- Angular - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="Angular"
       [position]="[-20, 0, -10]"
       [fontSize]="0.7"
       [color]="cyanColor"
-      [emissive]="cyanColor"
+      [emissiveColor]="cyanColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.13"
+      [depth]="0.13"
       [bevelEnabled]="true"
       [bevelSize]="0.013"
       [bevelThickness]="0.022"
     />
 
-    <!-- NestJS - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="NestJS"
       [position]="[13, 4, -12]"
       [fontSize]="0.7"
       [color]="goldColor"
-      [emissive]="goldColor"
+      [emissiveColor]="goldColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.12"
+      [depth]="0.12"
       [bevelEnabled]="true"
       [bevelSize]="0.012"
       [bevelThickness]="0.02"
     />
 
-    <!-- ChromaDB - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="ChromaDB"
       [position]="[-12, -10, -15]"
       [fontSize]="0.7"
       [color]="purpleColor"
-      [emissive]="purpleColor"
+      [emissiveColor]="purpleColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.11"
+      [depth]="0.11"
       [bevelEnabled]="true"
       [bevelSize]="0.011"
       [bevelThickness]="0.018"
     />
 
-    <!-- Neo4j - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="Neo4j"
       [position]="[12, -10, -15]"
       [fontSize]="0.7"
       [color]="greenColor"
-      [emissive]="greenColor"
+      [emissiveColor]="greenColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.12"
+      [depth]="0.12"
       [bevelEnabled]="true"
       [bevelSize]="0.012"
       [bevelThickness]="0.02"
     />
 
-    <!-- WebSockets - Far edge, deep background (matching shape positions) -->
-    <app-text-3d
+    <a3d-extruded-text-3d
       text="WebSockets"
       [position]="[-22, 14, -20]"
       [fontSize]="0.7"
       [color]="pinkColor"
-      [emissive]="pinkColor"
+      [emissiveColor]="pinkColor"
       [emissiveIntensity]="0.4"
       [metalness]="0.3"
       [roughness]="0.7"
-      [height]="0.1"
+      [depth]="0.1"
       [bevelEnabled]="true"
       [bevelSize]="0.01"
       [bevelThickness]="0.015"
@@ -357,44 +357,6 @@ export class HeroSceneGraphComponent {
   readonly greenColor = Colors3D.accent.limeGreen.hex;
   readonly goldColor = Colors3D.accent.gold.hex;
   readonly whiteColor = Colors3D.material.white.hex;
-
-  // Scene lighting configuration
-  readonly heroLighting: SceneLighting = {
-    ambient: {
-      color: this.whiteColor,
-      intensity: 1.2,
-    },
-    directional: [
-      {
-        color: this.whiteColor,
-        intensity: 2.0,
-        position: [10, 10, 10],
-        castShadow: true,
-      },
-    ],
-    point: [
-      // Purple accent light from left
-      {
-        color: this.purpleColor,
-        intensity: 1.5,
-        position: [-10, 5, 5],
-        castShadow: true,
-      },
-      // Pink accent light from right
-      {
-        color: this.pinkColor,
-        intensity: 1.5,
-        position: [10, 5, 5],
-        castShadow: true,
-      },
-      // Cyan bottom light for depth
-      {
-        color: this.cyanColor,
-        intensity: 1.0,
-        position: [0, -5, 8],
-      },
-    ],
-  };
 
   // Particle colors using Colors3D CSS values
   readonly particleColors = [

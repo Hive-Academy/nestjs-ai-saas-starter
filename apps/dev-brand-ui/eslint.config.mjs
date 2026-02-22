@@ -68,13 +68,6 @@ export default [
       ],
     },
   },
-  // Allow Three.js imports in angular-3d module and test files (overrides above rule)
-  {
-    files: ['src/app/core/angular-3d/**/*.ts', '**/*.spec.ts', '**/*.test.ts'],
-    rules: {
-      'no-restricted-imports': 'off',
-    },
-  },
   {
     files: ['**/*.html'],
     rules: {

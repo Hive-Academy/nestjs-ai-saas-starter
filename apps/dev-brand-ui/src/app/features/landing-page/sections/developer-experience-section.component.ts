@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
 /**
  * Developer Experience Section Component

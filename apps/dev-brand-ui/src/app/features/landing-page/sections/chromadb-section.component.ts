@@ -1,8 +1,8 @@
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Component, signal } from '@angular/core';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 import { HijackedScrollTimelineComponent } from '../../../shared/components/hijacked-scroll-timeline.component';
-import { HijackedScrollItemDirective } from '../../../core/angular-3d/directives/hijacked-scroll-item.directive';
+import { HijackedScrollItemDirective } from '../../../core/gsap-animations/hijacked-scroll-item.directive';
 import { CodeSnippetComponent } from '../../../shared/components/code-snippet.component';
 import { DecorativePatternComponent } from '../../../shared/components/decorative-patterns.component';
 import type { TimelineStep } from '../../../shared/components/scrolling-code-timeline.component';
