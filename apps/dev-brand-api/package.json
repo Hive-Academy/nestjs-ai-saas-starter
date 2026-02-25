@@ -10,7 +10,17 @@
     "start:dev": "nx serve dev-brand-api",
     "start:prod": "node dist/main.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@hive-academy/langgraph-core": "*",
+    "@hive-academy/langgraph-hitl": "*",
+    "@hive-academy/langgraph-memory": "*",
+    "@hive-academy/langgraph-monitoring": "*",
+    "@hive-academy/langgraph-platform": "*",
+    "@hive-academy/langgraph-workflow-engine": "*",
+    "@hive-academy/nestjs-chromadb": "*",
+    "@hive-academy/nestjs-neo4j": "*",
+    "@hive-academy/langgraph-adapters": "*"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
