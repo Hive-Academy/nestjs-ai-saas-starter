@@ -34,6 +34,60 @@ export class AppModule {}
 - Multiple instances cause duplicate listener warnings (false positives)
 - Global import provides consistent event bus across all modules
 
+## State Types
+
+### HitlCapableState (Structural Interface)
+
+All HITL services use `HitlCapableState` as their state parameter type. This is a structural interface with **all fields optional** to support graceful degradation -- HITL services will work with any state object, accessing fields only when present.
+
+```typescript
+import { HitlCapableState } from '@hive-academy/langgraph-hitl';
+
+// HitlCapableState fields (all optional):
+// - executionId?: string
+// - confidence?: number
+// - currentNode?: string
+// - metadata?: Record<string, unknown>
+// - risks?: Array<{ severity, type, description, mitigation? }>
+// - humanFeedback?: { approved, status, approver, message?, timestamp, metadata? }
+// - approvalReceived?: boolean
+// - waitingForApproval?: boolean
+// - rejectionReason?: string
+```
+
+Services access these fields with optional chaining for safe degradation:
+
+```typescript
+const executionId = state.executionId ?? 'unknown';
+const confidence = state.confidence ?? 0;
+```
+
+### HitlAgentStateAnnotation
+
+For workflows that need HITL capabilities, use `HitlAgentStateAnnotation` which combines `AgentStateAnnotation` fields with HITL-specific fields (with proper reducers and defaults):
+
+```typescript
+import { HitlAgentStateAnnotation } from '@hive-academy/langgraph-hitl';
+import { FunctionalWorkflow } from '@hive-academy/langgraph-workflow-engine';
+
+@FunctionalWorkflow({
+  name: 'approval-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE,
+  channels: HitlAgentStateAnnotation,
+})
+@Injectable()
+export class MyApprovalWorkflow {
+  // Nodes receive state with both AgentState and HITL fields
+}
+
+// Derive TypeScript type from the annotation
+type HitlAgentState = typeof HitlAgentStateAnnotation.State;
+```
+
+`HitlAgentStateAnnotation` includes all fields from `AgentStateAnnotation` (messages, next, current, etc.) plus all `HitlFields` (executionId, confidence, risks, humanFeedback, approvalReceived, waitingForApproval, rejectionReason).
+
+---
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)
@@ -1470,17 +1524,17 @@ async function handleDifferentInterruptions() {
 ```typescript
 // Basic usage - requires approval when confidence is low
 @RequiresApproval({ confidenceThreshold: 0.7 })
-async processPayment(state: WorkflowState): Promise<WorkflowState>
+async processPayment(state: HitlCapableState): Promise<Partial<Record<string, unknown>>>
 
 // Advanced usage - conditional approval with risk assessment
 @RequiresApproval({
-  when: (state) => state.amount > 10000,
+  when: (state) => (state as Record<string, unknown>)['amount'] as number > 10000,
   riskThreshold: ApprovalRiskLevel.HIGH,
   chainId: 'financial-approval',
   timeoutMs: 600000,
   onTimeout: 'escalate'
 })
-async processLargeTransaction(state: WorkflowState): Promise<WorkflowState>
+async processLargeTransaction(state: HitlCapableState): Promise<Partial<Record<string, unknown>>>
 ```
 
 ### Complete Production Usage Example
@@ -1560,7 +1614,9 @@ export class EnterpriseAIWorkflowService {
       },
     },
   })
-  async generateCode(state: WorkflowState): Promise<WorkflowState> {
+  async generateCode(
+    state: HitlCapableState & Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     const task = state.task as CodeGenerationTask;
 
     try {
@@ -1662,7 +1718,9 @@ export class EnterpriseAIWorkflowService {
       },
     },
   })
-  async deployToProduction(state: WorkflowState): Promise<WorkflowState> {
+  async deployToProduction(
+    state: HitlCapableState & Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     const context = state.deployment as DeploymentContext;
 
     try {
@@ -1875,7 +1933,7 @@ HitlModule.forRootAsync({
 ```typescript
 @Injectable()
 export class CustomRiskEvaluator {
-  evaluateRisk(state: WorkflowState, context: any): RiskAssessment {
+  evaluateRisk(state: Record<string, unknown>, context: any): RiskAssessment {
     const factors = [];
     let score = 0;
 
@@ -1964,7 +2022,7 @@ interface HumanApprovalRequest {
   nodeId: string;
   message: string;
   metadata: Record<string, unknown>;
-  state: WorkflowState;
+  state: HitlCapableState & Record<string, unknown>;
   options: RequiresApprovalOptions;
   workflowState: ApprovalWorkflowState;
   riskAssessment?: RiskAssessment;
@@ -1973,10 +2031,10 @@ interface HumanApprovalRequest {
 }
 
 interface RequiresApprovalOptions {
-  when?: (state: WorkflowState) => boolean;
+  when?: (state: Record<string, unknown>) => boolean;
   confidenceThreshold?: number;
   riskThreshold?: ApprovalRiskLevel;
-  message?: string | ((state: WorkflowState) => string);
+  message?: string | ((state: Record<string, unknown>) => string);
   timeoutMs?: number;
   onTimeout?: 'approve' | 'reject' | 'escalate' | 'retry';
   chainId?: string;

@@ -143,18 +143,74 @@ Tasks execute in **source code order** (top-to-bottom) by default. You can overr
 async step3(context: TaskExecutionContext) { ... }
 ```
 
-### State Management
+### State Management (Annotation-Based)
 
-**Define Custom State:**
+State in LangGraph workflows is defined via **annotations**, not plain TypeScript interfaces. Annotations define reducers (how state updates merge) and defaults. The `@FunctionalWorkflow` decorator accepts a `channels` parameter to specify the annotation used by the underlying `StateGraph`.
+
+**Using the Default Annotation:**
+
+By default, workflows use `AgentStateAnnotation` from `@hive-academy/langgraph-core`. This provides fields like `messages`, `next`, `current`, `scratchpad`, `task`, `threadId`, `userId`, and `metadata`.
 
 ```typescript
-import { FunctionalWorkflowState } from '@hive-academy/langgraph-core';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 
-export interface MyWorkflowState extends FunctionalWorkflowState {
-  userId: string;
-  data: any[];
-  processed: boolean;
-}
+// Default - AgentStateAnnotation is used automatically
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK,
+})
+
+// Explicit - same effect, but makes the annotation visible
+@FunctionalWorkflow({
+  name: 'my-workflow',
+  type: WorkflowType.FUNCTIONAL_TASK,
+  channels: AgentStateAnnotation,
+})
+```
+
+**Custom Annotations:**
+
+For workflows that need additional state fields, create a custom annotation using `Annotation.Root`:
+
+```typescript
+import { Annotation } from '@langchain/langgraph';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
+
+// Extend AgentStateAnnotation with custom fields
+const MyWorkflowAnnotation = Annotation.Root({
+  ...AgentStateAnnotation.spec,
+  userId: Annotation<string>({
+    reducer: (current, update) => update ?? current,
+    default: () => '',
+  }),
+  data: Annotation<Record<string, unknown>[]>({
+    reducer: (current, update) => update ?? current,
+    default: () => [],
+  }),
+  processed: Annotation<boolean>({
+    reducer: (current, update) => update ?? current,
+    default: () => false,
+  }),
+});
+
+// Pass custom annotation to the workflow
+@FunctionalWorkflow({
+  name: 'data-pipeline',
+  type: WorkflowType.FUNCTIONAL_TASK,
+  channels: MyWorkflowAnnotation,
+})
+```
+
+**For HITL-enabled workflows**, use `HitlAgentStateAnnotation` from `@hive-academy/langgraph-hitl`:
+
+```typescript
+import { HitlAgentStateAnnotation } from '@hive-academy/langgraph-hitl';
+
+@FunctionalWorkflow({
+  name: 'approval-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE,
+  channels: HitlAgentStateAnnotation,
+})
 ```
 
 **Access State in Tasks:**
@@ -162,10 +218,11 @@ export interface MyWorkflowState extends FunctionalWorkflowState {
 ```typescript
 @Task()
 async processData(context: TaskExecutionContext): Promise<TaskExecutionResult> {
-  const state = context.state as MyWorkflowState;
+  const state = context.state as Record<string, unknown>;
 
-  // Modify state
-  const processed = state.data.map(item => ({ ...item, processed: true }));
+  // Modify state - return a new object
+  const data = (state['data'] as Record<string, unknown>[]) ?? [];
+  const processed = data.map(item => ({ ...item, processed: true }));
 
   return {
     state: { ...state, data: processed, processed: true }
@@ -188,7 +245,6 @@ import {
   Edge,
   WorkflowType,
 } from '@hive-academy/langgraph-workflow-engine';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 @FunctionalWorkflow({
   name: 'approval-workflow',
@@ -197,7 +253,7 @@ import type { WorkflowState } from '@hive-academy/langgraph-core';
 @Injectable()
 export class ApprovalWorkflow {
   @Node({ id: 'analyze', type: 'llm' })
-  async analyze(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  async analyze(state: Record<string, unknown>): Promise<Partial<Record<string, unknown>>> {
     const llm = await this.llm.getLLM({ temperature: 0.1 });
     const analysis = await llm.invoke([...]);
 
@@ -205,33 +261,34 @@ export class ApprovalWorkflow {
   }
 
   @Edge('analyze', 'approve')
-  shouldApprove(state: WorkflowState): boolean {
-    return state.confidence >= 0.9 && state.riskLevel === 'low';
+  shouldApprove(state: Record<string, unknown>): boolean {
+    return (state['confidence'] as number) >= 0.9 && state['riskLevel'] === 'low';
   }
 
   @Edge('analyze', 'review')
-  needsReview(state: WorkflowState): boolean {
-    return state.confidence >= 0.6 && state.confidence < 0.9;
+  needsReview(state: Record<string, unknown>): boolean {
+    const confidence = state['confidence'] as number;
+    return confidence >= 0.6 && confidence < 0.9;
   }
 
   @Edge('analyze', 'reject')
-  shouldReject(state: WorkflowState): boolean {
-    return state.confidence < 0.6;
+  shouldReject(state: Record<string, unknown>): boolean {
+    return (state['confidence'] as number) < 0.6;
   }
 
   @Node({ id: 'approve' })
-  async approve(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  async approve(state: Record<string, unknown>): Promise<Partial<Record<string, unknown>>> {
     return { approved: true, status: 'approved' };
   }
 
   @Node({ id: 'review', type: 'human' })
-  async review(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  async review(state: Record<string, unknown>): Promise<Partial<Record<string, unknown>>> {
     // Human-in-the-loop review
     return { needsHumanReview: true };
   }
 
   @Node({ id: 'reject' })
-  async reject(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  async reject(state: Record<string, unknown>): Promise<Partial<Record<string, unknown>>> {
     return { approved: false, status: 'rejected' };
   }
 }
@@ -261,8 +318,8 @@ simpleTransition() {} // Always true
 
 ```typescript
 @Edge('analyze', 'process')
-shouldProcess(state: WorkflowState): boolean {
-  return state.score > 0.8 && state.verified;
+shouldProcess(state: Record<string, unknown>): boolean {
+  return (state['score'] as number) > 0.8 && !!state['verified'];
 }
 ```
 
@@ -752,11 +809,17 @@ async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
 ### 3. Type Safety
 
 ```typescript
-// ✅ CORRECT: Define custom state interface
-interface MyState extends FunctionalWorkflowState {
-  userId: string;
-  data: any[];
-}
+// ✅ CORRECT: Use annotation-derived types for type safety
+import { Annotation } from '@langchain/langgraph';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
+
+const MyAnnotation = Annotation.Root({
+  ...AgentStateAnnotation.spec,
+  userId: Annotation<string>({ reducer: (c, u) => u ?? c, default: () => '' }),
+  data: Annotation<unknown[]>({ reducer: (c, u) => u ?? c, default: () => [] }),
+});
+
+type MyState = typeof MyAnnotation.State;
 
 @Task()
 async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
@@ -931,8 +994,9 @@ If migrating from older workflow patterns:
 
 1. **Remove base classes**: No need to extend `UnifiedWorkflowBase`
 2. **Add explicit type**: Set `type: WorkflowType.FUNCTIONAL_TASK` or `FUNCTIONAL_NODE`
-3. **Update state types**: Extend `FunctionalWorkflowState`
+3. **Use annotation-based state**: Define custom annotations instead of extending `WorkflowState`/`FunctionalWorkflowState` interfaces. Use the `channels` parameter on `@FunctionalWorkflow` to pass your annotation.
 4. **Apply `@Injectable()`**: Workflows must be NestJS providers
+5. **Update handler signatures**: Node/edge handlers use `Record<string, unknown>` instead of `WorkflowState`
 
 **Before:**
 
