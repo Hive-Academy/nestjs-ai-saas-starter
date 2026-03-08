@@ -11,7 +11,7 @@ import type {
 import { MetadataProcessorService } from '../core/metadata-processor.service';
 import { LangGraphCommandService } from './langgraph-command.service';
 import type { WorkflowDefinition } from '../interfaces/workflow-engine.interface';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+// WorkflowState import removed - using Record<string, unknown> constraint instead
 import { BASE_STORE_TOKEN } from '@hive-academy/langgraph-memory';
 import {
   FunctionalTaskGraphStrategy,
@@ -117,7 +117,9 @@ export class WorkflowResumptionService {
    * );
    * ```
    */
-  async resumeWorkflow<TState extends WorkflowState = WorkflowState>(
+  async resumeWorkflow<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     workflowClass: string,
     threadId: string,
     resumeValue: any,
@@ -166,7 +168,9 @@ export class WorkflowResumptionService {
    * console.log('Tasks:', snapshot.tasks);
    * ```
    */
-  async getWorkflowState<TState extends WorkflowState = WorkflowState>(
+  async getWorkflowState<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     workflowClass: string,
     threadId: string
   ): Promise<SanitizedStateSnapshot<TState>> {
@@ -212,7 +216,7 @@ export class WorkflowResumptionService {
    * );
    * ```
    */
-  async updateWorkflowState<TState extends WorkflowState>(
+  async updateWorkflowState<TState extends Record<string, unknown>>(
     workflowClass: string,
     threadId: string,
     updates: Record<string, any>,
@@ -253,7 +257,7 @@ export class WorkflowResumptionService {
    *
    * @throws Error if workflow not found or compilation fails
    */
-  private async compileWorkflowGraph<TState extends WorkflowState>(
+  private async compileWorkflowGraph<TState extends Record<string, unknown>>(
     workflowClass: string
   ): Promise<any> {
     this.logger.debug(`Compiling workflow graph: ${workflowClass}`);

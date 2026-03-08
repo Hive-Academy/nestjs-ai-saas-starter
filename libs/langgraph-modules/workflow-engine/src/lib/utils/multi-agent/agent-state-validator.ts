@@ -153,7 +153,6 @@ export function validateAndWarnAgentStateForMemory(
 export function createDefaultAgentStateForMemory(
   partial: Partial<AgentState> = {}
 ): AgentState {
-  const now = new Date();
   const timestamp = Date.now();
   return {
     // Multi-agent specific fields
@@ -161,19 +160,6 @@ export function createDefaultAgentStateForMemory(
     threadId: `fallback-thread-${timestamp}`,
     current: 'default-agent',
     metadata: {},
-    // Required WorkflowState fields
-    id: `agent-state-${timestamp}`,
-    executionId: `exec_${timestamp}`,
-    status: 'pending' as const,
-    completedNodes: [],
-    confidence: 1.0,
-    retryCount: 0,
-    timestamps: {
-      started: now,
-    },
-    startedAt: now,
-    createdAt: now,
-    updatedAt: now,
     // Merge partial overrides
     ...partial,
   } as AgentState;

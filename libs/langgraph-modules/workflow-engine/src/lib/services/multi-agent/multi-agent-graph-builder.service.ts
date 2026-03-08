@@ -40,7 +40,6 @@ import {
   getMultiAgentConfig,
   isMultiAgentWorkflow,
 } from '../../decorators/multi-agent/multi-agent.decorator';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
 import type { IMultiAgentGraphBuilder } from './builders/i-multi-agent-graph-builder.interface';
 import { MultiAgentGraphBuilderError } from './errors';
 import { SupervisorGraphBuilder } from './builders/supervisor-graph-builder';
@@ -153,9 +152,9 @@ export class MultiAgentGraphBuilderService {
    * const result = await compiled.invoke({ messages: [...] });
    * ```
    */
-  async buildGraph<TState extends WorkflowState = WorkflowState>(
-    supervisorClass: any
-  ): Promise<StateGraph<TState>> {
+  async buildGraph<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(supervisorClass: any): Promise<StateGraph<TState>> {
     this.logger.debug(`Building multi-agent graph for ${supervisorClass.name}`);
 
     // Step 1: Validate @MultiAgent decorator presence

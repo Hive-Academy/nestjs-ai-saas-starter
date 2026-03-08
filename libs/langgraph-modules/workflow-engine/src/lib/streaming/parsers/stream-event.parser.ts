@@ -21,7 +21,6 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import type { WorkflowState } from '../../interfaces/workflow-engine.interface';
 import type {
   LangGraphStreamChunk,
   ParsedStreamEvent,
@@ -67,7 +66,7 @@ export class StreamEventParser {
    * @param chunk - Raw chunk from LangGraph stream
    * @returns Parsed event or null if invalid/empty
    */
-  parseChunk<TState extends WorkflowState = WorkflowState>(
+  parseChunk<TState extends Record<string, unknown> = Record<string, unknown>>(
     chunk: unknown
   ):
     | ParsedStreamEvent<TState>
@@ -110,9 +109,9 @@ export class StreamEventParser {
    * Parse a standard LangGraph chunk (without subgraphs)
    * Format: { nodeName: stateUpdate }
    */
-  private parseStandardChunk<TState extends WorkflowState = WorkflowState>(
-    chunk: unknown
-  ): ParsedStreamEvent<TState> | null {
+  private parseStandardChunk<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(chunk: unknown): ParsedStreamEvent<TState> | null {
     // Step 1: Validate chunk structure
     const validation = this.validateChunk(chunk);
 
@@ -177,9 +176,9 @@ export class StreamEventParser {
    * Parse a subgraph chunk (tuple format when subgraphs: true)
    * Format: [namespace[], mode, { nodeName: stateUpdate }]
    */
-  private parseSubgraphChunk<TState extends WorkflowState = WorkflowState>(
-    chunk: SubgraphStreamChunk<TState>
-  ): ParsedStreamEvent<TState> | null {
+  private parseSubgraphChunk<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(chunk: SubgraphStreamChunk<TState>): ParsedStreamEvent<TState> | null {
     const [namespacePath, streamMode, stateChunk] = chunk;
 
     // Validate the state chunk part (same as standard chunk)
@@ -240,7 +239,9 @@ export class StreamEventParser {
    * @param stream - LangGraph stream (async iterable)
    * @yields Parsed events
    */
-  async *parseStream<TState extends WorkflowState = WorkflowState>(
+  async *parseStream<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     stream: AsyncIterable<unknown>
   ): AsyncGenerator<
     | ParsedStreamEvent<TState>
@@ -294,7 +295,7 @@ export class StreamEventParser {
    * @param event - Parsed event
    * @returns True if event should be skipped
    */
-  shouldSkipEvent<TState extends WorkflowState>(
+  shouldSkipEvent<TState extends Record<string, unknown>>(
     event:
       | ParsedStreamEvent<TState>
       | ParsedMessageEvent
@@ -386,7 +387,9 @@ export class StreamEventParser {
    * Parse a multi-mode chunk: [mode, data]
    * Format used when streamMode is an array (e.g., ['updates', 'messages'])
    */
-  private parseMultiModeChunk<TState extends WorkflowState = WorkflowState>(
+  private parseMultiModeChunk<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     chunk: MultiModeStreamChunk
   ):
     | ParsedStreamEvent<TState>

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { Command } from '@langchain/langgraph';
 import type { StateSnapshot } from '@langchain/langgraph';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+// WorkflowState import removed - using Record<string, unknown> constraint instead
 
 /**
  * LangGraphCommandService
@@ -49,7 +49,9 @@ export class LangGraphCommandService {
    * const result = await commandService.invokeWithCommand(compiled, command, config);
    * ```
    */
-  async invokeWithCommand<TState extends WorkflowState = WorkflowState>(
+  async invokeWithCommand<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     compiledGraph: any,
     command: Command,
     config: RunnableConfig
@@ -94,10 +96,9 @@ export class LangGraphCommandService {
    * console.log('Next nodes:', snapshot.next); // Real next nodes, not empty array
    * ```
    */
-  async getState<TState extends WorkflowState = WorkflowState>(
-    compiledGraph: any,
-    config: RunnableConfig
-  ): Promise<StateSnapshot> {
+  async getState<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(compiledGraph: any, config: RunnableConfig): Promise<StateSnapshot> {
     this.logger.debug(
       `Retrieving state snapshot for thread: ${config.configurable?.thread_id}`
     );
@@ -145,7 +146,9 @@ export class LangGraphCommandService {
    * );
    * ```
    */
-  async updateState<TState extends WorkflowState = WorkflowState>(
+  async updateState<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     compiledGraph: any,
     updates: Partial<TState>,
     asNode: string | null | undefined,
@@ -197,7 +200,9 @@ export class LangGraphCommandService {
    * }
    * ```
    */
-  async *streamWithCommand<TState extends WorkflowState = WorkflowState>(
+  async *streamWithCommand<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     compiledGraph: any,
     command: Command,
     config: RunnableConfig & {

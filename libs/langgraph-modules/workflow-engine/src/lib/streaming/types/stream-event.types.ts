@@ -14,7 +14,7 @@
  * - 'debug': Streams detailed execution traces
  */
 
-import type { WorkflowState } from '../../interfaces/workflow-engine.interface';
+// WorkflowState import removed - using Record<string, unknown> constraint instead
 
 /**
  * LangGraph Stream Modes
@@ -31,8 +31,9 @@ export type StreamMode = 'values' | 'updates' | 'messages' | 'custom' | 'debug';
  * - Start node: { '__start__': {} }
  * - Empty update: {}
  */
-export type LangGraphStreamChunk<TState extends WorkflowState = WorkflowState> =
-  Record<string, Partial<TState>> | Record<string, never>; // Empty object type
+export type LangGraphStreamChunk<
+  TState extends Record<string, unknown> = Record<string, unknown>
+> = Record<string, Partial<TState>> | Record<string, never>; // Empty object type
 
 /**
  * Subgraph stream chunk structure (when subgraphs: true)
@@ -43,25 +44,26 @@ export type LangGraphStreamChunk<TState extends WorkflowState = WorkflowState> =
  * - Subgraph: [['worker-agent:uuid'], 'updates', { 'agentNode': { ... } }]
  * - Nested: [['parent:uuid', 'child:uuid'], 'updates', { 'node': { ... } }]
  */
-export type SubgraphStreamChunk<TState extends WorkflowState = WorkflowState> =
-  [
-    string[], // Namespace path (empty for parent, populated for subgraphs)
-    StreamMode | 'updates' | 'values', // Stream mode
-    LangGraphStreamChunk<TState> // The actual state update
-  ];
+export type SubgraphStreamChunk<
+  TState extends Record<string, unknown> = Record<string, unknown>
+> = [
+  string[], // Namespace path (empty for parent, populated for subgraphs)
+  StreamMode | 'updates' | 'values', // Stream mode
+  LangGraphStreamChunk<TState> // The actual state update
+];
 
 /**
  * Union type: handles both regular and subgraph chunks
  */
-export type AnyStreamChunk<TState extends WorkflowState = WorkflowState> =
-  | LangGraphStreamChunk<TState>
-  | SubgraphStreamChunk<TState>;
+export type AnyStreamChunk<
+  TState extends Record<string, unknown> = Record<string, unknown>
+> = LangGraphStreamChunk<TState> | SubgraphStreamChunk<TState>;
 
 /**
  * Parsed stream event with guaranteed structure
  */
 export interface ParsedStreamEvent<
-  TState extends WorkflowState = WorkflowState
+  TState extends Record<string, unknown> = Record<string, unknown>
 > {
   /**
    * Node name that emitted this event
@@ -147,7 +149,7 @@ export function isToolNode(nodeName: string): boolean {
 /**
  * Type guard: Check if chunk is valid
  */
-export function isValidChunk<TState extends WorkflowState>(
+export function isValidChunk<TState extends Record<string, unknown>>(
   chunk: unknown
 ): chunk is LangGraphStreamChunk<TState> {
   return (
@@ -172,7 +174,7 @@ export function isEmptyChunk(chunk: unknown): boolean {
 /**
  * Type guard: Check if chunk is a subgraph chunk (tuple format)
  */
-export function isSubgraphChunk<TState extends WorkflowState>(
+export function isSubgraphChunk<TState extends Record<string, unknown>>(
   chunk: unknown
 ): chunk is SubgraphStreamChunk<TState> {
   return (

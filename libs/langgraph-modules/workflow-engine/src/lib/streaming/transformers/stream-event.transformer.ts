@@ -15,7 +15,6 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import type { WorkflowState } from '../../interfaces/workflow-engine.interface';
 import type {
   ParsedStreamEvent,
   ParsedMessageEvent,
@@ -30,7 +29,7 @@ import type {
  * This is what your controllers/services should work with
  */
 export interface WorkflowUpdateEvent<
-  TState extends WorkflowState = WorkflowState
+  TState extends Record<string, unknown> = Record<string, unknown>
 > {
   readonly type: 'workflow-update';
   readonly executionId: string;
@@ -51,7 +50,7 @@ export interface WorkflowUpdateEvent<
  * Domain-specific tool execution event
  */
 export interface ToolExecutionEvent<
-  TState extends WorkflowState = WorkflowState
+  TState extends Record<string, unknown> = Record<string, unknown>
 > {
   readonly type: 'tool-execution';
   readonly executionId: string;
@@ -107,7 +106,9 @@ export interface DebugStreamEvent {
 /**
  * Union type for all domain events
  */
-export type DomainStreamEvent<TState extends WorkflowState = WorkflowState> =
+export type DomainStreamEvent<
+  TState extends Record<string, unknown> = Record<string, unknown>
+> =
   | WorkflowUpdateEvent<TState>
   | ToolExecutionEvent<TState>
   | MessageStreamEvent
@@ -127,7 +128,9 @@ export class StreamEventTransformer {
    * @param executionId - Workflow execution ID
    * @returns Domain event
    */
-  transformToDomainEvent<TState extends WorkflowState = WorkflowState>(
+  transformToDomainEvent<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     parsedEvent:
       | ParsedStreamEvent<TState>
       | ParsedMessageEvent
@@ -181,7 +184,9 @@ export class StreamEventTransformer {
    * @param executionId - Workflow execution ID
    * @returns Workflow update event
    */
-  transformToWorkflowUpdate<TState extends WorkflowState = WorkflowState>(
+  transformToWorkflowUpdate<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     parsedEvent: ParsedStreamEvent<TState>,
     executionId: string
   ): WorkflowUpdateEvent<TState> {
@@ -209,7 +214,9 @@ export class StreamEventTransformer {
    * @param executionId - Workflow execution ID
    * @returns Tool execution event
    */
-  transformToToolExecution<TState extends WorkflowState = WorkflowState>(
+  transformToToolExecution<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     parsedEvent: ParsedStreamEvent<TState>,
     executionId: string
   ): ToolExecutionEvent<TState> {
@@ -317,7 +324,9 @@ export class StreamEventTransformer {
    * @param executionId - Workflow execution ID
    * @yields Domain events
    */
-  async *transformStream<TState extends WorkflowState = WorkflowState>(
+  async *transformStream<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     parsedStream: AsyncIterable<
       | ParsedStreamEvent<TState>
       | ParsedMessageEvent
