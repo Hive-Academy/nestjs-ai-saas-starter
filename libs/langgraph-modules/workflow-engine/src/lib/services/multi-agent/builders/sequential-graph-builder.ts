@@ -7,7 +7,7 @@ import type {
 } from '../../../decorators/multi-agent/multi-agent.decorator';
 import { isSequentialConfig } from '../../../decorators/multi-agent/multi-agent.decorator';
 import { getAgentConfig } from '../../../decorators/multi-agent/agent.decorator';
-import type { WorkflowState } from '../../../interfaces/workflow-engine.interface';
+
 import { MetadataProcessorService } from '../../../core/metadata-processor.service';
 import type { IMultiAgentGraphBuilder } from './i-multi-agent-graph-builder.interface';
 import { SequentialGraphBuilderError } from '../errors';
@@ -113,11 +113,9 @@ export class SequentialGraphBuilder implements IMultiAgentGraphBuilder {
    * @returns StateGraph with linear agent chain structure
    * @throws SequentialGraphBuilderError if validation fails or graph construction fails
    */
-  // @ts-expect-error - LangGraph StateGraph generic type mismatch with WorkflowState
-  async buildGraph<TState extends WorkflowState = WorkflowState>(
-    config: MultiAgentConfig,
-    workflowClass: any
-  ): Promise<StateGraph<TState>> {
+  async buildGraph<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(config: MultiAgentConfig, workflowClass: any): Promise<StateGraph<TState>> {
     this.logger.debug(
       `Building sequential graph for ${
         workflowClass?.name || 'multi-agent workflow'

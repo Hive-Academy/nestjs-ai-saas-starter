@@ -8,10 +8,7 @@ import type {
 } from '@langchain/langgraph-checkpoint';
 import { BASE_STORE_TOKEN } from '@hive-academy/langgraph-memory';
 import { MetadataProcessorService } from '../core/metadata-processor.service';
-import type {
-  WorkflowDefinition,
-  WorkflowState,
-} from '../interfaces/workflow-engine.interface';
+import type { WorkflowDefinition } from '../interfaces/workflow-engine.interface';
 import { MultiAgentGraphBuilderService } from '../services/multi-agent/multi-agent-graph-builder.service';
 import {
   FunctionalTaskGraphStrategy,
@@ -119,7 +116,9 @@ export class WorkflowExecutionService {
    *
    * Implementation: Task 3.2
    */
-  async executeWorkflow<TState extends WorkflowState = WorkflowState>(
+  async executeWorkflow<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     workflowClass: any,
     input: TState,
     config?: RunnableConfig
@@ -133,7 +132,7 @@ export class WorkflowExecutionService {
 
     // 2. Extract metadata using MetadataProcessorService
     const definition =
-      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+      this.metadataProcessor.extractWorkflowDefinition(workflowClass);
 
     // 3. Bind all handlers to instance (fixes 'this' context)
     definition.nodes.forEach((node) => {
@@ -182,7 +181,9 @@ export class WorkflowExecutionService {
    * Enhancement: Task 6 - Default to 'updates' mode for tool call visibility
    * Enhancement: Comprehensive streaming modes support (messages, custom, debug, multi-mode)
    */
-  async *streamWorkflow<TState extends WorkflowState = WorkflowState>(
+  async *streamWorkflow<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     workflowClass: any,
     input: TState,
     config?: RunnableConfig & {
@@ -205,7 +206,7 @@ export class WorkflowExecutionService {
 
     // 2. Extract metadata using MetadataProcessorService
     const definition =
-      this.metadataProcessor.extractWorkflowDefinition<TState>(workflowClass);
+      this.metadataProcessor.extractWorkflowDefinition(workflowClass);
 
     // 3. Bind all handlers to instance (fixes 'this' context)
     definition.nodes.forEach((node) => {
@@ -268,7 +269,9 @@ export class WorkflowExecutionService {
    * 2. Compile graph with checkpointer and store
    * 3. Execute via LangGraph's native invoke()
    */
-  async executeMultiAgentWorkflow<TState extends WorkflowState = WorkflowState>(
+  async executeMultiAgentWorkflow<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     supervisorClass: any,
     agentClasses: any[],
     input: TState,
@@ -318,9 +321,10 @@ export class WorkflowExecutionService {
    * @param definition - WorkflowDefinition extracted from decorators
    * @returns StateGraph instance ready for compilation
    */
-  private buildStateGraph<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): StateGraph<TState> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private buildStateGraph(
+    definition: WorkflowDefinition
+  ): StateGraph<any, any, any, string> {
     const workflowType = definition.config?.metadata?.pattern as string;
 
     this.logger.debug(

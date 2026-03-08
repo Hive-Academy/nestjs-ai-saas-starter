@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StateGraph } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
-import type {
-  WorkflowDefinition,
-  WorkflowState,
-} from '../../interfaces/workflow-engine.interface';
+import type { WorkflowDefinition } from '../../interfaces/workflow-engine.interface';
 import { BaseGraphBuildingStrategy } from './base-graph-building.strategy';
 import { ToolRegistryService } from '../../services/tool-registry.service';
 
@@ -48,15 +45,19 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with taskDependencies metadata
    * @returns StateGraph with linear task edges
    */
-  buildStateGraph<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): StateGraph<TState> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  buildStateGraph(
+    definition: WorkflowDefinition
+  ): StateGraph<any, any, any, string> {
     this.logger.debug(
       `Building functional-task graph for ${definition.name} with ${definition.nodes.length} tasks`
     );
 
     // Create StateGraph with channels from definition
-    const graph = new StateGraph<TState>(definition.channels);
+    // Note: channels is always an AnnotationRoot (e.g. AgentStateAnnotation).
+    // We let TypeScript infer the graph's state type from the annotation
+    // rather than forcing TState (a plain interface) which isn't a valid StateDefinitionInit.
+    const graph = new StateGraph(definition.channels);
 
     // 1. Add all nodes (tasks)
     this.addNodesToGraph(graph, definition);
@@ -97,9 +98,10 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param graph - StateGraph to add edges to
    * @param definition - WorkflowDefinition with taskDependencies metadata
    */
-  private addTaskEdges<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  private addTaskEdges(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     const taskDeps = definition.config?.metadata?.taskDependencies as
       | Record<string, readonly string[]>
@@ -127,7 +129,7 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
 
       for (const depId of dependencies) {
         this.logger.debug(`Adding dependency edge: ${depId} → ${taskId}`);
-        graph.addEdge(depId as any, taskId as any);
+        graph.addEdge(depId, taskId);
       }
     }
   }
@@ -153,9 +155,10 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param graph - StateGraph to add tool routing to
    * @param definition - WorkflowDefinition with node metadata
    */
-  private addLLMTaskToolRouting<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  private addLLMTaskToolRouting(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     const llmTaskNodes = definition.nodes.filter((node) => node.isLLMTask);
 
@@ -208,25 +211,19 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
       // 2. Create task-specific ToolNode
       const toolNodeId = `tools_${node.id}`;
       const toolNode = new ToolNode(tools);
-      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      // ToolNode signature is correct and works at runtime
-      graph.addNode(toolNodeId, toolNode as any);
+      graph.addNode(toolNodeId, toolNode);
 
       // 3. Determine next task for 'continue' route
       const nextTaskId = this.getNextTaskId(node.id, taskDeps, definition);
 
       // 4. Add conditional edge: task → tools_task OR next task
-      graph.addConditionalEdges(
-        node.id as any,
-        this.shouldExecuteTools.bind(this),
-        {
-          tools: toolNodeId as any,
-          continue: (nextTaskId || this.END) as any,
-        }
-      );
+      graph.addConditionalEdges(node.id, this.shouldExecuteTools.bind(this), {
+        tools: toolNodeId,
+        continue: nextTaskId || this.END,
+      });
 
       // 5. Add return edge: tools_task → task (loop until no tool_calls)
-      graph.addEdge(toolNodeId as any, node.id as any);
+      graph.addEdge(toolNodeId, node.id);
 
       this.logger.debug(
         `Tool routing added for ${node.id}: ${node.id} ↔ ${toolNodeId} (max ${node.llmTaskOptions.maxToolIterations} iterations)`
@@ -246,10 +243,10 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - Workflow definition
    * @returns Next task ID or null if no next task
    */
-  private getNextTaskId<TState extends WorkflowState = WorkflowState>(
+  private getNextTaskId(
     currentTaskId: string,
     taskDeps: Record<string, readonly string[]> | undefined,
-    definition: WorkflowDefinition<TState>
+    definition: WorkflowDefinition
   ): string | null {
     if (!taskDeps) {
       return null;

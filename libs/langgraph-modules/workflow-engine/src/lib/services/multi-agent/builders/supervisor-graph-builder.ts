@@ -15,7 +15,7 @@ import type {
 } from '../../../decorators/multi-agent/multi-agent.decorator';
 import { isSupervisorConfig } from '../../../decorators/multi-agent/multi-agent.decorator';
 import { getAgentConfig } from '../../../decorators/multi-agent/agent.decorator';
-import type { WorkflowState } from '../../../interfaces/workflow-engine.interface';
+
 import { LlmProviderService } from '../../llm/llm-provider.service';
 import { MetadataProcessorService } from '../../../core/metadata-processor.service';
 import type { IMultiAgentGraphBuilder } from './i-multi-agent-graph-builder.interface';
@@ -112,8 +112,9 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
    * @returns StateGraph with supervisor pattern structure
    * @throws SupervisorGraphBuilderError if validation fails or graph construction fails
    */
-  // @ts-expect-error - LangGraph StateGraph generic type mismatch with WorkflowState
-  async buildGraph<TState extends WorkflowState = WorkflowState>(
+  async buildGraph<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     config: MultiAgentConfig,
     supervisorClass: any
   ): Promise<StateGraph<TState>> {
@@ -178,7 +179,7 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
           role: 'system',
           content: supervisorConfig.systemPrompt,
         };
-        const messages = [systemMessage, ...(state.messages || [])];
+        const messages = [systemMessage, ...((state.messages as any[]) || [])];
 
         // Invoke tool-bound LLM with current messages
         const response = (await supervisorWithTools.invoke(messages)) as any;
@@ -197,7 +198,7 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
         // Append supervisor response to messages
         return {
           messages: [response],
-        } as Partial<TState>;
+        } as unknown as Partial<TState>;
       });
 
       // 6. Add ToolNode for worker execution
@@ -578,15 +579,18 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
    * @param state - Current workflow state
    * @returns 'tools' if tool_calls present, 'continue' if no tool_calls
    */
-  private shouldExecuteTools(state: WorkflowState): 'tools' | 'continue' {
+  private shouldExecuteTools(
+    state: Record<string, unknown>
+  ): 'tools' | 'continue' {
     // Check if state has messages
-    if (!state.messages || state.messages.length === 0) {
+    const messages = state.messages as any[] | undefined;
+    if (!messages || messages.length === 0) {
       this.logger.debug('No messages in state, workflow complete');
       return 'continue';
     }
 
     // Get last message (supervisor response)
-    const lastMessage = state.messages[state.messages.length - 1];
+    const lastMessage = messages[messages.length - 1];
 
     // Check for tool_calls in LangChain message structure
     if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {

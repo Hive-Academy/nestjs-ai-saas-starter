@@ -4,7 +4,6 @@ import {
   WorkflowDefinition,
   WorkflowNode,
   WorkflowEdge,
-  WorkflowState,
   Command,
 } from '../interfaces';
 import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
@@ -62,9 +61,7 @@ export class MetadataProcessorService {
    * Extract WorkflowDefinition from decorator metadata
    * Supports both functional-task (@Entrypoint/@Task) and functional-node (@Node/@Edge) patterns
    */
-  extractWorkflowDefinition<TState extends WorkflowState = WorkflowState>(
-    workflowClass: any
-  ): WorkflowDefinition<TState> {
+  extractWorkflowDefinition(workflowClass: any): WorkflowDefinition {
     this.logger.debug(
       `Extracting workflow definition from ${workflowClass.name}`
     );
@@ -86,15 +83,9 @@ export class MetadataProcessorService {
 
     // 🔑 PATTERN-SPECIFIC COMPILATION
     if (workflowPattern === 'functional-task') {
-      return this.compileTaskBasedWorkflow<TState>(
-        workflowClass,
-        workflowOptions
-      );
+      return this.compileTaskBasedWorkflow(workflowClass, workflowOptions);
     } else {
-      return this.compileNodeBasedWorkflow<TState>(
-        workflowClass,
-        workflowOptions
-      );
+      return this.compileNodeBasedWorkflow(workflowClass, workflowOptions);
     }
   }
 
@@ -179,10 +170,10 @@ export class MetadataProcessorService {
    * THIN LAYER: Extracts metadata ONLY, no graph building.
    * WorkflowExecutionService builds StateGraph edges from taskDependencies metadata.
    */
-  private compileTaskBasedWorkflow<TState extends WorkflowState>(
+  private compileTaskBasedWorkflow(
     workflowClass: any,
     workflowOptions: any
-  ): WorkflowDefinition<TState> {
+  ): WorkflowDefinition {
     const prototype = workflowClass.prototype || workflowClass;
     const methodNames = Object.getOwnPropertyNames(prototype);
 
@@ -353,11 +344,11 @@ export class MetadataProcessorService {
     }
 
     // Convert to WorkflowDefinition (metadata only, no graph building)
-    const definition: WorkflowDefinition<TState> = {
+    const definition: WorkflowDefinition = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
-      channels: AgentStateAnnotation, // 🔑 Always use default AgentStateAnnotation
-      nodes: this.convertNodesToDefinition<TState>(nodes),
+      channels: workflowOptions.channels || AgentStateAnnotation,
+      nodes: this.convertNodesToDefinition(nodes),
       edges: [], // Empty - WorkflowExecutionService builds edges from taskDependencies metadata
       entryPoint: entrypointId || nodes[0]?.id || 'start',
       config: {
@@ -383,10 +374,10 @@ export class MetadataProcessorService {
    * Compile node-based workflow (@Node + @Edge pattern)
    * Traditional graph-based approach
    */
-  private compileNodeBasedWorkflow<TState extends WorkflowState>(
+  private compileNodeBasedWorkflow(
     workflowClass: any,
     workflowOptions: any
-  ): WorkflowDefinition<TState> {
+  ): WorkflowDefinition {
     // Get node metadata (existing implementation)
     const nodeMetadata = getWorkflowNodes(workflowClass);
     this.logger.debug(
@@ -400,12 +391,12 @@ export class MetadataProcessorService {
     );
 
     // Convert to WorkflowDefinition (existing implementation)
-    const definition: WorkflowDefinition<TState> = {
+    const definition: WorkflowDefinition = {
       name: workflowOptions.name || workflowClass.name,
       description: workflowOptions.description,
-      channels: AgentStateAnnotation, // 🔑 Always use default AgentStateAnnotation
-      nodes: this.convertNodesToDefinition<TState>(nodeMetadata),
-      edges: this.convertEdgesToDefinition<TState>(edgeMetadata, nodeMetadata),
+      channels: workflowOptions.channels || AgentStateAnnotation,
+      nodes: this.convertNodesToDefinition(nodeMetadata),
+      edges: this.convertEdgesToDefinition(edgeMetadata, nodeMetadata),
       entryPoint: this.determineEntryPoint(nodeMetadata, edgeMetadata),
       config: {
         requiresApproval: workflowOptions.requiresHumanApproval,
@@ -445,9 +436,9 @@ export class MetadataProcessorService {
   /**
    * Convert node metadata to workflow nodes
    */
-  private convertNodesToDefinition<TState extends WorkflowState>(
+  private convertNodesToDefinition(
     nodeMetadata: NodeMetadata[]
-  ): Array<WorkflowNode<TState>> {
+  ): Array<WorkflowNode> {
     return nodeMetadata.map((node: any) => {
       // Check if this is an LLM task node
       const isLLMTask = node.type === 'llm' && node.llmTaskMetadata;
@@ -457,8 +448,8 @@ export class MetadataProcessorService {
         name: node.name || node.id,
         description: node.description,
         handler: node.handler as (
-          state: TState
-        ) => Promise<Partial<TState> | Command<TState>>,
+          state: Record<string, unknown>
+        ) => Promise<Partial<Record<string, unknown>> | Command>,
         requiresApproval: node.requiresApproval,
         // 🔑 NEW: Include LLM task flags in node
         isLLMTask,
@@ -497,11 +488,11 @@ export class MetadataProcessorService {
   /**
    * Convert edge metadata to workflow edges
    */
-  private convertEdgesToDefinition<TState extends WorkflowState>(
+  private convertEdgesToDefinition(
     edgeMetadata: EdgeMetadata[],
     nodeMetadata: NodeMetadata[]
-  ): Array<WorkflowEdge<TState>> {
-    const edges: Array<WorkflowEdge<TState>> = [];
+  ): Array<WorkflowEdge> {
+    const edges: Array<WorkflowEdge> = [];
 
     // Add explicit edges from @Edge decorators
     edgeMetadata.forEach((edge) => {
@@ -510,7 +501,16 @@ export class MetadataProcessorService {
         to:
           typeof edge.to === 'function'
             ? {
-                condition: edge.to as (state: TState) => string | null,
+                condition: ((edgeFn, defaultRoute) => {
+                  return (state: Record<string, unknown>): string => {
+                    const result = (
+                      edgeFn as (
+                        state: Record<string, unknown>
+                      ) => string | null
+                    )(state);
+                    return result ?? defaultRoute ?? '__end__';
+                  };
+                })(edge.to, this.findDefaultRoute(nodeMetadata)),
                 routes: {}, // Will be populated by analyzing the condition function
                 default: this.findDefaultRoute(nodeMetadata),
               }
@@ -519,7 +519,9 @@ export class MetadataProcessorService {
           priority: edge.priority,
           minConfidence: edge.minConfidence,
           maxConfidence: edge.maxConfidence,
-          condition: edge.condition as (state: WorkflowState) => boolean,
+          condition: edge.condition as (
+            state: Record<string, unknown>
+          ) => boolean,
           metadata: edge.metadata,
         },
       });
@@ -603,9 +605,7 @@ export class MetadataProcessorService {
   /**
    * Validate workflow definition
    */
-  validateWorkflowDefinition<TState extends WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): void {
+  validateWorkflowDefinition(definition: WorkflowDefinition): void {
     this.logger.debug(`Validating workflow definition: ${definition.name}`);
 
     // Check for required fields
@@ -695,9 +695,7 @@ export class MetadataProcessorService {
   /**
    * Get workflow summary for debugging
    */
-  getWorkflowSummary<TState extends WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): string {
+  getWorkflowSummary(definition: WorkflowDefinition): string {
     const nodeCount = definition.nodes.length;
     const edgeCount = definition.edges.length;
     const approvalNodes = definition.nodes.filter(
@@ -745,9 +743,7 @@ export class MetadataProcessorService {
   /**
    * Get streaming configuration summary for debugging
    */
-  getStreamingSummary<TState extends WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): string {
+  getStreamingSummary(definition: WorkflowDefinition): string {
     let tokenNodes = 0;
     let eventNodes = 0;
     let progressNodes = 0;
@@ -773,9 +769,7 @@ export class MetadataProcessorService {
   /**
    * Check if workflow has streaming capabilities
    */
-  hasStreamingCapabilities<TState extends WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): boolean {
+  hasStreamingCapabilities(definition: WorkflowDefinition): boolean {
     return definition.nodes.some((node) => {
       const streamingMetadata = node.config?.metadata?.streaming;
       return (

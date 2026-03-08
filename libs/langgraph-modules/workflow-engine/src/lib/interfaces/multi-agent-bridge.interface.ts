@@ -4,11 +4,7 @@
  * without creating a direct dependency on multi-agent module
  */
 
-import type {
-  WorkflowState,
-  WorkflowNode,
-  WorkflowEdge,
-} from './workflow-engine.interface';
+import type { WorkflowNode, WorkflowEdge } from './workflow-engine.interface';
 
 /**
  * Multi-agent workflow definition from decorator patterns
@@ -122,18 +118,16 @@ export interface MultiAgentBridgeConfig {
 /**
  * Result of multi-agent definition translation
  */
-export interface MultiAgentTranslationResult<
-  TState extends WorkflowState = WorkflowState
-> {
+export interface MultiAgentTranslationResult {
   /**
    * The translated workflow nodes (one per agent + coordination nodes)
    */
-  nodes: WorkflowNode<TState>[];
+  nodes: WorkflowNode[];
 
   /**
    * The translated workflow edges (agent communication + coordination)
    */
-  edges: WorkflowEdge<TState>[];
+  edges: WorkflowEdge[];
 
   /**
    * The entry point node ID (usually coordinator or first agent)
@@ -158,7 +152,7 @@ export interface MultiAgentTranslationResult<
  * Multi-agent execution context for workflow nodes
  */
 export interface MultiAgentExecutionContext<
-  TState extends WorkflowState = WorkflowState
+  TState extends Record<string, unknown> = Record<string, unknown>
 > {
   readonly state: TState;
   readonly agentId: string;

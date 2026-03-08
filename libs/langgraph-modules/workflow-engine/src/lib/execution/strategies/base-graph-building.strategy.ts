@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import { type StateGraph, END } from '@langchain/langgraph';
 import type {
   WorkflowDefinition,
-  WorkflowState,
   WorkflowNode,
 } from '../../interfaces/workflow-engine.interface';
 import type { GraphBuildingStrategy } from './graph-building.strategy.interface';
@@ -37,9 +36,10 @@ export abstract class BaseGraphBuildingStrategy
    * Build StateGraph from WorkflowDefinition
    * Template method - subclasses implement specific logic
    */
-  abstract buildStateGraph<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): StateGraph<TState>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  abstract buildStateGraph(
+    definition: WorkflowDefinition
+  ): StateGraph<any, any, any, string>;
 
   /**
    * Add all nodes from definition to graph
@@ -48,14 +48,13 @@ export abstract class BaseGraphBuildingStrategy
    * @param graph - StateGraph to add nodes to
    * @param definition - WorkflowDefinition with nodes metadata
    */
-  protected addNodesToGraph<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  protected addNodesToGraph(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     definition.nodes.forEach((node) => {
       this.logger.debug(`Adding node: ${node.id}`);
-      // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-      // Handler signature is correct: (state: TState) => Promise<Partial<TState> | Command>
       graph.addNode(node.id, node.handler);
     });
   }
@@ -67,12 +66,13 @@ export abstract class BaseGraphBuildingStrategy
    * @param graph - StateGraph to set entry point on
    * @param entryPoint - Node ID to use as entry point
    */
-  protected setGraphEntryPoint<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected setGraphEntryPoint(
+    graph: StateGraph<any, any, any, string>,
     entryPoint: string
   ): void {
     this.logger.debug(`Setting entry point: ${entryPoint}`);
-    graph.setEntryPoint(entryPoint as any);
+    graph.setEntryPoint(entryPoint);
   }
 
   /**
@@ -84,12 +84,15 @@ export abstract class BaseGraphBuildingStrategy
    * @param state - Current workflow state
    * @returns 'tools' if tool calls detected, 'continue' otherwise
    */
-  protected shouldExecuteTools(state: WorkflowState): 'tools' | 'continue' {
-    if (!state.messages || state.messages.length === 0) {
+  protected shouldExecuteTools(
+    state: Record<string, unknown>
+  ): 'tools' | 'continue' {
+    const messages = state.messages as any[] | undefined;
+    if (!messages || messages.length === 0) {
       return 'continue';
     }
 
-    const lastMessage = state.messages[state.messages.length - 1];
+    const lastMessage = messages[messages.length - 1];
 
     // Check if last message has tool_calls (LangChain message structure)
     if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
@@ -113,9 +116,9 @@ export abstract class BaseGraphBuildingStrategy
    * @param definition - WorkflowDefinition with edge metadata
    * @returns Next node ID or null if no explicit next node
    */
-  protected getNextNode<TState extends WorkflowState = WorkflowState>(
-    node: WorkflowNode<TState>,
-    definition: WorkflowDefinition<TState>
+  protected getNextNode(
+    node: WorkflowNode,
+    definition: WorkflowDefinition
   ): string | null {
     // Find explicit edge from this node
     const edge = definition.edges.find((e) => e.from === node.id);
@@ -133,9 +136,7 @@ export abstract class BaseGraphBuildingStrategy
    * @param definition - WorkflowDefinition to check
    * @returns True if tools are configured
    */
-  protected hasTools<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): boolean {
+  protected hasTools(definition: WorkflowDefinition): boolean {
     return (
       definition.config?.metadata?.tools &&
       (definition.config.metadata.tools as unknown[]).length > 0

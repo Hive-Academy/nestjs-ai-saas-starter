@@ -3,7 +3,6 @@ import { StateGraph } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import type {
   WorkflowDefinition,
-  WorkflowState,
   ConditionalRouting,
 } from '../../interfaces/workflow-engine.interface';
 import { BaseGraphBuildingStrategy } from './base-graph-building.strategy';
@@ -53,15 +52,19 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with explicit edges
    * @returns StateGraph with conditional routing and tool support
    */
-  buildStateGraph<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): StateGraph<TState> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  buildStateGraph(
+    definition: WorkflowDefinition
+  ): StateGraph<any, any, any, string> {
     this.logger.debug(
       `Building functional-node graph for ${definition.name} with ${definition.nodes.length} nodes`
     );
 
     // Create StateGraph with channels from definition
-    const graph = new StateGraph<TState>(definition.channels);
+    // Note: channels is always an AnnotationRoot (e.g. AgentStateAnnotation).
+    // We let TypeScript infer the graph's state type from the annotation
+    // rather than forcing TState (a plain interface) which isn't a valid StateDefinitionInit.
+    const graph = new StateGraph(definition.channels);
 
     // 1. Add all nodes
     this.addNodesToGraph(graph, definition);
@@ -99,15 +102,15 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param graph - StateGraph to add ToolNode to
    * @param definition - WorkflowDefinition with tools metadata
    */
-  private addToolNode<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  private addToolNode(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     const tools = definition.config!.metadata!.tools as any[];
     const toolNode = new ToolNode(tools);
 
-    // @ts-expect-error - LangGraph's complex conditional types cause issues with strict mode
-    graph.addNode('tools', toolNode as any);
+    graph.addNode('tools', toolNode);
 
     this.logger.debug(
       `Added ToolNode with ${tools.length} tools to functional-node graph ${definition.name}`
@@ -133,27 +136,28 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param graph - StateGraph to add edges to
    * @param definition - WorkflowDefinition with edges metadata
    */
-  private addNodeEdges<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  private addNodeEdges(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     definition.edges.forEach((edge) => {
       if (typeof edge.to === 'string') {
         // Simple edge: from → to
         this.logger.debug(`Adding edge: ${edge.from} → ${edge.to}`);
-        graph.addEdge(edge.from as any, edge.to as any);
+        graph.addEdge(edge.from, edge.to);
       } else {
         // Conditional edge with routing
-        const conditionalTo = edge.to as ConditionalRouting<TState>;
+        const conditionalTo = edge.to as ConditionalRouting;
         this.logger.debug(
           `Adding conditional edge from ${edge.from} with routes: ${Object.keys(
             conditionalTo.routes
           ).join(', ')}`
         );
         graph.addConditionalEdges(
-          edge.from as any,
-          conditionalTo.condition as any,
-          conditionalTo.routes as any
+          edge.from,
+          conditionalTo.condition,
+          conditionalTo.routes
         );
       }
     });
@@ -179,9 +183,10 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param graph - StateGraph to add tool routing to
    * @param definition - WorkflowDefinition with tool metadata
    */
-  private addNodeToolRouting<TState extends WorkflowState = WorkflowState>(
-    graph: StateGraph<TState>,
-    definition: WorkflowDefinition<TState>
+  private addNodeToolRouting(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graph: StateGraph<any, any, any, string>,
+    definition: WorkflowDefinition
   ): void {
     // Add conditional tool routing for each node
     definition.nodes.forEach((node) => {
@@ -191,19 +196,15 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
         `Adding tool routing for node ${node.id}: tools or ${nextNode || 'END'}`
       );
 
-      graph.addConditionalEdges(
-        node.id as any,
-        this.shouldExecuteTools.bind(this),
-        {
-          tools: 'tools' as any,
-          continue: (nextNode || this.END) as any,
-        }
-      );
+      graph.addConditionalEdges(node.id, this.shouldExecuteTools.bind(this), {
+        tools: 'tools',
+        continue: nextNode || this.END,
+      });
     });
 
     // Tools always return to entrypoint (agent node)
     // This creates the execution loop: agent → tools → agent
-    graph.addEdge('tools' as any, definition.entryPoint as any);
+    graph.addEdge('tools', definition.entryPoint);
 
     this.logger.debug(
       `Added tool routing: tools → ${definition.entryPoint} (entrypoint loop)`

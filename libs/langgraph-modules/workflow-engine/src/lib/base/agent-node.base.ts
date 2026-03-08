@@ -2,7 +2,7 @@ import { Logger, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState, Command, WorkflowError } from '../interfaces';
+import type { Command, WorkflowError } from '../interfaces';
 import { WorkflowCommandType } from '../constants';
 
 /**
@@ -30,7 +30,7 @@ export interface AgentNodeConfig {
  * Provides common functionality for LLM interaction, error handling, and state management
  */
 export abstract class AgentNodeBase<
-  TState extends WorkflowState = WorkflowState
+  TState extends Record<string, unknown> = Record<string, unknown>
 > implements OnModuleInit
 {
   protected readonly logger: Logger;
@@ -73,16 +73,14 @@ export abstract class AgentNodeBase<
    * Execute the node logic
    * Nodes can return either a state update or a Command for control flow
    */
-  public abstract execute(
-    state: TState
-  ): Promise<Partial<TState> | Command<TState>>;
+  public abstract execute(state: TState): Promise<Partial<TState> | Command>;
 
   /**
    * Execute with hooks and error handling
    */
   public async executeWithHooks(
     state: TState
-  ): Promise<Partial<TState> | Command<TState>> {
+  ): Promise<Partial<TState> | Command> {
     try {
       // Pre-execution
       await this.preExecute(state);
@@ -176,7 +174,7 @@ export abstract class AgentNodeBase<
    */
   protected async postExecute(
     state: TState,
-    result: Partial<TState> | Command<TState>
+    result: Partial<TState> | Command
   ): Promise<void> {
     this.logger.debug(`Post-executing node ${this.nodeConfig.id}`);
 
@@ -212,10 +210,7 @@ export abstract class AgentNodeBase<
   /**
    * Handle node errors
    */
-  protected async handleError(
-    error: Error,
-    state: TState
-  ): Promise<Command<TState>> {
+  protected async handleError(error: Error, state: TState): Promise<Command> {
     this.logger.error(
       `Error in node ${this.nodeConfig.id}: ${error.message}`,
       error.stack
@@ -247,17 +242,19 @@ export abstract class AgentNodeBase<
 
     // Check retry policy
     const maxRetries = this.nodeConfig.maxRetries ?? 3;
-    if (state.retryCount < maxRetries && workflowError.isRecoverable) {
+    const retryCount = (state.retryCount as number) ?? 0;
+    const confidence = (state.confidence as number) ?? 1;
+    if (retryCount < maxRetries && workflowError.isRecoverable) {
       return {
         type: WorkflowCommandType.RETRY,
         retry: {
           node: this.nodeConfig.id,
-          delay: Math.pow(2, state.retryCount) * 1000, // Exponential backoff
+          delay: Math.pow(2, retryCount) * 1000, // Exponential backoff
         },
         update: {
-          retryCount: state.retryCount + 1,
+          retryCount: retryCount + 1,
           lastError: workflowError,
-          confidence: Math.max((state.confidence ?? 1) - 0.1, 0),
+          confidence: Math.max(confidence - 0.1, 0),
         } as unknown as Partial<TState>,
       };
     }
@@ -320,8 +317,8 @@ export abstract class AgentNodeBase<
    */
   protected createCommand(
     type: WorkflowCommandType,
-    options: Partial<Command<TState>> = {}
-  ): Command<TState> {
+    options: Partial<Command> = {}
+  ): Command {
     return {
       type,
       ...options,
@@ -336,7 +333,7 @@ export abstract class AgentNodeBase<
   /**
    * Create a goto command
    */
-  protected goto(target: string, update?: Partial<TState>): Command<TState> {
+  protected goto(target: string, update?: Partial<TState>): Command {
     return this.createCommand(WorkflowCommandType.GOTO, {
       goto: target,
       update,
@@ -346,7 +343,7 @@ export abstract class AgentNodeBase<
   /**
    * Create an update command
    */
-  protected update(update: Partial<TState>): Command<TState> {
+  protected update(update: Partial<TState>): Command {
     return this.createCommand(WorkflowCommandType.UPDATE, {
       update,
     });
@@ -355,7 +352,7 @@ export abstract class AgentNodeBase<
   /**
    * Create an end command
    */
-  protected end(update?: Partial<TState>): Command<TState> {
+  protected end(update?: Partial<TState>): Command {
     return this.createCommand(WorkflowCommandType.END, {
       update,
     });
@@ -366,7 +363,7 @@ export abstract class AgentNodeBase<
    */
   protected meetsConfidenceThreshold(state: TState): boolean {
     const threshold = this.nodeConfig.confidenceThreshold ?? 0.7;
-    return (state.confidence ?? 1) >= threshold;
+    return ((state.confidence as number) ?? 1) >= threshold;
   }
 
   /**
@@ -398,7 +395,7 @@ export abstract class AgentNodeBase<
   protected async checkApproval(
     state: TState,
     nextNode: string
-  ): Promise<Command<TState>> {
+  ): Promise<Command> {
     if (this.requiresApproval(state)) {
       this.logger.log('Routing to human approval');
       return this.goto('human_approval', {

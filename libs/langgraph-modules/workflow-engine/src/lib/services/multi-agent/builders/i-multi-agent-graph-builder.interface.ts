@@ -19,7 +19,6 @@
  */
 
 import type { StateGraph } from '@langchain/langgraph';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
 import type { MultiAgentConfig } from '../../../decorators/multi-agent/multi-agent.decorator';
 
 /**
@@ -87,7 +86,7 @@ export interface IMultiAgentGraphBuilder {
    * const compiled = graph.compile({ checkpointer, store });
    * ```
    */
-  buildGraph<TState extends WorkflowState = WorkflowState>(
+  buildGraph<TState extends Record<string, unknown> = Record<string, unknown>>(
     config: MultiAgentConfig,
     supervisorClass: any
   ): Promise<StateGraph<TState>>;

@@ -1,8 +1,5 @@
 import type { StateGraph } from '@langchain/langgraph';
-import type {
-  WorkflowDefinition,
-  WorkflowState,
-} from '../../interfaces/workflow-engine.interface';
+import type { WorkflowDefinition } from '../../interfaces/workflow-engine.interface';
 
 /**
  * GraphBuildingStrategy Interface
@@ -31,7 +28,8 @@ export interface GraphBuildingStrategy {
    * @param definition - WorkflowDefinition with nodes, edges, config
    * @returns Compiled StateGraph ready for execution
    */
-  buildStateGraph<TState extends WorkflowState = WorkflowState>(
-    definition: WorkflowDefinition<TState>
-  ): StateGraph<TState>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  buildStateGraph(
+    definition: WorkflowDefinition
+  ): StateGraph<any, any, any, string>;
 }
