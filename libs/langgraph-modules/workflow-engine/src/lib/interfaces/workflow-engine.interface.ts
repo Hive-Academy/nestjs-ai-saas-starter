@@ -1,15 +1,11 @@
-import type { WorkflowError as _WorkflowError } from '@hive-academy/langgraph-core';
-
-export type {
-  WorkflowState,
-  WorkflowError,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
+import type { WorkflowError } from '@hive-academy/langgraph-core';
+import type { AnnotationRoot } from '@langchain/langgraph';
 
 export interface WorkflowDefinition {
   name: string;
   description?: string;
-  channels?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  channels?: AnnotationRoot<any>;
   nodes: Array<WorkflowNode>;
   edges: Array<WorkflowEdge>;
   entryPoint: string;
@@ -78,7 +74,7 @@ export interface WorkflowNodeConfig {
   timeout?: number;
   streaming?: boolean;
   tools?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface WorkflowEdgeConfig {
@@ -86,14 +82,14 @@ export interface WorkflowEdgeConfig {
   minConfidence?: number;
   maxConfidence?: number;
   condition?: (state: Record<string, unknown>) => boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Command {
   type?: 'goto' | 'update' | 'end' | 'error' | 'retry' | 'skip' | 'stop';
   goto?: string;
   update?: Partial<Record<string, unknown>>;
-  error?: Error | _WorkflowError;
+  error?: Error | WorkflowError;
   reason?: string;
   maxAttempts?: number;
   params?: Record<string, unknown>;
@@ -101,7 +97,7 @@ export interface Command {
     node: string;
     delay?: number;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   priority?: 'low' | 'medium' | 'high' | 'critical';
   timestamp?: Date;
 }

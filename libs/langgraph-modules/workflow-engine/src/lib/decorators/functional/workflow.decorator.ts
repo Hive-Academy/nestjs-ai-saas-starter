@@ -1,4 +1,5 @@
 import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
+import type { AnnotationRoot } from '@langchain/langgraph';
 import {
   WORKFLOW_EDGES_KEY,
   WORKFLOW_METADATA_KEY,
@@ -53,8 +54,9 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
     timeout?: number;
     fallbackStrategy?: 'auto-approve' | 'reject' | 'retry';
   };
-  /** State annotation or channels definition */
-  channels?: any;
+  /** State annotation (AnnotationRoot) for LangGraph StateGraph channels */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  channels?: AnnotationRoot<any>;
   /** Pattern to use (supervisor, pipeline, parallel, etc.) */
   pattern?: 'supervisor' | 'pipeline' | 'parallel' | 'map-reduce' | 'saga';
   /** Interrupt nodes for checkpointing */

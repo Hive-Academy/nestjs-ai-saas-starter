@@ -20,7 +20,10 @@
  * ```
  */
 
-export type { GraphBuildingStrategy } from './graph-building.strategy.interface';
+export type {
+  GraphBuildingStrategy,
+  AnyStateGraph,
+} from './graph-building.strategy.interface';
 export { BaseGraphBuildingStrategy } from './base-graph-building.strategy';
 export { FunctionalTaskGraphStrategy } from './functional-task-graph.strategy';
 export { FunctionalNodeGraphStrategy } from './functional-node-graph.strategy';

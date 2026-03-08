@@ -2,7 +2,8 @@ import { Logger, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { Command, WorkflowError } from '../interfaces';
+import type { Command } from '../interfaces';
+import type { WorkflowError } from '@hive-academy/langgraph-core';
 import { WorkflowCommandType } from '../constants';
 
 /**

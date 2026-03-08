@@ -3,7 +3,6 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
 import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
-import type { HumanFeedback } from '@hive-academy/langgraph-core';
 import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 
 /**
@@ -162,16 +161,16 @@ export class HumanApprovalNode {
    * @param config - RunnableConfig containing checkpointer, store, and thread configuration
    * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
-  async execute<TState extends HitlCapableState = HitlCapableState>(
-    state: TState,
+  async execute(
+    state: HitlCapableState,
     config: RunnableConfig,
     options?: {
-      extractActions?: (state: TState) => ProposedAction[];
+      extractActions?: (state: HitlCapableState) => ProposedAction[];
       autoApproveThreshold?: number;
       timeoutMs?: number;
-      skipCondition?: (state: TState) => boolean;
+      skipCondition?: (state: HitlCapableState) => boolean;
     }
-  ): Promise<Partial<TState>> {
+  ): Promise<Partial<HitlCapableState>> {
     const executionId = state.executionId ?? 'unknown';
 
     // Validate checkpointer configuration (required for interrupt())
@@ -198,7 +197,7 @@ export class HumanApprovalNode {
       this.logger.debug(
         `Skipping human approval for ${executionId} - condition met`
       );
-      return {} as Partial<TState>;
+      return {};
     }
 
     // Check auto-approve threshold
@@ -222,16 +221,16 @@ export class HumanApprovalNode {
           timestamp: new Date(),
         },
         approvalReceived: true,
-      } as unknown as Partial<TState>;
+      };
     }
 
     this.logger.log(`Human approval requested for execution ${executionId}`);
 
     // Retrieve historical approval patterns from BaseStore (if available)
-    let historicalApprovals: any[] = [];
+    let historicalApprovals: unknown[] = [];
     if (store) {
       try {
-        const userId = (state as any).userId || 'system';
+        const userId = state.userId || 'system';
         const items = await store.search(['approval-context', userId]);
         historicalApprovals = items.slice(0, 5); // Get top 5 similar approvals
         this.logger.debug(
@@ -264,11 +263,16 @@ export class HumanApprovalNode {
           ...(state.metadata || {}),
           historicalApprovals:
             historicalApprovals.length > 0
-              ? historicalApprovals.map((item) => ({
-                  executionId: item.value?.executionId,
-                  confidence: item.value?.confidence,
-                  timestamp: item.value?.timestamp,
-                }))
+              ? historicalApprovals.map((item) => {
+                  const val = (item as Record<string, unknown>)?.value as
+                    | Record<string, unknown>
+                    | undefined;
+                  return {
+                    executionId: val?.executionId,
+                    confidence: val?.confidence,
+                    timestamp: val?.timestamp,
+                  };
+                })
               : undefined,
         },
       },
@@ -283,7 +287,7 @@ export class HumanApprovalNode {
     // Store approval context in BaseStore for cross-workflow memory (if available)
     if (store) {
       try {
-        const userId = (state as any).userId || 'system';
+        const userId = state.userId || 'system';
         await store.put(
           ['approval-context', userId],
           `approval-${executionId}`,
@@ -353,23 +357,23 @@ export class HumanApprovalNode {
         message: feedback,
         timestamp: new Date(),
         metadata: humanDecision?.modifications,
-      } as HumanFeedback,
+      },
       confidence: approved
         ? Math.min((confidence || 0) + 0.1, 1.0)
         : Math.max((confidence || 0) - 0.2, 0.0),
       waitingForApproval: false,
       approvalReceived: approved,
       rejectionReason: !approved ? feedback : undefined,
-    } as unknown as Partial<TState>;
+    };
   }
 
   /**
    * Process human feedback when workflow resumes
    */
-  processHumanFeedback<TState extends HitlCapableState = HitlCapableState>(
-    state: TState,
+  processHumanFeedback(
+    state: HitlCapableState,
     response: HumanApprovalResponse
-  ): Partial<TState> {
+  ): Partial<HitlCapableState> {
     const executionId = state.executionId ?? 'unknown';
 
     // Remove from pending approvals
@@ -393,7 +397,7 @@ export class HumanApprovalNode {
     }
 
     // Build state update
-    const stateUpdate: Partial<TState> = {
+    const stateUpdate: Partial<HitlCapableState> = {
       humanFeedback: {
         approved: response.decision === 'approved',
         status:
@@ -406,18 +410,18 @@ export class HumanApprovalNode {
         message: response.feedback,
         timestamp: response.timestamp,
         metadata: response.modifications,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       waitingForApproval: false,
       approvalReceived: response.decision === 'approved',
       rejectionReason:
         response.decision === 'rejected' ? response.feedback : undefined,
-    } as unknown as Partial<TState>;
+    };
 
     // Add modifications to metadata if provided
     if (response.modifications) {
-      (stateUpdate as any).metadata = {
-        ...(state.metadata || ({} as Record<string, unknown>)),
+      stateUpdate.metadata = {
+        ...(state.metadata ?? {}),
         humanModifications: response.modifications,
       };
     }
@@ -435,9 +439,7 @@ export class HumanApprovalNode {
   /**
    * Extract default proposed actions from state
    */
-  private extractDefaultActions<TState extends HitlCapableState>(
-    state: TState
-  ): ProposedAction[] {
+  private extractDefaultActions(state: HitlCapableState): ProposedAction[] {
     const actions: ProposedAction[] = [];
     const metadata = (state.metadata ?? {}) as Record<string, unknown>;
 

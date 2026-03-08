@@ -2,6 +2,16 @@ import type { StateGraph } from '@langchain/langgraph';
 import type { WorkflowDefinition } from '../../interfaces/workflow-engine.interface';
 
 /**
+ * Type alias for StateGraph with untyped channels.
+ * LangGraph's StateGraph generic params are complex conditional types
+ * that cannot be expressed with plain TypeScript interfaces.
+ * Using `any` for the first 3 params and `string` for node names
+ * is the correct approach when the annotation is dynamic.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyStateGraph = StateGraph<any, any, any, string>;
+
+/**
  * GraphBuildingStrategy Interface
  *
  * Strategy pattern for building LangGraph StateGraph from WorkflowDefinition metadata.
@@ -28,8 +38,5 @@ export interface GraphBuildingStrategy {
    * @param definition - WorkflowDefinition with nodes, edges, config
    * @returns Compiled StateGraph ready for execution
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  buildStateGraph(
-    definition: WorkflowDefinition
-  ): StateGraph<any, any, any, string>;
+  buildStateGraph(definition: WorkflowDefinition): AnyStateGraph;
 }

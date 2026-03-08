@@ -1,7 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { StateGraph } from '@langchain/langgraph';
 import type {
   BaseCheckpointSaver,
   BaseStore,
@@ -14,6 +13,7 @@ import {
   FunctionalTaskGraphStrategy,
   FunctionalNodeGraphStrategy,
 } from './strategies';
+import type { AnyStateGraph } from './strategies';
 import { WorkflowResumptionService } from '../services/workflow-resumption.service';
 import type { WorkflowEngineModuleOptions } from '../interfaces/functional/module-options.interface';
 
@@ -321,10 +321,7 @@ export class WorkflowExecutionService {
    * @param definition - WorkflowDefinition extracted from decorators
    * @returns StateGraph instance ready for compilation
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private buildStateGraph(
-    definition: WorkflowDefinition
-  ): StateGraph<any, any, any, string> {
+  private buildStateGraph(definition: WorkflowDefinition): AnyStateGraph {
     const workflowType = definition.config?.metadata?.pattern as string;
 
     this.logger.debug(

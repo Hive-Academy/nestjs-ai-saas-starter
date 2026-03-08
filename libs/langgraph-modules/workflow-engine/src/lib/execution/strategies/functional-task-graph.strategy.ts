@@ -3,6 +3,7 @@ import { StateGraph } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
 import type { WorkflowDefinition } from '../../interfaces/workflow-engine.interface';
 import { BaseGraphBuildingStrategy } from './base-graph-building.strategy';
+import type { AnyStateGraph } from './graph-building.strategy.interface';
 import { ToolRegistryService } from '../../services/tool-registry.service';
 
 /**
@@ -45,10 +46,7 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with taskDependencies metadata
    * @returns StateGraph with linear task edges
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  buildStateGraph(
-    definition: WorkflowDefinition
-  ): StateGraph<any, any, any, string> {
+  buildStateGraph(definition: WorkflowDefinition): AnyStateGraph {
     this.logger.debug(
       `Building functional-task graph for ${definition.name} with ${definition.nodes.length} tasks`
     );
@@ -57,7 +55,12 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
     // Note: channels is always an AnnotationRoot (e.g. AgentStateAnnotation).
     // We let TypeScript infer the graph's state type from the annotation
     // rather than forcing TState (a plain interface) which isn't a valid StateDefinitionInit.
-    const graph = new StateGraph(definition.channels);
+    // Cast required: AnnotationRoot<any> → StateGraph type params are complex conditional types
+    // that TypeScript cannot reconcile with AnyStateGraph. This is the single cast point.
+    // channels is always set by MetadataProcessorService (defaults to AgentStateAnnotation)
+    const graph = new StateGraph(
+      definition.channels!
+    ) as unknown as AnyStateGraph;
 
     // 1. Add all nodes (tasks)
     this.addNodesToGraph(graph, definition);
@@ -99,8 +102,7 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with taskDependencies metadata
    */
   private addTaskEdges(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
     const taskDeps = definition.config?.metadata?.taskDependencies as
@@ -156,8 +158,7 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with node metadata
    */
   private addLLMTaskToolRouting(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
     const llmTaskNodes = definition.nodes.filter((node) => node.isLLMTask);

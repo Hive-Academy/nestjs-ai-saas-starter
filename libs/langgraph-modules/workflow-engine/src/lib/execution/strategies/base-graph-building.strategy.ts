@@ -1,10 +1,13 @@
 import { Logger } from '@nestjs/common';
-import { type StateGraph, END } from '@langchain/langgraph';
+import { END } from '@langchain/langgraph';
 import type {
   WorkflowDefinition,
   WorkflowNode,
 } from '../../interfaces/workflow-engine.interface';
-import type { GraphBuildingStrategy } from './graph-building.strategy.interface';
+import type {
+  GraphBuildingStrategy,
+  AnyStateGraph,
+} from './graph-building.strategy.interface';
 
 /**
  * BaseGraphBuildingStrategy
@@ -36,10 +39,7 @@ export abstract class BaseGraphBuildingStrategy
    * Build StateGraph from WorkflowDefinition
    * Template method - subclasses implement specific logic
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  abstract buildStateGraph(
-    definition: WorkflowDefinition
-  ): StateGraph<any, any, any, string>;
+  abstract buildStateGraph(definition: WorkflowDefinition): AnyStateGraph;
 
   /**
    * Add all nodes from definition to graph
@@ -49,8 +49,7 @@ export abstract class BaseGraphBuildingStrategy
    * @param definition - WorkflowDefinition with nodes metadata
    */
   protected addNodesToGraph(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
     definition.nodes.forEach((node) => {
@@ -66,11 +65,7 @@ export abstract class BaseGraphBuildingStrategy
    * @param graph - StateGraph to set entry point on
    * @param entryPoint - Node ID to use as entry point
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected setGraphEntryPoint(
-    graph: StateGraph<any, any, any, string>,
-    entryPoint: string
-  ): void {
+  protected setGraphEntryPoint(graph: AnyStateGraph, entryPoint: string): void {
     this.logger.debug(`Setting entry point: ${entryPoint}`);
     graph.setEntryPoint(entryPoint);
   }
@@ -137,10 +132,8 @@ export abstract class BaseGraphBuildingStrategy
    * @returns True if tools are configured
    */
   protected hasTools(definition: WorkflowDefinition): boolean {
-    return (
-      definition.config?.metadata?.tools &&
-      (definition.config.metadata.tools as unknown[]).length > 0
-    );
+    const tools = definition.config?.metadata?.tools;
+    return Array.isArray(tools) && tools.length > 0;
   }
 
   /**

@@ -6,6 +6,7 @@ import type {
   ConditionalRouting,
 } from '../../interfaces/workflow-engine.interface';
 import { BaseGraphBuildingStrategy } from './base-graph-building.strategy';
+import type { AnyStateGraph } from './graph-building.strategy.interface';
 
 /**
  * FunctionalNodeGraphStrategy
@@ -52,10 +53,7 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with explicit edges
    * @returns StateGraph with conditional routing and tool support
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  buildStateGraph(
-    definition: WorkflowDefinition
-  ): StateGraph<any, any, any, string> {
+  buildStateGraph(definition: WorkflowDefinition): AnyStateGraph {
     this.logger.debug(
       `Building functional-node graph for ${definition.name} with ${definition.nodes.length} nodes`
     );
@@ -64,7 +62,12 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
     // Note: channels is always an AnnotationRoot (e.g. AgentStateAnnotation).
     // We let TypeScript infer the graph's state type from the annotation
     // rather than forcing TState (a plain interface) which isn't a valid StateDefinitionInit.
-    const graph = new StateGraph(definition.channels);
+    // Cast required: AnnotationRoot<any> → StateGraph type params are complex conditional types
+    // that TypeScript cannot reconcile with AnyStateGraph. This is the single cast point.
+    // channels is always set by MetadataProcessorService (defaults to AgentStateAnnotation)
+    const graph = new StateGraph(
+      definition.channels!
+    ) as unknown as AnyStateGraph;
 
     // 1. Add all nodes
     this.addNodesToGraph(graph, definition);
@@ -103,8 +106,7 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with tools metadata
    */
   private addToolNode(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
     const tools = definition.config!.metadata!.tools as any[];
@@ -137,8 +139,7 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with edges metadata
    */
   private addNodeEdges(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
     definition.edges.forEach((edge) => {
@@ -184,23 +185,44 @@ export class FunctionalNodeGraphStrategy extends BaseGraphBuildingStrategy {
    * @param definition - WorkflowDefinition with tool metadata
    */
   private addNodeToolRouting(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graph: StateGraph<any, any, any, string>,
+    graph: AnyStateGraph,
     definition: WorkflowDefinition
   ): void {
-    // Add conditional tool routing for each node
-    definition.nodes.forEach((node) => {
-      const nextNode = this.getNextNode(node, definition);
+    // Add conditional tool routing only for LLM nodes (nodes that can generate tool_calls)
+    // Non-LLM nodes (human review, aggregators, etc.) should not get tool routing
+    // as it could conflict with explicit @Edge edges
+    const llmNodes = definition.nodes.filter(
+      (node) => node.config?.metadata?.type === 'llm'
+    );
 
+    if (llmNodes.length === 0) {
+      // No LLM nodes found - apply to all nodes as fallback (preserves original behavior)
       this.logger.debug(
-        `Adding tool routing for node ${node.id}: tools or ${nextNode || 'END'}`
+        'No nodes with type "llm" found - applying tool routing to all nodes'
       );
-
-      graph.addConditionalEdges(node.id, this.shouldExecuteTools.bind(this), {
-        tools: 'tools',
-        continue: nextNode || this.END,
+      definition.nodes.forEach((node) => {
+        const nextNode = this.getNextNode(node, definition);
+        graph.addConditionalEdges(node.id, this.shouldExecuteTools.bind(this), {
+          tools: 'tools',
+          continue: nextNode || this.END,
+        });
       });
-    });
+    } else {
+      llmNodes.forEach((node) => {
+        const nextNode = this.getNextNode(node, definition);
+
+        this.logger.debug(
+          `Adding tool routing for LLM node ${node.id}: tools or ${
+            nextNode || 'END'
+          }`
+        );
+
+        graph.addConditionalEdges(node.id, this.shouldExecuteTools.bind(this), {
+          tools: 'tools',
+          continue: nextNode || this.END,
+        });
+      });
+    }
 
     // Tools always return to entrypoint (agent node)
     // This creates the execution loop: agent → tools → agent

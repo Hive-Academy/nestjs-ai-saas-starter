@@ -31,23 +31,22 @@ import {
   type LLMTaskMetadata,
 } from '../decorators/functional/llm-task.decorator';
 
-// Placeholder types for streaming metadata
 interface StreamTokenMetadata {
   enabled?: boolean;
   bufferSize?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface StreamEventMetadata {
   enabled?: boolean;
   eventTypes?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface StreamProgressMetadata {
   enabled?: boolean;
   updateInterval?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -70,6 +69,18 @@ export class MetadataProcessorService {
     const workflowOptions = getWorkflowMetadata(workflowClass);
     if (!workflowOptions) {
       throw new Error(`No @Workflow decorator found on ${workflowClass.name}`);
+    }
+
+    // Validate channels if provided
+    if (
+      workflowOptions.channels &&
+      typeof workflowOptions.channels === 'object' &&
+      !('spec' in workflowOptions.channels)
+    ) {
+      throw new Error(
+        `Invalid channels on ${workflowClass.name}: channels must be an AnnotationRoot ` +
+          `(created via Annotation.Root({...})). Received an object without a .spec property.`
+      );
     }
 
     // 🔑 PATTERN DETECTION: Determine which pattern this workflow uses
@@ -212,7 +223,7 @@ export class MetadataProcessorService {
             };
 
             const result = await originalHandler.call(this, context);
-            return result.state || {};
+            return result.state ?? {};
           };
 
           nodes.push({
@@ -260,7 +271,7 @@ export class MetadataProcessorService {
             };
 
             const result = await originalHandler.call(this, context);
-            return result.state || {};
+            return result.state ?? {};
           };
 
           // Store LLM task metadata as an extended node object
@@ -312,7 +323,7 @@ export class MetadataProcessorService {
 
             const result = await originalHandler.call(this, context);
             // Return state update (result.state) for LangGraph
-            return result.state || {};
+            return result.state ?? {};
           };
 
           nodes.push({
@@ -501,16 +512,23 @@ export class MetadataProcessorService {
         to:
           typeof edge.to === 'function'
             ? {
-                condition: ((edgeFn, defaultRoute) => {
+                condition: ((edgeFn, defaultRoute, logger) => {
                   return (state: Record<string, unknown>): string => {
                     const result = (
                       edgeFn as (
                         state: Record<string, unknown>
                       ) => string | null
                     )(state);
+                    if (result === null || result === undefined) {
+                      logger.warn(
+                        `Routing function returned ${result} — falling back to '${
+                          defaultRoute ?? '__end__'
+                        }'. ` + `This may indicate a bug in the routing logic.`
+                      );
+                    }
                     return result ?? defaultRoute ?? '__end__';
                   };
-                })(edge.to, this.findDefaultRoute(nodeMetadata)),
+                })(edge.to, this.findDefaultRoute(nodeMetadata), this.logger),
                 routes: {}, // Will be populated by analyzing the condition function
                 default: this.findDefaultRoute(nodeMetadata),
               }
@@ -749,7 +767,13 @@ export class MetadataProcessorService {
     let progressNodes = 0;
 
     definition.nodes.forEach((node) => {
-      const streamingMetadata = node.config?.metadata?.streaming;
+      const streamingMetadata = node.config?.metadata?.streaming as
+        | {
+            token?: StreamTokenMetadata;
+            event?: StreamEventMetadata;
+            progress?: StreamProgressMetadata;
+          }
+        | undefined;
       if (streamingMetadata) {
         if (streamingMetadata.token?.enabled) {
           tokenNodes++;
@@ -771,7 +795,13 @@ export class MetadataProcessorService {
    */
   hasStreamingCapabilities(definition: WorkflowDefinition): boolean {
     return definition.nodes.some((node) => {
-      const streamingMetadata = node.config?.metadata?.streaming;
+      const streamingMetadata = node.config?.metadata?.streaming as
+        | {
+            token?: StreamTokenMetadata;
+            event?: StreamEventMetadata;
+            progress?: StreamProgressMetadata;
+          }
+        | undefined;
       return (
         streamingMetadata &&
         (streamingMetadata.token?.enabled ||
