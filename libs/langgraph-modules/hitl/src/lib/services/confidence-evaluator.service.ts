@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
 import { HITL_EVENTS, RISK_WEIGHTS } from '../constants';
 import type { IConfidenceStorageService } from '../interfaces/confidence-storage.interface';
@@ -46,7 +46,7 @@ export interface RiskAssessment {
  */
 export interface RiskAssessmentOptions {
   factors?: string[];
-  customEvaluator?: (state: WorkflowState) => {
+  customEvaluator?: (state: HitlCapableState) => {
     level: ApprovalRiskLevel;
     factors: string[];
     score: number;
@@ -73,7 +73,7 @@ export interface ApprovalPattern {
  */
 export interface ConfidenceEvaluationContext {
   /** Current workflow state */
-  state: WorkflowState;
+  state: HitlCapableState;
 
   /** Historical patterns for this node */
   historicalPattern?: ApprovalPattern;
@@ -102,21 +102,21 @@ export interface ConfidenceEvaluationContext {
  */
 export interface MLIntegrationHooks {
   /** Predict confidence based on state */
-  predictConfidence?: (state: WorkflowState) => Promise<number>;
+  predictConfidence?: (state: HitlCapableState) => Promise<number>;
 
   /** Predict risk level */
-  predictRisk?: (state: WorkflowState) => Promise<ApprovalRiskLevel>;
+  predictRisk?: (state: HitlCapableState) => Promise<ApprovalRiskLevel>;
 
   /** Learn from approval outcome */
   learnFromOutcome?: (
-    state: WorkflowState,
+    state: HitlCapableState,
     approved: boolean,
     confidence: number,
     actualOutcome: 'success' | 'failure'
   ) => Promise<void>;
 
   /** Get recommendation */
-  getRecommendation?: (state: WorkflowState) => Promise<{
+  getRecommendation?: (state: HitlCapableState) => Promise<{
     shouldApprove: boolean;
     confidence: number;
     reasoning: string[];
@@ -178,7 +178,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Evaluate confidence level for workflow state
    */
   async evaluateConfidence(
-    state: WorkflowState,
+    state: HitlCapableState,
     context?: Partial<ConfidenceEvaluationContext>
   ): Promise<number> {
     const evaluationContext: ConfidenceEvaluationContext = {
@@ -186,9 +186,9 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       ...context,
     };
 
-    this.logger.debug(
-      `Evaluating confidence for execution ${state.executionId}`
-    );
+    const executionId = state.executionId ?? 'unknown';
+
+    this.logger.debug(`Evaluating confidence for execution ${executionId}`);
 
     try {
       // Get base confidence from state
@@ -223,25 +223,25 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       if (this.confidenceStorage) {
         try {
           await this.confidenceStorage.storeConfidenceHistory(
-            state.executionId,
+            executionId,
             factors
           );
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(executionId, factors);
         } catch (error) {
           this.logger.error(
             `Failed to store confidence history in adapter: ${error}`
           );
           // Cache-only fallback for this execution
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(executionId, factors);
         }
       } else {
         // Cache-only mode
-        this.historyCache.set(state.executionId, factors);
+        this.historyCache.set(executionId, factors);
       }
 
       // Emit evaluation event
       await this.eventEmitter.emit(HITL_EVENTS.CONFIDENCE_EVALUATED, {
-        executionId: state.executionId,
+        executionId,
         confidence,
         factors: factors.map((f) => ({
           name: f.name,
@@ -270,7 +270,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Assess risk level for workflow state
    */
   async assessRisk(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions = {}
   ): Promise<RiskAssessment> {
     this.logger.debug(`Assessing risk for execution ${state.executionId}`);
@@ -391,18 +391,17 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Get confidence factors for a state
    */
   async getConfidenceFactors(
-    state: WorkflowState
+    state: HitlCapableState
   ): Promise<Record<string, number>> {
-    let factors = this.historyCache.get(state.executionId);
+    const execId = state.executionId ?? 'unknown';
+    let factors = this.historyCache.get(execId);
 
     // Load from storage if not in cache
     if (!factors && this.confidenceStorage) {
       try {
-        factors = await this.confidenceStorage.getConfidenceHistory(
-          state.executionId
-        );
+        factors = await this.confidenceStorage.getConfidenceHistory(execId);
         if (factors) {
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(execId, factors);
         }
       } catch (error) {
         this.logger.error(
@@ -427,7 +426,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Learn from approval outcome for future predictions
    */
   async learnFromApprovalOutcome(
-    state: WorkflowState,
+    state: HitlCapableState,
     approved: boolean,
     confidence: number,
     actualOutcome?: 'success' | 'failure'
@@ -508,7 +507,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       if (this.confidenceStorage && actualOutcome) {
         try {
           await this.confidenceStorage.storeConfidenceOutcome({
-            executionId: state.executionId,
+            executionId: state.executionId ?? 'unknown',
             approved,
             actualOutcome,
             humanConfidence: confidence,
@@ -572,7 +571,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   /**
    * Get ML recommendation if available
    */
-  async getMLRecommendation(state: WorkflowState): Promise<
+  async getMLRecommendation(state: HitlCapableState): Promise<
     | {
         shouldApprove: boolean;
         confidence: number;
@@ -845,7 +844,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Calculate risk factors
    */
   private async calculateRiskFactors(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions
   ): Promise<RiskAssessment['details']> {
     const details = {
@@ -967,7 +966,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    */
   private async enhanceRiskAssessment(
     assessment: RiskAssessment,
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions
   ): Promise<RiskAssessment> {
     if (!assessment.details.security) {

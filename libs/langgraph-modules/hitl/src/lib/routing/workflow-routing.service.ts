@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 /**
  * Service for handling workflow routing logic
@@ -12,13 +11,16 @@ export class WorkflowRoutingService {
   /**
    * Route based on human approval decision
    */
-  routeAfterHumanApproval(state: WorkflowState): string {
-    if (!state.humanFeedback) {
+  routeAfterHumanApproval(state: Record<string, unknown>): string {
+    const humanFeedback = state['humanFeedback'] as
+      | { status?: string }
+      | undefined;
+    if (!humanFeedback) {
       this.logger.debug('No human feedback available, defaulting to retry');
       return 'retry'; // Wait for feedback
     }
 
-    const decision = state.humanFeedback.status;
+    const decision = humanFeedback.status;
     this.logger.log(`Human approval decision: ${decision}`);
 
     switch (decision) {
@@ -37,7 +39,7 @@ export class WorkflowRoutingService {
    * Route based on confidence level
    */
   routeBasedOnConfidence(
-    state: WorkflowState,
+    state: Record<string, unknown>,
     nextNode: string,
     options?: {
       confidenceThreshold?: number;
@@ -51,7 +53,7 @@ export class WorkflowRoutingService {
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
     const lowConfidenceRoute = options?.lowConfidenceRoute ?? 'human_approval';
 
-    const confidence = state.confidence || 0;
+    const confidence = (state['confidence'] as number) || 0;
 
     this.logger.debug(
       `Routing based on confidence: ${confidence} (threshold: ${confidenceThreshold})`
@@ -88,7 +90,7 @@ export class WorkflowRoutingService {
    * Route based on workflow status
    */
   routeBasedOnStatus(
-    state: WorkflowState,
+    state: Record<string, unknown>,
     options?: {
       maxRetries?: number;
       pausedRoute?: string;
@@ -99,7 +101,8 @@ export class WorkflowRoutingService {
     const pausedRoute = options?.pausedRoute ?? 'human_approval';
     const waitingRoute = options?.waitingRoute ?? 'human_approval';
 
-    const status = state.workflowStatus || state.status;
+    const status =
+      (state['workflowStatus'] as string) || (state['status'] as string);
 
     this.logger.debug(`Routing based on status: ${status}`);
 
@@ -107,7 +110,9 @@ export class WorkflowRoutingService {
       case 'completed':
         return 'end';
       case 'failed':
-        return (state.retryCount || 0) < maxRetries ? 'retry' : 'end';
+        return ((state['retryCount'] as number) || 0) < maxRetries
+          ? 'retry'
+          : 'end';
       case 'paused':
         return pausedRoute;
       case 'waiting_input':
@@ -121,7 +126,7 @@ export class WorkflowRoutingService {
    * Route based on error conditions
    */
   routeOnError(
-    state: WorkflowState,
+    state: Record<string, unknown>,
     error: Error,
     options?: {
       maxRetries?: number;
@@ -133,7 +138,7 @@ export class WorkflowRoutingService {
     const retryRoute = options?.retryRoute ?? 'retry';
     const errorRoute = options?.errorRoute ?? 'human_approval';
 
-    const retryCount = state.retryCount || 0;
+    const retryCount = (state['retryCount'] as number) || 0;
 
     this.logger.debug(
       `Routing on error: ${error.message} (retry ${retryCount}/${maxRetries})`
@@ -272,9 +277,9 @@ export class WorkflowRoutingService {
   /**
    * Create a conditional routing function
    */
-  createConditionalRouter<TState extends WorkflowState = WorkflowState>(
-    routingLogic: (state: TState) => string
-  ): (state: TState) => string {
+  createConditionalRouter<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(routingLogic: (state: TState) => string): (state: TState) => string {
     return (state: TState) => {
       try {
         const route = routingLogic(state);
@@ -290,7 +295,9 @@ export class WorkflowRoutingService {
   /**
    * Create a multi-condition router
    */
-  createMultiConditionRouter<TState extends WorkflowState = WorkflowState>(
+  createMultiConditionRouter<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     conditions: Array<{
       condition: (state: TState) => boolean;
       route: string;
@@ -349,7 +356,9 @@ export class WorkflowRoutingService {
   /**
    * Create a sequential router that follows a predefined order
    */
-  createSequentialRouter<TState extends WorkflowState = WorkflowState>(
+  createSequentialRouter<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
     sequence: string[],
     options?: {
       loop?: boolean;
@@ -357,7 +366,9 @@ export class WorkflowRoutingService {
     }
   ): (state: TState) => string {
     return (state: TState) => {
-      const currentIndex = sequence.indexOf(state.currentNode || '');
+      const currentIndex = sequence.indexOf(
+        (state['currentNode'] as string) || ''
+      );
 
       // Check skip condition
       if (options?.skipCondition?.(state)) {

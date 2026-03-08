@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
+import { generateId } from '@hive-academy/langgraph-core';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
 import { HitlNotificationService } from './hitl-notification.service';
@@ -207,7 +207,7 @@ export class UserInterruptionService implements OnModuleInit {
   ): Promise<{
     success: boolean;
     shouldContinue: boolean;
-    updatedState?: Partial<WorkflowState>;
+    updatedState?: Partial<Record<string, unknown>>;
     error?: string;
   }> {
     // ✅ CORRECT: Try cache first for performance, fallback to storage
@@ -297,7 +297,7 @@ export class UserInterruptionService implements OnModuleInit {
       }
 
       // Create updated state with user input
-      const updatedState: Partial<WorkflowState> = {
+      const updatedState: Partial<Record<string, unknown>> = {
         userInput: response.response,
         userInputMetadata: response.metadata,
         interruptionHandled: true,

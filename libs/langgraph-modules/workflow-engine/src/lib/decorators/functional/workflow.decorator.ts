@@ -1,6 +1,5 @@
 import type { WorkflowExecutionConfig } from '@hive-academy/langgraph-core';
 import {
-  type WorkflowStateAnnotation,
   WORKFLOW_EDGES_KEY,
   WORKFLOW_METADATA_KEY,
   WORKFLOW_NODES_KEY,
@@ -55,7 +54,7 @@ export interface WorkflowOptions extends Partial<WorkflowExecutionConfig> {
     fallbackStrategy?: 'auto-approve' | 'reject' | 'retry';
   };
   /** State annotation or channels definition */
-  channels?: typeof WorkflowStateAnnotation | any;
+  channels?: any;
   /** Pattern to use (supervisor, pipeline, parallel, etc.) */
   pattern?: 'supervisor' | 'pipeline' | 'parallel' | 'map-reduce' | 'saga';
   /** Interrupt nodes for checkpointing */

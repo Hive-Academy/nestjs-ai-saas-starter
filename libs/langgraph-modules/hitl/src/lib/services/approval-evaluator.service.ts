@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import type {
   RequiresApprovalOptions,
   ApprovalRiskLevel,
@@ -37,7 +37,7 @@ export class ApprovalEvaluatorService {
    * @returns true if approval should be skipped, false otherwise
    */
   async evaluateSkipConditions(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions
   ): Promise<boolean> {
     const skip = options.skipConditions;
@@ -91,7 +91,7 @@ export class ApprovalEvaluatorService {
    * @returns true if approval is required, false otherwise
    */
   async evaluateApprovalRequired(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions,
     services: {
       humanApprovalService?: HumanApprovalService;
@@ -164,7 +164,7 @@ export class ApprovalEvaluatorService {
    * @returns Routing command to send workflow to approval node
    */
   async routeToApproval(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions,
     nodeId: string
   ): Promise<any> {

@@ -37,7 +37,7 @@ export enum CommandType {
   ERROR = 'ERROR',
 }
 
-export type NodeHandler<TState = any> = (
+export type NodeHandler<TState = Record<string, unknown>> = (
   state: TState
 ) => Promise<Partial<TState> | Command<TState>>;
 

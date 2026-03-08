@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { generateId, type WorkflowState } from '@hive-academy/langgraph-core';
+import { generateId } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import {
   IFeedbackStorageService,
   FeedbackEntry,
@@ -155,7 +156,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process feedback with adapter-first pattern and AI learning integration
    */
-  async processFeedback<TState extends WorkflowState = WorkflowState>(
+  async processFeedback<TState extends HitlCapableState = HitlCapableState>(
     feedbackId: string,
     currentState: TState
   ): Promise<Partial<TState>> {
@@ -345,7 +346,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process approval feedback
    */
-  private processApprovalFeedback<TState extends WorkflowState>(
+  private processApprovalFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {
@@ -365,7 +366,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process rejection feedback
    */
-  private processRejectionFeedback<TState extends WorkflowState>(
+  private processRejectionFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {
@@ -386,7 +387,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process modification feedback
    */
-  private processModificationFeedback<TState extends WorkflowState>(
+  private processModificationFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {
@@ -412,7 +413,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process clarification feedback
    */
-  private processClarificationFeedback<TState extends WorkflowState>(
+  private processClarificationFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {
@@ -430,7 +431,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process rating feedback
    */
-  private processRatingFeedback<TState extends WorkflowState>(
+  private processRatingFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {
@@ -453,7 +454,7 @@ export class FeedbackProcessorService implements OnModuleInit {
   /**
    * Process comment feedback
    */
-  private processCommentFeedback<TState extends WorkflowState>(
+  private processCommentFeedback<TState extends HitlCapableState>(
     entry: FeedbackEntry,
     currentState: TState
   ): Partial<TState> {

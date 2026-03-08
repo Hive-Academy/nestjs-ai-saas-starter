@@ -42,6 +42,14 @@ export * from './lib/decorators/approval.decorator';
 // Constants
 export * from './lib/constants';
 
+// HITL State Interface and Annotation
+export type { HitlCapableState } from './lib/interfaces/hitl-state.interface';
+export {
+  HitlFields,
+  HitlAgentStateAnnotation,
+} from './lib/annotations/hitl-state.annotation';
+export type { HitlAgentState } from './lib/annotations/hitl-state.annotation';
+
 // Interfaces
 export type * from './lib/interfaces/hitl.interface';
 export {

@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import {
   WorkflowResumptionService,
   UserContext,
@@ -122,7 +122,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     executionId: string,
     nodeId: string,
     message: string,
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions = {},
     workflowClass?: string // NEW parameter (optional for backward compatibility)
   ): Promise<HumanApprovalRequest> {
@@ -130,7 +130,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     const enhancedOptions: RequiresApprovalOptions = {
       ...options,
       // metadata must be a function that returns the metadata object
-      metadata: (state: WorkflowState) => {
+      metadata: (state: HitlCapableState) => {
         const baseMetadata =
           typeof options.metadata === 'function' ? options.metadata(state) : {};
         return {
@@ -174,7 +174,7 @@ export class HumanApprovalService implements OnModuleInit, OnModuleDestroy {
     approverContext?: UserContext
   ): Promise<{
     success: boolean;
-    nextState?: Partial<WorkflowState>;
+    nextState?: Partial<HitlCapableState>;
     error?: string;
     workflowResumed?: boolean; // NEW
   }> {

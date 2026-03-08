@@ -3,10 +3,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { interrupt } from '@langchain/langgraph';
 import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
-import type {
-  WorkflowState,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
+import type { HumanFeedback } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 
 /**
  * Proposed action for human approval
@@ -164,7 +162,7 @@ export class HumanApprovalNode {
    * @param config - RunnableConfig containing checkpointer, store, and thread configuration
    * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
-  async execute<TState extends WorkflowState = WorkflowState>(
+  async execute<TState extends HitlCapableState = HitlCapableState>(
     state: TState,
     config: RunnableConfig,
     options?: {
@@ -174,7 +172,7 @@ export class HumanApprovalNode {
       skipCondition?: (state: TState) => boolean;
     }
   ): Promise<Partial<TState>> {
-    const { executionId } = state;
+    const executionId = state.executionId ?? 'unknown';
 
     // Validate checkpointer configuration (required for interrupt())
     const checkpointer = config.configurable?.checkpointer;
@@ -204,7 +202,7 @@ export class HumanApprovalNode {
     }
 
     // Check auto-approve threshold
-    const confidence = state.confidence || 0;
+    const confidence = state.confidence ?? 0;
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
 
     if (confidence >= autoApproveThreshold) {
@@ -368,11 +366,11 @@ export class HumanApprovalNode {
   /**
    * Process human feedback when workflow resumes
    */
-  processHumanFeedback<TState extends WorkflowState = WorkflowState>(
+  processHumanFeedback<TState extends HitlCapableState = HitlCapableState>(
     state: TState,
     response: HumanApprovalResponse
   ): Partial<TState> {
-    const { executionId } = state;
+    const executionId = state.executionId ?? 'unknown';
 
     // Remove from pending approvals
     this.pendingApprovals.delete(executionId);
@@ -381,7 +379,7 @@ export class HumanApprovalNode {
     this.logger.log(`Human decision for ${executionId}: ${response.decision}`);
 
     // Adjust confidence based on decision
-    let newConfidence = state.confidence || 0;
+    let newConfidence = state.confidence ?? 0;
     switch (response.decision) {
       case 'approved':
         newConfidence = Math.min(newConfidence + 0.1, 1.0);
@@ -437,11 +435,11 @@ export class HumanApprovalNode {
   /**
    * Extract default proposed actions from state
    */
-  private extractDefaultActions<TState extends WorkflowState>(
+  private extractDefaultActions<TState extends HitlCapableState>(
     state: TState
   ): ProposedAction[] {
     const actions: ProposedAction[] = [];
-    const metadata = state.metadata || ({} as Record<string, unknown>);
+    const metadata = (state.metadata ?? {}) as Record<string, unknown>;
 
     // Check for various action types in metadata
     if (metadata.codeGeneration) {

@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type {
-  WorkflowState,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ApprovalChainService, Approver } from './approval-chain.service';
 import { ApproverIntelligenceService } from './approver-intelligence.service';
@@ -123,7 +120,7 @@ export class ApprovalProcessingService {
     approvalRequests: Map<string, HumanApprovalRequest>
   ): Promise<{
     success: boolean;
-    nextState?: Partial<WorkflowState>;
+    nextState?: Partial<HitlCapableState>;
     error?: string;
   }> {
     const request = approvalRequests.get(requestId);
@@ -148,7 +145,7 @@ export class ApprovalProcessingService {
     request.timestamps.responded = response.timestamp;
 
     try {
-      let nextState: Partial<WorkflowState> = {};
+      let nextState: Partial<HitlCapableState> = {};
 
       switch (response.decision) {
         case 'approved':
@@ -207,7 +204,7 @@ export class ApprovalProcessingService {
   private async handleApprovalSuccess(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit approval feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -233,7 +230,7 @@ export class ApprovalProcessingService {
         message: response.message,
         timestamp: response.timestamp,
         metadata: response.metadata,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       approvalReceived: true,
       waitingForApproval: false,
@@ -249,7 +246,7 @@ export class ApprovalProcessingService {
   private async handleApprovalRejection(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit rejection feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -273,10 +270,9 @@ export class ApprovalProcessingService {
         status: 'rejected',
         approver: response.approver,
         message: response.message,
-        reason: response.message,
         timestamp: response.timestamp,
         metadata: response.metadata,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       approvalReceived: false,
       waitingForApproval: false,
@@ -290,7 +286,7 @@ export class ApprovalProcessingService {
   private async handleApprovalEscalation(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     if (request.chainId && this.approvalChainService) {
       try {
         const chainRequest = await this.approvalChainService.getApprovalRequest(
@@ -334,7 +330,7 @@ export class ApprovalProcessingService {
   private async handleApprovalRetry(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     if (request.retry.count < request.retry.maxAttempts) {
       request.retry.count++;
       request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
@@ -363,7 +359,7 @@ export class ApprovalProcessingService {
   private async handleApprovalModification(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit modification feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -384,7 +380,7 @@ export class ApprovalProcessingService {
         message: response.message,
         timestamp: response.timestamp,
         metadata: response.modifications,
-      } as HumanFeedback,
+      },
       waitingForApproval: false,
       metadata: {
         ...request.state.metadata,

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import type { RunnableConfig } from '@langchain/core/runnables';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -37,7 +37,7 @@ export enum EscalationStrategy {
  */
 export interface RequiresApprovalOptions {
   /** Condition function to determine if approval is needed */
-  when?: (state: WorkflowState) => boolean;
+  when?: (state: HitlCapableState) => boolean;
 
   /** Confidence threshold below which approval is required (0-1) */
   confidenceThreshold?: number;
@@ -46,10 +46,10 @@ export interface RequiresApprovalOptions {
   riskThreshold?: ApprovalRiskLevel;
 
   /** Message to show when requesting approval */
-  message?: string | ((state: WorkflowState) => string);
+  message?: string | ((state: HitlCapableState) => string);
 
   /** Additional metadata to include with approval request */
-  metadata?: (state: WorkflowState) => Record<string, unknown>;
+  metadata?: (state: HitlCapableState) => Record<string, unknown>;
 
   /** Timeout for approval in milliseconds */
   timeoutMs?: number;
@@ -72,7 +72,7 @@ export interface RequiresApprovalOptions {
     /** Skip if in safe mode */
     safeMode?: boolean;
     /** Custom skip condition */
-    custom?: (state: WorkflowState) => boolean;
+    custom?: (state: HitlCapableState) => boolean;
   };
 
   /** Risk assessment configuration */
@@ -82,7 +82,7 @@ export interface RequiresApprovalOptions {
     /** Risk factors to consider */
     factors?: string[];
     /** Custom risk evaluator */
-    evaluator?: (state: WorkflowState) => {
+    evaluator?: (state: HitlCapableState) => {
       level: ApprovalRiskLevel;
       factors: string[];
       score: number;
@@ -102,9 +102,12 @@ export interface RequiresApprovalOptions {
   /** Custom approval handlers */
   handlers?: {
     /** Pre-approval hook */
-    beforeApproval?: (state: WorkflowState) => Promise<void>;
+    beforeApproval?: (state: HitlCapableState) => Promise<void>;
     /** Post-approval hook */
-    afterApproval?: (state: WorkflowState, approved: boolean) => Promise<void>;
+    afterApproval?: (
+      state: HitlCapableState,
+      approved: boolean
+    ) => Promise<void>;
   };
 
   /** Approver authorization requirements */
@@ -143,7 +146,7 @@ export interface RequiresApprovalOptions {
  *     tiers: ['enterprise']
  *   }
  * })
- * async performRiskyOperation(state: WorkflowState) {
+ * async performRiskyOperation(state: HitlCapableState) {
  *   // This will route to approval based on confidence and risk assessment
  *   return { result: 'completed' };
  * }
@@ -187,7 +190,7 @@ export function RequiresApproval(
 
     descriptor.value = async function (
       this: any,
-      state: WorkflowState,
+      state: HitlCapableState,
       config?: RunnableConfig
     ): Promise<any> {
       try {
@@ -258,7 +261,9 @@ export function RequiresApproval(
 
         // Check if already approved
         const approvalKey = `approved_${String(propertyKey)}`;
-        const alreadyApproved = state[approvalKey] || state.approvalReceived;
+        const alreadyApproved =
+          (state as Record<string, unknown>)[approvalKey] ||
+          state.approvalReceived;
 
         if (alreadyApproved) {
           if (this.logger) {
@@ -365,7 +370,7 @@ export function getApprovalOptions(
  * @example
  * ```typescript
  * @ApprovalHandler()
- * async handleApproval(state: WorkflowState, feedback: HumanFeedback) {
+ * async handleApproval(state: HitlCapableState, feedback: HumanFeedback) {
  *   if (feedback.approved) {
  *     return { type: 'goto', goto: 'continue' };
  *   } else {

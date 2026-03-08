@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { RunnableConfig } from '@langchain/core/runnables';
-import { type WorkflowState, generateId } from '@hive-academy/langgraph-core';
+import { generateId } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { ApprovalChainService } from './approval-chain.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
@@ -54,7 +55,7 @@ export class HitlApprovalRequestService {
     executionId: string,
     nodeId: string,
     message: string,
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions = {},
     hitlStorage: IHitlStorageService,
     approvalCache: Map<string, HumanApprovalRequest>,
