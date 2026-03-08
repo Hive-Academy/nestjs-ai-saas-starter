@@ -80,10 +80,6 @@ export type { WorkflowExecutionConfig } from './lib/interfaces/workflow-config.i
 // Annotations (runtime exports)
 export * from './lib/annotations';
 export {
-  WorkflowStateAnnotation,
-  createCustomStateAnnotation,
-} from './lib/annotations/workflow-state.annotation';
-export {
   AgentStateAnnotation,
   createCustomAgentStateAnnotation,
 } from './lib/annotations/agent-state.annotation';

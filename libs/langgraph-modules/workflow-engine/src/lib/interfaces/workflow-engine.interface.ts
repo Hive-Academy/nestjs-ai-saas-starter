@@ -115,7 +115,7 @@ export interface WorkflowEdge<TState = WorkflowState> {
 }
 
 export interface ConditionalRouting<TState = WorkflowState> {
-  condition: (state: TState) => string | null;
+  condition: (state: TState) => string;
   routes: Record<string, string>;
   default?: string;
 }
@@ -199,17 +199,3 @@ export const WORKFLOW_NODES_KEY = 'workflow:nodes';
 export const WORKFLOW_EDGES_KEY = 'workflow:edges';
 export const WORKFLOW_TOOLS_KEY = 'workflow:tools';
 export const LANGGRAPH_MODULE_OPTIONS = 'LANGGRAPH_MODULE_OPTIONS';
-
-// Import actual implementations from core module
-import {
-  WorkflowStateAnnotation as CoreWorkflowStateAnnotation,
-  createCustomStateAnnotation as coreCreateCustomStateAnnotation,
-  isWorkflow as coreIsWorkflow,
-} from '@hive-academy/langgraph-core';
-
-// Re-export with original names for backward compatibility
-export const WorkflowStateAnnotation = CoreWorkflowStateAnnotation;
-export const createCustomStateAnnotation = coreCreateCustomStateAnnotation;
-export const isWorkflow = coreIsWorkflow;
-
-// Workflow engine specific interfaces can be added here as needed
