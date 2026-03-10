@@ -178,6 +178,9 @@ export class DevBrandWorkflowStateService {
   /** Sequence counter for generating unique timeline entry IDs */
   private timelineSequence = 0;
 
+  /** Tracks which agents have already incremented the step counter */
+  private agentsStarted = new Set<string>();
+
   // ---------------------------------------------------------------------------
   // PUBLIC READONLY ACCESSORS (existing)
   // ---------------------------------------------------------------------------
@@ -229,6 +232,7 @@ export class DevBrandWorkflowStateService {
   readonly workflowProgress = computed(() => {
     const agents = this.agentProgress();
     const total = Object.keys(agents).length;
+    if (total === 0) return 0;
     const completed = Object.values(agents).filter(
       (a) => a.status === 'completed'
     ).length;
@@ -286,6 +290,7 @@ export class DevBrandWorkflowStateService {
     this._timelineEntries.set([]);
     this._errors.set([]);
     this.timelineSequence = 0;
+    this.agentsStarted.clear();
 
     // Add workflow-start timeline entry
     this.addTimelineEntry(
@@ -350,6 +355,7 @@ export class DevBrandWorkflowStateService {
     this._timelineEntries.set([]);
     this._errors.set([]);
     this.timelineSequence = 0;
+    this.agentsStarted.clear();
   }
 
   // ---------------------------------------------------------------------------
@@ -392,6 +398,35 @@ export class DevBrandWorkflowStateService {
           error: error.message,
           endTime: new Date(),
         }));
+
+        // Transition all active agents to error state
+        this._agentProgress.update((agents) => {
+          const updated: AgentProgressMap = {};
+          for (const [id, agent] of Object.entries(agents)) {
+            if (
+              agent.status !== 'idle' &&
+              agent.status !== 'completed' &&
+              agent.status !== 'error'
+            ) {
+              updated[id] = {
+                ...agent,
+                status: 'error',
+                currentAction: null,
+                lastUpdate: new Date(),
+              };
+            } else {
+              updated[id] = agent;
+            }
+          }
+          return updated;
+        });
+
+        // Add error timeline entry
+        this.addTimelineEntry(
+          'agent-error',
+          `Workflow failed: ${error.message}`,
+          'error'
+        );
       })
     );
 
@@ -449,11 +484,14 @@ export class DevBrandWorkflowStateService {
           'Processing workflow update...'
         );
 
-        // Increment step when a new agent starts executing
-        this._executionState.update((state) => ({
-          ...state,
-          currentStep: Math.min(state.currentStep + 1, state.totalSteps),
-        }));
+        // Increment step only on first occurrence of each agent
+        if (!this.agentsStarted.has(agentId)) {
+          this.agentsStarted.add(agentId);
+          this._executionState.update((state) => ({
+            ...state,
+            currentStep: Math.min(state.currentStep + 1, state.totalSteps),
+          }));
+        }
       }
 
       this.addTimelineEntry(
@@ -488,6 +526,36 @@ export class DevBrandWorkflowStateService {
         const registryEntry = AGENT_REGISTRY[delegatedAgentId];
 
         if (registryEntry) {
+          // Mark the previously active agent as completed before delegation
+          const previousAgent = this.currentAgent();
+          if (
+            previousAgent &&
+            previousAgent !== delegatedAgentId &&
+            previousAgent !== 'supervisor'
+          ) {
+            const prevEntry = AGENT_REGISTRY[previousAgent];
+            this.updateAgentStatus(previousAgent, 'completed', null);
+            this._agentProgress.update((agents) => {
+              const agent = agents[previousAgent];
+              if (agent) {
+                return {
+                  ...agents,
+                  [previousAgent]: { ...agent, progress: 100 },
+                };
+              }
+              return agents;
+            });
+            if (prevEntry) {
+              this.addTimelineEntry(
+                'agent-complete',
+                `${prevEntry.name}: Completed`,
+                'completed',
+                previousAgent,
+                prevEntry.name
+              );
+            }
+          }
+
           // Set delegated agent status
           this.updateAgentStatus(
             delegatedAgentId,
@@ -911,13 +979,13 @@ export class DevBrandWorkflowStateService {
       // Not JSON, check string patterns
     }
 
-    // Check for common error string patterns
-    const lowerContent = content.toLowerCase();
+    // Check for common error string patterns - only match at start of content
+    // to avoid false positives on content that merely mentions errors
+    const lowerContent = content.toLowerCase().trimStart();
     return (
       lowerContent.startsWith('error:') ||
-      lowerContent.includes('error:') ||
-      lowerContent.includes('failed:') ||
-      lowerContent.includes('exception:')
+      lowerContent.startsWith('failed:') ||
+      lowerContent.startsWith('exception:')
     );
   }
 }
