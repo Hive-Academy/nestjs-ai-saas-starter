@@ -296,6 +296,7 @@ export class ExecutionControlComponent {
    */
   readonly executionStarted = output<{
     executionId: string;
+    streamUrl: string;
   }>();
 
   /**
@@ -364,12 +365,13 @@ export class ExecutionControlComponent {
           // Store execution ID
           this._executionId.set(response.executionId);
 
-          // Notify state service to start execution tracking
-          this.workflowStateService.startExecution(response.executionId);
+          // Notify state service to start execution tracking (pass streamUrl for SSE)
+          this.workflowStateService.startExecution(response.streamUrl);
 
-          // Emit full response for parent coordination (includes websocketUrl)
+          // Emit full response for parent coordination
           this.executionStarted.emit({
             executionId: response.executionId,
+            streamUrl: response.streamUrl,
           });
 
           console.log('Workflow execution started:', response.executionId);

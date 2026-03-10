@@ -57,8 +57,8 @@ export class ThreadRegistryRepository extends Neo4jRepositoryBase<Thread> {
     userId: string,
     options: ThreadListOptions = {}
   ): Promise<ThreadMetadata[]> {
-    const limit = options.limit || 50;
-    const offset = options.offset || 0;
+    const limit = parseInt(String(options.limit || 50), 10);
+    const offset = parseInt(String(options.offset || 0), 10);
     const orderBy = options.orderBy || 'lastMessageAt';
     const orderDirection = options.orderDirection || 'DESC';
 

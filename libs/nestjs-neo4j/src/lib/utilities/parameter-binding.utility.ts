@@ -1,4 +1,5 @@
 import { BindParam } from 'neogma';
+import { int, isInt } from 'neo4j-driver';
 
 /**
  * Advanced Parameter Binding Utility for Neo4j/Neogma
@@ -110,11 +111,19 @@ export class ParameterBindingUtility {
     const paramMapping: Record<string, string> = {};
 
     for (const paramName of paramNames) {
-      const value = data[paramName];
+      let value = data[paramName];
 
       // Skip undefined values if configured
       if (skipUndefined && value === undefined) {
         continue;
+      }
+
+      // Ensure integer values are wrapped with neo4j.int().
+      // The Neo4j driver sends plain JS numbers as Float64 (e.g., 50 → 50.0),
+      // which Neo4j rejects for LIMIT/SKIP. neo4j.int() ensures proper
+      // integer transmission via the Bolt protocol.
+      if (typeof value === 'number' && Number.isInteger(value)) {
+        value = int(value);
       }
 
       // Add parameter with unique name generation
@@ -409,7 +418,15 @@ export class SmartQueryBuilder {
    * ```
    */
   limit(count: number): this {
-    const paramName = this.bindParam.getUniqueNameAndAdd('limit', count);
+    // Wrap plain JS integers with neo4j.int() to prevent Float64 transmission.
+    // The Neo4j driver sends plain numbers as Float64 (e.g., 50 → 50.0),
+    // which Neo4j rejects for LIMIT. neo4j.int() ensures proper integer via Bolt.
+    const value = isInt(count)
+      ? count
+      : typeof count === 'number' && Number.isInteger(count)
+      ? int(count)
+      : count;
+    const paramName = this.bindParam.getUniqueNameAndAdd('limit', value);
     this.queryParts.push(`LIMIT $${paramName}`);
     return this;
   }
@@ -424,7 +441,15 @@ export class SmartQueryBuilder {
    * ```
    */
   skip(count: number): this {
-    const paramName = this.bindParam.getUniqueNameAndAdd('skip', count);
+    // Wrap plain JS integers with neo4j.int() to prevent Float64 transmission.
+    // The Neo4j driver sends plain numbers as Float64 (e.g., 20 → 20.0),
+    // which Neo4j rejects for SKIP. neo4j.int() ensures proper integer via Bolt.
+    const value = isInt(count)
+      ? count
+      : typeof count === 'number' && Number.isInteger(count)
+      ? int(count)
+      : count;
+    const paramName = this.bindParam.getUniqueNameAndAdd('skip', value);
     this.queryParts.push(`SKIP $${paramName}`);
     return this;
   }

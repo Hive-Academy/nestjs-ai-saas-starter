@@ -1,4 +1,4 @@
-import type { AIMessage } from '@langchain/core/messages';
+import type { BaseMessage } from '@langchain/core/messages';
 import type { RunnableConfig } from '@langchain/core/runnables';
 
 /**
@@ -58,7 +58,7 @@ export interface AgentState extends Record<string, unknown> {
    * Message history - core component of LangGraph multi-agent systems
    * Maintains conversation context across agent handoffs
    */
-  messages: AIMessage[];
+  messages: BaseMessage[];
 
   /**
    * Next agent to execute (used by supervisor pattern)

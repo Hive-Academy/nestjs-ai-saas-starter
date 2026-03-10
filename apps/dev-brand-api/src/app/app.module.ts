@@ -103,16 +103,14 @@ import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbr
     }),
 
     // ClsModule for async context propagation - used by security decorators
+    // NOTE: User context is set by JwtAuthGuard (guard phase runs after middleware),
+    // so we only initialize the CLS namespace here without trying to read req.user.
     ClsModule.forRoot({
       global: true,
       middleware: {
         mount: true,
         setup: (cls, req) => {
-          // Set user from request (populated by auth guard)
-          if (req.user) {
-            cls.set('user', req.user);
-          }
-          // Set additional context for audit logging
+          // Set additional context for audit logging (available before auth)
           cls.set(
             'ipAddress',
             req.ip ||

@@ -1,7 +1,8 @@
 import { Injectable, Logger, Type } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { StateGraph, END } from '@langchain/langgraph';
+import { StateGraph, END, messagesStateReducer } from '@langchain/langgraph';
 import { ToolNode } from '@langchain/langgraph/prebuilt';
+import { SystemMessage } from '@langchain/core/messages';
 import {
   DynamicStructuredTool,
   tool,
@@ -151,13 +152,14 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
       this.logger.debug('Bound worker tools to supervisor LLM');
 
       // 4. Create StateGraph with supervisor pattern channels
+      // CRITICAL: Use messagesStateReducer for the messages channel.
+      // This coerces plain { role, content } objects into proper BaseMessage instances,
+      // which is required by LangGraph's ToolNode (validates BaseMessage[] input).
       const graph = new StateGraph<TState>({
         channels: {
           messages: {
-            value: (existing: any[], updates: any[]) => [
-              ...(existing || []),
-              ...(updates || []),
-            ],
+            value: messagesStateReducer,
+            default: () => [],
           },
           metadata: {
             value: (existing: any, updates: any) => ({
@@ -175,30 +177,50 @@ export class SupervisorGraphBuilder implements IMultiAgentGraphBuilder {
         this.logger.debug('Supervisor node invoked');
 
         // Prepend system message with supervisor prompt
-        const systemMessage = {
-          role: 'system',
-          content: supervisorConfig.systemPrompt,
-        };
+        // Use proper SystemMessage instance (required by LangChain LLM invocation)
+        const systemMessage = new SystemMessage(supervisorConfig.systemPrompt);
         const messages = [systemMessage, ...((state.messages as any[]) || [])];
 
-        // Invoke tool-bound LLM with current messages
-        const response = (await supervisorWithTools.invoke(messages)) as any;
+        try {
+          // Invoke tool-bound LLM with current messages
+          const response = (await supervisorWithTools.invoke(messages)) as any;
 
-        // Log tool calls if present
-        if (response.tool_calls && response.tool_calls.length > 0) {
-          this.logger.debug(
-            `Supervisor selected tools: ${response.tool_calls
-              .map((tc: any) => tc.name)
-              .join(', ')}`
+          // Log tool calls if present
+          if (response.tool_calls && response.tool_calls.length > 0) {
+            this.logger.debug(
+              `Supervisor selected tools: ${response.tool_calls
+                .map((tc: any) => tc.name)
+                .join(', ')}`
+            );
+          } else {
+            this.logger.debug('Supervisor finalized (no tool calls)');
+          }
+
+          // Append supervisor response to messages
+          return {
+            messages: [response],
+          } as unknown as Partial<TState>;
+        } catch (error: any) {
+          // Log full LLM provider error details for debugging
+          this.logger.error(
+            `Supervisor LLM invocation failed: ${error.message}`
           );
-        } else {
-          this.logger.debug('Supervisor finalized (no tool calls)');
+          if (error.response?.data) {
+            this.logger.error(
+              `LLM provider response: ${JSON.stringify(error.response.data)}`
+            );
+          }
+          if (error.error) {
+            this.logger.error(
+              `LLM error details: ${JSON.stringify(error.error)}`
+            );
+          }
+          // Log message count and tool count for debugging
+          this.logger.error(
+            `Request context: ${messages.length} messages, ${workerTools.length} tools bound`
+          );
+          throw error;
         }
-
-        // Append supervisor response to messages
-        return {
-          messages: [response],
-        } as unknown as Partial<TState>;
       });
 
       // 6. Add ToolNode for worker execution

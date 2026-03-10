@@ -8,6 +8,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Neogma } from 'neogma';
 import { QueryBuilder } from 'neogma';
+import { int, isInt } from 'neo4j-driver';
 import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 import {
   type FindOptions,
@@ -274,7 +275,25 @@ export class NeogmaService implements INeogmaService {
   ): Promise<QueryResult> {
     const startTime = Date.now();
     try {
-      const result = await this.neogma.queryRunner.run(cypher, params);
+      // GLOBAL FILTER: Wrap plain JS integers with neo4j.int().
+      // The Neo4j driver sends plain JS numbers as Float64 (e.g., 50 → 50.0),
+      // which Neo4j rejects for LIMIT/SKIP/integer-only clauses.
+      // neo4j.int() creates a proper Integer type that the Bolt protocol
+      // transmits as an integer. This ensures ALL queries work correctly
+      // regardless of whether the caller used neo4j.int() or not.
+      const normalizedParams: Record<string, any> = {};
+      for (const [key, value] of Object.entries(params)) {
+        if (typeof value === 'number' && Number.isInteger(value)) {
+          normalizedParams[key] = int(value);
+        } else {
+          normalizedParams[key] = value;
+        }
+      }
+
+      const result = await this.neogma.queryRunner.run(
+        cypher,
+        normalizedParams
+      );
 
       const queryResult: QueryResult = {
         records: result.records,

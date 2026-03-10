@@ -311,6 +311,102 @@ export class WorkflowExecutionService {
   }
 
   /**
+   * Stream a multi-agent workflow using LangGraph's native stream() API
+   *
+   * @param supervisorClass - Class decorated with @MultiAgent
+   * @param input - Initial workflow state
+   * @param config - Optional RunnableConfig with streamMode, subgraphs, thread_id
+   * @returns AsyncIterable of stream chunks
+   *
+   * Pattern:
+   * 1. Delegate graph building to MultiAgentGraphBuilderService
+   * 2. Compile graph with checkpointer and store
+   * 3. Stream via LangGraph's native stream()
+   */
+  async *streamMultiAgentWorkflow<
+    TState extends Record<string, unknown> = Record<string, unknown>
+  >(
+    supervisorClass: any,
+    input: TState,
+    config?: RunnableConfig & {
+      streamMode?: string | string[];
+      subgraphs?: boolean;
+    }
+  ): AsyncIterable<unknown> {
+    this.logger.log(`Streaming multi-agent workflow: ${supervisorClass.name}`);
+
+    try {
+      // 1. Delegate graph building to MultiAgentGraphBuilderService
+      const graph = await this.multiAgentGraphBuilder.buildGraph(
+        supervisorClass
+      );
+
+      // 2. Compile graph with checkpointer and store
+      const compiled = graph.compile({
+        checkpointer: this.checkpointer,
+        store: this.store,
+      });
+
+      // 3. Stream using LangGraph's native stream()
+      // Defaults: multi-mode streaming with subgraph support for full agent visibility
+      const streamMode = config?.streamMode || [
+        'updates',
+        'messages',
+        'custom',
+      ];
+      const subgraphs = config?.subgraphs ?? true;
+      this.logger.debug(
+        `Multi-agent streaming mode: ${
+          Array.isArray(streamMode) ? streamMode.join(',') : streamMode
+        }, subgraphs: ${subgraphs}`
+      );
+
+      const streamConfig: Record<string, unknown> = { ...config };
+      (streamConfig as any).subgraphs = subgraphs;
+
+      const stream = await compiled.stream(input, {
+        ...streamConfig,
+        streamMode: streamMode as any,
+      });
+
+      for await (const chunk of stream) {
+        yield chunk;
+      }
+
+      this.logger.log(
+        `Multi-agent streaming completed: ${supervisorClass.name}`
+      );
+    } catch (error) {
+      // Log full error details including response body from LLM providers
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Multi-agent streaming ${supervisorClass.name} failed:\n${errorMessage}`
+      );
+      // LangChain errors often include response details in cause or response fields
+      if (error instanceof Error) {
+        const anyError = error as any;
+        if (anyError.response?.data) {
+          this.logger.error(
+            `Provider response body: ${JSON.stringify(anyError.response.data)}`
+          );
+        }
+        if (anyError.cause) {
+          this.logger.error(`Error cause: ${anyError.cause}`);
+        }
+        if (anyError.status) {
+          this.logger.error(`Error status: ${anyError.status}`);
+        }
+        // Log the full error stack for debugging
+        if (anyError.stack) {
+          this.logger.debug(`Error stack: ${anyError.stack}`);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Build LangGraph StateGraph from WorkflowDefinition metadata
    * Delegates to pattern-specific strategy based on workflow type
    *

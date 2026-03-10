@@ -11,7 +11,7 @@ services:
     environment:
       # IMPORTANT: Password is set ONLY on first initialization (when volume is created)
       # If auth fails, run: docker compose down -v && docker compose up -d
-      - NEO4J_AUTH=neo4j/development_password
+      - NEO4J_AUTH=neo4j/neogma-password
       - NEO4J_PLUGINS=["graph-data-science"]
       # Disable encryption for local development (Neo4j 5.x requires explicit config)
       - NEO4J_server_bolt_tls__level=DISABLED

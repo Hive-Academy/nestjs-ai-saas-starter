@@ -16,7 +16,7 @@ export const getNeo4jConfig = (...args: unknown[]): Neo4jModuleOptions => {
   return {
     uri: configService.get('NEO4J_URI', 'bolt://localhost:7687'),
     username: configService.get('NEO4J_USERNAME', 'neo4j'),
-    password: configService.get('NEO4J_PASSWORD', 'password'),
+    password: configService.get('NEO4J_PASSWORD', 'neogma-password'),
     database: configService.get('NEO4J_DATABASE', 'neo4j'),
 
     config: {

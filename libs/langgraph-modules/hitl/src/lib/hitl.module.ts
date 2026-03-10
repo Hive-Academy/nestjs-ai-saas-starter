@@ -189,7 +189,9 @@ export class HitlModule {
         HitlValidationService,
         HitlApprovalRequestService,
         HumanApprovalService,
+        // Decorator Support Service - Extracted from decorator (2025-01-11)
         ApprovalEvaluatorService,
+        HitlModuleInitializerService, // Module initialization & service locator registration
       ],
       exports: [
         HumanApprovalService,
@@ -252,7 +254,10 @@ export class HitlModule {
         provide: HITL_CONFIG,
         useFactory: async (...args: unknown[]) => {
           const config = await options.useFactory!(...args);
-          return { ...DEFAULT_HITL_CONFIG, ...config };
+          const merged = { ...DEFAULT_HITL_CONFIG, ...config };
+          // Store config for decorator access (same as forRoot)
+          setHitlConfig(merged);
+          return merged;
         },
         inject: options.inject || ([] as any[]),
       };

@@ -4,9 +4,17 @@
     "allow": [],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["D:\\projects\\nestjs-ai-saas-starter"]
+    "additionalDirectories": [
+      "D:\\projects\\nestjs-ai-saas-starter"
+    ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["sequential-thinking", "nx-mcp", "angular-cli", "fetch", "Canva"],
+  "enabledMcpjsonServers": [
+    "sequential-thinking",
+    "nx-mcp",
+    "angular-cli",
+    "chrome-devtools",
+    "docs-langchain"
+  ],
   "outputStyle": "default"
 }

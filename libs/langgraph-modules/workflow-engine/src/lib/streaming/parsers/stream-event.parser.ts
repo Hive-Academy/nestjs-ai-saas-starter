@@ -174,12 +174,38 @@ export class StreamEventParser {
 
   /**
    * Parse a subgraph chunk (tuple format when subgraphs: true)
-   * Format: [namespace[], mode, { nodeName: stateUpdate }]
+   * Format: [namespace[], mode, data]
+   * Where data depends on mode:
+   *   - 'updates'/'values': { nodeName: stateUpdate }
+   *   - 'messages': [messageChunk, metadata]
+   *   - 'custom': any
+   *   - 'debug': { type, timestamp, payload }
    */
   private parseSubgraphChunk<
     TState extends Record<string, unknown> = Record<string, unknown>
-  >(chunk: SubgraphStreamChunk<TState>): ParsedStreamEvent<TState> | null {
-    const [namespacePath, streamMode, stateChunk] = chunk;
+  >(
+    chunk: SubgraphStreamChunk<TState>
+  ):
+    | ParsedStreamEvent<TState>
+    | ParsedMessageEvent
+    | ParsedCustomEvent
+    | ParsedDebugEvent
+    | null {
+    const [namespacePath, streamMode, data] = chunk;
+
+    // Route non-updates modes to their appropriate parsers
+    if (streamMode === 'messages' && isMessagesChunk(data)) {
+      return this.parseMessagesChunk(data);
+    }
+    if (streamMode === 'debug' && isDebugChunk(data)) {
+      return this.parseDebugChunk(data);
+    }
+    if (streamMode === 'custom') {
+      return this.parseCustomChunk(data);
+    }
+
+    // Standard updates/values mode: data is { nodeName: stateUpdate }
+    const stateChunk = data as LangGraphStreamChunk<TState>;
 
     // Validate the state chunk part (same as standard chunk)
     if (isEmptyChunk(stateChunk)) {
