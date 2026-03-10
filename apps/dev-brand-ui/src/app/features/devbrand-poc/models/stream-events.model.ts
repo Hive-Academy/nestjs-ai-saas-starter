@@ -461,6 +461,87 @@ export interface SubscriptionConfirmed {
 }
 
 // =============================================================================
+// Domain Event Interface (SSE payload structure)
+// =============================================================================
+
+/**
+ * DomainEvent Interface
+ *
+ * Represents the actual JSON payload structure received from SSE.
+ * Covers all 4 backend domain event types plus workflow_complete.
+ *
+ * @remarks
+ * - This is the unified type for ALL events coming through SSE
+ * - The `type` field discriminates which handler processes the event
+ * - Fields are optional because different event types use different fields
+ *
+ * @public
+ */
+export interface DomainEvent {
+  readonly type:
+    | 'workflow-update'
+    | 'tool-execution'
+    | 'message-stream'
+    | 'custom-stream'
+    | 'workflow_complete';
+  readonly executionId: string;
+  readonly timestamp: string;
+
+  /** Node name from LangGraph (e.g., 'supervisor', 'github-code-analyzer') */
+  readonly nodeName?: string;
+
+  /** State snapshot for workflow-update events */
+  readonly state?: Record<string, unknown>;
+
+  /** LangGraph execution metadata */
+  readonly metadata?: {
+    readonly isSystemNode?: boolean;
+    readonly isToolNode?: boolean;
+    readonly isEmpty?: boolean;
+    readonly isSubgraphEvent?: boolean;
+    readonly subgraphId?: string;
+    readonly namespacePath?: readonly string[];
+    readonly langgraph_node?: string;
+    readonly langgraph_step?: number;
+    readonly langgraph_checkpoint_ns?: string;
+    readonly checkpoint_ns?: string;
+    readonly [key: string]: unknown;
+  };
+
+  /** Token content for message-stream events */
+  readonly content?: string;
+
+  /** Execution step number for message-stream events */
+  readonly step?: number;
+
+  /** AI message chunk for message-stream events */
+  readonly messageChunk?: {
+    readonly id?: string;
+    readonly type?: string;
+    readonly content?: string;
+    readonly tool_call_chunks?: ReadonlyArray<{
+      readonly name?: string;
+      readonly args?: string;
+      readonly id?: string;
+      readonly index?: number;
+    }>;
+    readonly tool_calls?: ReadonlyArray<{
+      readonly name: string;
+      readonly args: Record<string, unknown>;
+      readonly id: string;
+    }>;
+    readonly additional_kwargs?: Record<string, unknown>;
+    readonly response_metadata?: Record<string, unknown>;
+  };
+
+  /** Tool execution data for tool-execution events */
+  readonly toolData?: Record<string, unknown>;
+
+  /** Custom data for custom-stream events */
+  readonly data?: Record<string, unknown>;
+}
+
+// =============================================================================
 // Zod Schemas for Runtime Validation
 // =============================================================================
 

@@ -3,13 +3,18 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import {
   StreamUpdate,
   StreamEventType,
-  TokenUpdate,
+  DomainEvent,
 } from '../models/stream-events.model';
 import {
   ExecutionState,
   ExecutionStatus,
 } from '../models/execution-state.model';
 import { AgentProgress, AgentStatus } from '../models/agent-progress.model';
+import {
+  TimelineEntry,
+  TimelineEntryType,
+  AgentError,
+} from '../models/timeline.model';
 import { DevBrandSseService } from './devbrand-sse.service';
 
 /**
@@ -18,7 +23,7 @@ import { DevBrandSseService } from './devbrand-sse.service';
  * Map of agent IDs to their current progress state.
  *
  * @remarks
- * - 3 agents in DevBrand workflow:
+ * - 3 agents in DevBrand workflow + supervisor:
  *   1. github-code-analyzer: GitHub repository analysis
  *   2. personal-brand-strategist: Brand strategy development
  *   3. content-creator: Content generation
@@ -57,126 +62,98 @@ export interface HITLApproval {
 }
 
 /**
+ * Agent registry entry for known LangGraph agent nodes
+ */
+interface AgentRegistryEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly icon: string;
+}
+
+/** Maximum number of events to retain in history */
+const MAX_EVENT_HISTORY = 10_000;
+
+/**
  * DevBrand Workflow State Service
  *
- * Centralized state management for LangGraph workflow execution with real-time event processing.
- * Evidence: implementation-plan.md:307-584 (DevBrandWorkflowStateService specification)
+ * Centralized state management for LangGraph workflow execution with domain event routing.
  *
  * @remarks
  * **Purpose**:
  * - Subscribe to SSE event streams from DevBrandSseService
- * - Process all 16 StreamEventType values with comprehensive event handlers
- * - Maintain ExecutionState, AgentProgressMap, HITL queue via signals
+ * - Route ALL domain event types (workflow-update, message-stream, tool-execution, custom-stream, workflow_complete)
+ * - Maintain ExecutionState, AgentProgressMap, streaming text, timeline, errors via signals
  * - Provide computed signals for derived state (progress, current agent, flags)
- * - Track event history with sequence validation (detect missed events)
  *
  * **State Architecture** (Signal-Based):
- * - _executionState (signal): Workflow lifecycle (idle → running → completed/error)
- * - _agentProgress (signal): 3-agent parallel tracking with granular status
- * - _hitlQueue (signal): Human-in-the-loop approval queue
- * - _eventHistory (BehaviorSubject): Complete event log for virtual scrolling
+ * - _executionState: Workflow lifecycle (idle -> running -> completed/error)
+ * - _agentProgress: Agent tracking with granular status including 'delegated'
+ * - _hitlQueue: Human-in-the-loop approval queue
+ * - _eventHistory: Complete event log (BehaviorSubject for virtual scrolling)
+ * - _streamingText: Per-agent LLM token accumulation buffers
+ * - _timelineEntries: Orchestration narrative timeline
+ * - _errors: Error collection with agent attribution
  *
- * **Event Processing**:
- * - All 16 StreamEventType values handled with dedicated processors
- * - Sequence number validation (gaps detected and logged)
- * - Agent ID extraction from canonical node IDs (devbrand/github-analysis → github-code-analyzer)
- * - Real-time state mutations on every event
+ * **Domain Event Router**:
+ * - workflow-update -> handleWorkflowUpdateEvent(): agent status, timeline
+ * - message-stream -> handleMessageStreamEvent(): token accumulation, delegation detection
+ * - tool-execution -> handleToolExecutionEvent(): tool results/errors, agent status
+ * - custom-stream -> handleCustomStreamEvent(): progress percentage updates
+ * - workflow_complete -> handleWorkflowComplete(): completion status
  *
- * **Computed Properties**:
- * - isExecuting: boolean - workflow running flag
- * - currentAgent: string | null - active agent ID
- * - workflowProgress: number - overall progress percentage (0-100)
- * - hasPendingApprovals: boolean - HITL queue not empty
- *
- * **Modern Angular Pattern**:
- * - Signal-based state (NOT BehaviorSubjects for primitive state)
- * - Computed signals for derived state (automatic recalculation)
- * - Modern inject() pattern (NOT constructor injection)
- * - Readonly signal accessors (asReadonly() for immutability)
- *
- * **Performance Optimization**:
- * - BehaviorSubject for event history (optimized for large arrays with virtual scrolling)
- * - Signal granularity: separate signals avoid unnecessary recomputation
- * - Sequence validation prevents duplicate processing
- *
- * @example
- * ```typescript
- * // In component
- * const stateService = inject(DevBrandWorkflowStateService);
- *
- * // Start workflow execution
- * stateService.startExecution('exec-abc123');
- *
- * // Monitor execution state
- * effect(() => {
- *   const state = stateService.executionState();
- *   console.log('Status:', state.status);
- * });
- *
- * // Get current agent
- * effect(() => {
- *   const agent = stateService.currentAgent();
- *   console.log('Active agent:', agent);
- * });
- *
- * // Monitor overall progress
- * effect(() => {
- *   const progress = stateService.workflowProgress();
- *   console.log('Progress:', progress, '%');
- * });
- *
- * // Access event history
- * stateService.eventHistory$.subscribe(events => {
- *   console.log('Total events:', events.length);
- * });
- *
- * // Filter events by type
- * const errorEvents = stateService.getEventsByType(StreamEventType.ERROR);
- *
- * // Filter events by agent
- * const analyzerEvents = stateService.getEventsByAgent('github-code-analyzer');
- * ```
- *
- * @see {@link ExecutionState} Workflow execution state interface
- * @see {@link AgentProgress} Individual agent progress interface
- * @see {@link StreamUpdate} Stream event interface
  * @public
  */
 @Injectable({
   providedIn: 'root',
 })
 export class DevBrandWorkflowStateService {
-  /**
-   * SSE service for real-time event streaming
-   * @private
-   */
+  /** SSE service for real-time event streaming */
   private readonly sseService = inject(DevBrandSseService);
 
   /**
-   * Workflow execution state signal
-   * @private
-   * @remarks
-   * - Tracks workflow lifecycle: idle → running → completed/error
-   * - Updated on workflow:start, workflow:end, workflow:error events
-   * - Contains executionId, timestamps, error messages
+   * Agent registry: maps LangGraph node names to display metadata.
+   * Replaces the broken extractAgentId() that expected {domain}/{phase} format.
    */
+  private readonly AGENT_REGISTRY: Record<string, AgentRegistryEntry> = {
+    supervisor: { id: 'supervisor', name: 'Supervisor', icon: '\u{1F9E0}' },
+    'github-code-analyzer': {
+      id: 'github-code-analyzer',
+      name: 'GitHub Code Analyzer',
+      icon: '\u{1F50D}',
+    },
+    'personal-brand-strategist': {
+      id: 'personal-brand-strategist',
+      name: 'Personal Brand Strategist',
+      icon: '\u{1F3AF}',
+    },
+    'content-creator': {
+      id: 'content-creator',
+      name: 'Content Creator',
+      icon: '\u{270D}\u{FE0F}',
+    },
+  };
+
+  /** Default streaming text buffer state */
+  private readonly EMPTY_STREAMING_TEXT: Record<string, string> = {
+    supervisor: '',
+    'github-code-analyzer': '',
+    'personal-brand-strategist': '',
+    'content-creator': '',
+  };
+
+  // ---------------------------------------------------------------------------
+  // EXISTING SIGNALS (preserved)
+  // ---------------------------------------------------------------------------
+
   private readonly _executionState = signal<ExecutionState>({
     status: 'idle' as ExecutionStatus,
     currentStep: 0,
-    totalSteps: 3, // 3 agents in DevBrand workflow
+    totalSteps: 3,
     startTime: null,
     endTime: null,
     error: null,
   });
 
-  /**
-   * Agent progress map signal
-   * @private
-   * @remarks
-   * - 3 agents: github-code-analyzer, personal-brand-strategist, content-creator
-   * - Updated on node:start, node:end, progress, milestone events
-   * - Tracks status, progress percentage, current action, last update
-   */
   private readonly _agentProgress = signal<AgentProgressMap>({
     'github-code-analyzer': {
       agentId: 'github-code-analyzer',
@@ -204,80 +181,66 @@ export class DevBrandWorkflowStateService {
     },
   });
 
-  /**
-   * HITL approval queue signal
-   * @private
-   * @remarks
-   * - Stores pending human-in-the-loop approval requests
-   * - Updated when workflow pauses for user decisions
-   * - Cleared on approval/rejection or workflow completion
-   */
   private readonly _hitlQueue = signal<HITLApproval[]>([]);
 
-  /**
-   * Event history subject (BehaviorSubject for large arrays)
-   * @private
-   * @remarks
-   * - Stores complete event log for virtual scrolling
-   * - Sequence validation on every event append
-   * - Performance: BehaviorSubject optimized for 10k+ events
-   */
   private readonly _eventHistory = new BehaviorSubject<StreamUpdate[]>([]);
 
-  /**
-   * Readonly execution state accessor
-   * @public
-   * @remarks
-   * - Immutable reference (asReadonly())
-   * - Components can read but not mutate
-   */
+  // ---------------------------------------------------------------------------
+  // NEW SIGNALS
+  // ---------------------------------------------------------------------------
+
+  /** Per-agent streaming text buffers for LLM token accumulation */
+  private readonly _streamingText = signal<Record<string, string>>({
+    ...this.EMPTY_STREAMING_TEXT,
+  });
+
+  /** Orchestration timeline entries (chronological narrative) */
+  private readonly _timelineEntries = signal<TimelineEntry[]>([]);
+
+  /** Error collection with agent attribution */
+  private readonly _errors = signal<AgentError[]>([]);
+
+  /** Sequence counter for generating unique timeline entry IDs */
+  private timelineSequence = 0;
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC READONLY ACCESSORS (existing)
+  // ---------------------------------------------------------------------------
+
   readonly executionState = this._executionState.asReadonly();
-
-  /**
-   * Readonly agent progress accessor
-   * @public
-   */
   readonly agentProgress = this._agentProgress.asReadonly();
-
-  /**
-   * Readonly HITL queue accessor
-   * @public
-   */
   readonly hitlQueue = this._hitlQueue.asReadonly();
-
-  /**
-   * Event history observable
-   * @public
-   * @remarks
-   * - Observable stream for event log updates
-   * - Used by EventStreamComponent for virtual scrolling
-   */
   readonly eventHistory$: Observable<StreamUpdate[]> =
     this._eventHistory.asObservable();
 
-  /**
-   * Computed: Is workflow currently executing?
-   * @public
-   * @remarks
-   * - Derived from executionState().status === 'running'
-   * - Automatically recalculates on status change
-   * - Used for UI loading states, button disabling
-   */
+  // ---------------------------------------------------------------------------
+  // PUBLIC READONLY ACCESSORS (new)
+  // ---------------------------------------------------------------------------
+
+  readonly streamingText = this._streamingText.asReadonly();
+  readonly timelineEntries = this._timelineEntries.asReadonly();
+  readonly errors = this._errors.asReadonly();
+
+  // ---------------------------------------------------------------------------
+  // COMPUTED SIGNALS
+  // ---------------------------------------------------------------------------
+
   readonly isExecuting = computed(
     () => this.executionState().status === 'running'
   );
 
   /**
-   * Computed: Current active agent ID
-   * @public
-   * @remarks
-   * - Finds first agent with status 'thinking', 'executing', or 'waiting'
-   * - Returns null if no active agent
-   * - Used for UI highlighting, focus indicators
+   * Current active agent ID.
+   * Finds the first agent with an active status (delegated, thinking, executing, waiting).
    */
   readonly currentAgent = computed(() => {
     const agents = this.agentProgress();
-    const activeStatuses: AgentStatus[] = ['thinking', 'executing', 'waiting'];
+    const activeStatuses: AgentStatus[] = [
+      'delegated',
+      'thinking',
+      'executing',
+      'waiting',
+    ];
 
     for (const [agentId, progress] of Object.entries(agents)) {
       if (activeStatuses.includes(progress.status)) {
@@ -288,14 +251,6 @@ export class DevBrandWorkflowStateService {
     return null;
   });
 
-  /**
-   * Computed: Overall workflow progress percentage
-   * @public
-   * @remarks
-   * - Calculates based on completed agents / total agents
-   * - Returns 0-100 percentage
-   * - Formula: (completed agents / 3) * 100
-   */
   readonly workflowProgress = computed(() => {
     const agents = this.agentProgress();
     const total = Object.keys(agents).length;
@@ -305,47 +260,23 @@ export class DevBrandWorkflowStateService {
     return Math.round((completed / total) * 100);
   });
 
-  /**
-   * Computed: Has pending HITL approvals?
-   * @public
-   * @remarks
-   * - Returns true if HITL queue is not empty
-   * - Used for approval notification badges
-   */
   readonly hasPendingApprovals = computed(() => this.hitlQueue().length > 0);
 
-  /**
-   * Constructor - Initialize WebSocket subscriptions
-   * @remarks
-   * - Subscribes to streamUpdates$, tokenUpdates$, errors$
-   * - Event processors registered for all event types
-   * - Automatic cleanup on service destroy
-   */
+  // ---------------------------------------------------------------------------
+  // CONSTRUCTOR
+  // ---------------------------------------------------------------------------
+
   constructor() {
     this.subscribeToSseEvents();
   }
 
+  // ---------------------------------------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------------------------------------
+
   /**
-   * Start workflow execution tracking
-   *
-   * @param executionId - Unique workflow execution ID from REST API
-   *
-   * @remarks
-   * - Sets status to 'running'
-   * - Resets all agent progress to 'idle'
-   * - Clears event history and HITL queue
-   * - Call after receiving executionId from DevBrandApiService
-   *
-   * @example
-   * ```typescript
-   * // After REST API call
-   * apiService.executeWorkflow(request).subscribe(response => {
-   *   stateService.startExecution(response.streamUrl);
-   *   sseService.connect(response.streamUrl);
-   * });
-   * ```
-   *
-   * @public
+   * Start workflow execution tracking.
+   * Resets all state, connects to SSE stream, and begins event processing.
    */
   startExecution(streamUrl: string): void {
     this._executionState.set({
@@ -359,9 +290,9 @@ export class DevBrandWorkflowStateService {
 
     // Reset all agents to idle state
     this._agentProgress.update((agents) => {
-      const reset: AgentProgressMap = {};
+      const resetMap: AgentProgressMap = {};
       for (const [agentId, agent] of Object.entries(agents)) {
-        reset[agentId] = {
+        resetMap[agentId] = {
           ...agent,
           status: 'idle',
           progress: 0,
@@ -369,12 +300,23 @@ export class DevBrandWorkflowStateService {
           lastUpdate: new Date(),
         };
       }
-      return reset;
+      return resetMap;
     });
 
-    // Clear history and queue
+    // Clear all state
     this._eventHistory.next([]);
     this._hitlQueue.set([]);
+    this._streamingText.set({ ...this.EMPTY_STREAMING_TEXT });
+    this._timelineEntries.set([]);
+    this._errors.set([]);
+    this.timelineSequence = 0;
+
+    // Add workflow-start timeline entry
+    this.addTimelineEntry(
+      'workflow-start',
+      'Workflow execution started',
+      'active'
+    );
 
     // Connect to SSE stream and subscribe to events
     this.sseService.connect(streamUrl);
@@ -382,720 +324,25 @@ export class DevBrandWorkflowStateService {
   }
 
   /**
-   * Subscribe to SSE event streams
-   * @private
-   * @remarks
-   * - Processes workflowUpdates$: workflow/node/progress/milestone/error events
-   * - Processes errors$: SSE connection errors
-   * - All subscriptions automatically managed by service lifecycle
-   */
-  private subscribeToSseEvents(): void {
-    console.log(
-      '🎧 [DevBrandWorkflowStateService] Subscribing to SSE events...'
-    );
-
-    // Workflow updates: all workflow events
-    this.sseService.workflowUpdates$.subscribe((update) => {
-      console.log('📨 [DevBrandWorkflowStateService] Received workflow update');
-      console.log(
-        '📊 [DevBrandWorkflowStateService] Update type:',
-        update.type
-      );
-      console.log('📋 [DevBrandWorkflowStateService] Full update:', update);
-
-      // Handle workflow_complete event
-      if (update.type === 'workflow_complete') {
-        console.log('🎉 [DevBrandWorkflowStateService] Workflow completed');
-        this._executionState.update((state) => ({
-          ...state,
-          status: 'completed',
-          endTime: new Date(),
-          currentStep: state.totalSteps,
-        }));
-        return;
-      }
-
-      // Handle regular workflow-update events
-      if (update.type === 'workflow-update') {
-        // Process the event (extract StreamUpdate from SSE event structure)
-        const streamUpdate = this.extractStreamUpdateFromSseEvent(update);
-        if (streamUpdate) {
-          this.processStreamUpdate(streamUpdate);
-          this.addToEventHistory(streamUpdate);
-        }
-      }
-
-      console.log(
-        '✅ [DevBrandWorkflowStateService] Workflow update processed'
-      );
-    });
-
-    // Errors: SSE connection errors
-    this.sseService.errors$.subscribe((error) => {
-      console.error('❌ [DevBrandWorkflowStateService] Received error:', error);
-      this._executionState.update((state) => ({
-        ...state,
-        status: 'error',
-        error: error.message,
-        endTime: new Date(),
-      }));
-      console.error(
-        '🔄 [DevBrandWorkflowStateService] Execution state updated to error'
-      );
-    });
-  }
-
-  /**
-   * Extract StreamUpdate from SSE event structure
-   * SSE events wrap the actual workflow data
-   */
-  private extractStreamUpdateFromSseEvent(sseEvent: any): StreamUpdate | null {
-    try {
-      // SSE event structure: { type, executionId, nodeName, state, timestamp }
-      // We need to extract the state and convert it to StreamUpdate format
-      if (!sseEvent.state) {
-        console.warn('⚠️ No state in SSE event:', sseEvent);
-        return null;
-      }
-
-      // Create StreamUpdate from SSE event
-      const streamUpdate: StreamUpdate = {
-        type: this.mapNodeNameToEventType(sseEvent.nodeName),
-        data: sseEvent.state,
-        metadata: {
-          timestamp: new Date(sseEvent.timestamp),
-          sequenceNumber: Date.now(), // Use timestamp as sequence for now
-          executionId: sseEvent.executionId,
-        },
-      };
-
-      return streamUpdate;
-    } catch (error) {
-      console.error('❌ Failed to extract StreamUpdate from SSE event:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Map LangGraph node name to StreamEventType
-   */
-  private mapNodeNameToEventType(nodeName: string): StreamEventType {
-    // Map node execution to appropriate event types
-    if (nodeName?.includes('supervisor')) {
-      return 'supervisor:route' as StreamEventType;
-    }
-    if (nodeName?.includes('github')) {
-      return 'agent:start' as StreamEventType;
-    }
-    if (nodeName?.includes('brand')) {
-      return 'agent:start' as StreamEventType;
-    }
-    if (nodeName?.includes('content')) {
-      return 'agent:start' as StreamEventType;
-    }
-    return 'node:start' as StreamEventType;
-  }
-
-  /**
-   * Process stream update and update relevant state
-   *
-   * @param update - Validated StreamUpdate event from WebSocket
-   *
-   * @remarks
-   * - Handles all 16 StreamEventType values
-   * - Routes to specialized handlers based on event type
-   * - Updates execution state, agent progress, HITL queue
-   *
-   * Evidence: research-summary.md:332-366 (StreamEventType enumeration)
-   *
-   * @private
-   */
-  private processStreamUpdate(update: StreamUpdate): void {
-    switch (update.type) {
-      // Workflow lifecycle events
-      case StreamEventType.WORKFLOW_START:
-        this.handleWorkflowStart(update);
-        break;
-
-      case StreamEventType.WORKFLOW_END:
-        this.handleWorkflowEnd(update);
-        break;
-
-      case StreamEventType.WORKFLOW_ERROR:
-        this.handleWorkflowError(update);
-        break;
-
-      // Node lifecycle events
-      case StreamEventType.NODE_START:
-        this.handleNodeStart(update);
-        break;
-
-      case StreamEventType.NODE_END:
-      case StreamEventType.NODE_COMPLETE:
-        this.handleNodeEnd(update);
-        break;
-
-      case StreamEventType.NODE_ERROR:
-        this.handleNodeError(update);
-        break;
-
-      // Progress events
-      case StreamEventType.PROGRESS:
-        this.handleProgressUpdate(update);
-        break;
-
-      case StreamEventType.MILESTONE:
-        this.handleMilestone(update);
-        break;
-
-      // Token event
-      case StreamEventType.TOKEN:
-        // Token events handled by separate tokenUpdates$ stream
-        // No state update needed here
-        break;
-
-      // Error event
-      case StreamEventType.ERROR:
-        this.handleError(update);
-        break;
-
-      // Stream data types (LangGraph stream modes)
-      case StreamEventType.VALUES:
-      case StreamEventType.UPDATES:
-      case StreamEventType.MESSAGES:
-      case StreamEventType.EVENTS:
-      case StreamEventType.DEBUG:
-      case StreamEventType.FINAL:
-        this.handleStreamData(update);
-        break;
-
-      // Custom events
-      case StreamEventType.CUSTOM:
-        this.handleCustomEvent(update);
-        break;
-
-      default:
-        console.warn('Unhandled event type:', update.type);
-    }
-  }
-
-  /**
-   * Handle WORKFLOW_START event
-   * @private
-   */
-  private handleWorkflowStart(_update: StreamUpdate): void {
-    this._executionState.update((state) => ({
-      ...state,
-      status: 'running',
-      startTime: new Date(),
-    }));
-  }
-
-  /**
-   * Handle WORKFLOW_END event
-   * @private
-   */
-  private handleWorkflowEnd(_update: StreamUpdate): void {
-    this._executionState.update((state) => ({
-      ...state,
-      status: 'completed',
-      endTime: new Date(),
-      currentStep: state.totalSteps,
-    }));
-  }
-
-  /**
-   * Handle WORKFLOW_ERROR event
-   * @private
-   */
-  private handleWorkflowError(update: StreamUpdate): void {
-    const errorMessage =
-      typeof update.data === 'object' && update.data !== null
-        ? (update.data as { message?: string }).message ||
-          'Unknown workflow error'
-        : 'Unknown workflow error';
-
-    this._executionState.update((state) => ({
-      ...state,
-      status: 'error',
-      error: errorMessage,
-      endTime: new Date(),
-    }));
-  }
-
-  /**
-   * Handle NODE_START event (agent activation)
-   *
-   * @param update - Stream update with node start metadata
-   *
-   * @remarks
-   * - Extracts agent ID from canonical node ID (devbrand/github-analysis → github-code-analyzer)
-   * - Sets agent status to 'executing'
-   * - Updates currentAction from metadata.activity or metadata.detail
-   * - Increments currentStep in execution state
-   *
-   * Evidence: research-summary.md:148-198 (GitHubCodeAnalyzerAgent)
-   * Evidence: research-summary.md:395-406 (node ID structure)
-   *
-   * @private
-   */
-  private handleNodeStart(update: StreamUpdate): void {
-    const agentId = this.extractAgentId(update.metadata?.nodeId);
-    if (!agentId) {
-      console.warn(
-        'NODE_START: Could not extract agent ID from nodeId:',
-        update.metadata?.nodeId
-      );
-      return;
-    }
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        console.warn('NODE_START: Unknown agent ID:', agentId);
-        return agents;
-      }
-
-      return {
-        ...agents,
-        [agentId]: {
-          ...agent,
-          status: 'executing',
-          currentAction:
-            update.metadata?.activity ||
-            update.metadata?.detail ||
-            'Processing...',
-          lastUpdate: new Date(),
-        },
-      };
-    });
-
-    // Increment current step
-    this._executionState.update((state) => ({
-      ...state,
-      currentStep: Math.min(state.currentStep + 1, state.totalSteps),
-    }));
-  }
-
-  /**
-   * Handle NODE_END/NODE_COMPLETE event (agent completion)
-   *
-   * @param update - Stream update with node end metadata
-   *
-   * @remarks
-   * - Sets agent status to 'completed'
-   * - Updates progress to 100%
-   * - Clears currentAction
-   *
-   * @private
-   */
-  private handleNodeEnd(update: StreamUpdate): void {
-    const agentId = this.extractAgentId(update.metadata?.nodeId);
-    if (!agentId) {
-      console.warn(
-        'NODE_END: Could not extract agent ID from nodeId:',
-        update.metadata?.nodeId
-      );
-      return;
-    }
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        console.warn('NODE_END: Unknown agent ID:', agentId);
-        return agents;
-      }
-
-      return {
-        ...agents,
-        [agentId]: {
-          ...agent,
-          status: 'completed',
-          progress: 100,
-          currentAction: null,
-          lastUpdate: new Date(),
-        },
-      };
-    });
-  }
-
-  /**
-   * Handle NODE_ERROR event
-   * @private
-   */
-  private handleNodeError(update: StreamUpdate): void {
-    const agentId = this.extractAgentId(update.metadata?.nodeId);
-    if (!agentId) {
-      console.warn(
-        'NODE_ERROR: Could not extract agent ID from nodeId:',
-        update.metadata?.nodeId
-      );
-      return;
-    }
-
-    const errorMessage =
-      typeof update.data === 'object' && update.data !== null
-        ? (update.data as { message?: string }).message || 'Node error'
-        : 'Node error';
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        console.warn('NODE_ERROR: Unknown agent ID:', agentId);
-        return agents;
-      }
-
-      return {
-        ...agents,
-        [agentId]: {
-          ...agent,
-          status: 'error',
-          currentAction: `Error: ${errorMessage}`,
-          lastUpdate: new Date(),
-        },
-      };
-    });
-  }
-
-  /**
-   * Handle PROGRESS event
-   *
-   * @param update - Stream update with progress data
-   *
-   * @remarks
-   * - Updates agent progress percentage
-   * - Updates currentAction if provided
-   * - Progress data format: { percentage?: number, message?: string, agentId?: string }
-   *
-   * @private
-   */
-  private handleProgressUpdate(update: StreamUpdate): void {
-    const progressData = update.data as {
-      percentage?: number;
-      message?: string;
-      agentId?: string;
-    };
-
-    const agentId =
-      progressData.agentId || this.extractAgentId(update.metadata?.nodeId);
-    if (!agentId) {
-      console.warn('PROGRESS: Could not determine agent ID');
-      return;
-    }
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        console.warn('PROGRESS: Unknown agent ID:', agentId);
-        return agents;
-      }
-
-      return {
-        ...agents,
-        [agentId]: {
-          ...agent,
-          progress: progressData.percentage ?? agent.progress,
-          currentAction: progressData.message ?? agent.currentAction,
-          lastUpdate: new Date(),
-        },
-      };
-    });
-  }
-
-  /**
-   * Handle MILESTONE event
-   *
-   * @param update - Stream update with milestone data
-   *
-   * @remarks
-   * - Milestone represents significant workflow checkpoint
-   * - Updates agent currentAction with milestone description
-   *
-   * @private
-   */
-  private handleMilestone(update: StreamUpdate): void {
-    const milestoneData = update.data as {
-      name?: string;
-      description?: string;
-      agentId?: string;
-    };
-
-    const agentId =
-      milestoneData.agentId || this.extractAgentId(update.metadata?.nodeId);
-    if (!agentId) {
-      console.warn('MILESTONE: Could not determine agent ID');
-      return;
-    }
-
-    const milestoneMessage =
-      milestoneData.description || milestoneData.name || 'Milestone reached';
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        console.warn('MILESTONE: Unknown agent ID:', agentId);
-        return agents;
-      }
-
-      return {
-        ...agents,
-        [agentId]: {
-          ...agent,
-          currentAction: `Milestone: ${milestoneMessage}`,
-          lastUpdate: new Date(),
-        },
-      };
-    });
-  }
-
-  /**
-   * Handle ERROR event
-   * @private
-   */
-  private handleError(update: StreamUpdate): void {
-    const errorMessage =
-      typeof update.data === 'object' && update.data !== null
-        ? (update.data as { message?: string }).message || 'Unknown error'
-        : 'Unknown error';
-
-    this._executionState.update((state) => ({
-      ...state,
-      status: 'error',
-      error: errorMessage,
-      endTime: new Date(),
-    }));
-  }
-
-  /**
-   * Handle stream data events (VALUES, UPDATES, MESSAGES, etc.)
-   *
-   * @param update - Stream update with stream data
-   *
-   * @remarks
-   * - LangGraph stream modes provide different data views
-   * - VALUES: complete state snapshots
-   * - UPDATES: partial state updates
-   * - MESSAGES: message streaming
-   * - EVENTS: event stream
-   * - DEBUG: debugging information
-   * - FINAL: final output only
-   * - No state mutation needed (data logged for debugging)
-   *
-   * @private
-   */
-  private handleStreamData(update: StreamUpdate): void {
-    // Stream data events are informational
-    // No state mutation needed - data available in event history
-    console.debug('Stream data event:', update.type, update.data);
-  }
-
-  /**
-   * Handle CUSTOM event
-   *
-   * @param update - Stream update with custom event data
-   *
-   * @remarks
-   * - Application-specific custom events
-   * - Could be HITL approvals, notifications, etc.
-   *
-   * @private
-   */
-  private handleCustomEvent(update: StreamUpdate): void {
-    // Check if custom event is HITL approval request
-    const customData = update.data as {
-      type?: string;
-      approvalId?: string;
-      message?: string;
-      context?: unknown;
-    };
-
-    if (customData.type === 'hitl_approval') {
-      const approval: HITLApproval = {
-        id: customData.approvalId || `approval-${Date.now()}`,
-        executionId: update.metadata?.executionId || '',
-        agentId: this.extractAgentId(update.metadata?.nodeId) || 'unknown',
-        message: customData.message || 'Approval required',
-        context: customData.context,
-        requestedAt: new Date(),
-        status: 'pending',
-      };
-
-      this._hitlQueue.update((queue) => [...queue, approval]);
-
-      // Set execution to paused
-      this._executionState.update((state) => ({
-        ...state,
-        status: 'paused',
-      }));
-    }
-  }
-
-  /**
-   * Process token update (LLM streaming)
-   *
-   * @param token - Token update from LLM response
-   *
-   * @remarks
-   * - Updates agent status to 'thinking' if not already set
-   * - Token streaming indicates LLM generation in progress
-   *
-   * @private
-   */
-  private processTokenUpdate(_token: TokenUpdate): void {
-    // Determine which agent is generating tokens
-    const agentId = this.currentAgent();
-    if (!agentId) {
-      // If no current agent, token might be from system prompt
-      return;
-    }
-
-    this._agentProgress.update((agents) => {
-      const agent = agents[agentId];
-      if (!agent) {
-        return agents;
-      }
-
-      // Only update status if not already thinking
-      if (agent.status !== 'thinking') {
-        return {
-          ...agents,
-          [agentId]: {
-            ...agent,
-            status: 'thinking',
-            currentAction: 'Generating response...',
-            lastUpdate: new Date(),
-          },
-        };
-      }
-
-      return agents;
-    });
-  }
-
-  /**
-   * Extract agent ID from canonical node ID
-   *
-   * @param nodeId - Canonical node ID from stream metadata
-   * @returns Agent ID or null if extraction fails
-   *
-   * @remarks
-   * - Node ID format: {domain}/{phase}/{activity}/{detail}
-   * - Example: "devbrand/github-analysis/extract-achievements/performance"
-   * - Phase maps to agent ID via phaseToAgent mapping
-   *
-   * Evidence: research-summary.md:395-406 (node ID structure)
-   *
-   * @private
-   */
-  private extractAgentId(nodeId?: string): string | null {
-    if (!nodeId) return null;
-
-    const parts = nodeId.split('/');
-    if (parts.length < 2) {
-      console.warn('Invalid node ID format:', nodeId);
-      return null;
-    }
-
-    // Map phase to agent ID
-    const phaseToAgent: Record<string, string> = {
-      'github-analysis': 'github-code-analyzer',
-      'brand-strategy': 'personal-brand-strategist',
-      'content-creation': 'content-creator',
-    };
-
-    const phase = parts[1];
-    const agentId = phaseToAgent[phase];
-
-    if (!agentId) {
-      console.warn('Unknown phase in node ID:', phase, 'from', nodeId);
-      return null;
-    }
-
-    return agentId;
-  }
-
-  /**
-   * Add event to history with sequence validation
-   *
-   * @param update - Stream update to add to history
-   *
-   * @remarks
-   * - Validates sequence numbers to detect missed events
-   * - Logs warning if sequence gap detected (network issue, event loss)
-   * - Appends to BehaviorSubject for virtual scrolling performance
-   *
-   * Evidence: research-websocket.md:348-368 (sequence number management)
-   *
-   * @private
-   */
-  private addToEventHistory(update: StreamUpdate): void {
-    const current = this._eventHistory.value;
-
-    // Validate sequence numbers to detect gaps
-    if (current.length > 0) {
-      const lastSeq = current[current.length - 1].metadata?.sequenceNumber;
-      const currentSeq = update.metadata?.sequenceNumber;
-
-      if (lastSeq !== undefined && currentSeq !== undefined) {
-        if (currentSeq !== lastSeq + 1) {
-          console.warn(
-            `⚠️ Sequence gap detected: expected ${
-              lastSeq + 1
-            }, got ${currentSeq}. Possible event loss or network issue.`
-          );
-        }
-      }
-    }
-
-    // Add to history (virtual scrolling handles large arrays efficiently)
-    this._eventHistory.next([...current, update]);
-  }
-
-  /**
    * Get filtered events by type
-   *
-   * @param type - StreamEventType to filter by
-   * @returns Array of matching events
-   *
-   * @remarks
-   * - Used by EventStreamComponent for type-based filtering
-   * - Returns shallow copy (safe for UI manipulation)
-   *
-   * @public
    */
   getEventsByType(type: StreamEventType): StreamUpdate[] {
     return this._eventHistory.value.filter((e) => e.type === type);
   }
 
   /**
-   * Get events by agent
-   *
-   * @param agentId - Agent ID to filter by
-   * @returns Array of matching events
-   *
-   * @remarks
-   * - Extracts agent ID from each event's nodeId metadata
-   * - Used for agent-specific event timelines
-   *
-   * @public
+   * Get events by agent ID
    */
   getEventsByAgent(agentId: string): StreamUpdate[] {
     return this._eventHistory.value.filter((e) => {
-      const extractedId = this.extractAgentId(e.metadata?.nodeId);
-      return extractedId === agentId;
+      const resolvedId = this.resolveAgentIdFromStreamUpdate(e);
+      return resolvedId === agentId;
     });
   }
 
   /**
-   * Clear state for new execution
-   *
-   * @remarks
-   * - Resets execution state to 'idle'
-   * - Resets all agents to idle state
-   * - Clears event history and HITL queue
-   * - Call before starting new workflow execution
-   *
-   * @public
+   * Clear state for new execution.
+   * Resets all signals including new streaming text, timeline, and error signals.
    */
   reset(): void {
     this._executionState.set({
@@ -1108,9 +355,9 @@ export class DevBrandWorkflowStateService {
     });
 
     this._agentProgress.update((agents) => {
-      const reset: AgentProgressMap = {};
+      const resetMap: AgentProgressMap = {};
       for (const [agentId, agent] of Object.entries(agents)) {
-        reset[agentId] = {
+        resetMap[agentId] = {
           ...agent,
           status: 'idle',
           progress: 0,
@@ -1118,10 +365,559 @@ export class DevBrandWorkflowStateService {
           lastUpdate: new Date(),
         };
       }
-      return reset;
+      return resetMap;
     });
 
     this._eventHistory.next([]);
     this._hitlQueue.set([]);
+    this._streamingText.set({ ...this.EMPTY_STREAMING_TEXT });
+    this._timelineEntries.set([]);
+    this._errors.set([]);
+    this.timelineSequence = 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE SUBSCRIPTION & DOMAIN EVENT ROUTER
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Subscribe to SSE event streams.
+   * Routes ALL domain events through processDomainEvent() instead of only handling workflow-update.
+   */
+  private subscribeToSseEvents(): void {
+    // Workflow updates: ALL domain events from SSE
+    this.sseService.workflowUpdates$.subscribe((update: DomainEvent) => {
+      // Add raw event to history for debug panel
+      this.addDomainEventToHistory(update);
+
+      // Route through domain event processor
+      this.processDomainEvent(update);
+    });
+
+    // SSE connection errors
+    this.sseService.errors$.subscribe((error) => {
+      console.error('[WorkflowStateService] SSE connection error:', error);
+      this._executionState.update((state) => ({
+        ...state,
+        status: 'error',
+        error: error.message,
+        endTime: new Date(),
+      }));
+    });
+  }
+
+  /**
+   * Domain event router - dispatches each event type to its dedicated handler.
+   * Zero events silently dropped; unhandled types logged as warnings.
+   */
+  private processDomainEvent(event: DomainEvent): void {
+    switch (event.type) {
+      case 'workflow-update':
+        this.handleWorkflowUpdateEvent(event);
+        break;
+      case 'message-stream':
+        this.handleMessageStreamEvent(event);
+        break;
+      case 'tool-execution':
+        this.handleToolExecutionEvent(event);
+        break;
+      case 'custom-stream':
+        this.handleCustomStreamEvent(event);
+        break;
+      case 'workflow_complete':
+        this.handleWorkflowComplete(event);
+        break;
+      default:
+        console.warn(
+          '[WorkflowStateService] Unknown domain event type:',
+          (event as Record<string, unknown>)['type']
+        );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DOMAIN EVENT HANDLERS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Handle workflow-update events.
+   * Updates agent status to 'executing' and adds timeline entries for node activity.
+   */
+  private handleWorkflowUpdateEvent(event: DomainEvent): void {
+    const agentId = this.resolveAgentId(event);
+
+    if (agentId && this.AGENT_REGISTRY[agentId]) {
+      const registryEntry = this.AGENT_REGISTRY[agentId];
+
+      // Skip supervisor for agent progress updates (supervisor is not an "agent" in the progress sense)
+      if (agentId !== 'supervisor') {
+        this.updateAgentStatus(
+          agentId,
+          'executing',
+          'Processing workflow update...'
+        );
+
+        // Increment step when a new agent starts executing
+        this._executionState.update((state) => ({
+          ...state,
+          currentStep: Math.min(state.currentStep + 1, state.totalSteps),
+        }));
+      }
+
+      this.addTimelineEntry(
+        'agent-start',
+        `${registryEntry.name}: Processing`,
+        'active',
+        agentId,
+        registryEntry.name
+      );
+    }
+  }
+
+  /**
+   * Handle message-stream events.
+   *
+   * Key behaviors:
+   * 1. Detect supervisor delegation from tool_call_chunks
+   * 2. Accumulate streaming text tokens per-agent
+   * 3. Update agent status to 'thinking' when receiving content
+   */
+  private handleMessageStreamEvent(event: DomainEvent): void {
+    const nodeName = event.nodeName || event.metadata?.langgraph_node;
+
+    // Detect supervisor delegation: supervisor making tool calls to delegate to agents
+    if (
+      nodeName === 'supervisor' &&
+      event.messageChunk?.tool_call_chunks?.length
+    ) {
+      const firstChunk = event.messageChunk.tool_call_chunks[0];
+      if (firstChunk.name) {
+        const delegatedAgentId = firstChunk.name;
+        const registryEntry = this.AGENT_REGISTRY[delegatedAgentId];
+
+        if (registryEntry) {
+          // Set delegated agent status
+          this.updateAgentStatus(
+            delegatedAgentId,
+            'delegated',
+            'Delegated by supervisor'
+          );
+
+          // Add delegation timeline entry
+          this.addTimelineEntry(
+            'delegation',
+            `Supervisor: Delegating to ${registryEntry.name}`,
+            'active',
+            delegatedAgentId,
+            registryEntry.name
+          );
+        }
+      }
+    }
+
+    // Detect completed tool calls (supervisor finalized delegation)
+    if (nodeName === 'supervisor' && event.messageChunk?.tool_calls?.length) {
+      const toolCall = event.messageChunk.tool_calls[0];
+      const delegatedAgentId = toolCall.name;
+      const registryEntry = this.AGENT_REGISTRY[delegatedAgentId];
+
+      if (registryEntry) {
+        this.updateAgentStatus(
+          delegatedAgentId,
+          'delegated',
+          'Delegated by supervisor'
+        );
+      }
+    }
+
+    // Accumulate streaming text content
+    const content = event.content;
+    if (content) {
+      const agentId = this.resolveAgentId(event) || nodeName || 'unknown';
+      const bufferKey = this.AGENT_REGISTRY[agentId] ? agentId : 'supervisor';
+
+      this._streamingText.update((buffers) => ({
+        ...buffers,
+        [bufferKey]: (buffers[bufferKey] || '') + content,
+      }));
+
+      // Update non-supervisor agents to 'thinking' when they produce content
+      if (agentId !== 'supervisor' && this.AGENT_REGISTRY[agentId]) {
+        const currentProgress = this._agentProgress();
+        const agentState = currentProgress[agentId];
+        if (
+          agentState &&
+          agentState.status !== 'thinking' &&
+          agentState.status !== 'completed'
+        ) {
+          this.updateAgentStatus(agentId, 'thinking', 'Generating response...');
+
+          const registryEntry = this.AGENT_REGISTRY[agentId];
+          this.addTimelineEntry(
+            'agent-thinking',
+            `${registryEntry.name}: Generating response`,
+            'active',
+            agentId,
+            registryEntry.name
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle tool-execution events.
+   * Extracts tool results/errors from toolData.messages array.
+   * Updates agent status and adds timeline entries.
+   */
+  private handleToolExecutionEvent(event: DomainEvent): void {
+    const agentId =
+      this.resolveAgentId(event) || this.currentAgent() || 'unknown';
+    const registryEntry = this.AGENT_REGISTRY[agentId];
+    const agentName = registryEntry?.name || agentId;
+
+    const toolData = event.toolData;
+    if (!toolData) {
+      this.addTimelineEntry(
+        'tool-execution',
+        `${agentName}: Tool execution`,
+        'active',
+        agentId,
+        agentName
+      );
+      return;
+    }
+
+    // Extract messages array from toolData
+    const messages = toolData['messages'] as
+      | ReadonlyArray<Record<string, unknown>>
+      | undefined;
+    if (messages && Array.isArray(messages)) {
+      for (const message of messages) {
+        const messageContent =
+          typeof message['content'] === 'string' ? message['content'] : '';
+        const isError = this.isToolErrorMessage(messageContent);
+
+        if (isError) {
+          // Error in tool execution
+          this.updateAgentStatus(agentId, 'error', `Error: ${messageContent}`);
+
+          const agentError: AgentError = {
+            agentId,
+            agentName,
+            message: messageContent,
+            timestamp: new Date(),
+            rawError: message,
+          };
+          this._errors.update((errors) => [...errors, agentError]);
+
+          this.addTimelineEntry(
+            'agent-error',
+            `${agentName}: ${messageContent}`,
+            'error',
+            agentId,
+            agentName,
+            messageContent
+          );
+        } else if (messageContent) {
+          // Successful tool result
+          this.addTimelineEntry(
+            'tool-execution',
+            `${agentName}: Tool completed`,
+            'completed',
+            agentId,
+            agentName,
+            messageContent.substring(0, 200)
+          );
+        }
+      }
+    } else {
+      this.addTimelineEntry(
+        'tool-execution',
+        `${agentName}: Tool execution`,
+        'active',
+        agentId,
+        agentName
+      );
+    }
+  }
+
+  /**
+   * Handle custom-stream events.
+   * Extracts progress percentage and message from event.data.
+   */
+  private handleCustomStreamEvent(event: DomainEvent): void {
+    const data = event.data;
+    if (!data) return;
+
+    const percentage = data['percentage'] as number | undefined;
+    const message = data['message'] as string | undefined;
+    const agentIdFromData = data['agent'] as string | undefined;
+
+    const agentId =
+      agentIdFromData || this.resolveAgentId(event) || this.currentAgent();
+    if (!agentId) return;
+
+    this._agentProgress.update((agents) => {
+      const agent = agents[agentId];
+      if (!agent) return agents;
+
+      return {
+        ...agents,
+        [agentId]: {
+          ...agent,
+          progress: percentage ?? agent.progress,
+          currentAction: message ?? agent.currentAction,
+          lastUpdate: new Date(),
+        },
+      };
+    });
+  }
+
+  /**
+   * Handle workflow_complete events.
+   * Sets execution to completed, marks remaining active agents as completed,
+   * and adds workflow-complete timeline entry.
+   */
+  private handleWorkflowComplete(_event: DomainEvent): void {
+    this._executionState.update((state) => ({
+      ...state,
+      status: 'completed',
+      endTime: new Date(),
+      currentStep: state.totalSteps,
+    }));
+
+    // Mark any still-active agents as completed
+    this._agentProgress.update((agents) => {
+      const updated: AgentProgressMap = {};
+      for (const [id, agent] of Object.entries(agents)) {
+        if (
+          agent.status !== 'idle' &&
+          agent.status !== 'completed' &&
+          agent.status !== 'error'
+        ) {
+          updated[id] = {
+            ...agent,
+            status: 'completed',
+            progress: 100,
+            currentAction: null,
+            lastUpdate: new Date(),
+          };
+
+          // Add completion timeline entry for each agent that was active
+          const registryEntry = this.AGENT_REGISTRY[id];
+          if (registryEntry) {
+            this.addTimelineEntry(
+              'agent-complete',
+              `${registryEntry.name}: Completed`,
+              'completed',
+              id,
+              registryEntry.name
+            );
+          }
+        } else {
+          updated[id] = agent;
+        }
+      }
+      return updated;
+    });
+
+    this.addTimelineEntry(
+      'workflow-complete',
+      'Workflow execution completed',
+      'completed'
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AGENT ID RESOLUTION
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Resolve agent ID from a DomainEvent using multiple strategies:
+   * 1. Direct nodeName match against AGENT_REGISTRY
+   * 2. Subgraph ID match from metadata
+   * 3. Checkpoint namespace extraction (e.g., 'github-code-analyzer:uuid')
+   */
+  private resolveAgentId(event: DomainEvent): string | null {
+    // Strategy 1: Direct nodeName match
+    const nodeName = event.nodeName || event.metadata?.langgraph_node;
+    if (nodeName && this.AGENT_REGISTRY[nodeName]) {
+      return nodeName;
+    }
+
+    // Strategy 2: Subgraph ID match
+    const subgraphId = event.metadata?.subgraphId;
+    if (typeof subgraphId === 'string' && this.AGENT_REGISTRY[subgraphId]) {
+      return subgraphId;
+    }
+
+    // Strategy 3: Checkpoint namespace extraction
+    const checkpointNs =
+      event.metadata?.langgraph_checkpoint_ns || event.metadata?.checkpoint_ns;
+    if (typeof checkpointNs === 'string' && checkpointNs) {
+      const agentName = checkpointNs.split(':')[0];
+      if (this.AGENT_REGISTRY[agentName]) {
+        return agentName;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve agent ID from a legacy StreamUpdate (for getEventsByAgent compatibility).
+   */
+  private resolveAgentIdFromStreamUpdate(update: StreamUpdate): string | null {
+    const nodeId = update.metadata?.nodeId;
+    if (!nodeId) return null;
+
+    // Check direct match against registry
+    if (this.AGENT_REGISTRY[nodeId]) return nodeId;
+
+    // Legacy format: try phase extraction
+    const parts = nodeId.split('/');
+    if (parts.length >= 2) {
+      const phaseToAgent: Record<string, string> = {
+        'github-analysis': 'github-code-analyzer',
+        'brand-strategy': 'personal-brand-strategist',
+        'content-creation': 'content-creator',
+      };
+      const agentId = phaseToAgent[parts[1]];
+      if (agentId) return agentId;
+    }
+
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // HELPER METHODS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Update an agent's status and current action.
+   */
+  private updateAgentStatus(
+    agentId: string,
+    status: AgentStatus,
+    currentAction: string | null
+  ): void {
+    this._agentProgress.update((agents) => {
+      const agent = agents[agentId];
+      if (!agent) {
+        console.warn('[WorkflowStateService] Unknown agent ID:', agentId);
+        return agents;
+      }
+
+      return {
+        ...agents,
+        [agentId]: {
+          ...agent,
+          status,
+          currentAction,
+          lastUpdate: new Date(),
+        },
+      };
+    });
+  }
+
+  /**
+   * Add a timeline entry to the narrative log.
+   */
+  private addTimelineEntry(
+    type: TimelineEntryType,
+    message: string,
+    status: 'active' | 'completed' | 'error',
+    agentId?: string,
+    agentName?: string,
+    detail?: string
+  ): void {
+    this.timelineSequence++;
+    const entry: TimelineEntry = {
+      id: `tl-${this.timelineSequence}-${Date.now()}`,
+      type,
+      timestamp: new Date(),
+      agentId,
+      agentName,
+      message,
+      detail,
+      status,
+    };
+
+    this._timelineEntries.update((entries) => [...entries, entry]);
+  }
+
+  /**
+   * Add a domain event to the event history (for debug panel).
+   * Converts DomainEvent to StreamUpdate format for backward compatibility with EventStreamComponent.
+   * Caps history at MAX_EVENT_HISTORY entries.
+   */
+  private addDomainEventToHistory(event: DomainEvent): void {
+    const streamUpdate: StreamUpdate = {
+      type: this.domainTypeToStreamEventType(event.type),
+      data: event,
+      metadata: {
+        timestamp: new Date(event.timestamp),
+        sequenceNumber: Date.now(),
+        executionId: event.executionId,
+        nodeId: event.nodeName,
+      },
+    };
+
+    const current = this._eventHistory.value;
+    const updated =
+      current.length >= MAX_EVENT_HISTORY
+        ? [
+            ...current.slice(current.length - MAX_EVENT_HISTORY + 1),
+            streamUpdate,
+          ]
+        : [...current, streamUpdate];
+
+    this._eventHistory.next(updated);
+  }
+
+  /**
+   * Map domain event type string to StreamEventType enum for backward compatibility.
+   */
+  private domainTypeToStreamEventType(type: string): StreamEventType {
+    switch (type) {
+      case 'workflow-update':
+        return StreamEventType.UPDATES;
+      case 'message-stream':
+        return StreamEventType.MESSAGE_STREAM;
+      case 'tool-execution':
+        return StreamEventType.EVENTS;
+      case 'custom-stream':
+        return StreamEventType.CUSTOM_STREAM;
+      case 'workflow_complete':
+        return StreamEventType.WORKFLOW_END;
+      default:
+        return StreamEventType.CUSTOM;
+    }
+  }
+
+  /**
+   * Check if a tool message content indicates an error.
+   * Looks for common error patterns in the message string.
+   */
+  private isToolErrorMessage(content: string): boolean {
+    if (!content) return false;
+
+    // Check for JSON-parsed error objects
+    try {
+      const parsed = JSON.parse(content) as Record<string, unknown>;
+      if (parsed['error'] === true || parsed['error'] === 'true') return true;
+    } catch {
+      // Not JSON, check string patterns
+    }
+
+    // Check for common error string patterns
+    const lowerContent = content.toLowerCase();
+    return (
+      lowerContent.startsWith('error:') ||
+      lowerContent.includes('error:') ||
+      lowerContent.includes('failed:') ||
+      lowerContent.includes('exception:')
+    );
   }
 }

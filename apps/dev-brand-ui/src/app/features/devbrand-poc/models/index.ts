@@ -22,3 +22,6 @@ export type * from './agent-progress.model';
 // REST API Models (Task 3)
 export type * from './execute-devbrand-request.model';
 export type * from './execute-devbrand-response.model';
+
+// Timeline & Error Models
+export type * from './timeline.model';

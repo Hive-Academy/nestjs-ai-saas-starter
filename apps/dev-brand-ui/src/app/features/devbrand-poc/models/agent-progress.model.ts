@@ -32,6 +32,7 @@
  */
 export type AgentStatus =
   | 'idle'
+  | 'delegated'
   | 'thinking'
   | 'executing'
   | 'waiting'
