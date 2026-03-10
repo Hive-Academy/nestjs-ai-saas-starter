@@ -29,6 +29,7 @@ import { IsString, IsOptional } from 'class-validator';
 import { Observable } from 'rxjs';
 import type { MessageEvent } from '@nestjs/common';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import type { DomainStreamEvent } from '@hive-academy/langgraph-workflow-engine';
 import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
 import { generateThreadId } from '@hive-academy/langgraph-core';
 import {
@@ -129,7 +130,7 @@ export class DevBrandController {
   // Store active workflow streams (executionId → async generator)
   private readonly activeStreams = new Map<
     string,
-    AsyncGenerator<any, void, unknown>
+    AsyncGenerator<DomainStreamEvent, void, unknown>
   >();
 
   constructor(
@@ -270,17 +271,25 @@ export class DevBrandController {
               type: 'workflow-update',
             } as MessageEvent);
 
-            // Check if workflow completed
+            // Check if workflow completed (state only exists on workflow-update events)
+            const workflowState =
+              event.type === 'workflow-update'
+                ? (event.state as Record<string, unknown> | undefined)
+                : undefined;
+            const stateStatus = workflowState?.['status'];
+            const stateMetadata = workflowState?.['metadata'] as
+              | Record<string, unknown>
+              | undefined;
             if (
-              event.state?.status === 'completed' ||
-              event.state?.metadata?.workflowCompleted
+              stateStatus === 'completed' ||
+              stateMetadata?.['workflowCompleted']
             ) {
               this.logger.log(`✅ Workflow completed: ${executionId}`);
               subscriber.next({
                 data: {
                   type: 'workflow_complete',
                   executionId,
-                  finalState: event.state,
+                  finalState: workflowState,
                   timestamp: new Date().toISOString(),
                 },
                 type: 'workflow_complete',

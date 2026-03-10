@@ -8,16 +8,7 @@ import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-stat
 import { StreamingTextDisplayComponent } from './streaming-text-display.component';
 import { AgentProgress, AgentStatus } from '../models/agent-progress.model';
 import { AgentError } from '../models/timeline.model';
-
-/**
- * Agent metadata for display in the activity panels.
- */
-interface AgentMetadata {
-  readonly id: string;
-  readonly name: string;
-  readonly icon: string;
-  readonly description: string;
-}
+import { AGENT_METADATA } from '../models/agent-registry.const';
 
 /**
  * Agent view model combining static metadata with dynamic state.
@@ -32,34 +23,6 @@ interface AgentViewModel {
   readonly error: AgentError | null;
   readonly isActive: boolean;
 }
-
-/** All agents including supervisor, ordered for display */
-const AGENT_METADATA: readonly AgentMetadata[] = [
-  {
-    id: 'supervisor',
-    name: 'Supervisor',
-    icon: '\u{1F9E0}',
-    description: 'Orchestrates agent delegation and workflow routing',
-  },
-  {
-    id: 'github-code-analyzer',
-    name: 'GitHub Code Analyzer',
-    icon: '\u{1F50D}',
-    description: 'Analyzes repositories and extracts technical achievements',
-  },
-  {
-    id: 'personal-brand-strategist',
-    name: 'Personal Brand Strategist',
-    icon: '\u{1F3AF}',
-    description: 'Develops brand strategy and professional positioning',
-  },
-  {
-    id: 'content-creator',
-    name: 'Content Creator',
-    icon: '\u{270D}\u{FE0F}',
-    description: 'Generates platform-specific content and posts',
-  },
-] as const;
 
 /**
  * AgentActivityPanelsComponent

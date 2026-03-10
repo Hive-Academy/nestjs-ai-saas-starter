@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { Subject } from 'rxjs';
+import { DomainEvent } from '../models/stream-events.model';
 
 /**
  * DevBrand SSE Service
@@ -86,7 +87,7 @@ export class DevBrandSseService {
    * Workflow update subject
    * @private
    */
-  private readonly _workflowUpdates = new Subject<any>();
+  private readonly _workflowUpdates = new Subject<DomainEvent>();
 
   /**
    * Error subject
@@ -246,9 +247,8 @@ export class DevBrandSseService {
       status: 'disconnected',
     });
 
-    // Complete observables (no more emissions)
-    this._workflowUpdates.complete();
-    this._errors.complete();
+    // Don't complete Subjects — service is reusable across multiple workflow executions.
+    // Completing would make them permanently closed and unable to emit on next connect().
 
     console.log('✅ [DevBrandSseService] Disconnected from SSE stream');
   }
@@ -345,34 +345,60 @@ export class DevBrandSseService {
       }
     );
 
-    // 4. Error event (connection or stream errors)
-    this.eventSource.onerror = (event) => {
-      console.error('❌ [DevBrandSseService] EVENT: error received');
-      console.error('💥 [DevBrandSseService] Error event:', event);
+    // 4. Workflow error event (sent by backend as SSE event before clean close)
+    this.eventSource.addEventListener(
+      'workflow_error',
+      (event: MessageEvent) => {
+        console.error('❌ [DevBrandSseService] EVENT: workflow_error received');
+        console.error('💥 [DevBrandSseService] Error data:', event.data);
 
-      const errorMessage =
-        this.eventSource?.readyState === EventSource.CLOSED
-          ? 'SSE connection closed by server'
-          : 'SSE connection error';
+        let errorMessage = 'Workflow execution failed';
+        try {
+          const data = JSON.parse(event.data);
+          errorMessage = data.message || errorMessage;
+        } catch {
+          // Use default message
+        }
+
+        this._connectionState.update((state) => ({
+          ...state,
+          status: 'error',
+          lastError: errorMessage,
+        }));
+
+        this._errors.next({
+          message: errorMessage,
+          timestamp: new Date(),
+        });
+
+        // Disconnect immediately — this is a fatal workflow error
+        this.disconnect();
+      }
+    );
+
+    // 5. Connection-level error event (network issues, server close)
+    this.eventSource.onerror = () => {
+      console.error('❌ [DevBrandSseService] EVENT: connection error');
+
+      // Always disconnect on error — the stream is either done or broken.
+      // EventSource auto-reconnect causes infinite loops when the backend
+      // has already cleaned up the stream (yields "Stream not found" 404).
+      console.warn(
+        '🔌 [DevBrandSseService] Disconnecting to prevent reconnect loop'
+      );
 
       this._connectionState.update((state) => ({
         ...state,
         status: 'error',
-        lastError: errorMessage,
+        lastError: 'SSE connection lost',
       }));
 
       this._errors.next({
-        message: errorMessage,
+        message: 'SSE connection lost',
         timestamp: new Date(),
       });
 
-      // If connection closed permanently, disconnect
-      if (this.eventSource?.readyState === EventSource.CLOSED) {
-        console.warn(
-          '🔌 [DevBrandSseService] Connection closed, disconnecting...'
-        );
-        this.disconnect();
-      }
+      this.disconnect();
     };
 
     console.log(

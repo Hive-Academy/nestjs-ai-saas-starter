@@ -5,6 +5,7 @@ import {
   ElementRef,
   effect,
   viewChild,
+  computed,
 } from '@angular/core';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
 import { StreamingTextDisplayComponent } from './streaming-text-display.component';
@@ -69,7 +70,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
           <div class="min-w-0">
             <p class="font-medium text-blue-900">{{ entry.message }}</p>
             <p class="text-xs text-blue-600 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
           </div>
         </div>
@@ -84,7 +85,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
             <p class="text-sm text-purple-700 mt-1">{{ entry.detail }}</p>
             }
             <p class="text-xs text-purple-600 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
           </div>
         </div>
@@ -119,12 +120,12 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
             </p>
             <p class="text-sm text-indigo-700">{{ entry.message }}</p>
             <p class="text-xs text-indigo-500 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
-            @if (entry.agentId && getStreamingText(entry.agentId)) {
+            @if (entry.agentId && streamingTextMap()[entry.agentId]) {
             <div class="mt-3">
               <app-streaming-text-display
-                [text]="getStreamingText(entry.agentId)"
+                [text]="streamingTextMap()[entry.agentId]"
                 [isActive]="entry.status === 'active'"
                 [label]="(entry.agentName || entry.agentId) + ' Output'"
               />
@@ -163,12 +164,12 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
             </p>
             <p class="text-sm text-indigo-600">{{ entry.message }}</p>
             <p class="text-xs text-indigo-500 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
-            @if (entry.agentId && getStreamingText(entry.agentId)) {
+            @if (entry.agentId && streamingTextMap()[entry.agentId]) {
             <div class="mt-3">
               <app-streaming-text-display
-                [text]="getStreamingText(entry.agentId)"
+                [text]="streamingTextMap()[entry.agentId]"
                 [isActive]="entry.status === 'active'"
                 [label]="(entry.agentName || entry.agentId) + ' Output'"
               />
@@ -203,7 +204,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
           </p>
           }
           <p class="text-xs text-gray-400 mt-1">
-            {{ formatTimestamp(entry.timestamp) }}
+            {{ formattedTimestamps()[entry.id] }}
           </p>
         </div>
         } @case ('agent-error') {
@@ -222,7 +223,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
             </p>
             }
             <p class="text-xs text-red-500 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
           </div>
         </div>
@@ -237,7 +238,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
             <p class="text-sm text-green-700 mt-1">{{ entry.detail }}</p>
             }
             <p class="text-xs text-green-600 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
           </div>
         </div>
@@ -249,7 +250,7 @@ import { StreamingTextDisplayComponent } from './streaming-text-display.componen
           <div class="min-w-0">
             <p class="font-medium text-blue-900">{{ entry.message }}</p>
             <p class="text-xs text-blue-600 mt-1">
-              {{ formatTimestamp(entry.timestamp) }}
+              {{ formattedTimestamps()[entry.id] }}
             </p>
           </div>
         </div>
@@ -286,6 +287,29 @@ export class OrchestrationTimelineComponent {
   private readonly scrollContainer =
     viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
 
+  /**
+   * Pre-computed streaming text map - avoids method calls in template.
+   * Returns the full Record<string, string> for template access.
+   */
+  readonly streamingTextMap = computed(() => this.stateService.streamingText());
+
+  /**
+   * Pre-computed timestamp map keyed by timeline entry ID.
+   * Avoids calling formatTimestamp() on every change detection cycle.
+   */
+  readonly formattedTimestamps = computed(() => {
+    const entries = this.stateService.timelineEntries();
+    const map: Record<string, string> = {};
+    for (const entry of entries) {
+      map[entry.id] = entry.timestamp.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    }
+    return map;
+  });
+
   constructor() {
     // Auto-scroll to bottom when new timeline entries are added
     effect(() => {
@@ -302,26 +326,6 @@ export class OrchestrationTimelineComponent {
           }
         });
       }
-    });
-  }
-
-  /**
-   * Get streaming text for a specific agent.
-   * Returns the accumulated streaming text buffer for the given agent ID.
-   */
-  getStreamingText(agentId: string): string {
-    return this.stateService.streamingText()[agentId] || '';
-  }
-
-  /**
-   * Format a Date timestamp into a human-readable time string.
-   */
-  formatTimestamp(timestamp: Date): string {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
     });
   }
 }

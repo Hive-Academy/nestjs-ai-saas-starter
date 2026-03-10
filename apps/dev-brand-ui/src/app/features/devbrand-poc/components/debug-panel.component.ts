@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
@@ -92,15 +93,8 @@ export class DebugPanelComponent {
   /** Whether the debug panel is expanded */
   readonly expanded = signal(false);
 
-  /** Number of events in history */
-  readonly eventCount = signal(0);
-
-  constructor() {
-    // Subscribe to event history to keep count updated
-    this.stateService.eventHistory$.subscribe((events) => {
-      this.eventCount.set(events.length);
-    });
-  }
+  /** Number of events in history - derived from eventHistory signal (no manual subscription needed) */
+  readonly eventCount = computed(() => this.eventHistory().length);
 
   /** Toggle debug panel expanded/collapsed state */
   toggleExpanded(): void {

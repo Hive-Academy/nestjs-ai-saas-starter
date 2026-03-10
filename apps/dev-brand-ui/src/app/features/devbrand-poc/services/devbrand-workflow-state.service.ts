@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import {
   StreamUpdate,
   StreamEventType,
@@ -15,6 +15,7 @@ import {
   TimelineEntryType,
   AgentError,
 } from '../models/timeline.model';
+import { AGENT_REGISTRY } from '../models/agent-registry.const';
 import { DevBrandSseService } from './devbrand-sse.service';
 
 /**
@@ -46,32 +47,26 @@ export type AgentProgressMap = Record<string, AgentProgress>;
  */
 export interface HITLApproval {
   /** Unique approval request ID */
-  id: string;
-  /** Execution ID this approval belongs to */
-  executionId: string;
-  /** Agent requesting approval */
-  agentId: string;
-  /** Human-readable approval message */
-  message: string;
-  /** Approval context/details */
-  context: unknown;
-  /** Timestamp when approval was requested */
-  requestedAt: Date;
-  /** Approval status */
-  status: 'pending' | 'approved' | 'rejected';
-}
-
-/**
- * Agent registry entry for known LangGraph agent nodes
- */
-interface AgentRegistryEntry {
   readonly id: string;
-  readonly name: string;
-  readonly icon: string;
+  /** Execution ID this approval belongs to */
+  readonly executionId: string;
+  /** Agent requesting approval */
+  readonly agentId: string;
+  /** Human-readable approval message */
+  readonly message: string;
+  /** Approval context/details */
+  readonly context: unknown;
+  /** Timestamp when approval was requested */
+  readonly requestedAt: Date;
+  /** Approval status */
+  readonly status: 'pending' | 'approved' | 'rejected';
 }
 
 /** Maximum number of events to retain in history */
 const MAX_EVENT_HISTORY = 10_000;
+
+/** Maximum number of timeline entries to retain */
+const MAX_TIMELINE_ENTRIES = 500;
 
 /**
  * DevBrand Workflow State Service
@@ -110,28 +105,8 @@ export class DevBrandWorkflowStateService {
   /** SSE service for real-time event streaming */
   private readonly sseService = inject(DevBrandSseService);
 
-  /**
-   * Agent registry: maps LangGraph node names to display metadata.
-   * Replaces the broken extractAgentId() that expected {domain}/{phase} format.
-   */
-  private readonly AGENT_REGISTRY: Record<string, AgentRegistryEntry> = {
-    supervisor: { id: 'supervisor', name: 'Supervisor', icon: '\u{1F9E0}' },
-    'github-code-analyzer': {
-      id: 'github-code-analyzer',
-      name: 'GitHub Code Analyzer',
-      icon: '\u{1F50D}',
-    },
-    'personal-brand-strategist': {
-      id: 'personal-brand-strategist',
-      name: 'Personal Brand Strategist',
-      icon: '\u{1F3AF}',
-    },
-    'content-creator': {
-      id: 'content-creator',
-      name: 'Content Creator',
-      icon: '\u{270D}\u{FE0F}',
-    },
-  };
+  /** Subscription handle for SSE event streams - cleaned up between executions */
+  private sseSubscription: Subscription | null = null;
 
   /** Default streaming text buffer state */
   private readonly EMPTY_STREAMING_TEXT: Record<string, string> = {
@@ -267,7 +242,8 @@ export class DevBrandWorkflowStateService {
   // ---------------------------------------------------------------------------
 
   constructor() {
-    this.subscribeToSseEvents();
+    // SSE subscriptions are established in startExecution(), not here,
+    // to avoid duplicate subscriptions on repeated executions.
   }
 
   // ---------------------------------------------------------------------------
@@ -382,28 +358,44 @@ export class DevBrandWorkflowStateService {
 
   /**
    * Subscribe to SSE event streams.
-   * Routes ALL domain events through processDomainEvent() instead of only handling workflow-update.
+   * Unsubscribes any existing subscription before creating a new one
+   * to prevent duplicate event handlers on repeated executions.
+   * Routes ALL domain events through processDomainEvent().
    */
   private subscribeToSseEvents(): void {
-    // Workflow updates: ALL domain events from SSE
-    this.sseService.workflowUpdates$.subscribe((update: DomainEvent) => {
-      // Add raw event to history for debug panel
-      this.addDomainEventToHistory(update);
+    // Tear down previous subscriptions to prevent duplicates
+    if (this.sseSubscription) {
+      this.sseSubscription.unsubscribe();
+      this.sseSubscription = null;
+    }
 
-      // Route through domain event processor
-      this.processDomainEvent(update);
-    });
+    const subscription = new Subscription();
+
+    // Workflow updates: ALL domain events from SSE
+    subscription.add(
+      this.sseService.workflowUpdates$.subscribe((update: DomainEvent) => {
+        // Add raw event to history for debug panel
+        this.addDomainEventToHistory(update);
+
+        // Route through domain event processor
+        this.processDomainEvent(update);
+      })
+    );
 
     // SSE connection errors
-    this.sseService.errors$.subscribe((error) => {
-      console.error('[WorkflowStateService] SSE connection error:', error);
-      this._executionState.update((state) => ({
-        ...state,
-        status: 'error',
-        error: error.message,
-        endTime: new Date(),
-      }));
-    });
+    subscription.add(
+      this.sseService.errors$.subscribe((error) => {
+        console.error('[WorkflowStateService] SSE connection error:', error);
+        this._executionState.update((state) => ({
+          ...state,
+          status: 'error',
+          error: error.message,
+          endTime: new Date(),
+        }));
+      })
+    );
+
+    this.sseSubscription = subscription;
   }
 
   /**
@@ -446,8 +438,8 @@ export class DevBrandWorkflowStateService {
   private handleWorkflowUpdateEvent(event: DomainEvent): void {
     const agentId = this.resolveAgentId(event);
 
-    if (agentId && this.AGENT_REGISTRY[agentId]) {
-      const registryEntry = this.AGENT_REGISTRY[agentId];
+    if (agentId && AGENT_REGISTRY[agentId]) {
+      const registryEntry = AGENT_REGISTRY[agentId];
 
       // Skip supervisor for agent progress updates (supervisor is not an "agent" in the progress sense)
       if (agentId !== 'supervisor') {
@@ -493,7 +485,7 @@ export class DevBrandWorkflowStateService {
       const firstChunk = event.messageChunk.tool_call_chunks[0];
       if (firstChunk.name) {
         const delegatedAgentId = firstChunk.name;
-        const registryEntry = this.AGENT_REGISTRY[delegatedAgentId];
+        const registryEntry = AGENT_REGISTRY[delegatedAgentId];
 
         if (registryEntry) {
           // Set delegated agent status
@@ -519,7 +511,7 @@ export class DevBrandWorkflowStateService {
     if (nodeName === 'supervisor' && event.messageChunk?.tool_calls?.length) {
       const toolCall = event.messageChunk.tool_calls[0];
       const delegatedAgentId = toolCall.name;
-      const registryEntry = this.AGENT_REGISTRY[delegatedAgentId];
+      const registryEntry = AGENT_REGISTRY[delegatedAgentId];
 
       if (registryEntry) {
         this.updateAgentStatus(
@@ -534,7 +526,7 @@ export class DevBrandWorkflowStateService {
     const content = event.content;
     if (content) {
       const agentId = this.resolveAgentId(event) || nodeName || 'unknown';
-      const bufferKey = this.AGENT_REGISTRY[agentId] ? agentId : 'supervisor';
+      const bufferKey = AGENT_REGISTRY[agentId] ? agentId : 'supervisor';
 
       this._streamingText.update((buffers) => ({
         ...buffers,
@@ -542,7 +534,7 @@ export class DevBrandWorkflowStateService {
       }));
 
       // Update non-supervisor agents to 'thinking' when they produce content
-      if (agentId !== 'supervisor' && this.AGENT_REGISTRY[agentId]) {
+      if (agentId !== 'supervisor' && AGENT_REGISTRY[agentId]) {
         const currentProgress = this._agentProgress();
         const agentState = currentProgress[agentId];
         if (
@@ -552,7 +544,7 @@ export class DevBrandWorkflowStateService {
         ) {
           this.updateAgentStatus(agentId, 'thinking', 'Generating response...');
 
-          const registryEntry = this.AGENT_REGISTRY[agentId];
+          const registryEntry = AGENT_REGISTRY[agentId];
           this.addTimelineEntry(
             'agent-thinking',
             `${registryEntry.name}: Generating response`,
@@ -573,7 +565,7 @@ export class DevBrandWorkflowStateService {
   private handleToolExecutionEvent(event: DomainEvent): void {
     const agentId =
       this.resolveAgentId(event) || this.currentAgent() || 'unknown';
-    const registryEntry = this.AGENT_REGISTRY[agentId];
+    const registryEntry = AGENT_REGISTRY[agentId];
     const agentName = registryEntry?.name || agentId;
 
     const toolData = event.toolData;
@@ -705,7 +697,7 @@ export class DevBrandWorkflowStateService {
           };
 
           // Add completion timeline entry for each agent that was active
-          const registryEntry = this.AGENT_REGISTRY[id];
+          const registryEntry = AGENT_REGISTRY[id];
           if (registryEntry) {
             this.addTimelineEntry(
               'agent-complete',
@@ -742,13 +734,13 @@ export class DevBrandWorkflowStateService {
   private resolveAgentId(event: DomainEvent): string | null {
     // Strategy 1: Direct nodeName match
     const nodeName = event.nodeName || event.metadata?.langgraph_node;
-    if (nodeName && this.AGENT_REGISTRY[nodeName]) {
+    if (nodeName && AGENT_REGISTRY[nodeName]) {
       return nodeName;
     }
 
     // Strategy 2: Subgraph ID match
     const subgraphId = event.metadata?.subgraphId;
-    if (typeof subgraphId === 'string' && this.AGENT_REGISTRY[subgraphId]) {
+    if (typeof subgraphId === 'string' && AGENT_REGISTRY[subgraphId]) {
       return subgraphId;
     }
 
@@ -757,7 +749,7 @@ export class DevBrandWorkflowStateService {
       event.metadata?.langgraph_checkpoint_ns || event.metadata?.checkpoint_ns;
     if (typeof checkpointNs === 'string' && checkpointNs) {
       const agentName = checkpointNs.split(':')[0];
-      if (this.AGENT_REGISTRY[agentName]) {
+      if (AGENT_REGISTRY[agentName]) {
         return agentName;
       }
     }
@@ -773,7 +765,7 @@ export class DevBrandWorkflowStateService {
     if (!nodeId) return null;
 
     // Check direct match against registry
-    if (this.AGENT_REGISTRY[nodeId]) return nodeId;
+    if (AGENT_REGISTRY[nodeId]) return nodeId;
 
     // Legacy format: try phase extraction
     const parts = nodeId.split('/');
@@ -844,7 +836,13 @@ export class DevBrandWorkflowStateService {
       status,
     };
 
-    this._timelineEntries.update((entries) => [...entries, entry]);
+    this._timelineEntries.update((entries) => {
+      const updated = [...entries, entry];
+      if (updated.length > MAX_TIMELINE_ENTRIES) {
+        return updated.slice(updated.length - MAX_TIMELINE_ENTRIES);
+      }
+      return updated;
+    });
   }
 
   /**
@@ -879,7 +877,9 @@ export class DevBrandWorkflowStateService {
   /**
    * Map domain event type string to StreamEventType enum for backward compatibility.
    */
-  private domainTypeToStreamEventType(type: string): StreamEventType {
+  private domainTypeToStreamEventType(
+    type: DomainEvent['type']
+  ): StreamEventType {
     switch (type) {
       case 'workflow-update':
         return StreamEventType.UPDATES;

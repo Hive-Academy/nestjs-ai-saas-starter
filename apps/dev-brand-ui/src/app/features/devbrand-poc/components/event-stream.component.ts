@@ -1,4 +1,10 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -37,6 +43,7 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
   selector: 'app-event-stream',
   standalone: true,
   imports: [ScrollingModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
       <!-- Filter Controls -->
@@ -191,23 +198,7 @@ export class EventStreamComponent {
     initialValue: [],
   });
 
-  constructor() {
-    console.log('🎬 [EventStreamComponent] Component constructed');
-
-    // Log when events arrive
-    this.stateService.eventHistory$.subscribe((events) => {
-      console.log('📊 [EventStreamComponent] Event history updated');
-      console.log('📈 [EventStreamComponent] Total events:', events.length);
-      if (events.length > 0) {
-        const latest = events[events.length - 1];
-        console.log('🆕 [EventStreamComponent] Latest event:', {
-          type: latest.type,
-          sequence: latest.metadata.sequenceNumber,
-          nodeId: latest.metadata.nodeId,
-        });
-      }
-    });
-  }
+  // No constructor subscription needed - eventHistory is already a signal via toSignal().
 
   /**
    * Selected filter type
