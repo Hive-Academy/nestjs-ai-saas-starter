@@ -8,6 +8,7 @@ import {
   StreamEventTransformer,
   type DomainStreamEvent,
 } from '@hive-academy/langgraph-workflow-engine';
+import { HumanMessage } from '@langchain/core/messages';
 import { GitHubCodeAnalyzerAgent } from '../agents/github-code-analyzer/github-code-analyzer.agent';
 import { ContentCreatorAgent } from '../agents/content-creator/content-creator.agent';
 import { PersonalBrandStrategistAgent } from '../agents/personal-brand-strategist/personal-brand-strategist.agent';
@@ -171,7 +172,11 @@ export class DevBrandSupervisorWorkflow {
         startedAt: now,
         timestamps: { started: now },
         completedNodes: [],
-        messages: [],
+        messages: [
+          new HumanMessage(
+            `Analyze the GitHub profile for "${input.githubUsername}" and build a personal brand strategy. Follow the workflow sequence: first analyze GitHub, then develop brand strategy, then create content.`
+          ),
+        ],
         metadata: {
           userId: input.userId,
           githubUsername: input.githubUsername,
@@ -282,7 +287,11 @@ export class DevBrandSupervisorWorkflow {
       startedAt: now,
       timestamps: { started: now },
       completedNodes: [],
-      messages: [],
+      messages: [
+        new HumanMessage(
+          `Analyze the GitHub profile for "${input.githubUsername}" and build a personal brand strategy. Follow the workflow sequence: first analyze GitHub, then develop brand strategy, then create content.`
+        ),
+      ],
       metadata: {
         userId: input.userId,
         githubUsername: input.githubUsername,
@@ -291,19 +300,12 @@ export class DevBrandSupervisorWorkflow {
       },
     };
 
-    // 2. Stream via WorkflowExecutionService with comprehensive streaming modes
-    // - 'updates': Node-level state changes (supervisor + workers via subgraphs)
-    // - 'messages': LLM token streaming from ALL agents (supervisor + workers)
-    // - 'custom': Custom progress events from worker agents
-    // Note: DevBrandSupervisorWorkflow already has agents configured via @MultiAgent decorator
-    const stream = this.workflowExecution.streamWorkflow(
+    // 2. Stream via WorkflowExecutionService multi-agent streaming
+    // Defaults: streamMode=['updates','messages','custom'], subgraphs=true
+    const stream = this.workflowExecution.streamMultiAgentWorkflow(
       DevBrandSupervisorWorkflow,
       initialState,
-      {
-        configurable: { thread_id: executionId },
-        streamMode: ['updates', 'messages', 'custom'], // ✅ Add messages + custom modes
-        subgraphs: true, // Enable worker agent streaming
-      } as any // Type assertion needed for array streamMode (LangGraph types not updated yet)
+      { configurable: { thread_id: executionId } }
     );
 
     // 3. Parse and transform stream events using defensive utilities
@@ -329,6 +331,11 @@ export class DevBrandSupervisorWorkflow {
         parsedEvent,
         executionId
       );
+
+      // Filter empty message-stream events to reduce noise and network traffic
+      if (domainEvent.type === 'message-stream' && !domainEvent.content) {
+        continue;
+      }
 
       // Yield to caller (includes subgraph metadata if from worker agent)
       yield domainEvent;

@@ -150,6 +150,7 @@ export class DevBrandController {
    * Start DevBrand workflow (non-blocking)
    * Returns executionId immediately for SSE subscription
    */
+  @UseGuards(JwtAuthGuard)
   @Post('execute')
   @ApiOperation({
     summary: 'Start DevBrand workflow',
@@ -177,9 +178,13 @@ export class DevBrandController {
     description: 'Invalid request (missing githubUsername)',
   })
   async executeDevBrand(
-    @Body() dto: ExecuteDevBrandDto
+    @Body() dto: ExecuteDevBrandDto,
+    @Req() request: Request
   ): Promise<ExecuteDevBrandResponseDto> {
-    this.logger.log(`🚀 Starting DevBrand workflow for: ${dto.githubUsername}`);
+    const userId = request.user!.id;
+    this.logger.log(
+      `🚀 Starting DevBrand workflow for: ${dto.githubUsername}, user: ${userId}`
+    );
 
     try {
       // Validate input
@@ -187,15 +192,11 @@ export class DevBrandController {
         throw new BadRequestException('GitHub username cannot be empty');
       }
 
-      if (!dto.userId) {
-        throw new BadRequestException('User ID is required');
-      }
-
       const executionId = `devbrand-${Date.now()}`;
 
-      // Create async generator for streaming
+      // Create async generator for streaming - userId comes from authenticated JWT context
       const stream = this.devBrandWorkflow.executeWithStreaming({
-        userId: dto.userId,
+        userId,
         githubUsername: dto.githubUsername.trim(),
         executionId,
       });
@@ -244,12 +245,18 @@ export class DevBrandController {
       const stream = this.activeStreams.get(executionId);
 
       if (!stream) {
-        subscriber.error(
-          new HttpException(
-            `Stream not found for ${executionId}. Make sure to call POST /api/devbrand/execute first.`,
-            HttpStatus.NOT_FOUND
-          )
-        );
+        this.logger.warn(`Stream not found for ${executionId}`);
+        // Send as SSE event (not subscriber.error) to prevent EventSource auto-reconnect loop
+        subscriber.next({
+          data: {
+            type: 'workflow_error',
+            executionId,
+            message: `Stream not found for ${executionId}. It may have already completed or expired.`,
+            timestamp: new Date().toISOString(),
+          },
+          type: 'workflow_error',
+        } as MessageEvent);
+        subscriber.complete();
         return;
       }
 
@@ -288,7 +295,19 @@ export class DevBrandController {
             `❌ Stream error for ${executionId}:`,
             error.message
           );
-          subscriber.error(error);
+          // Send error as SSE event (not subscriber.error) so the client receives it
+          // before the connection closes. subscriber.error() causes an abrupt close
+          // which triggers EventSource auto-reconnect → infinite loop.
+          subscriber.next({
+            data: {
+              type: 'workflow_error',
+              executionId,
+              message: error.message || 'Workflow execution failed',
+              timestamp: new Date().toISOString(),
+            },
+            type: 'workflow_error',
+          } as MessageEvent);
+          subscriber.complete(); // Clean close prevents auto-reconnect
           this.activeStreams.delete(executionId);
         }
       })();
