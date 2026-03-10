@@ -398,6 +398,7 @@
 
 **Developer**: frontend-developer
 **Tasks**: 4 | **Dependencies**: Batch 3 (all components must exist)
+**Commit**: 878d5155
 
 ### Task 4.1: Modify EventStream component for debug panel embedding COMPLETE
 
