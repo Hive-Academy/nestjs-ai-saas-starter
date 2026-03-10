@@ -148,6 +148,7 @@ interface AgentViewModel {
             <div
               class="text-3xl w-12 h-12 flex items-center justify-center rounded-full"
               [class.bg-gray-100]="agent.progress.status === 'idle'"
+              [class.bg-amber-100]="agent.progress.status === 'delegated'"
               [class.bg-blue-100]="agent.progress.status === 'thinking'"
               [class.bg-green-100]="agent.progress.status === 'executing'"
               [class.bg-yellow-100]="agent.progress.status === 'waiting'"
@@ -172,6 +173,8 @@ interface AgentViewModel {
               class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full"
               [class.bg-gray-200]="agent.progress.status === 'idle'"
               [class.text-gray-700]="agent.progress.status === 'idle'"
+              [class.bg-amber-200]="agent.progress.status === 'delegated'"
+              [class.text-amber-700]="agent.progress.status === 'delegated'"
               [class.bg-blue-200]="agent.progress.status === 'thinking'"
               [class.text-blue-700]="agent.progress.status === 'thinking'"
               [class.bg-green-200]="agent.progress.status === 'executing'"
@@ -197,6 +200,7 @@ interface AgentViewModel {
               <div
                 class="h-2 rounded-full transition-all duration-500"
                 [class.bg-gray-400]="agent.progress.status === 'idle'"
+                [class.bg-amber-500]="agent.progress.status === 'delegated'"
                 [class.bg-blue-500]="agent.progress.status === 'thinking'"
                 [class.bg-green-500]="agent.progress.status === 'executing'"
                 [class.bg-yellow-500]="agent.progress.status === 'waiting'"

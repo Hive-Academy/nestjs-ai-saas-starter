@@ -1,7 +1,8 @@
 import { Component, inject, OnDestroy } from '@angular/core';
 import { ExecutionControlComponent } from '../components/execution-control.component';
-import { ProgressVisualizationComponent } from '../components/progress-visualization.component';
-import { EventStreamComponent } from '../components/event-stream.component';
+import { AgentActivityPanelsComponent } from '../components/agent-activity-panels.component';
+import { OrchestrationTimelineComponent } from '../components/orchestration-timeline.component';
+import { DebugPanelComponent } from '../components/debug-panel.component';
 import { DevBrandSseService } from '../services/devbrand-sse.service';
 import { DevBrandWorkflowStateService } from '../services/devbrand-workflow-state.service';
 import { ConversationSidebarComponent } from '../../../shared/components/conversation-sidebar/conversation-sidebar.component';
@@ -17,19 +18,21 @@ import { ConversationApiService } from '../../../shared/services/conversation-ap
  * service lifecycle (WebSocket connection management).
  *
  * **Responsibilities**:
- * - Orchestrate child components (ExecutionControl, ProgressVisualization, EventStream)
- * - Manage WebSocket lifecycle (connect on execution start, disconnect on destroy)
- * - Coordinate workflow state service and WebSocket service
- * - Provide responsive grid layout for optimal UX
+ * - Orchestrate child components (ExecutionControl, AgentActivityPanels, OrchestrationTimeline, DebugPanel)
+ * - Manage SSE lifecycle (connect on execution start, disconnect on destroy)
+ * - Coordinate workflow state service and SSE service
+ * - Provide responsive single-column layout with sidebar
  *
  * **Template Structure**:
  * ```
- * Container (max-w-7xl, centered)
- * ├── Page Header (h1 title)
- * ├── Execution Control (top section)
- * └── Two-Column Grid (responsive)
- *     ├── Left: Progress Visualization (agent tracking)
- *     └── Right: Event Stream (real-time feed)
+ * Container (max-w-5xl, centered)
+ * ├── Sidebar (280px, conversation list)
+ * └── Main Content (single column)
+ *     ├── Header (title, description)
+ *     ├── Execution Control (workflow trigger)
+ *     ├── Agent Activity Panels (full-width agent cards)
+ *     ├── Orchestration Timeline (real-time narrative)
+ *     └── Debug Panel (collapsed raw events)
  * ```
  *
  * **Integration Flow**:
@@ -77,8 +80,9 @@ import { ConversationApiService } from '../../../shared/services/conversation-ap
  * - Responsive design with Tailwind CSS grid (mobile-first)
  *
  * @see {@link ExecutionControlComponent} - Workflow trigger form
- * @see {@link ProgressVisualizationComponent} - Agent progress cards
- * @see {@link EventStreamComponent} - Real-time event feed with filtering
+ * @see {@link AgentActivityPanelsComponent} - Full-width agent activity panels
+ * @see {@link OrchestrationTimelineComponent} - Real-time orchestration narrative
+ * @see {@link DebugPanelComponent} - Collapsible raw event debug view
  * @see {@link DevBrandSseService} - SSE connection management
  * @see {@link DevBrandWorkflowStateService} - Central state orchestration
  */
@@ -87,18 +91,18 @@ import { ConversationApiService } from '../../../shared/services/conversation-ap
   standalone: true,
   imports: [
     ExecutionControlComponent,
-    ProgressVisualizationComponent,
-    EventStreamComponent,
+    AgentActivityPanelsComponent,
+    OrchestrationTimelineComponent,
+    DebugPanelComponent,
     ConversationSidebarComponent,
   ],
   template: `
-    <div class="container mx-auto px-4 py-8">
+    <div class="container mx-auto max-w-5xl px-4 py-8">
       <!-- Page Header -->
       <header class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">DevBrand Workflow POC</h1>
+        <h1 class="text-3xl font-bold text-gray-900">DevBrand Workflow</h1>
         <p class="mt-2 text-gray-600">
-          Real-time LangGraph multi-agent workflow demonstration with SSE
-          streaming
+          Real-time multi-agent workflow orchestration
         </p>
       </header>
 
@@ -115,29 +119,21 @@ import { ConversationApiService } from '../../../shared/services/conversation-ap
           />
         </div>
 
-        <!-- Main Content Column -->
-        <div class="space-y-8">
+        <!-- Main Content Column (single-column layout) -->
+        <div class="space-y-6">
           <!-- Execution Control -->
           <app-execution-control
             (executionStarted)="onExecutionStarted($event)"
           />
 
-          <!-- Two-Column Layout: Progress + Events -->
-          <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <!-- Left: Progress Visualization -->
-            <div class="space-y-4">
-              <h2 class="text-xl font-semibold text-gray-800">
-                Agent Progress
-              </h2>
-              <app-progress-visualization />
-            </div>
+          <!-- Agent Activity Panels (full-width agent cards) -->
+          <app-agent-activity-panels />
 
-            <!-- Right: Event Stream -->
-            <div class="space-y-4">
-              <h2 class="text-xl font-semibold text-gray-800">Event Stream</h2>
-              <app-event-stream />
-            </div>
-          </div>
+          <!-- Orchestration Timeline (primary narrative view) -->
+          <app-orchestration-timeline />
+
+          <!-- Debug Panel (collapsed raw events) -->
+          <app-debug-panel />
         </div>
       </div>
     </div>
@@ -204,7 +200,10 @@ export class DevbrandPocPageComponent implements OnDestroy {
    * - Workflow state service coordinates all child component state updates
    * - SSE automatically handles reconnection
    */
-  onExecutionStarted(response: { executionId: string }): void {
+  onExecutionStarted(response: {
+    executionId: string;
+    streamUrl: string;
+  }): void {
     console.log('🎯 [DevBrandPocPageComponent] onExecutionStarted() called');
     console.log(
       '🆔 [DevBrandPocPageComponent] Execution ID:',
@@ -214,12 +213,6 @@ export class DevbrandPocPageComponent implements OnDestroy {
     // Track current thread ID
     this.currentThreadId = response.executionId;
 
-    // Start workflow execution (connects SSE and subscribes to events)
-    console.log(
-      '🚀 [DevBrandPocPageComponent] Starting workflow state tracking...'
-    );
-    // TODO:
-    // this.workflowStateService.startExecution(response.streamUrl);
     console.log('✅ [DevBrandPocPageComponent] Workflow execution started');
   }
 

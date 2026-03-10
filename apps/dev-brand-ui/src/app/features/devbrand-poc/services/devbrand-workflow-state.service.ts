@@ -430,7 +430,7 @@ export class DevBrandWorkflowStateService {
       default:
         console.warn(
           '[WorkflowStateService] Unknown domain event type:',
-          (event as Record<string, unknown>)['type']
+          (event as unknown as Record<string, unknown>)['type']
         );
     }
   }

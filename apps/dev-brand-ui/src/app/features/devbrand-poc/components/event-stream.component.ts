@@ -38,20 +38,17 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
   standalone: true,
   imports: [ScrollingModule],
   template: `
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">
-        Event Stream
-        <span
-          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 ml-2"
-        >
-          {{ filteredEvents().length }}
-        </span>
-      </h3>
-
+    <div>
       <!-- Filter Controls -->
       <div class="mb-4 flex flex-wrap items-center gap-2">
-        <span class="text-sm font-medium text-gray-700">Filter:</span>
-
+        <span class="text-sm font-medium text-gray-700">
+          Events
+          <span
+            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 ml-1"
+          >
+            {{ filteredEvents().length }}
+          </span>
+        </span>
         <!-- All Events Button -->
         <button
           (click)="setFilter('all')"
@@ -174,7 +171,7 @@ import { StreamEventType, StreamUpdate } from '../models/stream-events.model';
       </div>
 
       <!-- Event Count Summary -->
-      <div class="mt-4 text-sm text-gray-600">
+      <div class="mt-3 text-xs text-gray-500">
         Showing {{ filteredEvents().length }} of
         {{ eventHistory().length }} events
       </div>
