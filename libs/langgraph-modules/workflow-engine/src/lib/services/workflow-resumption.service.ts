@@ -123,7 +123,8 @@ export class WorkflowResumptionService {
     workflowClass: string,
     threadId: string,
     resumeValue: any,
-    checkpointId?: string
+    checkpointId?: string,
+    userConfig?: RunnableConfig
   ): Promise<TState> {
     this.logger.log(
       `Resuming workflow: ${workflowClass}, threadId: ${threadId}`
@@ -132,7 +133,11 @@ export class WorkflowResumptionService {
     const graph = await this.compileWorkflowGraph<TState>(workflowClass);
     const command = new Command({ resume: resumeValue });
     const config: RunnableConfig = {
-      configurable: { thread_id: threadId, checkpoint_id: checkpointId },
+      configurable: {
+        thread_id: threadId,
+        checkpoint_id: checkpointId,
+        ...userConfig?.configurable,
+      },
     };
 
     const result = await this.commandService.invokeWithCommand<TState>(

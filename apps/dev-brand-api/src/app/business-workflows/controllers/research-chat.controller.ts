@@ -427,7 +427,19 @@ export class ResearchChatController {
         throw new Error(`No checkpoint found for execution ${executionId}`);
       }
 
-      // Resume workflow from interruption with approval state
+      // Create user config so resumed workflow retains auth context
+      const userContext: UserContext = {
+        userId: user.id,
+        tenantId: user.tenantId,
+        roles: user.roles,
+        tier: user.tier,
+        permissions: user.permissions,
+        email: user.email,
+        organizationId: user.organizationId,
+      };
+      const userConfig = this.workflowAuthContext.createUserConfig(userContext);
+
+      // Resume workflow from interruption with approval state + auth context
       if (body.approved) {
         this.logger.log(`▶️  Resuming workflow: ${executionId}`);
 
@@ -436,7 +448,8 @@ export class ResearchChatController {
           ResearcherAgent,
           executionId,
           checkpointId,
-          approvalState
+          approvalState,
+          userConfig
         );
 
         this.logger.log(`✅ Workflow resumed and completed: ${executionId}`);
@@ -453,7 +466,8 @@ export class ResearchChatController {
           ResearcherAgent,
           executionId,
           checkpointId,
-          approvalState
+          approvalState,
+          userConfig
         );
 
         return {

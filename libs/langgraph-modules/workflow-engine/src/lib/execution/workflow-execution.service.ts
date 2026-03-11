@@ -574,7 +574,8 @@ export class WorkflowExecutionService {
     workflowClass: any,
     threadId: string,
     checkpointId: string,
-    resumeValue: any
+    resumeValue: any,
+    userConfig?: RunnableConfig
   ): Promise<any> {
     if (!this.resumptionService) {
       throw new Error(
@@ -590,7 +591,8 @@ export class WorkflowExecutionService {
       workflowClass.name || workflowClass,
       threadId,
       resumeValue,
-      checkpointId
+      checkpointId,
+      userConfig
     );
   }
 }
