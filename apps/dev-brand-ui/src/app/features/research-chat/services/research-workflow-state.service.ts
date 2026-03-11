@@ -57,6 +57,20 @@ export class ResearchWorkflowStateService {
   /** Tracks whether we've added a synthesizing timeline entry for the current LLM stream */
   private hasSynthesizingEntry = false;
 
+  /** Phase display messages - class-level constant to avoid per-call recreation */
+  private readonly PHASE_MESSAGES: Record<ResearchPhase, string> = {
+    idle: 'Workflow idle',
+    started: 'Research started',
+    searching: 'Searching for information',
+    reading: 'Reading sources',
+    synthesizing: 'Synthesizing findings',
+    'report-draft': 'Drafting report',
+    approval: 'Awaiting approval',
+    saving: 'Saving results',
+    completed: 'Research completed',
+    error: 'Error occurred',
+  };
+
   // ---------------------------------------------------------------------------
   // PRIVATE WRITABLE SIGNALS
   // ---------------------------------------------------------------------------
@@ -277,22 +291,9 @@ export class ResearchWorkflowStateService {
     if (detectedPhase !== previousPhase) {
       this._currentPhase.set(detectedPhase);
 
-      const phaseMessages: Record<ResearchPhase, string> = {
-        idle: 'Workflow idle',
-        started: 'Research started',
-        searching: 'Searching for information',
-        reading: 'Reading sources',
-        synthesizing: 'Synthesizing findings',
-        'report-draft': 'Drafting report',
-        approval: 'Awaiting approval',
-        saving: 'Saving results',
-        completed: 'Research completed',
-        error: 'Error occurred',
-      };
-
       this.addTimelineEntry(
         this.phaseToTimelineEntryType(detectedPhase),
-        phaseMessages[detectedPhase] || `Processing: ${nodeName}`,
+        this.PHASE_MESSAGES[detectedPhase] || `Processing: ${nodeName}`,
         nodeName || undefined,
         'active',
         detectedPhase

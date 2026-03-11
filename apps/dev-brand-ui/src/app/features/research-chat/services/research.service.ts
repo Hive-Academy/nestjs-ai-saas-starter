@@ -273,9 +273,12 @@ export class ResearchService {
             );
 
             // Handle connection errors
-            eventSource.onerror = (error) => {
-              console.error('[ResearchService] SSE connection error:', error);
-              observer.error(error);
+            eventSource.onerror = () => {
+              const sseError = new Error(
+                `SSE connection failed (readyState: ${eventSource.readyState})`
+              );
+              console.error('[ResearchService] SSE connection error:', sseError.message);
+              observer.error(sseError);
               eventSource.close();
             };
 

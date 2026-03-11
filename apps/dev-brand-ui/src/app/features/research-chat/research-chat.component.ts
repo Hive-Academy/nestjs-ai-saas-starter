@@ -41,7 +41,7 @@ import { ConversationApiService } from '../../shared/services/conversation-api.s
         <app-conversation-sidebar
           workflowType="researcher"
           [userId]="userId"
-          [currentThreadId]="currentThreadId"
+          [currentThreadId]="currentThreadId()"
           (conversationSelected)="onConversationSelected($event)"
           (newConversationCreated)="onNewConversation($event)"
         />
@@ -106,7 +106,7 @@ export class ResearchChatComponent implements OnDestroy {
   readonly userId = 'test-researcher-001';
 
   /** Current conversation thread */
-  currentThreadId?: string;
+  readonly currentThreadId = signal<string | undefined>(undefined);
 
   /** Current query input bound via ngModel */
   readonly currentQuery = signal('');
@@ -144,7 +144,7 @@ export class ResearchChatComponent implements OnDestroy {
       .subscribe({
         next: (response) => {
           this.currentExecutionId = response.executionId;
-          this.currentThreadId = response.executionId;
+          this.currentThreadId.set(response.executionId);
           this.stateService.startExecution(response.executionId);
         },
         error: (error: Error) => {
@@ -161,13 +161,12 @@ export class ResearchChatComponent implements OnDestroy {
   onApprovalDecision(approved: boolean): void {
     const executionId = this.stateService.hitlApproval()?.executionId ?? this.currentExecutionId;
 
-    this.stateService.clearApproval();
-
     this.approvalSubscription?.unsubscribe();
     this.approvalSubscription = this.researchService
       .approveReport(executionId, approved)
       .subscribe({
         next: () => {
+          this.stateService.clearApproval();
           if (approved) {
             // Resume streaming to capture save confirmation events
             this.stateService.startExecution(executionId);
@@ -183,9 +182,7 @@ export class ResearchChatComponent implements OnDestroy {
    * Handle conversation selection from sidebar.
    */
   onConversationSelected(threadId: string): void {
-    this.currentThreadId = threadId;
-    // Conversation history viewing is a future enhancement;
-    // for now, simply track the selected thread.
+    this.currentThreadId.set(threadId);
   }
 
   /**
@@ -193,7 +190,7 @@ export class ResearchChatComponent implements OnDestroy {
    */
   onNewConversation(threadId: string): void {
     this.stateService.reset();
-    this.currentThreadId = threadId;
+    this.currentThreadId.set(threadId);
     this.currentQuery.set('');
   }
 }
