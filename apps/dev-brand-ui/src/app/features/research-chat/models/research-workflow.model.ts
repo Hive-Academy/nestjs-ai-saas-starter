@@ -1,4 +1,4 @@
-import { AgentRegistryEntry } from '../../devbrand-poc/models/agent-registry.const';
+import type { AgentRegistryEntry } from '../../devbrand-poc/models/agent-registry.const';
 
 /** Research workflow phases (single-agent progression) */
 export type ResearchPhase =
