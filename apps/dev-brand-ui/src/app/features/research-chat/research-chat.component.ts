@@ -136,13 +136,12 @@ export class ResearchChatComponent implements OnDestroy {
       return;
     }
 
-    this.currentQuery.set('');
-
     this.startSubscription?.unsubscribe();
     this.startSubscription = this.researchService
       .startResearch(query, this.userId, 'detailed')
       .subscribe({
         next: (response) => {
+          this.currentQuery.set('');
           this.currentExecutionId = response.executionId;
           this.currentThreadId.set(response.executionId);
           this.stateService.startExecution(response.executionId);
@@ -168,8 +167,8 @@ export class ResearchChatComponent implements OnDestroy {
         next: () => {
           this.stateService.clearApproval();
           if (approved) {
-            // Resume streaming to capture save confirmation events
-            this.stateService.startExecution(executionId);
+            // Resume streaming without resetting state (preserves timeline/history)
+            this.stateService.resumeExecution(executionId);
           }
         },
         error: (error: Error) => {

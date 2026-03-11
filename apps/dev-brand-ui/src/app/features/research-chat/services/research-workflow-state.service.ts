@@ -180,6 +180,16 @@ export class ResearchWorkflowStateService {
     this.addTimelineEntry('approval-decision', 'Approval decision submitted', undefined, 'completed', 'approval');
   }
 
+  /**
+   * Resume tracking after HITL approval without resetting existing state.
+   * Unlike startExecution(), this preserves timeline, streaming text, and event history.
+   */
+  resumeExecution(executionId: string): void {
+    this._executionStatus.set('running');
+    this._currentPhase.set('saving');
+    this.subscribeToStream(executionId);
+  }
+
   // ---------------------------------------------------------------------------
   // SSE SUBSCRIPTION
   // ---------------------------------------------------------------------------
@@ -267,7 +277,7 @@ export class ResearchWorkflowStateService {
       default:
         console.warn(
           '[ResearchState] Unknown event type:',
-          (event as Record<string, unknown>)['type']
+          (event as unknown as Record<string, unknown>)['type']
         );
     }
   }
@@ -289,6 +299,9 @@ export class ResearchWorkflowStateService {
 
     // Only update phase and add timeline entry if phase actually changed
     if (detectedPhase !== previousPhase) {
+      // Mark previous active timeline entries as completed
+      this.completeActiveTimelineEntries();
+
       this._currentPhase.set(detectedPhase);
 
       this.addTimelineEntry(
@@ -584,6 +597,20 @@ export class ResearchWorkflowStateService {
       }
       return updated;
     });
+  }
+
+  /**
+   * Transition all currently 'active' timeline entries to 'completed'.
+   * Called when a phase transition occurs so previous entries stop showing spinners.
+   */
+  private completeActiveTimelineEntries(): void {
+    this._timelineEntries.update((entries) =>
+      entries.map((entry) =>
+        entry.status === 'active'
+          ? { ...entry, status: 'completed' as const }
+          : entry
+      )
+    );
   }
 
   // ---------------------------------------------------------------------------
