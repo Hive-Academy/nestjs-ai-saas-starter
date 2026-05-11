@@ -8,7 +8,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Neogma } from 'neogma';
 import { QueryBuilder } from 'neogma';
-import { int, isInt } from 'neo4j-driver';
+import { int } from 'neo4j-driver';
 import { NEOGMA_TOKEN } from '../constants/neogma.constants';
 import {
   type FindOptions,
