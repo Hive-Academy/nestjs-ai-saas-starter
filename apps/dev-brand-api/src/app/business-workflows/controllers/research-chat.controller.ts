@@ -249,7 +249,7 @@ export class ResearchChatController {
                   `🛑 Workflow interrupted for approval: ${executionId}`
                 );
 
-                const interruptItems = (event.state as any);
+                const interruptItems = event.state as any;
                 const firstItem = Array.isArray(interruptItems)
                   ? interruptItems[0]
                   : interruptItems;
@@ -259,7 +259,8 @@ export class ResearchChatController {
                   data: {
                     type: 'interruption_request',
                     executionId,
-                    message: interruptValue.message || 'Report draft ready for review',
+                    message:
+                      interruptValue.message || 'Report draft ready for review',
                     reportDraft: interruptValue.reportDraft,
                     reportTitle: interruptValue.reportTitle,
                     timestamp: new Date().toISOString(),
@@ -446,7 +447,9 @@ export class ResearchChatController {
 
       // Resume workflow with streaming so the frontend can observe the saving step
       if (body.approved) {
-        this.logger.log(`▶️  Streaming resume for approved workflow: ${executionId}`);
+        this.logger.log(
+          `▶️  Streaming resume for approved workflow: ${executionId}`
+        );
 
         // Create streaming resume generator — store so SSE endpoint can serve it
         const resumeStream = this.researcherAgent.resumeWithStreaming({
@@ -461,7 +464,8 @@ export class ResearchChatController {
 
         return {
           status: 'success',
-          message: 'Report approved — connect to stream URL to follow saving progress.',
+          message:
+            'Report approved — connect to stream URL to follow saving progress.',
         };
       } else {
         this.logger.log(`⛔ Workflow rejected: ${executionId}`);
@@ -695,9 +699,11 @@ export class ResearchChatController {
 
       // Security: Verify thread ownership
       // Reference: controller-implementation-guide.md:113-118
-      const threadUserId = stateSnapshot.values.metadata?.userId as
-        | string
-        | undefined;
+      const values = stateSnapshot.values as {
+        metadata?: Record<string, unknown>;
+        messages?: unknown[];
+      };
+      const threadUserId = values.metadata?.userId as string | undefined;
       if (threadUserId && threadUserId !== userId) {
         throw new UnauthorizedException(
           `User ${userId} cannot access thread ${threadId}`
@@ -706,7 +712,7 @@ export class ResearchChatController {
 
       // Extract conversation messages
       // Reference: controller-implementation-guide.md:121-131
-      const messages = stateSnapshot.values.messages || [];
+      const messages = (values.messages as any[]) || [];
 
       // Format response with researcher-specific structure
       return {
@@ -720,21 +726,16 @@ export class ResearchChatController {
           toolCalls: msg.tool_calls || [],
         })),
         metadata: {
-          query: stateSnapshot.values.metadata?.query as string | undefined,
-          reportTitle: stateSnapshot.values.metadata?.reportTitle as
-            | string
-            | undefined,
-          researchStatus: stateSnapshot.values.metadata?.researchStatus as
-            | string
-            | undefined,
-          confidenceScore: stateSnapshot.values.metadata?.confidenceScore as
+          query: values.metadata?.query as string | undefined,
+          reportTitle: values.metadata?.reportTitle as string | undefined,
+          researchStatus: values.metadata?.researchStatus as string | undefined,
+          confidenceScore: values.metadata?.confidenceScore as
             | number
             | undefined,
         },
         nextSteps: stateSnapshot.next || [],
         waitingForApproval:
-          (stateSnapshot.values.metadata?.waitingForApproval as boolean) ||
-          false,
+          (values.metadata?.waitingForApproval as boolean) || false,
         checkpointId: stateSnapshot.config.configurable?.checkpoint_id as
           | string
           | undefined,

@@ -434,7 +434,13 @@ export class DevBrandController {
 
       // Security: Verify thread ownership
       // Reference: controller-implementation-guide.md:416-422
-      const threadUserId = stateSnapshot.values.metadata?.userId;
+      const values = stateSnapshot.values as {
+        metadata?: Record<string, unknown>;
+        messages?: unknown[];
+        current?: unknown;
+        next?: unknown;
+      };
+      const threadUserId = values.metadata?.userId as string | undefined;
       if (threadUserId && threadUserId !== userId) {
         throw new UnauthorizedException(
           `User ${userId} cannot access thread ${threadId}`
@@ -443,7 +449,7 @@ export class DevBrandController {
 
       // Extract conversation messages
       // Reference: controller-implementation-guide.md:425-429
-      const messages = stateSnapshot.values.messages || [];
+      const messages = (values.messages as any[]) || [];
 
       // Format response with supervisor-specific structure
       // Reference: controller-implementation-guide.md:431-467
@@ -459,27 +465,22 @@ export class DevBrandController {
           toolCalls: msg.tool_calls || [],
         })),
         metadata: {
-          query: stateSnapshot.values.metadata?.query as string | undefined,
-          reportTitle: stateSnapshot.values.metadata?.reportTitle as
-            | string
-            | undefined,
-          researchStatus: stateSnapshot.values.metadata?.researchStatus as
-            | string
-            | undefined,
-          confidenceScore: stateSnapshot.values.metadata?.confidenceScore as
+          query: values.metadata?.query as string | undefined,
+          reportTitle: values.metadata?.reportTitle as string | undefined,
+          researchStatus: values.metadata?.researchStatus as string | undefined,
+          confidenceScore: values.metadata?.confidenceScore as
             | number
             | undefined,
         },
         agentCoordination: {
-          currentAgent: stateSnapshot.values.current as string | undefined,
-          nextAgent: stateSnapshot.values.next as string | undefined,
+          currentAgent: values.current as string | undefined,
+          nextAgent: values.next as string | undefined,
           agentHistory: this.extractAgentHistory(messages),
           pendingTasks: stateSnapshot.tasks || [],
         },
         nextSteps: stateSnapshot.next || [],
         waitingForApproval:
-          (stateSnapshot.values.metadata?.waitingForApproval as boolean) ||
-          false,
+          (values.metadata?.waitingForApproval as boolean) || false,
         checkpointId: stateSnapshot.config.configurable?.checkpoint_id as
           | string
           | undefined,
