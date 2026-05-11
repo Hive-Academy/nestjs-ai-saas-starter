@@ -146,6 +146,7 @@ import { StreamingTextDisplayComponent } from '../../devbrand-poc/components/str
                         [text]="stateService.streamingText()"
                         [isActive]="stateService.isStreaming()"
                         [label]="'Research Synthesis'"
+                        [renderMarkdown]="true"
                       />
                     </div>
                   }

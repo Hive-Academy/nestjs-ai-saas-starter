@@ -222,7 +222,7 @@ export class MetadataProcessorService {
               config,
             };
 
-            const result = await originalHandler.call(this, context);
+            const result = await originalHandler.call(this, context, config);
             return result.state ?? {};
           };
 
@@ -270,7 +270,7 @@ export class MetadataProcessorService {
               config,
             };
 
-            const result = await originalHandler.call(this, context);
+            const result = await originalHandler.call(this, context, config);
             return result.state ?? {};
           };
 
@@ -321,7 +321,7 @@ export class MetadataProcessorService {
               config, // ✅ Pass RunnableConfig from LangGraph
             };
 
-            const result = await originalHandler.call(this, context);
+            const result = await originalHandler.call(this, context, config);
             // Return state update (result.state) for LangGraph
             return result.state ?? {};
           };

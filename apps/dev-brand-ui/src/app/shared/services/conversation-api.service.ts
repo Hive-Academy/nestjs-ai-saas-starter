@@ -226,7 +226,7 @@ export class ConversationApiService {
   ): Observable<NewConversationResponse> {
     return this.http
       .post<NewConversationResponse>(
-        `${this.researchApiUrl}/new`,
+        `${this.researchApiUrl}`,
         { initialQuery },
         { headers: { 'x-user-id': userId } }
       )

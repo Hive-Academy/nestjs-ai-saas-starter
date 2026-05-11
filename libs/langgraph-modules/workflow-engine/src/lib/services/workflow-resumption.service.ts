@@ -151,6 +151,47 @@ export class WorkflowResumptionService {
   }
 
   /**
+   * Stream a workflow resumption using LangGraph Command pattern + streaming
+   *
+   * HIGH-LEVEL OPERATION: Orchestrates graph compilation + Command streaming
+   * Yields raw stream chunks — callers should pipe through StreamEventParser/Transformer.
+   *
+   * @param workflowClass - Workflow class name (string for NestJS DI lookup)
+   * @param threadId - Thread identifier for checkpoint retrieval
+   * @param resumeValue - Value to resume with (passed to Command)
+   * @param checkpointId - Optional checkpoint ID to resume from specific checkpoint
+   * @param userConfig - Optional RunnableConfig with auth context
+   * @param streamMode - Stream mode(s); defaults to ['updates', 'messages', 'custom']
+   */
+  async *streamResumeWorkflow(
+    workflowClass: string,
+    threadId: string,
+    resumeValue: any,
+    checkpointId?: string,
+    userConfig?: RunnableConfig,
+    streamMode?: string | string[]
+  ): AsyncIterable<unknown> {
+    this.logger.log(
+      `Streaming resume for workflow: ${workflowClass}, threadId: ${threadId}`
+    );
+
+    const graph = await this.compileWorkflowGraph(workflowClass);
+    const command = new Command({ resume: resumeValue });
+    const config = {
+      configurable: {
+        thread_id: threadId,
+        checkpoint_id: checkpointId,
+        ...userConfig?.configurable,
+      },
+      streamMode: streamMode ?? ['updates', 'messages', 'custom'],
+    };
+
+    yield* this.commandService.streamWithCommand(graph, command, config as any);
+
+    this.logger.log(`Streaming resume completed for: ${workflowClass}`);
+  }
+
+  /**
    * Get current workflow state with PII sanitization
    *
    * HIGH-LEVEL OPERATION: Orchestrates graph compilation + state retrieval + sanitization

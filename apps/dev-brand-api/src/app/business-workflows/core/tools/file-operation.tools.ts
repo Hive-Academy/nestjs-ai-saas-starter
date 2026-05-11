@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Tool } from '@hive-academy/langgraph-workflow-engine';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { z } from 'zod';
 
 /**
  * 📁 FILE OPERATION TOOLS - LOCAL REPORT MANAGEMENT
@@ -43,6 +44,14 @@ export class FileOperationTools {
     name: 'create-report',
     description:
       'Create a new markdown research report with title, content, and metadata. Automatically generates filename from title and adds YAML frontmatter.',
+    schema: z.object({
+      title: z.string().describe('Report title used to generate the filename'),
+      content: z.string().describe('Markdown content of the report body'),
+      metadata: z
+        .record(z.unknown())
+        .optional()
+        .describe('Optional key-value metadata for the YAML frontmatter'),
+    }),
   })
   async createReport({
     title,
@@ -116,6 +125,14 @@ export class FileOperationTools {
     name: 'save-report',
     description:
       'Save or update content to an existing report file. Can append or overwrite content.',
+    schema: z.object({
+      filepath: z.string().describe('Absolute path to the report file to update'),
+      content: z.string().describe('Content to write to the report'),
+      append: z
+        .boolean()
+        .optional()
+        .describe('If true, appends content; if false (default), overwrites'),
+    }),
   })
   async saveReport({
     filepath,
@@ -165,6 +182,7 @@ export class FileOperationTools {
     name: 'list-reports',
     description:
       'List all saved research reports with metadata (title, created date, etc.)',
+    schema: z.object({}),
   })
   async listReports(): Promise<{
     reports: Array<{
@@ -224,6 +242,9 @@ export class FileOperationTools {
   @Tool({
     name: 'read-report',
     description: 'Read the full content and metadata of a saved report',
+    schema: z.object({
+      filepath: z.string().describe('Absolute path to the report file to read'),
+    }),
   })
   async readReport({ filepath }: { filepath: string }): Promise<{
     content: string;

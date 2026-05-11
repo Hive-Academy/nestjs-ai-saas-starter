@@ -14,16 +14,20 @@ dotenv.config({ path: llmEnvPath });
  * - Now: workflow-engine.config.ts provides WorkflowEngineModule settings + LLM config
  * - LLM configuration loaded from .env.llm file
  * - NOTE: Multi-agent specific config removed (consolidated packages deleted)
+ *
+ * LLM DISPATCH BRANCHES:
+ * - Branch A (native LangChain): set LLM_MODEL="provider:model-name", e.g. "anthropic:claude-sonnet-4-6"
+ *   The matching API key must be in the environment (e.g. ANTHROPIC_API_KEY).
+ * - Branch B (custom OpenAI-compatible endpoint): set LLM_BASE_URL to activate.
+ *   LLM_MODEL becomes the bare model name sent to the endpoint, LLM_API_KEY is the auth key.
  */
-export function getWorkflowEngineConfig(): Omit<
-  WorkflowEngineModuleOptions,
-  | 'streamingAdapter'
-  | 'checkpointAdapter'
-  | 'memoryAdapter'
-  | 'checkpointer'
-  | 'tools'
-  | 'llm'
-> & { llm?: any } {
+export function getWorkflowEngineConfig(): Partial<WorkflowEngineModuleOptions> {
+  if (!process.env.LLM_API_KEY) {
+    console.warn(
+      '[WorkflowEngine] LLM_API_KEY is not set — LLM calls will fail unless the provider reads its key from a dedicated env var (e.g. ANTHROPIC_API_KEY for Branch A)',
+    );
+  }
+
   return {
     // ============================================
     // COMPILATION SETTINGS
@@ -60,16 +64,17 @@ export function getWorkflowEngineConfig(): Omit<
     // ============================================
     llm: {
       defaultLlm: {
-        provider: (process.env.LLM_PROVIDER as any) || 'openai',
-        model: process.env.LLM_MODEL || 'gpt-4o-mini',
-        temperature: parseFloat(process.env.LLM_TEMPERATURE || '0.7'),
-        maxTokens: parseInt(process.env.LLM_MAX_TOKENS || '4000'),
-        openaiApiKey: process.env.OPENAI_API_KEY,
-        anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-        openrouterApiKey: process.env.OPENROUTER_API_KEY,
-        googleApiKey: process.env.GOOGLE_API_KEY,
-        azureOpenaiApiKey: process.env.AZURE_OPENAI_API_KEY,
-        cohereApiKey: process.env.COHERE_API_KEY,
+        // Branch A: "provider:model" — e.g. "openrouter:z-ai/glm-4.5-air:free", "anthropic:claude-sonnet-4-6"
+        // Branch B: bare model name understood by the custom endpoint (paired with LLM_BASE_URL)
+        model: process.env.LLM_MODEL ?? 'openrouter:z-ai/glm-4.5-air:free',
+        // Branch A: initChatModel also reads provider-specific env vars automatically
+        // Branch B: sent as the Authorization header to the custom endpoint
+        apiKey: process.env.LLM_API_KEY ?? '',
+        // Optional: set to trigger Branch B (ChatOpenAI with custom baseURL)
+        // Leave unset for Branch A (native LangChain provider dispatch)
+        baseUrl: process.env.LLM_BASE_URL,
+        temperature: parseFloat(process.env.LLM_TEMPERATURE ?? '0.7'),
+        maxTokens: parseInt(process.env.LLM_MAX_TOKENS ?? '2048'),
       },
       streaming: {
         enabled: process.env.LLM_STREAMING_ENABLED !== 'false',

@@ -3,15 +3,18 @@ import {
   Agent,
   Entrypoint,
   LLMTask,
+  LlmProviderService,
   Task,
+  ToolRegistryService,
   WorkflowExecutionService,
+  WorkflowResumptionService,
   type TaskExecutionContext,
   type TaskExecutionResult,
   StreamEventParser,
   StreamEventTransformer,
 } from '@hive-academy/langgraph-workflow-engine';
-import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import { AIMessage } from '@langchain/core/messages';
+import { interrupt } from '@langchain/langgraph';
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { FileOperationTools } from '../core/tools/file-operation.tools';
 import type { TypedAgentState } from '../types';
 import type { ResearcherMetadata } from './shared/metadata.types';
@@ -89,7 +92,10 @@ export class ResearcherAgent {
 
   constructor(
     private readonly fileTools: FileOperationTools,
-    private readonly workflowExecutionService: WorkflowExecutionService
+    private readonly workflowExecutionService: WorkflowExecutionService,
+    private readonly workflowResumptionService: WorkflowResumptionService,
+    private readonly llmProvider: LlmProviderService,
+    private readonly toolRegistry: ToolRegistryService
   ) {}
 
   /**
@@ -171,138 +177,146 @@ export class ResearcherAgent {
       `🔬 Conducting autonomous research with LLM tool calling: "${query}"`
     );
 
-    // Build intelligent system prompt that guides LLM tool selection
-    const researchSystemPrompt = `You are an autonomous research agent with intelligent tool selection capabilities.
+    const systemPrompt = `You are an autonomous research agent with intelligent tool selection capabilities.
 
 RESEARCH QUERY: "${query}"
 RESEARCH DEPTH: ${researchDepth}
 USER ID: ${userId}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AVAILABLE TOOLS & INTELLIGENT SELECTION STRATEGY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AVAILABLE TOOLS:
+1. web-search - Quick web search (simple/factual queries, researchDepth="summary")
+   Parameters: query, maxResults (3-5), searchDepth ("basic"), includeAnswer (true), includeDomains?, excludeDomains?
 
-1. **web-search** - Quick web search (2-5 sources, ~$0.01, <10s)
-   ✅ USE WHEN:
-   - Simple factual queries ("What is X?", "Who is Y?", "Define Z")
-   - Well-known topics requiring quick facts
-   - User specified researchDepth: "summary"
-   - Budget-conscious research
+2. research-search - Comprehensive research (complex topics, researchDepth="detailed"/"comprehensive")
+   Parameters: topic, includeAcademic (true), minSources (5-10), analysisDepth ("${researchDepth}")
 
-   📌 EXAMPLES:
-   - "What is React?"
-   - "Who founded Tesla?"
-   - "Define machine learning"
-   - "Latest news about OpenAI"
+3. create-report - Generate final markdown report (call LAST after gathering enough data)
+   Parameters: title (professional report title), content (full markdown report with Executive Summary/Key Findings/Conclusions/References), metadata ({userId, query, researchDepth, totalSources, createdAt, researchTopic, researchScope})
 
-2. **research-search** - Comprehensive research (5-10+ sources, academic, ~$0.05, <30s)
-   ✅ USE WHEN:
-   - Complex technical topics requiring depth
-   - Academic or scientific research
-   - Comparative analysis needed
-   - User specified researchDepth: "detailed" or "comprehensive"
-   - Topic requires multiple perspectives
+WORKFLOW:
+1. Analyze query complexity and choose web-search (simple) or research-search (complex)
+2. Execute research tool(s) - run multiple if needed for better coverage
+3. When sufficient data collected, call create-report with a complete professional report
+4. create-report MUST be your final tool call
 
-   📌 EXAMPLES:
-   - "Analyze quantum computing applications in drug discovery"
-   - "Compare GraphQL vs REST for microservices"
-   - "Latest AI safety research papers"
-   - "How does CRISPR gene editing work?"
+Now analyze the query and conduct research using the most appropriate tools. Call create-report when done.`;
 
-3. **create-report** - Generate professional markdown report
-   ✅ USE WHEN:
-   - Sufficient research data collected
-   - Ready to compile findings into final report
-   - This should be your FINAL tool call
+    // Determine messages to send to LLM
+    // First invocation: state.messages is empty → seed with system + human message
+    // Subsequent invocations (after tool results): use existing messages as-is
+    const existingMessages = state.messages || [];
 
-   📝 REQUIRED PARAMETERS:
-   - title: Professional report title based on research topic
-   - content: Comprehensive markdown report with:
-     * Executive Summary (2-3 paragraphs)
-     * Introduction (context, objectives)
-     * Key Findings (organized by themes, include citations)
-     * Analysis & Insights (synthesis, implications)
-     * Conclusions (summary, recommendations)
-     * References (numbered list with URLs from sources)
+    // Exit the tool loop early if create-report already ran successfully.
+    // After ToolNode executes create-report, this handler is invoked again with
+    // the ToolMessage appended. Without this guard the LLM would be called one
+    // more time and might decide to call additional tools.
+    if (existingMessages.length > 0) {
+      const lastMsg = existingMessages[existingMessages.length - 1];
+      const isToolMsg =
+        (lastMsg as any)._getType?.() === 'tool' ||
+        (lastMsg as any).role === 'tool';
 
-   📌 METADATA OBJECT:
-   Pass all relevant metadata for report tracking:
-   {
-     userId: "${userId}",
-     query: "${query}",
-     researchDepth: "${researchDepth}",
-     totalSources: <number of sources used>,
-     createdAt: <ISO timestamp>,
-     researchTopic: <extracted topic>,
-     researchScope: <scope description>
-   }
+      if (isToolMsg) {
+        // Find the AI message that triggered this tool call
+        const prevAI = [...existingMessages]
+          .reverse()
+          .find(
+            (m) =>
+              (m as any)._getType?.() === 'ai' ||
+              (m as any).role === 'assistant'
+          );
+        const hadCreateReport =
+          prevAI &&
+          Array.isArray((prevAI as any).tool_calls) &&
+          (prevAI as any).tool_calls.some(
+            (tc: any) => tc.name === 'create-report'
+          );
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-INTELLIGENT RESEARCH WORKFLOW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        if (hadCreateReport) {
+          // Parse tool result to confirm success
+          let toolResult: Record<string, unknown> = {};
+          try {
+            toolResult =
+              typeof lastMsg.content === 'string'
+                ? JSON.parse(lastMsg.content)
+                : (lastMsg.content as unknown as Record<string, unknown>);
+          } catch { /* leave empty */ }
 
-STEP 1: ANALYZE QUERY COMPLEXITY
-- Assess if query is simple/factual OR complex/analytical
-- Consider user's specified research depth: "${researchDepth}"
-- Determine optimal tool: web-search (fast) vs research-search (comprehensive)
+          if (toolResult['success']) {
+            const createReportCall = (prevAI as any).tool_calls.find(
+              (tc: any) => tc.name === 'create-report'
+            );
+            const reportTitle =
+              createReportCall?.args?.title ||
+              (toolResult['filename'] as string) ||
+              query;
+            const reportDraft = createReportCall?.args?.content || '';
 
-STEP 2: EXECUTE INITIAL RESEARCH
-- Call selected tool with appropriate parameters
-- For web-search: maxResults: 3-5, searchDepth: 'basic'
-- For research-search: includeAcademic: true, minSources: 5-10, analysisDepth: '${researchDepth}'
+            this.logger.log(
+              `Report "${reportTitle}" created — exiting tool loop, routing to approval`
+            );
 
-STEP 3: EVALUATE RESULTS & DECIDE NEXT ACTION
-- Assess if research is sufficient for comprehensive report
-- If gaps exist: Call additional tools with refined queries
-- If comprehensive: Proceed to create-report
+            return {
+              state: {
+                ...state,
+                metadata: {
+                  ...state.metadata,
+                  reportTitle,
+                  reportDraft,
+                  savedReportPath: toolResult['filepath'] as string,
+                  savedReportFilename: toolResult['filename'] as string,
+                  currentStep: 'research-complete',
+                },
+                messages: [
+                  ...existingMessages,
+                  new AIMessage(
+                    `Research complete. Report "${reportTitle}" has been created and is ready for your review.`
+                  ),
+                ],
+              },
+            };
+          }
+        }
+      }
+    }
 
-STEP 4: GENERATE FINAL REPORT
-- When research is complete, call create-report with:
-  * Professional title derived from query
-  * Well-structured markdown content (follow format above)
-  * All metadata fields populated
-- This MUST be your FINAL tool call
+    const messages =
+      existingMessages.length === 0
+        ? [new SystemMessage(systemPrompt), new HumanMessage(query)]
+        : existingMessages;
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COST OPTIMIZATION GUIDELINES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Get tools and bind to LLM
+    const tools = this.toolRegistry.getTools([
+      'web-search',
+      'research-search',
+      'create-report',
+    ]);
 
-${
-  researchDepth === 'summary'
-    ? '⚡ SUMMARY MODE: Prefer web-search for speed and cost efficiency'
-    : ''
-}
-${
-  researchDepth === 'detailed'
-    ? '🔍 DETAILED MODE: Analyze query, then choose optimal tool'
-    : ''
-}
-${
-  researchDepth === 'comprehensive'
-    ? '📚 COMPREHENSIVE MODE: Use research-search for maximum depth'
-    : ''
-}
+    if (tools.length === 0) {
+      this.logger.warn(
+        'No tools resolved from registry — research will proceed without tool calling'
+      );
+    }
 
-IMPORTANT: Balance thoroughness with cost. Don't use research-search for simple queries.
+    const llm = await this.llmProvider.getLLM();
+    // bindTools exists on BaseChatModel but the interface type doesn't declare it
+    const llmWithTools =
+      tools.length > 0 ? (llm as any).bindTools(tools) : llm;
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    this.logger.log(
+      `Invoking LLM with ${tools.length} tools bound, ${messages.length} messages`
+    );
 
-Now analyze the query and autonomously execute research using the most appropriate tools.
-Remember: Call create-report LAST when research is complete!`;
+    const llmResponse = await llmWithTools.invoke(messages);
 
-    // For @LLMTask, the framework automatically:
-    // 1. Binds tools (web-search, research-search, create-report) to LLM
-    // 2. Invokes LLM with state.messages + system prompt
-    // 3. Detects tool_calls in LLM response
-    // 4. Routes to tools_conductAutonomousResearch if tool_calls present
-    // 5. Executes tools and appends results to messages
-    // 6. Loops back to this task with tool results
-    // 7. Continues until no tool_calls (research complete)
-    // 8. Proceeds to next task (saveApprovedReport)
+    const hasToolCalls =
+      Array.isArray((llmResponse as any).tool_calls) &&
+      (llmResponse as any).tool_calls.length > 0;
 
-    this.logger.log('LLM will autonomously select and call research tools');
+    this.logger.log(
+      `LLM response received — tool_calls: ${hasToolCalls ? (llmResponse as any).tool_calls.map((tc: any) => tc.name).join(', ') : 'none'}`
+    );
 
-    // ✅ NEW: Return state with custom progress
     return {
       state: {
         ...state,
@@ -312,21 +326,11 @@ Remember: Call create-report LAST when research is complete!`;
           customProgress: {
             agent: 'researcher-agent',
             stage: 'llm-tool-selection',
-            message: `Analyzing query: "${query.substring(0, 50)}${
-              query.length > 50 ? '...' : ''
-            }"`,
+            message: `Analyzing query: "${query.substring(0, 50)}${query.length > 50 ? '...' : ''}"`,
             percentage: 25,
           },
         },
-        messages: [
-          ...state.messages,
-          new AIMessage({
-            content: researchSystemPrompt,
-            additional_kwargs: {
-              llmTaskId: 'conductAutonomousResearch',
-            },
-          }),
-        ],
+        messages: [...messages, llmResponse],
       },
     };
   }
@@ -334,35 +338,46 @@ Remember: Call create-report LAST when research is complete!`;
   /**
    * TASK 3: SAVE APPROVED REPORT - Human-in-the-Loop Approval Gate
    *
-   * Uses @RequiresApproval decorator for human-in-the-loop approval.
-   * Workflow pauses before saving, allowing user to review report draft.
-   * If approved, report is saved. If rejected, workflow ends without saving.
-   *
-   * @RequiresApproval integration:
-   * - Workflow automatically pauses before this task executes
-   * - User sees approval modal with report draft
-   * - User approves/rejects via API endpoint
-   * - Workflow resumes with user's decision
+   * Uses LangGraph native interrupt() for HITL approval.
+   * Workflow pauses at interrupt(), emitting __interrupt__ in the stream.
+   * The controller detects __interrupt__ and emits interruption_request SSE.
+   * User reviews and approves/rejects via POST /api/research/approve/:executionId.
+   * Workflow resumes with Command({ resume: approvalData }); interrupt() returns approvalData.
    */
   @Task({ dependsOn: ['conductAutonomousResearch'] })
-  @RequiresApproval({
-    message: (state) =>
-      `Research report draft ready for review: "${
-        state.metadata?.reportTitle || 'Untitled'
-      }"`,
-    timeoutMs: 180000, // 3 minutes
-    onTimeout: 'approve', // Auto-approve if timeout (proceed with save)
-    metadata: (state) => ({
-      approvalType: 'report-draft-review',
-      reportTitle: state.metadata?.reportTitle,
-      query: state.metadata?.query,
-      researchDepth: state.metadata?.researchDepth,
-    }),
-  })
   async saveApprovedReport(
     context: TaskExecutionContext<TypedAgentState<ResearcherMetadata>>
   ): Promise<TaskExecutionResult<TypedAgentState<ResearcherMetadata>>> {
     const state = context.state;
+
+    // Pause workflow for human approval.
+    // First invocation: interrupt() throws GraphInterrupt → LangGraph saves checkpoint,
+    //   emits { __interrupt__: [...] } in stream, stream ends.
+    // On resume via Command({ resume: data }): interrupt() returns data without throwing.
+    const resumeData = interrupt({
+      type: 'approval_required',
+      message: `Research report draft ready for review: "${state.metadata.reportTitle || 'Untitled'}"`,
+      reportDraft: state.metadata.reportDraft,
+      reportTitle: state.metadata.reportTitle,
+      query: state.metadata.query,
+    });
+
+    // Check approval decision from the resume data
+    const approved = (resumeData as any)?.metadata?.userApproval === 'approved';
+    if (!approved) {
+      this.logger.log(`Report rejected by user`);
+      return {
+        state: {
+          ...state,
+          metadata: {
+            ...state.metadata,
+            finalReport: 'Report rejected by user',
+            currentStep: 'rejected',
+          },
+        },
+      };
+    }
+
     this.logger.log(
       `💾 Saving approved report: "${state.metadata.reportTitle || 'Untitled'}"`
     );
@@ -486,6 +501,42 @@ Remember: Call create-report LAST when research is complete!`;
         error: error as Error,
       };
     }
+  }
+
+  /**
+   * Resume an interrupted workflow with streaming (post-HITL approval).
+   *
+   * Streams the post-approval portion of the workflow so the frontend can
+   * observe the saving step and receive workflow_complete via SSE.
+   */
+  async *resumeWithStreaming(input: {
+    executionId: string;
+    checkpointId: string;
+    resumeValue: any;
+    userConfig?: any;
+  }): AsyncGenerator<any, void, unknown> {
+    this.logger.log(`Streaming resume for execution: ${input.executionId}`);
+
+    const rawStream = this.workflowResumptionService.streamResumeWorkflow(
+      'ResearcherAgent',
+      input.executionId,
+      input.resumeValue,
+      input.checkpointId,
+      input.userConfig,
+      ['updates', 'messages', 'custom']
+    );
+
+    const parser = new StreamEventParser();
+    const transformer = new StreamEventTransformer();
+
+    for await (const chunk of rawStream) {
+      const parsedEvent = parser.parseChunk(chunk);
+      if (!parsedEvent || parser.shouldSkipEvent(parsedEvent)) continue;
+      const domainEvent = transformer.transformToDomainEvent(parsedEvent, input.executionId);
+      yield domainEvent as any;
+    }
+
+    this.logger.log(`Streaming resume completed for ${input.executionId}`);
   }
 
   /**

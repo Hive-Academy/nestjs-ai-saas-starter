@@ -212,23 +212,19 @@ export class ResearchWorkflowStateService {
           this._isStreaming.set(false);
 
           const errorMessage =
-            error instanceof Error ? error.message : 'SSE connection failed';
+            error instanceof Error ? error.message : 'Connection to research service was lost. Please try again.';
+
           this._errors.update((errors) => [
             ...errors,
-            {
-              message: errorMessage,
-              timestamp: new Date(),
-              rawError: error,
-            },
+            { message: errorMessage, timestamp: new Date(), rawError: error },
           ]);
 
-          this.addTimelineEntry(
-            'error',
-            `Connection error: ${errorMessage}`,
-            undefined,
-            'error',
-            'error'
-          );
+          // Mark any active entries as stopped, then append the error — keep history visible
+          this.completeActiveTimelineEntries();
+          this._streamingText.set('');
+          this.hasSynthesizingEntry = false;
+
+          this.addTimelineEntry('error', errorMessage, undefined, 'error', 'error');
         },
         complete: () => {
           // Stream completed normally (EventSource closed after workflow_complete)
@@ -270,6 +266,9 @@ export class ResearchWorkflowStateService {
         break;
       case 'workflow_complete':
         this.handleWorkflowComplete(event);
+        break;
+      case 'workflow-error':
+        this.handleWorkflowError(event);
         break;
       case 'debug-trace':
         // Already added to event history above; no additional processing needed
@@ -425,6 +424,27 @@ export class ResearchWorkflowStateService {
     this.cleanupSubscription();
   }
 
+  private handleWorkflowError(event: ResearchDomainEvent): void {
+    this._executionStatus.set('error');
+    this._currentPhase.set('error');
+    this._isStreaming.set(false);
+
+    const message = event.message ?? 'An unexpected error occurred. Please try again.';
+
+    this._errors.update((errors) => [
+      ...errors,
+      { message, timestamp: new Date(), rawError: event },
+    ]);
+
+    // Mark any active entries as stopped, then append the error — keep history visible
+    this.completeActiveTimelineEntries();
+    this._streamingText.set('');
+    this.hasSynthesizingEntry = false;
+
+    this.addTimelineEntry('error', message, undefined, 'error', 'error');
+    this.cleanupSubscription();
+  }
+
   // ---------------------------------------------------------------------------
   // PHASE DETECTION HELPERS
   // ---------------------------------------------------------------------------
@@ -432,18 +452,25 @@ export class ResearchWorkflowStateService {
   /**
    * Detect research phase from node name using heuristic string matching.
    * Falls back to 'started' for unknown node names.
+   *
+   * NOTE: Specific patterns are checked before generic ones to prevent
+   * 'research' (which ends with 'search') from matching the searching phase.
    */
   private detectPhaseFromNodeName(lowerNodeName: string): ResearchPhase {
-    if (lowerNodeName.includes('search')) return 'searching';
+    if (lowerNodeName.includes('initialize') || lowerNodeName.includes('init')) return 'started';
+    if (lowerNodeName.includes('save') || lowerNodeName.includes('approved')) return 'saving';
     if (lowerNodeName.includes('read')) return 'reading';
     if (
       lowerNodeName.includes('synth') ||
       lowerNodeName.includes('generate') ||
-      lowerNodeName.includes('report')
+      lowerNodeName.includes('conduct') ||
+      lowerNodeName.includes('autonomous')
     ) {
       return 'synthesizing';
     }
-    if (lowerNodeName.includes('save')) return 'saving';
+    // 'search' only if it isn't just the tail of 'research'
+    if (lowerNodeName.replace('research', '').includes('search')) return 'searching';
+    if (lowerNodeName.includes('research')) return 'synthesizing';
 
     return 'started';
   }

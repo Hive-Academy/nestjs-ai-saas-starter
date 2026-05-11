@@ -1,20 +1,27 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
+import { initChatModel } from 'langchain/chat_models/universal';
 import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import type { BaseLanguageModelInterface } from '@langchain/core/language_models/base';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type {
   LlmConfig,
   LlmModuleOptions,
 } from '../../interfaces/llm-config.interface';
 
 /**
- * Service for managing LLM instances and provider abstraction
- * Handles multiple LLM providers and caching
+ * Service for managing LLM instances with two-branch dispatch:
+ *
+ * Branch A — Native LangChain provider via initChatModel (no baseUrl).
+ *   Model string format: "provider:model-name"
+ *   e.g. "anthropic:claude-sonnet-4-6", "openai:gpt-4o-mini"
+ *
+ * Branch B — OpenAI-compatible custom endpoint (baseUrl present).
+ *   ChatOpenAI is instantiated pointing at baseUrl with the supplied apiKey.
+ *   e.g. baseUrl="https://api.z.ai/v1", model="z-ai/glm-4.5-air"
  */
 @Injectable()
 export class LlmProviderService {
   private readonly logger = new Logger(LlmProviderService.name);
-  private readonly llmCache = new Map<string, BaseLanguageModelInterface>();
+  private readonly llmCache = new Map<string, BaseChatModel>();
 
   constructor(
     @Inject('LLM_MODULE_OPTIONS')
@@ -22,372 +29,219 @@ export class LlmProviderService {
   ) {}
 
   /**
-   * Get or create LLM instance with caching
+   * Get or create a cached LLM instance.
    */
-  async getLLM(config?: LlmConfig): Promise<BaseLanguageModelInterface> {
-    const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
+  async getLLM(config?: LlmConfig): Promise<BaseChatModel> {
     const cacheKey = this.createCacheKey(config);
 
     if (this.llmCache.has(cacheKey)) {
+      const model = config?.model ?? this.options.defaultLlm?.model ?? 'unknown';
       this.logger.debug(`Using cached LLM: ${model}`);
       return this.llmCache.get(cacheKey)!;
     }
 
-    this.logger.debug(`Creating new LLM instance: ${model}`);
     const llm = await this.createLLM(config);
     this.llmCache.set(cacheKey, llm);
-
     return llm;
   }
 
   /**
-   * Create LLM instance based on configured provider - simple and explicit
+   * Two-branch LLM factory.
+   *
+   * Branch B (custom endpoint) is chosen when defaultLlm.baseUrl is set.
+   * Branch A (native LangChain) is used otherwise.
    */
-  private async createLLM(
-    config?: LlmConfig
-  ): Promise<BaseLanguageModelInterface> {
-    const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
-    const temperature =
-      config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
-    const maxTokens = config?.maxTokens || this.options.defaultLlm?.maxTokens;
-
-    // Simple provider selection - explicit from configuration (NO backward compatibility)
-    const provider = this.options.defaultLlm?.provider || 'openai'; // default
-
-    this.logger.debug(
-      `Creating LLM instance: provider=${provider}, model=${model}`
-    );
-
-    switch (provider) {
-      case 'anthropic':
-        return this.createAnthropicLLM(model, temperature, maxTokens);
-
-      case 'openrouter':
-        return this.createOpenRouterLLM(model, temperature, maxTokens);
-
-      case 'google':
-        return this.createGoogleLLM(model, temperature, maxTokens);
-
-      case 'local':
-        return this.createLocalLLM(model, temperature, maxTokens);
-
-      case 'azure-openai':
-        return this.createAzureOpenAILLM(model, temperature, maxTokens);
-
-      case 'cohere':
-        return this.createCohereLLM(model, temperature, maxTokens);
-
-      case 'openai':
-      default:
-        return this.createOpenAILLM(model, temperature, maxTokens);
-    }
-  }
-
-  /**
-   * Create OpenAI LLM instance
-   */
-  private createOpenAILLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): ChatOpenAI {
-    const apiKey =
-      this.options.defaultLlm?.openaiApiKey || process.env.OPENAI_API_KEY; // fallback to env var
-
-    if (!apiKey) {
-      throw new Error(
-        'No OpenAI API key found - configure openaiApiKey in module options'
-      );
-    }
-
-    const configuration: any = {
-      model,
-      temperature,
-      maxTokens,
-      apiKey,
-      streaming: this.options.streaming?.enabled || false,
-    };
-
-    // Provider-specific configuration
-    if (this.options.defaultLlm?.openai?.organization) {
-      configuration.configuration = {
-        organization: this.options.defaultLlm.openai.organization,
-      };
-
-      if (this.options.defaultLlm.openai.project) {
-        configuration.configuration.project =
-          this.options.defaultLlm.openai.project;
-      }
-    }
-
-    this.logger.debug(`Creating OpenAI LLM with model: ${model}`);
-    return new ChatOpenAI(configuration);
-  }
-
-  /**
-   * Create Anthropic LLM instance
-   */
-  private createAnthropicLLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): ChatAnthropic {
-    const apiKey = this.options.defaultLlm?.anthropicApiKey;
-
-    if (!apiKey) {
-      throw new Error(
-        'No Anthropic API key found - configure anthropicApiKey in module options'
-      );
-    }
-
-    const configuration: any = {
-      model,
-      temperature,
-      maxTokens,
-      apiKey,
-      streaming: this.options.streaming?.enabled || false,
-    };
-
-    // Provider-specific configuration
-    if (this.options.defaultLlm?.anthropic?.version) {
-      configuration.anthropicApiVersion =
-        this.options.defaultLlm.anthropic.version;
-    }
-
-    this.logger.debug(`Creating Anthropic LLM with model: ${model}`);
-    return new ChatAnthropic(configuration);
-  }
-
-  /**
-   * Create OpenRouter LLM instance (uses ChatOpenAI with custom baseURL)
-   */
-  private createOpenRouterLLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): ChatOpenAI {
-    const apiKey =
-      this.options.defaultLlm?.openrouterApiKey ||
-      this.options.defaultLlm?.openrouterApiKey; // backward compatibility
-
-    if (!apiKey) {
-      throw new Error(
-        'No OpenRouter API key found - configure openrouterApiKey in module options'
-      );
-    }
-
-    const baseUrl =
-      this.options.defaultLlm?.openrouter?.baseUrl ||
-      'https://openrouter.ai/api/v1';
-    const siteName =
-      this.options.defaultLlm?.openrouter?.siteName || 'NestJS AI SaaS Starter';
-    const siteUrl =
-      this.options.defaultLlm?.openrouter?.siteUrl || 'http://localhost:3000';
-
-    const configuration: any = {
-      model,
-      temperature,
-      maxTokens,
-      apiKey,
-      streaming: this.options.streaming?.enabled || false,
-      configuration: {
-        baseURL: baseUrl,
-        defaultHeaders: {
-          'HTTP-Referer': siteUrl,
-          'X-Title': siteName,
-        },
-      },
-    };
-
-    this.logger.debug(`Creating OpenRouter LLM with model: ${model}`);
-    return new ChatOpenAI(configuration);
-  }
-
-  /**
-   * Create Google AI LLM instance
-   */
-  private createGoogleLLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): BaseLanguageModelInterface {
-    // Note: This would require @langchain/google-genai package
-    this.logger.warn(
-      'Google AI provider not yet implemented - falling back to OpenAI. ' +
-        'To use Google AI, install @langchain/google-genai package and implement provider.'
-    );
-
-    // Graceful fallback to OpenAI to prevent demo crashes
-    return this.createOpenAILLM(
-      model.replace(/^gemini/, 'gpt-4'),
-      temperature,
-      maxTokens
-    );
-  }
-
-  /**
-   * Create Local LLM instance (Ollama, LM Studio, etc.)
-   */
-  private createLocalLLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): ChatOpenAI {
-    const baseUrl =
-      this.options.defaultLlm?.local?.baseUrl || 'http://localhost:11434/v1';
-
-    const configuration: any = {
-      model,
-      temperature,
-      maxTokens,
-      apiKey: 'not-required', // Local LLMs typically don't require API keys
-      streaming: this.options.streaming?.enabled || false,
-      configuration: {
-        baseURL: baseUrl,
-      },
-    };
-
-    this.logger.debug(
-      `Creating Local LLM with model: ${model}, baseUrl: ${baseUrl}`
-    );
-    return new ChatOpenAI(configuration);
-  }
-
-  /**
-   * Create Azure OpenAI LLM instance
-   */
-  private createAzureOpenAILLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): BaseLanguageModelInterface {
-    // Note: This would require @langchain/azure-openai package or specific configuration
-    this.logger.warn(
-      'Azure OpenAI provider not yet implemented - falling back to OpenAI. ' +
-        'To use Azure OpenAI, install @langchain/azure-openai package and configure Azure endpoints.'
-    );
-
-    // Graceful fallback to OpenAI to prevent demo crashes
-    return this.createOpenAILLM(model, temperature, maxTokens);
-  }
-
-  /**
-   * Create Cohere LLM instance
-   */
-  private createCohereLLM(
-    model: string,
-    temperature: number,
-    maxTokens?: number
-  ): BaseLanguageModelInterface {
-    // Note: This would require @langchain/cohere package
-    this.logger.warn(
-      'Cohere provider not yet implemented - falling back to OpenAI. ' +
-        'To use Cohere, install @langchain/cohere package and implement provider.'
-    );
-
-    // Graceful fallback to OpenAI to prevent demo crashes
-    // Map common Cohere models to OpenAI equivalents
-    const mappedModel = model.startsWith('command') ? 'gpt-4' : model;
-    return this.createOpenAILLM(mappedModel, temperature, maxTokens);
-  }
-
-  /**
-   * Create cache key for LLM configuration
-   */
-  private createCacheKey(config?: LlmConfig): string {
-    const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
+  private async createLLM(config?: LlmConfig): Promise<BaseChatModel> {
+    const model = config?.model ?? this.options.defaultLlm?.model;
     const temperature =
       config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
     const maxTokens =
-      config?.maxTokens || this.options.defaultLlm?.maxTokens || 4000;
+      config?.maxTokens ?? this.options.defaultLlm?.maxTokens;
+    const apiKey = this.options.defaultLlm?.apiKey;
+    const baseUrl = this.options.defaultLlm?.baseUrl;
 
-    return `${model}_${temperature}_${maxTokens}`;
+    if (!model) {
+      throw new Error(
+        'LLM model must be specified — set defaultLlm.model in module options or LLM_MODEL env var'
+      );
+    }
+
+    // Branch B: OpenAI-compatible custom endpoint
+    if (baseUrl) {
+      if (!apiKey) {
+        throw new Error(
+          'apiKey is required when baseUrl is set (Branch B: custom OpenAI-compatible endpoint)'
+        );
+      }
+      const modelName = this.extractModelName(model);
+      this.logger.debug(
+        `Creating LLM via Branch B (custom endpoint): model=${modelName}, baseUrl=${baseUrl}`
+      );
+      return new ChatOpenAI({
+        model: modelName,
+        apiKey,
+        temperature,
+        maxTokens,
+        configuration: { baseURL: baseUrl },
+      }) as unknown as BaseChatModel;
+    }
+
+    // Branch A: native LangChain provider via initChatModel
+    this.logger.debug(
+      `Creating LLM via Branch A (native LangChain): model=${model}`
+    );
+    return initChatModel(model, {
+      temperature,
+      maxTokens,
+      ...(apiKey ? { apiKey } : {}),
+    }) as Promise<BaseChatModel>;
   }
 
   /**
-   * Get supported providers
+   * Strip the "provider:" prefix from a model string, if present.
+   * "anthropic:claude-sonnet-4-6" → "claude-sonnet-4-6"
+   * "llama3" → "llama3"
+   *
+   * OpenRouter-style IDs (e.g. "openai/gpt-oss-20b:free") contain a slash
+   * before the colon — these are passed through unchanged because the colon
+   * is a variant suffix, not a provider prefix.
+   */
+  private extractModelName(model: string): string {
+    const colonIndex = model.indexOf(':');
+    if (colonIndex === -1) return model;
+
+    const prefix = model.substring(0, colonIndex);
+    // If the prefix contains a slash it is an org/model ID (e.g. OpenRouter),
+    // not a "provider:model" pair — pass the whole string through.
+    if (prefix.includes('/')) return model;
+
+    return model.substring(colonIndex + 1);
+  }
+
+  /**
+   * Build a stable cache key that captures all factors affecting LLM identity.
+   */
+  private createCacheKey(config?: LlmConfig): string {
+    const model =
+      config?.model ?? this.options.defaultLlm?.model ?? 'unknown';
+    const temperature =
+      config?.temperature ?? this.options.defaultLlm?.temperature ?? 0;
+    const maxTokens =
+      config?.maxTokens ?? this.options.defaultLlm?.maxTokens ?? 0;
+    const baseUrl = this.options.defaultLlm?.baseUrl ?? '';
+    return `${model}_${temperature}_${maxTokens}_${baseUrl}`;
+  }
+
+  /**
+   * Validate that the current configuration is sufficient to create an LLM.
+   */
+  validateModelConfig(config?: LlmConfig): boolean {
+    const model = config?.model ?? this.options.defaultLlm?.model;
+    const baseUrl = this.options.defaultLlm?.baseUrl;
+    const apiKey = this.options.defaultLlm?.apiKey;
+
+    if (!model) {
+      this.logger.warn('No model specified');
+      return false;
+    }
+
+    if (baseUrl && !apiKey) {
+      this.logger.warn(
+        'baseUrl set but apiKey missing — Branch B requires apiKey'
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Native LangChain provider prefixes supported by Branch A.
+   * Any OpenAI-compatible provider is also supported via baseUrl (Branch B).
    */
   getSupportedProviders(): string[] {
     return [
       'openai',
       'anthropic',
+      'google-genai',
       'openrouter',
-      'google',
-      'local',
-      'azure-openai',
+      'groq',
+      'mistralai',
+      'together',
+      'fireworks',
       'cohere',
     ];
   }
 
   /**
-   * Validate model configuration gracefully
+   * Return token limits and capability flags for a given model string.
+   * Provider is derived from the "provider:" prefix of the model string.
    */
-  validateModelConfig(config?: LlmConfig): boolean {
-    const model = config?.model || this.options.defaultLlm?.model;
+  getModelCapabilities(model?: string): {
+    maxTokens: number;
+    supportsTools: boolean;
+    supportsStreaming: boolean;
+    provider: string;
+  } {
+    const modelStr = model ?? this.options.defaultLlm?.model ?? '';
+    const colonIdx = modelStr.indexOf(':');
     const provider =
-      this.options.defaultLlm?.provider ||
-      this.options.defaultLlm?.provider ||
-      'openai';
-
-    if (!model) {
-      this.logger.warn(
-        'No model specified in configuration, using default: gpt-4'
-      );
-      return true; // Allow default fallback
-    }
-
-    // Simple provider validation - check for required API key
-    let hasApiKey = false;
-    let keyName = '';
+      colonIdx === -1 ? 'openai' : modelStr.substring(0, colonIdx);
 
     switch (provider) {
       case 'anthropic':
-        hasApiKey = !!this.options.defaultLlm?.anthropicApiKey;
-        keyName = 'anthropicApiKey';
-        break;
+        return {
+          maxTokens: 200000,
+          supportsTools: true,
+          supportsStreaming: true,
+          provider,
+        };
+
+      case 'google-genai':
+        return {
+          maxTokens: 32768,
+          supportsTools: true,
+          supportsStreaming: true,
+          provider,
+        };
+
       case 'openrouter':
-        hasApiKey = !!this.options.defaultLlm?.openrouterApiKey;
-        keyName = 'openrouterApiKey';
-        break;
-      case 'google':
-        hasApiKey = !!this.options.defaultLlm?.googleApiKey;
-        keyName = 'googleApiKey';
-        break;
-      case 'azure-openai':
-        hasApiKey = !!this.options.defaultLlm?.azureOpenaiApiKey;
-        keyName = 'azureOpenaiApiKey';
-        break;
-      case 'cohere':
-        hasApiKey = !!this.options.defaultLlm?.cohereApiKey;
-        keyName = 'cohereApiKey';
-        break;
-      case 'local':
-        hasApiKey = true; // Local LLMs don't require API keys
-        break;
+        return {
+          maxTokens: 32768,
+          supportsTools: true,
+          supportsStreaming: true,
+          provider,
+        };
+
+      case 'groq':
+        return {
+          maxTokens: 32768,
+          supportsTools: true,
+          supportsStreaming: true,
+          provider,
+        };
+
       case 'openai':
       default:
-        hasApiKey = !!(
-          this.options.defaultLlm?.openaiApiKey || process.env.OPENAI_API_KEY
-        );
-        keyName = 'openaiApiKey';
-        break;
+        if (modelStr.includes('gpt-4')) {
+          return {
+            maxTokens: 128000,
+            supportsTools: true,
+            supportsStreaming: true,
+            provider,
+          };
+        }
+        return {
+          maxTokens: 16385,
+          supportsTools: true,
+          supportsStreaming: true,
+          provider,
+        };
     }
-
-    if (!hasApiKey) {
-      this.logger.warn(
-        `Provider ${provider} requires ${keyName} to be configured in module options`
-      );
-      return false;
-    }
-
-    this.logger.debug(
-      `Model configuration validated: provider=${provider}, model=${model}`
-    );
-    return true;
   }
 
   /**
-   * Clear LLM cache
+   * Clear all cached LLM instances.
    */
   clearCache(): void {
     const cacheSize = this.llmCache.size;
@@ -396,7 +250,7 @@ export class LlmProviderService {
   }
 
   /**
-   * Get cache statistics
+   * Return current cache statistics.
    */
   getCacheStats(): { size: number; keys: string[] } {
     return {
@@ -406,7 +260,7 @@ export class LlmProviderService {
   }
 
   /**
-   * Preload commonly used models
+   * Warm up the cache by pre-creating LLM instances for a list of model strings.
    */
   async preloadModels(models: string[]): Promise<void> {
     this.logger.log(`Preloading ${models.length} models`);
@@ -425,39 +279,31 @@ export class LlmProviderService {
   }
 
   /**
-   * Test LLM connectivity gracefully
+   * Verify LLM connectivity with a minimal test invocation.
+   * Returns false (rather than throwing) when the provider is not configured.
    */
   async testLLM(config?: LlmConfig): Promise<boolean> {
     try {
-      const provider =
-        this.options.defaultLlm?.provider ||
-        this.options.defaultLlm?.provider ||
-        'openai';
-      const model = config?.model || this.options.defaultLlm?.model || 'gpt-4';
+      const model =
+        config?.model ?? this.options.defaultLlm?.model ?? 'unknown';
 
-      // Check if we have the required API key for the configured provider
       if (!this.validateModelConfig(config)) {
         this.logger.warn(
-          `Skipping connectivity test - ${provider} provider not properly configured`
+          `Skipping connectivity test — model=${model} not properly configured`
         );
         return false;
       }
 
-      this.logger.debug(
-        `Testing LLM connectivity: provider=${provider}, model=${model}`
-      );
+      this.logger.debug(`Testing LLM connectivity: model=${model}`);
       const llm = await this.getLLM(config);
 
-      // Quick test with simple prompt
       const response = await llm.invoke([
         { role: 'user', content: 'Hello, respond with just "OK"' },
       ]);
 
       const success = response.content.toString().toLowerCase().includes('ok');
       this.logger.log(
-        `LLM connectivity test ${
-          success ? 'PASSED' : 'FAILED'
-        } for provider=${provider}, model=${model}`
+        `LLM connectivity test ${success ? 'PASSED' : 'FAILED'} for model=${model}`
       );
 
       return success;
@@ -468,112 +314,6 @@ export class LlmProviderService {
         }`
       );
       return false;
-    }
-  }
-
-  /**
-   * Get model capabilities and limits based on configured provider
-   */
-  getModelCapabilities(model?: string): {
-    maxTokens: number;
-    supportsTools: boolean;
-    supportsStreaming: boolean;
-    provider: string;
-  } {
-    const provider =
-      this.options.defaultLlm?.provider ||
-      this.options.defaultLlm?.provider ||
-      'openai';
-    const modelName = model || this.options.defaultLlm?.model || 'gpt-4';
-
-    // Provider-based capabilities instead of model name detection
-    switch (provider) {
-      case 'openai':
-        if (modelName.startsWith('gpt-4')) {
-          return {
-            maxTokens: 128000,
-            supportsTools: true,
-            supportsStreaming: true,
-            provider: 'openai',
-          };
-        } else if (modelName.startsWith('gpt-3.5')) {
-          return {
-            maxTokens: 16385,
-            supportsTools: true,
-            supportsStreaming: true,
-            provider: 'openai',
-          };
-        }
-        return {
-          maxTokens: 8192,
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'openai',
-        };
-
-      case 'anthropic':
-        if (modelName.startsWith('claude-3')) {
-          return {
-            maxTokens: 200000,
-            supportsTools: true,
-            supportsStreaming: true,
-            provider: 'anthropic',
-          };
-        }
-        return {
-          maxTokens: 100000,
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'anthropic',
-        };
-
-      case 'openrouter':
-        return {
-          maxTokens: 32768, // Varies by model on OpenRouter
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'openrouter',
-        };
-
-      case 'google':
-        return {
-          maxTokens: 32768,
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'google',
-        };
-
-      case 'local':
-        return {
-          maxTokens: 4096, // Varies significantly for local models
-          supportsTools: false, // Most local setups don't support tools
-          supportsStreaming: true,
-          provider: 'local',
-        };
-
-      case 'azure-openai':
-        return {
-          maxTokens: 128000,
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'azure-openai',
-        };
-
-      case 'cohere':
-        return {
-          maxTokens: 128000,
-          supportsTools: true,
-          supportsStreaming: true,
-          provider: 'cohere',
-        };
-
-      default:
-        return {
-          maxTokens: 4000,
-          supportsTools: false,
-          supportsStreaming: false,
-          provider: 'unknown',
-        };
     }
   }
 }

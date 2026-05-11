@@ -272,10 +272,34 @@ export class ResearchService {
               }
             );
 
-            // Handle connection errors
+            // 7. workflow-error: backend emits before closing on LLM/tool failure
+            eventSource.addEventListener(
+              'workflow-error',
+              (event: MessageEvent) => {
+                try {
+                  const data = JSON.parse(event.data) as Record<string, unknown>;
+                  observer.next({
+                    type: 'workflow-error',
+                    timestamp: data['timestamp'] as string,
+                    executionId,
+                    message: data['message'] as string | undefined,
+                  });
+                  observer.complete();
+                } catch (error) {
+                  console.warn('[ResearchService] Failed to parse workflow-error event:', error);
+                }
+                eventSource.close();
+              }
+            );
+
+            // Handle unexpected connection drops (network loss, server crash)
             eventSource.onerror = () => {
+              if (eventSource.readyState === EventSource.CLOSED) {
+                // Connection closed cleanly after workflow-error or workflow_complete
+                return;
+              }
               const sseError = new Error(
-                `SSE connection failed (readyState: ${eventSource.readyState})`
+                'Connection to research service was lost. Please try again.'
               );
               console.error('[ResearchService] SSE connection error:', sseError.message);
               observer.error(sseError);

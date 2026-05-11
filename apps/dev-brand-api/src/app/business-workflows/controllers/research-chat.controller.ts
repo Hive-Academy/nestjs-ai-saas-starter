@@ -242,49 +242,44 @@ export class ResearchChatController {
           for await (const event of stream) {
             // ✅ NEW: Handle different event types with type discrimination
             if (event.type === 'workflow-update') {
+              // Detect LangGraph native interrupt() — emits nodeName '__interrupt__'
+              // with stateUpdate = [{ value: interruptPayload, resumable: true }]
+              if ((event as any).nodeName === '__interrupt__') {
+                this.logger.log(
+                  `🛑 Workflow interrupted for approval: ${executionId}`
+                );
+
+                const interruptItems = (event.state as any);
+                const firstItem = Array.isArray(interruptItems)
+                  ? interruptItems[0]
+                  : interruptItems;
+                const interruptValue = firstItem?.value ?? {};
+
+                subscriber.next({
+                  data: {
+                    type: 'interruption_request',
+                    executionId,
+                    message: interruptValue.message || 'Report draft ready for review',
+                    reportDraft: interruptValue.reportDraft,
+                    reportTitle: interruptValue.reportTitle,
+                    timestamp: new Date().toISOString(),
+                  },
+                  type: 'interruption_request',
+                } as MessageEvent);
+                // Stream ends here — workflow waits at checkpoint for approval
+                break;
+              }
+
               // Existing workflow update handling
               subscriber.next({
                 data: event,
                 type: 'workflow-update',
               } as MessageEvent);
 
-              // Check if workflow interrupted (HITL)
-              // @RequiresApproval decorator sets waitingForApproval: true
-              if (
-                event.state?.waitingForApproval === true ||
-                event.state?.userApproval === 'pending'
-              ) {
-                this.logger.log(
-                  `🛑 Workflow interrupted for approval: ${executionId}`
-                );
-
-                // Extract approval message from approvalRequest if available
-                const approvalMessage =
-                  event.state?.approvalRequest?.message ||
-                  'Report draft ready for review';
-                const reportDraft =
-                  event.state?.reportDraft ||
-                  event.state?.metadata?.reportDraft;
-
-                subscriber.next({
-                  data: {
-                    type: 'interruption_request',
-                    executionId,
-                    message: approvalMessage,
-                    reportDraft,
-                    approvalRequest: event.state?.approvalRequest,
-                    timestamp: new Date().toISOString(),
-                  },
-                  type: 'interruption_request',
-                } as MessageEvent);
-                // Don't complete - wait for approval
-                break;
-              }
-
-              // Check if workflow completed
+              // Check if workflow completed (report saved after approval)
               if (
                 event.state?.status === 'completed' ||
-                event.state?.savedReportFilename
+                (event.state as any)?.metadata?.savedReportFilename
               ) {
                 this.logger.log(`✅ Workflow completed: ${executionId}`);
                 subscriber.next({
@@ -356,7 +351,17 @@ export class ResearchChatController {
             `❌ Stream error for ${executionId}:`,
             error.message
           );
-          subscriber.error(error);
+          const userMessage = this.toUserFriendlyError(error);
+          subscriber.next({
+            data: {
+              type: 'workflow-error',
+              executionId,
+              message: userMessage,
+              timestamp: new Date().toISOString(),
+            },
+            type: 'workflow-error',
+          } as MessageEvent);
+          subscriber.complete();
           this.activeStreams.delete(executionId);
         }
       })();
@@ -439,29 +444,29 @@ export class ResearchChatController {
       };
       const userConfig = this.workflowAuthContext.createUserConfig(userContext);
 
-      // Resume workflow from interruption with approval state + auth context
+      // Resume workflow with streaming so the frontend can observe the saving step
       if (body.approved) {
-        this.logger.log(`▶️  Resuming workflow: ${executionId}`);
+        this.logger.log(`▶️  Streaming resume for approved workflow: ${executionId}`);
 
-        // Resume using LangGraph native resumeFromInterruption()
-        await this.workflowExecutionService.resumeFromInterruption(
-          ResearcherAgent,
+        // Create streaming resume generator — store so SSE endpoint can serve it
+        const resumeStream = this.researcherAgent.resumeWithStreaming({
           executionId,
           checkpointId,
-          approvalState,
-          userConfig
-        );
+          resumeValue: approvalState,
+          userConfig,
+        });
 
-        this.logger.log(`✅ Workflow resumed and completed: ${executionId}`);
+        // Register stream so the SSE endpoint picks it up when frontend reconnects
+        this.activeStreams.set(executionId, resumeStream);
 
         return {
           status: 'success',
-          message: 'Report approved and workflow resumed successfully',
+          message: 'Report approved — connect to stream URL to follow saving progress.',
         };
       } else {
         this.logger.log(`⛔ Workflow rejected: ${executionId}`);
 
-        // For rejection, we still resume but the workflow can check approval state
+        // Rejection: resume via invoke (no streaming needed — workflow ends immediately)
         await this.workflowExecutionService.resumeFromInterruption(
           ResearcherAgent,
           executionId,
@@ -472,7 +477,7 @@ export class ResearchChatController {
 
         return {
           status: 'success',
-          message: 'Report rejected. Workflow resumed with rejection state.',
+          message: 'Report rejected. Workflow terminated.',
         };
       }
     } catch (error: any) {
@@ -817,5 +822,38 @@ export class ResearchChatController {
         'Failed to create new conversation'
       );
     }
+  }
+
+  private toUserFriendlyError(error: any): string {
+    const msg: string = error?.message ?? '';
+
+    if (
+      msg.includes('401') ||
+      msg.includes('User not found') ||
+      msg.includes('API key') ||
+      msg.includes('Unauthorized') ||
+      msg.includes('authentication')
+    ) {
+      return 'The AI service is not properly configured. Please contact support.';
+    }
+
+    if (
+      msg.includes('429') ||
+      msg.includes('rate limit') ||
+      msg.includes('quota')
+    ) {
+      return 'The AI service is temporarily unavailable due to rate limits. Please try again in a moment.';
+    }
+
+    if (
+      msg.includes('ECONNREFUSED') ||
+      msg.includes('ENOTFOUND') ||
+      msg.includes('network') ||
+      msg.includes('timeout')
+    ) {
+      return 'Unable to reach the AI service. Please check your connection and try again.';
+    }
+
+    return 'The research workflow encountered an error. Please try again.';
   }
 }

@@ -71,7 +71,8 @@ export interface ResearchDomainEvent {
     | 'custom-progress'
     | 'debug-trace'
     | 'interruption_request'
-    | 'workflow_complete';
+    | 'workflow_complete'
+    | 'workflow-error';
   readonly timestamp: string;
   readonly executionId: string;
   // workflow-update fields

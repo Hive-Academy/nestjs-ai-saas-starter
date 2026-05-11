@@ -116,10 +116,17 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
       return;
     }
 
+    // LLM task nodes get conditional routing from addLLMTaskToolRouting.
+    // Adding a regular edge FROM them here would bypass the conditional branch
+    // (saveApprovedReport would fire immediately after every LLM iteration).
+    const llmTaskIds = new Set(
+      definition.nodes.filter((n) => n.isLLMTask).map((n) => n.id)
+    );
+
     this.logger.debug(
       `Building linear edges from taskDependencies for ${
         Object.keys(taskDeps).length
-      } tasks`
+      } tasks (skipping outgoing edges from LLM task nodes: ${[...llmTaskIds].join(', ')})`
     );
 
     // For each task, add edge from dependency → task
@@ -130,6 +137,13 @@ export class FunctionalTaskGraphStrategy extends BaseGraphBuildingStrategy {
       }
 
       for (const depId of dependencies) {
+        if (llmTaskIds.has(depId)) {
+          // LLM task outgoing edges are conditional (handled by addLLMTaskToolRouting)
+          this.logger.debug(
+            `Skipping regular edge ${depId} → ${taskId} (LLM task — conditional routing handles this)`
+          );
+          continue;
+        }
         this.logger.debug(`Adding dependency edge: ${depId} → ${taskId}`);
         graph.addEdge(depId, taskId);
       }
