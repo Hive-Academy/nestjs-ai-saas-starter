@@ -1,24 +1,31 @@
-import { CommonModule } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { Component } from '@angular/core';
-import { Scene3DComponent } from '../../../core/angular-3d/components/scene-3d.component';
-import { HeroSceneGraphComponent } from './hero-scene-graph.component';
-import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/scroll-animation.directive';
+import { Scene3dComponent } from '@hive-academy/angular-3d';
+import { HeroSceneGraphComponent } from './scene-graphs/hero-scene-graph.component';
+import { ScrollAnimationDirective } from '../../../core/gsap-animations/scroll-animation.directive';
 
 @Component({
   selector: 'brand-hero-section',
   standalone: true,
-  imports: [CommonModule, Scene3DComponent, ScrollAnimationDirective],
+  imports: [
+    NgOptimizedImage,
+    Scene3dComponent,
+    HeroSceneGraphComponent,
+    ScrollAnimationDirective,
+  ],
   template: `
     <div
-      class="relative w-full h-screen overflow-hidden bg-gradient-to-br from-black via-sky-900 to-black"
+      class="relative w-full h-screen bg-gradient-to-br from-sky-300 via-white to-sky-600 flex flex-col"
       style="perspective: 1000px;"
     >
       <!-- 3D Background Scene (spheres + cubes) -->
-      <app-scene-3d class="absolute inset-0" [sceneGraph]="heroSceneGraph" />
+      <a3d-scene-3d class="absolute inset-0">
+        <app-hero-scene-graph />
+      </a3d-scene-3d>
 
       <!-- DOM Content Overlay - Compact with breathing room for 3D depth -->
       <div
-        class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none"
+        class="flex-1 flex flex-col items-center justify-end mb-5 z-10 pointer-events-none"
         scrollAnimation
         [scrollConfig]="{
           animation: 'custom',
@@ -30,100 +37,131 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         }"
       >
         <div
-          class="max-w-3xl mx-auto px-8 text-center space-y-6 pointer-events-auto transform-gpu"
+          class="max-w-4xl mx-auto px-6 md:px-8 text-center space-y-3 md:space-y-4 pointer-events-auto transform-gpu"
         >
-          <!-- Hero Title - Scroll up and fade out as user scrolls -->
-          <h1
-            class="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in-up"
-            style="text-shadow: 0 10px 30px rgba(168, 85, 247, 0.5), 0 2px 5px rgba(0,0,0,0.8);"
-          >
-            <span class="text-white drop-shadow-2xl">Enterprise AI</span><br />
+          <!-- Hero Title - Glowing badge + 3D extruded text -->
+          <h1 class="font-bold leading-tight animate-fade-in-up space-y-3">
             <span
-              class="text-white drop-shadow-2xl text-3xl md:text-5xl lg:text-6xl"
+              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
+                     border-2 border-indigo-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
             >
-              SaaS Starter
+              Build Production Grade AI Applications
+            </span>
+            <br />
+            <span
+              class="text-2xl sm:text-4xl md:text-6xl text-3d-extruded lg:text-7xl text-gray-900"
+            >
+              With TypeScript Patterns
+            </span>
+            <br />
+            <span
+              class="inline-block px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500
+                     border-2 border-indigo-400/50 rounded-full text-white
+                     shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse-glow"
+            >
+              You Already Know
             </span>
           </h1>
+        </div>
+      </div>
 
-          <!-- Hero Description - Parallax scroll effect -->
+      <!-- Value Proposition - Glassmorphism card at bottom aligned with hero text -->
+      <div class="relative z-20 animate-slide-up-fade animation-delay-400">
+        <div
+          class="max-w-4xl mx-auto px-6 py-6 md:px-8 md:py-8
+                    bg-white/70 backdrop-blur-xl border border-white/30
+                    rounded-t-3xl shadow-[0_-10px_60px_rgba(99,102,241,0.15)]
+                    hover:bg-white/75 transition-all duration-300"
+        >
+          <!-- Hero Description - Compact, highlight key metric -->
           <p
-            class="text-base md:text-xl text-gray-200 leading-relaxed max-w-xl mx-auto animate-fade-in-up animation-delay-200"
-            style="text-shadow: 0 2px 20px rgba(0,0,0,0.6);"
+            class="text-sm md:text-base text-gray-800 leading-relaxed max-w-3xl mx-auto text-center mb-6 md:mb-8 animate-fade-in-up animation-delay-200"
           >
-            Production-ready foundation combining
-            <span
-              class="text-purple-300 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >vector search</span
-            >,
-            <span
-              class="text-purple-300 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >graph relationships</span
-            >, and
-            <span
-              class="text-purple-300 font-semibold"
-              style="text-shadow: 0 0 20px rgba(216, 180, 254, 0.6);"
-              >intelligent workflows</span
-            >
+            NestJS AI SaaS Starter:
+            <strong class="text-indigo-600 font-bold">90% less code</strong>,
+            enterprise capabilities out-of-the-box, familiar patterns for vector
+            databases, knowledge graphs, and multi-agent workflows
           </p>
 
-          <!-- Feature Badges - Faster parallax -->
-          <div
-            class="flex flex-wrap justify-center gap-3 animate-fade-in-up animation-delay-400"
-          >
-            @for (badge of badges; track badge.text) {
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <!-- Feature 1: ChromaDB (Vector Database) -->
             <div
-              class="group px-4 py-2 rounded-full bg-purple-600/30 backdrop-blur-sm border border-purple-400/30
-                          flex items-center gap-2 transform transition-all duration-300 hover:scale-110 hover:-translate-y-1
-                          shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:shadow-2xl
-                          cursor-pointer text-sm"
-              style="transform-style: preserve-3d;"
+              class="flex flex-col items-center text-center p-6
+                     bg-gradient-to-br from-indigo-500/10 to-purple-500/10
+                     backdrop-blur-sm rounded-xl border border-white/40
+                     shadow-lg hover:shadow-xl hover:bg-white/20
+                     transition-all duration-300
+                     animate-scale-in animation-delay-500"
             >
-              <span
-                class="text-lg transition-transform duration-300 group-hover:scale-125"
-                >{{ badge.icon }}</span
-              >
-              <span class="text-white font-medium">{{ badge.text }}</span>
+              <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
+                <img
+                  ngSrc="/assets/icons/libraries/icon-chromadb.svg"
+                  alt="ChromaDB"
+                  class="w-full h-full object-contain animate-float drop-shadow-md"
+                  fill
+                />
+              </div>
+              <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">
+                Vector Database Mastery
+              </h3>
+              <p class="text-sm text-gray-800 leading-relaxed">
+                Reduce vector database operations from 50+ lines to 5 with
+                TypeORM-style repositories
+              </p>
             </div>
-            }
-          </div>
 
-          <!-- CTA Buttons - Slowest parallax for depth -->
-          <div
-            class="flex flex-wrap justify-center gap-3 pt-2 animate-fade-in-up animation-delay-600"
-          >
-            <button
-              class="group relative px-8 py-4 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600
-                           hover:from-purple-600 hover:via-pink-600 hover:to-purple-700
-                           text-white font-semibold shadow-2xl shadow-purple-500/50
-                           transition-all duration-300 hover:scale-105 hover:-translate-y-2
-                           hover:shadow-purple-500/70 hover:shadow-3xl
-                           flex items-center gap-2 overflow-hidden
-                           before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:to-transparent
-                           before:opacity-0 before:transition-opacity hover:before:opacity-100"
-              style="transform-style: preserve-3d;"
+            <!-- Feature 2: Multi-Agent -->
+            <div
+              class="flex flex-col items-center text-center p-6
+                     bg-gradient-to-br from-purple-500/10 to-pink-500/10
+                     backdrop-blur-sm rounded-xl border border-white/40
+                     shadow-lg hover:shadow-xl hover:bg-white/20
+                     transition-all duration-300
+                     animate-scale-in animation-delay-600"
             >
-              <span
-                class="text-xl transition-transform duration-300 group-hover:rotate-12"
-                >🚀</span
-              >
-              <span class="relative z-10">Explore Live Demo</span>
-            </button>
-            <button
-              class="group relative px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20
-                           backdrop-blur-sm border border-white/20 hover:border-white/40
-                           text-white font-semibold shadow-xl shadow-black/30
-                           transition-all duration-300 hover:scale-105 hover:-translate-y-2
-                           flex items-center gap-2"
-              style="transform-style: preserve-3d;"
+              <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
+                <img
+                  ngSrc="/assets/icons/libraries/icon-multi-agent.svg"
+                  alt="Multi-Agent"
+                  class="w-full h-full object-contain animate-float animation-delay-200 drop-shadow-md"
+                  fill
+                />
+              </div>
+              <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">
+                Intelligent Workflows
+              </h3>
+              <p class="text-sm text-gray-800 leading-relaxed">
+                Build multi-agent workflows with decorators, not imperative
+                graph construction
+              </p>
+            </div>
+
+            <!-- Feature 3: Monitoring (Enterprise Features) -->
+            <div
+              class="flex flex-col items-center text-center p-6
+                     bg-gradient-to-br from-pink-500/10 to-indigo-500/10
+                     backdrop-blur-sm rounded-xl border border-white/40
+                     shadow-lg hover:shadow-xl hover:bg-white/20
+                     transition-all duration-300
+                     animate-scale-in animation-delay-700"
             >
-              <span
-                class="text-xl transition-transform duration-300 group-hover:scale-110"
-                >🏗️</span
-              >
-              <span>View Architecture</span>
-            </button>
+              <div class="relative w-16 h-16 md:w-20 md:h-20 mb-4">
+                <img
+                  ngSrc="/assets/icons/libraries/icon-monitoring.svg"
+                  alt="Monitoring"
+                  class="w-full h-full object-contain animate-float animation-delay-400 drop-shadow-md"
+                  fill
+                />
+              </div>
+              <h3 class="text-base md:text-lg font-bold text-gray-900 mb-2">
+                Enterprise Ready
+              </h3>
+              <p class="text-sm text-gray-800 leading-relaxed">
+                Get enterprise features (multi-tenancy, monitoring, approvals)
+                without months of infrastructure work
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -155,8 +193,65 @@ import { ScrollAnimationDirective } from '../../../core/angular-3d/directives/sc
         animation-delay: 0.4s;
       }
 
+      .animation-delay-500 {
+        animation-delay: 0.5s;
+      }
+
       .animation-delay-600 {
         animation-delay: 0.6s;
+      }
+
+      .animation-delay-700 {
+        animation-delay: 0.7s;
+      }
+
+      /* Slide up and fade animation */
+      @keyframes slide-up-fade {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slide-up-fade {
+        animation: slide-up-fade 0.8s ease-out forwards;
+        opacity: 0;
+      }
+
+      /* Scale in animation for icons */
+      @keyframes scale-in {
+        from {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .animate-scale-in {
+        animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        opacity: 0;
+      }
+
+      /* Float animation for icons */
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
       }
     `,
   ],
@@ -165,10 +260,10 @@ export class HeroSectionComponent {
   // Scene graph reference - 3D background only (spheres + cubes)
   readonly heroSceneGraph = HeroSceneGraphComponent;
 
-  // Feature badges data
-  readonly badges = [
-    { icon: '🧠', text: 'Semantic Intelligence' },
-    { icon: '🕸️', text: 'Relationship Mapping' },
-    { icon: '⚡', text: 'Intelligent Workflows' },
+  // Value proposition bullets from design spec
+  readonly bullets = [
+    'Reduce vector database operations from 50+ lines to 5 with TypeORM-style repositories',
+    'Build multi-agent workflows with decorators, not imperative graph construction',
+    'Get enterprise features (multi-tenancy, monitoring, approvals) without months of infrastructure work',
   ];
 }

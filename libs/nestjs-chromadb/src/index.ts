@@ -14,6 +14,9 @@ export * from './lib/services/chroma-admin.service';
 export * from './lib/services/text-splitter.service';
 export * from './lib/services/metadata-extractor.service';
 
+// ✅ Collection Registry Service - automatic collection initialization
+export { CollectionRegistryService } from './lib/services/collection-registry.service';
+
 //  Services
 export type { AggregatedMetrics } from './lib/services/chroma-metrics.service';
 export { ChromaMetricsService } from './lib/services/chroma-metrics.service';
@@ -77,6 +80,16 @@ export type {
   CustomEmbeddingConfig,
   InputValidationConfig,
   EmbeddingProviderType,
+  CollectionStrategyOptions,
+  CollectionInitMode,
+} from './lib/interfaces/config';
+
+// Collection Strategy Presets
+export {
+  DEFAULT_COLLECTION_STRATEGY,
+  PRODUCTION_COLLECTION_STRATEGY,
+  DEVELOPMENT_COLLECTION_STRATEGY,
+  HIGHPERF_COLLECTION_STRATEGY,
 } from './lib/interfaces/config';
 
 // Consolidated Type System (SINGLE SOURCE OF TRUTH)
@@ -171,6 +184,15 @@ export {
   validateMetadataSchema,
   type MetadataSchema,
 } from './lib/utils/data/metadata.utils';
+export {
+  toChromaWhere,
+  buildWhereClause,
+  isValidChromaWhere,
+  assertValidChromaWhere,
+  type ChromaWhere,
+  type AppFilter,
+  WhereClauseBuilder,
+} from './lib/utils/chroma-filter.utils';
 export {
   handleUnknownError,
   logUnknownError,

@@ -16,11 +16,14 @@ console.log('🔧 Encapsulated environment loaded:', {
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app/app.module';
-import { AppStreamingManager } from './app/services/app-streaming-manager.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Cookie parser middleware (MUST be before CORS and other middleware)
+  app.use(cookieParser());
 
   // Global prefix
   const globalPrefix = 'api';
@@ -56,25 +59,13 @@ async function bootstrap() {
 
   // Start server FIRST - ensure HTTP server and WebSocket server are ready
   const port = process.env.PORT || 3000;
-  await app.listen(port);
 
-  // Initialize streaming services after HTTP server is ready
-  try {
-    Logger.log('🚀 Initializing streaming services...');
-    const streamingManager = app.get(AppStreamingManager);
-    await streamingManager.initializeStreaming();
-    Logger.log('✅ Streaming services initialized successfully');
-  } catch (error) {
-    Logger.error('❌ Failed to initialize streaming services:', error);
-    Logger.warn('⚠️  Application will continue without streaming capabilities');
-  }
+  await app.listen(port);
 
   // Setup graceful shutdown
   process.on('SIGTERM', async () => {
     Logger.log('🛑 SIGTERM received, shutting down gracefully...');
     try {
-      const streamingManager = app.get(AppStreamingManager);
-      await streamingManager.stopStreaming();
       await app.close();
       Logger.log('✅ Application shut down successfully');
       process.exit(0);
@@ -93,10 +84,6 @@ async function bootstrap() {
   Logger.log(
     `🔧 Health check available at: http://localhost:${port}/${globalPrefix}/health`
   );
-  Logger.log(
-    `🔌 WebSocket streaming available at: ws://localhost:${port}/streaming`
-  );
-  Logger.log(`🌊 Frontend should connect to: ws://localhost:${port}/streaming`);
 }
 
 bootstrap();

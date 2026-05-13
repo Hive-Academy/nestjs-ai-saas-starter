@@ -30,6 +30,11 @@ import type {
  */
 export interface WorkflowAgentMetadata {
   /**
+   * Index signature for compatibility with TypedAgentState
+   */
+  [key: string]: unknown;
+
+  /**
    * Current workflow step identifier
    */
   currentStep?: string;
@@ -469,6 +474,116 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
 }
 
 // ============================================================================
+// Researcher Agent Metadata
+// ============================================================================
+
+/**
+ * Type-safe metadata for ResearcherAgent
+ * Autonomous web research and report generation workflow
+ */
+export interface ResearcherMetadata extends WorkflowAgentMetadata {
+  /**
+   * User ID for the research request
+   */
+  userId: string;
+
+  /**
+   * User's research query
+   */
+  query: string;
+
+  /**
+   * Research depth level
+   */
+  researchDepth: 'summary' | 'detailed' | 'comprehensive';
+
+  /**
+   * Extracted research topic
+   */
+  researchTopic?: string;
+
+  /**
+   * Research scope description
+   */
+  researchScope?: string;
+
+  /**
+   * Search results from web research
+   */
+  searchResults?: any[];
+
+  /**
+   * Research synthesis
+   */
+  synthesis?: string;
+
+  /**
+   * Total sources analyzed
+   */
+  totalSources?: number;
+
+  /**
+   * Generated report draft
+   */
+  reportDraft?: string;
+
+  /**
+   * Report title
+   */
+  reportTitle?: string;
+
+  /**
+   * User approval status
+   */
+  userApproval?: 'pending' | 'approved' | 'rejected';
+
+  /**
+   * User feedback on approval
+   */
+  approvalFeedback?: string;
+
+  /**
+   * Saved report file path
+   */
+  savedReportPath?: string;
+
+  /**
+   * Saved report filename
+   */
+  savedReportFilename?: string;
+
+  /**
+   * Final report content
+   */
+  finalReport?: string;
+
+  /**
+   * Workflow instance ID
+   */
+  workflowInstanceId?: string;
+
+  /**
+   * Analysis start time
+   */
+  analysisStartTime?: Date;
+
+  /**
+   * Analysis end time
+   */
+  analysisEndTime?: Date;
+
+  /**
+   * Total processing time in milliseconds
+   */
+  totalProcessingTime?: number;
+
+  /**
+   * Tools used in workflow
+   */
+  toolsUsed?: string[];
+}
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
@@ -479,7 +594,8 @@ export interface ContentCreatorMetadata extends WorkflowAgentMetadata {
 export type AgentMetadata =
   | GitHubAnalyzerMetadata
   | BrandStrategistMetadata
-  | ContentCreatorMetadata;
+  | ContentCreatorMetadata
+  | ResearcherMetadata;
 
 /**
  * Type guard to check if metadata is GitHubAnalyzerMetadata
@@ -506,4 +622,13 @@ export function isContentCreatorMetadata(
   metadata: WorkflowAgentMetadata
 ): metadata is ContentCreatorMetadata {
   return 'platformContent' in metadata || 'contentId' in metadata;
+}
+
+/**
+ * Type guard to check if metadata is ResearcherMetadata
+ */
+export function isResearcherMetadata(
+  metadata: WorkflowAgentMetadata
+): metadata is ResearcherMetadata {
+  return 'query' in metadata || 'researchTopic' in metadata;
 }

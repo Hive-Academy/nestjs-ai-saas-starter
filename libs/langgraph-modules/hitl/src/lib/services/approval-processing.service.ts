@@ -1,13 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type {
-  WorkflowState,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { FeedbackProcessorService } from './feedback-processor.service';
 import { ApprovalChainService, Approver } from './approval-chain.service';
 import { ApproverIntelligenceService } from './approver-intelligence.service';
-import { ApprovalOutcomeService } from './approval-outcome.service';
 import { HITL_EVENTS } from '../constants';
 import {
   ApprovalWorkflowState,
@@ -25,7 +21,6 @@ import type { ApproverRanking } from '../interfaces/approver-intelligence.interf
  * - Reduced from 1,136 LOC to ~390 LOC (66% reduction)
  * - Extracted ApproverIntelligenceService (~450 LOC)
  * - Extracted ApprovalOutcomeService (~150 LOC)
- * - Maintains all IMemoryAdapter functionality through delegated services
  * - ZERO backward compatibility concerns (direct replacement)
  *
  * **Responsibility**: Orchestrate approval workflows and state transitions
@@ -35,7 +30,6 @@ import type { ApproverRanking } from '../interfaces/approver-intelligence.interf
  * Verification:
  * - Source: approval-processing.service.ts:1-1136 (original monolith)
  * - Pattern: Delegation to specialized services
- * - Integration: All IMemoryAdapter code preserved in delegated services
  */
 @Injectable()
 export class ApprovalProcessingService {
@@ -46,8 +40,7 @@ export class ApprovalProcessingService {
     private readonly feedbackProcessor: FeedbackProcessorService,
     private readonly approvalChainService: ApprovalChainService,
     // Phase 1a: NEW service dependencies (extracted from this file)
-    private readonly approverIntelligence: ApproverIntelligenceService,
-    private readonly approvalOutcome: ApprovalOutcomeService
+    private readonly approverIntelligence: ApproverIntelligenceService // Note: ApprovalOutcomeService methods removed during IMemoryAdapter purge (TASK_2025_042)
   ) {}
 
   /**
@@ -127,7 +120,7 @@ export class ApprovalProcessingService {
     approvalRequests: Map<string, HumanApprovalRequest>
   ): Promise<{
     success: boolean;
-    nextState?: Partial<WorkflowState>;
+    nextState?: Partial<HitlCapableState>;
     error?: string;
   }> {
     const request = approvalRequests.get(requestId);
@@ -152,7 +145,7 @@ export class ApprovalProcessingService {
     request.timestamps.responded = response.timestamp;
 
     try {
-      let nextState: Partial<WorkflowState> = {};
+      let nextState: Partial<HitlCapableState> = {};
 
       switch (response.decision) {
         case 'approved':
@@ -211,7 +204,7 @@ export class ApprovalProcessingService {
   private async handleApprovalSuccess(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit approval feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -223,17 +216,8 @@ export class ApprovalProcessingService {
       response.approver
     );
 
-    // 🧠 MEMORY LEARNING: Store approval decision for future learning (2025 Pattern)
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalMemoryForLearning(
-      request,
-      response,
-      'approved'
-    );
-
-    // 🎯 PHASE 1 P0-CRITICAL: Track approval outcome as agent execution
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalOutcome(request, response);
+    // Note: Memory learning methods removed during IMemoryAdapter purge (TASK_2025_042)
+    // Approval outcome tracking can be restored via BaseStore if needed
 
     // Update confidence
     const newConfidence = Math.min(request.confidence.current + 0.1, 1.0);
@@ -246,7 +230,7 @@ export class ApprovalProcessingService {
         message: response.message,
         timestamp: response.timestamp,
         metadata: response.metadata,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       approvalReceived: true,
       waitingForApproval: false,
@@ -262,7 +246,7 @@ export class ApprovalProcessingService {
   private async handleApprovalRejection(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit rejection feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -274,17 +258,8 @@ export class ApprovalProcessingService {
       response.approver
     );
 
-    // 🧠 MEMORY LEARNING: Store rejection decision for future learning (2025 Pattern)
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalMemoryForLearning(
-      request,
-      response,
-      'rejected'
-    );
-
-    // 🎯 PHASE 1 P0-CRITICAL: Track approval outcome as agent execution
-    // Phase 1a: Delegated to ApprovalOutcomeService
-    await this.approvalOutcome.storeApprovalOutcome(request, response);
+    // Note: Memory learning methods removed during IMemoryAdapter purge (TASK_2025_042)
+    // Approval outcome tracking can be restored via BaseStore if needed
 
     // Decrease confidence
     const newConfidence = Math.max(request.confidence.current - 0.2, 0.0);
@@ -295,10 +270,9 @@ export class ApprovalProcessingService {
         status: 'rejected',
         approver: response.approver,
         message: response.message,
-        reason: response.message,
         timestamp: response.timestamp,
         metadata: response.metadata,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       approvalReceived: false,
       waitingForApproval: false,
@@ -312,7 +286,7 @@ export class ApprovalProcessingService {
   private async handleApprovalEscalation(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     if (request.chainId && this.approvalChainService) {
       try {
         const chainRequest = await this.approvalChainService.getApprovalRequest(
@@ -356,7 +330,7 @@ export class ApprovalProcessingService {
   private async handleApprovalRetry(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     if (request.retry.count < request.retry.maxAttempts) {
       request.retry.count++;
       request.workflowState = ApprovalWorkflowState.IN_PROGRESS;
@@ -385,7 +359,7 @@ export class ApprovalProcessingService {
   private async handleApprovalModification(
     request: HumanApprovalRequest,
     response: HumanApprovalResponse
-  ): Promise<Partial<WorkflowState>> {
+  ): Promise<Partial<HitlCapableState>> {
     // Submit modification feedback
     await this.feedbackProcessor.submitFeedback(
       request.executionId,
@@ -406,7 +380,7 @@ export class ApprovalProcessingService {
         message: response.message,
         timestamp: response.timestamp,
         metadata: response.modifications,
-      } as HumanFeedback,
+      },
       waitingForApproval: false,
       metadata: {
         ...request.state.metadata,

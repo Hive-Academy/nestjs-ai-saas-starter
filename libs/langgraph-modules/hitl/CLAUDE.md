@@ -34,6 +34,60 @@ export class AppModule {}
 - Multiple instances cause duplicate listener warnings (false positives)
 - Global import provides consistent event bus across all modules
 
+## State Types
+
+### HitlCapableState (Structural Interface)
+
+All HITL services use `HitlCapableState` as their state parameter type. This is a structural interface with **all fields optional** to support graceful degradation -- HITL services will work with any state object, accessing fields only when present.
+
+```typescript
+import { HitlCapableState } from '@hive-academy/langgraph-hitl';
+
+// HitlCapableState fields (all optional):
+// - executionId?: string
+// - confidence?: number
+// - currentNode?: string
+// - metadata?: Record<string, unknown>
+// - risks?: Array<{ severity, type, description, mitigation? }>
+// - humanFeedback?: { approved, status, approver, message?, timestamp, metadata? }
+// - approvalReceived?: boolean
+// - waitingForApproval?: boolean
+// - rejectionReason?: string
+```
+
+Services access these fields with optional chaining for safe degradation:
+
+```typescript
+const executionId = state.executionId ?? 'unknown';
+const confidence = state.confidence ?? 0;
+```
+
+### HitlAgentStateAnnotation
+
+For workflows that need HITL capabilities, use `HitlAgentStateAnnotation` which combines `AgentStateAnnotation` fields with HITL-specific fields (with proper reducers and defaults):
+
+```typescript
+import { HitlAgentStateAnnotation } from '@hive-academy/langgraph-hitl';
+import { FunctionalWorkflow } from '@hive-academy/langgraph-workflow-engine';
+
+@FunctionalWorkflow({
+  name: 'approval-workflow',
+  type: WorkflowType.FUNCTIONAL_NODE,
+  channels: HitlAgentStateAnnotation,
+})
+@Injectable()
+export class MyApprovalWorkflow {
+  // Nodes receive state with both AgentState and HITL fields
+}
+
+// Derive TypeScript type from the annotation
+type HitlAgentState = typeof HitlAgentStateAnnotation.State;
+```
+
+`HitlAgentStateAnnotation` includes all fields from `AgentStateAnnotation` (messages, next, current, etc.) plus all `HitlFields` (executionId, confidence, risks, humanFeedback, approvalReceived, waitingForApproval, rejectionReason).
+
+---
+
 ## ✅ VERIFIED ECOSYSTEM INTEGRATION PATTERNS
 
 **Source Code Analysis Results** (January 2025)
@@ -42,16 +96,211 @@ The HITL module integrates across the ecosystem through **configuration**, **sto
 
 ### 🔗 Integration Architecture
 
-| Module            | Integration Pattern           | Usage                                                                               | File Reference                                                     |
-| ----------------- | ----------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **dev-brand-api** | Configuration Module          | Real production configuration with timeout and confidence thresholds                | `apps/dev-brand-api/src/app/config/hitl.config.ts:1-14`            |
-| **dev-brand-api** | Storage Adapters              | Neo4j adapters for hitl-storage, approval-chain, confidence, feedback, interruption | `apps/dev-brand-api/src/app/adapters/hitl/*.adapter.ts`            |
-| **memory**        | Documentation Cross-Reference | HITL mentioned as integration partner for approval learning                         | `libs/langgraph-modules/memory/CLAUDE.md`                          |
-| **monitoring**    | Architecture Tests            | HITL module validated in architecture tests                                         | `libs/langgraph-modules/monitoring/src/lib/architecture-*.spec.ts` |
+| Module              | Integration Pattern           | Usage                                                                               | File Reference                                                     |
+| ------------------- | ----------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **workflow-engine** | LangGraph Native Integration  | RunnableConfig access to BaseStore for cross-workflow memory                        | `workflow-engine/src/lib/execution/workflow-execution.service.ts`  |
+| **dev-brand-api**   | Configuration Module          | Real production configuration with timeout and confidence thresholds                | `apps/dev-brand-api/src/app/config/hitl.config.ts:1-14`            |
+| **dev-brand-api**   | Storage Adapters              | Neo4j adapters for hitl-storage, approval-chain, confidence, feedback, interruption | `apps/dev-brand-api/src/app/adapters/hitl/*.adapter.ts`            |
+| **memory**          | Documentation Cross-Reference | HITL mentioned as integration partner for approval learning                         | `libs/langgraph-modules/memory/CLAUDE.md`                          |
+| **monitoring**      | Architecture Tests            | HITL module validated in architecture tests                                         | `libs/langgraph-modules/monitoring/src/lib/architecture-*.spec.ts` |
 
 ### 🎯 Key Architectural Insight
 
-**HITL is a self-contained module with adapter-based storage**:
+**HITL is a self-contained module with adapter-based storage and LangGraph native integration**:
+
+## 🚀 LangGraph Native Integration (TASK_2025_040)
+
+**Updated**: January 2025 - Phase 4 Complete
+
+The HITL module now features full LangGraph native integration with embedded state management through the workflow-engine.
+
+### Core Native Patterns
+
+1. **interrupt()** - LangGraph native workflow pausing
+2. **Command** - Resume workflows with human input
+3. **RunnableConfig** - Access checkpointer + BaseStore
+4. **Embedded State** - No standalone checkpoint/memory services
+
+### RunnableConfig Access Pattern
+
+HITL nodes access checkpointer and BaseStore via RunnableConfig (not service injection):
+
+```typescript
+import type { RunnableConfig } from '@langchain/core/runnables';
+import type { BaseStore } from '@langchain/langgraph-checkpoint';
+import { interrupt } from '@langchain/langgraph';
+
+async function approvalNode(state: State, config: RunnableConfig) {
+  // 1. Access checkpointer (required for interrupt)
+  const checkpointer = config.configurable?.checkpointer;
+  if (!checkpointer) {
+    throw new Error('Checkpointer required for human approval');
+  }
+
+  // 2. Access BaseStore for cross-workflow memory (optional)
+  const store = config.configurable?.store as BaseStore | undefined;
+  if (store) {
+    // Store approval context for ML pattern learning
+    await store.put(['approval-context', userId], `approval-${executionId}`, {
+      executionId,
+      proposedActions,
+      confidence,
+      timestamp: new Date(),
+    });
+
+    // Search historical approval patterns
+    const historicalApprovals = await store.search(['approval-context', userId]);
+  }
+
+  // 3. Use LangGraph native interrupt()
+  const humanDecision = interrupt({
+    type: 'approval_required',
+    executionId,
+    approvalRequest,
+  });
+
+  return { humanFeedback: humanDecision };
+}
+```
+
+**Source**: `human-approval.node.ts:160-300`
+
+### BaseStore Integration Benefits
+
+| Feature                          | Before BaseStore    | With BaseStore             |
+| -------------------------------- | ------------------- | -------------------------- |
+| **Approval Pattern Storage**     | Neo4j only          | Neo4j + BaseStore          |
+| **Cross-Workflow Memory**        | Manual coordination | Automatic via namespaces   |
+| **Historical Pattern Retrieval** | Database queries    | Semantic search            |
+| **ML Pattern Learning**          | Batch processing    | Real-time storage          |
+| **Approver Intelligence**        | IMemoryAdapter only | IMemoryAdapter + BaseStore |
+
+### Implementation Details
+
+#### 1. HumanApprovalNode BaseStore Integration
+
+**File**: `human-approval.node.ts`
+
+- **Lines 191-196**: Access BaseStore from RunnableConfig
+- **Lines 233-247**: Retrieve historical approval patterns
+- **Lines 256-279**: Store approval context for cross-workflow memory
+
+**Key Features**:
+
+- Graceful degradation if BaseStore unavailable
+- Historical approval pattern retrieval
+- Cross-workflow approval context sharing
+- Namespace-based memory organization
+
+#### 2. ApproverIntelligenceService BaseStore Integration
+
+**File**: `approver-intelligence.service.ts`
+
+- **Lines 86-105**: Retrieve historical approver selection patterns
+- **Lines 189-214**: Store selection patterns for ML learning
+- **Lines 534-568**: Store approver feedback patterns
+
+**Key Features**:
+
+- ML-powered approver selection using historical patterns
+- Continuous learning from approval outcomes
+- Feedback pattern storage for performance optimization
+
+#### 3. Integration Tests
+
+**File**: `integration/workflow-engine.integration.spec.ts`
+
+**Test Coverage**:
+
+- Checkpointer access via RunnableConfig (Lines 71-116)
+- BaseStore access via RunnableConfig (Lines 118-185)
+- ApproverIntelligence BaseStore integration (Lines 187-272)
+- Embedded state management validation (Lines 274-352)
+- Cross-workflow memory sharing (Lines 354-420)
+
+### Comparison: HITL Value-Add vs LangGraph Native
+
+| Capability                | LangGraph Native    | HITL Value-Add                                  |
+| ------------------------- | ------------------- | ----------------------------------------------- |
+| **Workflow Pause**        | interrupt()         | + Enterprise approval workflows                 |
+| **State Persistence**     | BaseCheckpointSaver | + Approval chain management                     |
+| **Cross-Workflow Memory** | BaseStore           | + ML approver selection                         |
+| **Human Feedback**        | Command resume      | + Confidence scoring + risk assessment          |
+| **Timeout Handling**      | Manual              | + Automatic escalation + notifications          |
+| **Multi-Level Approvals** | Not built-in        | + Approval chains + parallel approvals          |
+| **Pattern Learning**      | Not built-in        | + IMemoryAdapter + BaseStore historical search  |
+| **Intelligence**          | Not built-in        | + 18 specialized services + ML pattern learning |
+
+**HITL builds enterprise workflows on LangGraph primitives.** LangGraph provides the foundation (interrupt, Command, checkpointer, BaseStore), HITL adds business logic.
+
+### Service Count Update
+
+**Total Services**: 18 services (after service layer purge)
+
+**Deleted Services** (2):
+
+- HitlCheckpointService (replaced by RunnableConfig checkpointer access)
+- HitlRecoveryService (replaced by LangGraph native recovery)
+
+**Retained Services** (18):
+
+- HumanApprovalService
+- ApprovalProcessingService
+- ApprovalChainService
+- ConfidenceEvaluatorService
+- UserInterruptionService
+- FeedbackProcessorService
+- ApproverIntelligenceService (enhanced with BaseStore)
+- ApprovalOutcomeService
+- ApprovalHistorySearchService
+- HitlMemoryLearningService
+- ApprovalTimeoutService
+- ApprovalStreamingService
+- HitlNotificationService
+- HitlTimeoutService
+- WorkflowRoutingService
+- HumanApprovalNode (enhanced with BaseStore)
+- - 2 additional services
+
+### Architecture: Embedded State Management
+
+**HITL follows the workflow-engine embedded pattern**:
+
+```typescript
+// ❌ OLD: Standalone checkpoint/memory services
+class HitlCheckpointService {
+  // Manual state management
+}
+
+// ✅ NEW: RunnableConfig-based access
+async function approvalNode(state: State, config: RunnableConfig) {
+  const checkpointer = config.configurable?.checkpointer;
+  const store = config.configurable?.store;
+  // Workflow-engine provides both via compilation
+}
+```
+
+**Pattern Source**: `workflow-execution.service.ts:94-96, 133-136`
+
+### Dual Storage Architecture
+
+HITL maintains dual storage for operational reliability:
+
+1. **Neo4j (Primary)**: Operational approval data
+
+   - Required for approval workflows
+   - Source of truth for approval chains
+   - Adapter-based (pluggable)
+
+2. **BaseStore (Enhancement)**: Cross-workflow memory
+   - Optional (graceful degradation)
+   - ML pattern learning
+   - Semantic approval search
+   - Provided by workflow-engine
+
+**Both storage layers are optional** - HITL degrades gracefully if either is unavailable.
+
+---
 
 ```typescript
 // ✅ CORRECT: HITL uses storage adapters for persistence
@@ -1275,17 +1524,17 @@ async function handleDifferentInterruptions() {
 ```typescript
 // Basic usage - requires approval when confidence is low
 @RequiresApproval({ confidenceThreshold: 0.7 })
-async processPayment(state: WorkflowState): Promise<WorkflowState>
+async processPayment(state: HitlCapableState): Promise<Partial<Record<string, unknown>>>
 
 // Advanced usage - conditional approval with risk assessment
 @RequiresApproval({
-  when: (state) => state.amount > 10000,
+  when: (state) => (state as Record<string, unknown>)['amount'] as number > 10000,
   riskThreshold: ApprovalRiskLevel.HIGH,
   chainId: 'financial-approval',
   timeoutMs: 600000,
   onTimeout: 'escalate'
 })
-async processLargeTransaction(state: WorkflowState): Promise<WorkflowState>
+async processLargeTransaction(state: HitlCapableState): Promise<Partial<Record<string, unknown>>>
 ```
 
 ### Complete Production Usage Example
@@ -1365,7 +1614,9 @@ export class EnterpriseAIWorkflowService {
       },
     },
   })
-  async generateCode(state: WorkflowState): Promise<WorkflowState> {
+  async generateCode(
+    state: HitlCapableState & Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     const task = state.task as CodeGenerationTask;
 
     try {
@@ -1467,7 +1718,9 @@ export class EnterpriseAIWorkflowService {
       },
     },
   })
-  async deployToProduction(state: WorkflowState): Promise<WorkflowState> {
+  async deployToProduction(
+    state: HitlCapableState & Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     const context = state.deployment as DeploymentContext;
 
     try {
@@ -1680,7 +1933,7 @@ HitlModule.forRootAsync({
 ```typescript
 @Injectable()
 export class CustomRiskEvaluator {
-  evaluateRisk(state: WorkflowState, context: any): RiskAssessment {
+  evaluateRisk(state: Record<string, unknown>, context: any): RiskAssessment {
     const factors = [];
     let score = 0;
 
@@ -1769,7 +2022,7 @@ interface HumanApprovalRequest {
   nodeId: string;
   message: string;
   metadata: Record<string, unknown>;
-  state: WorkflowState;
+  state: HitlCapableState & Record<string, unknown>;
   options: RequiresApprovalOptions;
   workflowState: ApprovalWorkflowState;
   riskAssessment?: RiskAssessment;
@@ -1778,10 +2031,10 @@ interface HumanApprovalRequest {
 }
 
 interface RequiresApprovalOptions {
-  when?: (state: WorkflowState) => boolean;
+  when?: (state: Record<string, unknown>) => boolean;
   confidenceThreshold?: number;
   riskThreshold?: ApprovalRiskLevel;
-  message?: string | ((state: WorkflowState) => string);
+  message?: string | ((state: Record<string, unknown>) => string);
   timeoutMs?: number;
   onTimeout?: 'approve' | 'reject' | 'escalate' | 'retry';
   chainId?: string;

@@ -1,35 +1,8 @@
 /**
  * Approver Intelligence Interfaces
- * Phase 1 P0-CRITICAL: Intelligent approver selection using IMemoryAdapter
+ * Phase 1 P0-CRITICAL: Intelligent approver selection
+ * Note: IMemoryAdapter purged - simplified to default selection
  */
-
-import type { UserMemoryPatterns } from '@hive-academy/langgraph-core';
-
-/**
- * Approver behavior profile extracted from memory patterns
- */
-export interface ApproverProfile {
-  /** Approver user ID */
-  approverId: string;
-
-  /** Memory-based user patterns */
-  patterns: UserMemoryPatterns;
-
-  /** Relevance score for current approval context (0-1) */
-  relevanceScore: number;
-
-  /** Calculated expertise level for this approval type */
-  expertise: ApproverExpertise;
-
-  /** Average response time in milliseconds */
-  avgResponseTime: number;
-
-  /** Historical approval rate (0-1) */
-  approvalRate: number;
-
-  /** Decision making style */
-  style: 'thorough' | 'decisive' | 'standard';
-}
 
 /**
  * Approver expertise metrics for ranking

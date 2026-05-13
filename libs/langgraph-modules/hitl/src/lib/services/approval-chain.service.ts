@@ -1,13 +1,5 @@
 import { generateId } from '@hive-academy/langgraph-core';
-import type { IMemoryAdapter, Store } from '@hive-academy/langgraph-core';
-import { STORE_COLLECTIONS } from '@hive-academy/langgraph-memory';
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnModuleInit,
-  Optional,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { IApprovalChainStorageService } from '../interfaces/approval-chain-storage.interface';
 
@@ -239,62 +231,75 @@ export class ApprovalChainService implements OnModuleInit {
   constructor(
     private readonly eventEmitter: EventEmitter2,
     @Inject('IApprovalChainStorageService')
-    private readonly chainStorage: IApprovalChainStorageService,
-    @Optional()
-    @Inject('IMemoryAdapter')
-    private readonly memoryAdapter?: IMemoryAdapter
+    private readonly chainStorage: IApprovalChainStorageService
   ) {
-    if (this.memoryAdapter) {
-      this.logger.log(
-        '🔗 Approval Chain Service initialized with adapter-first storage + IMemoryAdapter.getStore() for hierarchical tracking'
-      );
-    } else {
-      this.logger.log(
-        '🔗 Approval Chain Service initialized with adapter-first storage (IMemoryAdapter unavailable - Store tracking disabled)'
-      );
-    }
+    this.logger.log(
+      '🔗 Approval Chain Service initialized with adapter-first storage'
+    );
   }
 
   /**
-   * Module lifecycle - recover state from persistent storage
+   * Module lifecycle - Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic recovery from onModuleInit()
+   * - Old behavior: Queried ChromaDB for ALL approval chains at startup
+   * - New behavior: Chains loaded lazily when workflows need them
+   * - Impact: Zero startup queries, instant application start
    */
   async onModuleInit(): Promise<void> {
     this.logger.log(
-      'Approval Chain Service initializing with persistent storage'
+      '✅ ApprovalChainService initialized (lazy-loading enabled - chains load on-demand)'
     );
-    await this.recoverActiveRequests();
-    this.logger.log('✅ Approval Chain Service initialized');
   }
 
   /**
-   * Recover all active approval requests and chains from storage
+   * Resume approval chain for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic recovery
+   * Call this when workflows resume with pending approvals
+   *
+   * @param executionId - Workflow execution ID to resume
+   * @returns Chain ID if found, null otherwise
    */
-  private async recoverActiveRequests(): Promise<void> {
+  async resumeChainForExecution(executionId: string): Promise<string | null> {
     try {
-      // Recover all active approval requests
-      const activeRequests = await this.chainStorage.getAllActiveRequests();
-      activeRequests.forEach((request) => {
+      // Load only requests for this specific execution
+      const executionRequests =
+        await this.chainStorage.getActiveRequestsByExecution(executionId);
+
+      if (executionRequests.length === 0) {
+        this.logger.debug(
+          `No active approval requests found for execution ${executionId}`
+        );
+        return null;
+      }
+
+      // Rebuild cache for this execution's requests
+      executionRequests.forEach((request: ApprovalRequest) => {
         this.requestCache.set(request.id, request);
       });
 
-      // Recover all approval chains
-      const allChains = await this.chainStorage.getAllApprovalChains();
-      Object.entries(allChains).forEach(([chainId, levels]) => {
-        this.chainCache.set(chainId, levels);
-      });
+      // Load the chain for the first request (all requests in execution use same chain)
+      const chainId = executionRequests[0].chainId;
+      if (chainId && !this.chainCache.has(chainId)) {
+        const chainLevels = await this.chainStorage.getApprovalChain(chainId);
+        if (chainLevels) {
+          this.chainCache.set(chainId, chainLevels);
+        }
+      }
 
       this.logger.log(
-        `✅ Recovered ${activeRequests.length} requests and ${
-          Object.keys(allChains).length
-        } chains`
+        `✅ Resumed approval chain for execution ${executionId}: ${executionRequests.length} requests, chain ${chainId}`
       );
+
+      return chainId;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        '❌ CRITICAL: Failed to recover approval chains - service will fail fast',
-        error
+        `Failed to resume approval chain for execution ${executionId}: ${errorMsg}`
       );
       throw new Error(
-        'Cannot initialize ApprovalChainService without persistent storage recovery'
+        `Cannot resume approval chain for execution ${executionId}: ${errorMsg}`
       );
     }
   }
@@ -379,9 +384,6 @@ export class ApprovalChainService implements OnModuleInit {
     // Emit event for first level
     await this.notifyApprovers(request, requiredLevels[0]);
 
-    // Track chain initiation in Store (hierarchical namespace)
-    await this.trackChainProgressionInStore(request, 0, 'pending');
-
     this.logger.log(
       `Initiated approval request ${requestId} for execution ${executionId}`
     );
@@ -451,13 +453,6 @@ export class ApprovalChainService implements OnModuleInit {
         this.logger.log(
           `Approval request ${requestId} escalated to level ${nextLevel.name}`
         );
-
-        // Track level completion in Store (hierarchical namespace)
-        await this.trackChainProgressionInStore(
-          request,
-          request.currentLevel - 1,
-          'approved'
-        );
       } else {
         // All levels approved
         request.status = 'approved';
@@ -468,13 +463,6 @@ export class ApprovalChainService implements OnModuleInit {
         });
 
         this.logger.log(`Approval request ${requestId} fully approved`);
-
-        // Track final level completion in Store
-        await this.trackChainProgressionInStore(
-          request,
-          request.currentLevel,
-          'approved'
-        );
       }
     } else if (levelDecision === 'rejected') {
       request.status = 'rejected';
@@ -486,13 +474,6 @@ export class ApprovalChainService implements OnModuleInit {
       });
 
       this.logger.log(`Approval request ${requestId} rejected`);
-
-      // Track rejection in Store
-      await this.trackChainProgressionInStore(
-        request,
-        request.currentLevel,
-        'rejected'
-      );
     }
 
     request.updatedAt = new Date();
@@ -757,163 +738,23 @@ export class ApprovalChainService implements OnModuleInit {
   }
 
   /**
-   * Track approval chain progression in Store (IMemoryAdapter.getStore())
-   * Uses hierarchical namespaces for multi-level chain tracking
-   *
-   * Phase 2: Enhanced with STORE_COLLECTIONS constants
-   *
-   * Namespace pattern: ['chains', executionId, chainId, 'level', levelIndex]
-   *
-   * Verification:
-   * - Store interface: memory-adapter.interface.ts:60-100
-   * - Constants: memory/src/lib/constants/store-namespaces.ts
-   * - Pattern: implementation-plan-hitl.md:75-105
+   * Check if a user is a member of an approval chain
    */
-  private async trackChainProgressionInStore(
-    request: ApprovalRequest,
-    levelIndex: number,
-    decision: 'approved' | 'rejected' | 'pending'
-  ): Promise<void> {
-    if (!this.memoryAdapter) {
-      // Graceful degradation - Store tracking unavailable
-      return;
+  async isUserInChain(chainId: string, userId: string): Promise<boolean> {
+    let chain = this.chainCache.get(chainId);
+    if (!chain) {
+      chain = (await this.chainStorage.getApprovalChain(chainId)) || undefined;
+      if (chain) {
+        this.chainCache.set(chainId, chain);
+      }
     }
 
-    try {
-      // Use standardized collection constant
-      const store: Store = this.memoryAdapter.getStore(
-        STORE_COLLECTIONS.HITL.CHAINS
-      );
-      const currentLevel = request.chain[levelIndex];
-
-      // Store current chain level state with hierarchical namespace
-      // Pattern: ['chains', executionId, chainId, 'level', levelIndex.toString()]
-      const namespace = [
-        'chains',
-        request.executionId,
-        request.chainId,
-        'level',
-        levelIndex.toString(),
-      ];
-
-      await store.put(namespace, 'state', {
-        levelId: currentLevel.id,
-        levelName: currentLevel.name,
-        priority: currentLevel.priority,
-        policy: currentLevel.policy,
-        decision,
-        timestamp: new Date().toISOString(),
-        approvers: currentLevel.approvers.map((a) => ({
-          id: a.id,
-          name: a.name,
-          role: a.role,
-        })),
-        approvalHistory: request.history.filter(
-          (h) => h.levelId === currentLevel.id
-        ),
-      });
-
-      // Store chain overview for quick queries
-      const chainOverviewNamespace = [
-        'chains',
-        request.executionId,
-        request.chainId,
-      ];
-
-      await store.put(chainOverviewNamespace, 'overview', {
-        requestId: request.id,
-        executionId: request.executionId,
-        chainId: request.chainId,
-        currentLevel: levelIndex,
-        totalLevels: request.chain.length,
-        status: request.status,
-        createdAt: request.createdAt.toISOString(),
-        updatedAt: request.updatedAt.toISOString(),
-      });
-
-      this.logger.debug(
-        `Tracked chain progression for ${request.chainId} level ${levelIndex} in Store`
-      );
-    } catch (error) {
-      // Log error but don't fail the approval chain
-      this.logger.error(
-        `Failed to track chain progression in Store: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-  }
-
-  /**
-   * Get approval chain history from Store
-   * Query all levels for a specific approval chain
-   *
-   * Phase 2: Enhanced with STORE_COLLECTIONS constants
-   */
-  async getChainHistoryFromStore(
-    executionId: string,
-    chainId: string
-  ): Promise<Array<{ level: number; state: any }> | null> {
-    if (!this.memoryAdapter) {
-      return null;
+    if (!chain) {
+      return false;
     }
 
-    try {
-      const store: Store = this.memoryAdapter.getStore(
-        STORE_COLLECTIONS.HITL.CHAINS
-      );
-
-      // List all levels in the chain
-      const chainLevelsNamespace = ['chains', executionId, chainId, 'level'];
-
-      const levels = await store.list(chainLevelsNamespace);
-
-      return levels.map((levelItem: any) => ({
-        level: parseInt(levelItem.key, 10),
-        state: levelItem.value,
-      }));
-    } catch (error) {
-      this.logger.error(
-        `Failed to retrieve chain history from Store: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return null;
-    }
-  }
-
-  /**
-   * Search related approval chains via Store namespace search
-   * Find similar chains by execution context or chain characteristics
-   *
-   * Phase 2: Enhanced with STORE_COLLECTIONS constants
-   */
-  async searchRelatedChains(
-    executionId: string,
-    searchQuery: string
-  ): Promise<any[]> {
-    if (!this.memoryAdapter) {
-      return [];
-    }
-
-    try {
-      const store: Store = this.memoryAdapter.getStore(
-        STORE_COLLECTIONS.HITL.CHAINS
-      );
-
-      // Search within execution's approval chains
-      const executionChainsNamespace = ['chains', executionId];
-
-      const results = await store.search(executionChainsNamespace, searchQuery);
-
-      return results;
-    } catch (error) {
-      this.logger.error(
-        `Failed to search related chains in Store: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-      return [];
-    }
+    return chain.some((level) =>
+      level.approvers.some((approver) => approver.id === userId)
+    );
   }
 }

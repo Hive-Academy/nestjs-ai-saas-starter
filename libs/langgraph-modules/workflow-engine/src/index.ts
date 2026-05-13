@@ -1,71 +1,51 @@
-// Module
-export * from './lib/workflow-engine.module';
+// Services
+export * from './lib/execution/workflow-execution.service';
+export * from './lib/services/tool-registry.service';
+export * from './lib/services/auth-context.service';
+export * from './lib/services/workflow-resumption.service';
+export * from './lib/services/llm/llm-provider.service';
+export * from './lib/services/langgraph-command.service';
 
-// Core Services (moved from main library)
-export * from './lib/core/workflow-graph-builder.service';
-export * from './lib/core/compilation-cache.service';
-export * from './lib/core/metadata-processor.service';
-export * from './lib/core/subgraph-manager.service';
-export * from './lib/core/workflow-checkpoint.service';
-export * from './lib/core/workflow-execution.service';
-export * from './lib/core/graph-patterns.service';
-export * from './lib/core/graph-optimization.service';
+// Utils
+export * from './lib/utils/id-generator';
 
-// Decorator Bridge Services (cleaned up)
-export * from './lib/services/decorator-translation.service';
-export * from './lib/services/multi-agent-translation.service';
-
-// CENTRALIZED REGISTRATION: The single source of truth for all agents, tools, workflows
-export * from './lib/services/central-registry.service';
-export * from './lib/interfaces/decorator-bridge.interface';
-export * from './lib/interfaces/multi-agent-bridge.interface';
-// Removed duplicate enhanced decorator interfaces - use canonical ones from source modules
-
-// Streaming Services (moved from streaming module to avoid circular dependency)
-export * from './lib/streaming/workflow-stream.service';
-export * from './lib/streaming/workflow-stream-orchestrator.service';
-export * from './lib/streaming/stream-management.service';
-export * from './lib/streaming/token-processing.service';
-export * from './lib/streaming/stream-event-processor.service';
-
-// Routing (moved from main library)
-export * from './lib/routing/command-processor.service';
-
-// Base Classes
-export * from './lib/base/unified-workflow.base';
-export * from './lib/base/declarative-workflow.base';
-export * from './lib/base/streaming-workflow.base';
-export * from './lib/base/agent-node.base';
+// Decorators
+export * from './lib/decorators/functional/workflow.decorator';
+export * from './lib/decorators/functional/node.decorator';
+export * from './lib/decorators/functional/task.decorator';
+export * from './lib/decorators/functional/edge.decorator';
+export * from './lib/decorators/functional/entrypoint.decorator';
+export * from './lib/decorators/functional/llm-task.decorator';
+export * from './lib/decorators/multi-agent/agent.decorator';
+export * from './lib/decorators/multi-agent/multi-agent.decorator';
+export * from './lib/decorators/multi-agent/tool.decorator';
 
 // Interfaces
 export * from './lib/interfaces/workflow-engine.interface';
-export type * from './lib/interfaces/workflow-metadata.interface';
+export * from './lib/interfaces/decorator-bridge.interface';
+export * from './lib/interfaces/multi-agent-bridge.interface';
 
-// Specific type exports for external module imports
-export type {
-  WorkflowState,
-  WorkflowDefinition,
-  WorkflowNode,
-  WorkflowEdge,
-  Command,
-  ConditionalRouting,
-  WorkflowError,
-  HumanFeedback,
-  WorkflowNodeConfig,
-  WorkflowEdgeConfig,
-  WorkflowExecutionConfig,
-} from './lib/interfaces/workflow-engine.interface';
+// Functional Interfaces (includes WorkflowEngineModuleOptions)
+export type * from './lib/interfaces/functional/functional-workflow.interface';
+export type * from './lib/interfaces/functional/module-options.interface';
 
-// Multi-agent bridge exports are already included via the wildcard export above
-// from './lib/interfaces/multi-agent-bridge.interface'
+// Multi-Agent Services
+export * from './lib/services/multi-agent/multi-agent-graph-builder.service';
+export * from './lib/services/multi-agent/errors';
 
-// Constants
-export * from './lib/constants';
+// Multi-Agent Interfaces
+export * from './lib/interfaces/multi-agent/multi-agent.interface';
+export type * from './lib/interfaces/multi-agent/tool.interface';
 
-// Configuration utilities
-export * from './lib/utils/workflow-engine-config.accessor';
+// Types
+export * from './lib/types/internal-types';
+export * from './lib/types/agent-config.interface';
 
-// Enhanced HITL Decorators
-// Removed duplicate @RequiresApproval - use from @hive-academy/langgraph-hitl instead
+// Core
+export * from './lib/core/metadata-processor.service';
 
-// Examples removed - contained broken imports and duplicated functionality
+// Streaming
+export * from './lib/streaming';
+
+// Module
+export * from './lib/workflow-engine.module';

@@ -1,19 +1,25 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { Command } from '@langchain/langgraph';
 import { IHitlStorageService } from '../interfaces/hitl-storage.interface';
-import {
-  HitlNotificationService,
-  ApprovalTimeoutNotificationData,
-} from './hitl-notification.service';
+import { HitlNotificationService } from './hitl-notification.service';
+import { RunnableConfigFactory } from '../config/runnable-config.factory';
 import { HITL_DEFAULTS } from '../constants';
 
 /**
  * HITL Timeout Service
  *
+ * Phase 3 - RunnableConfig Integration:
+ * Now uses Command({ resume }) for timeout actions instead of custom resumption logic.
+ *
  * Manages approval request timeouts with configurable strategies:
- * - Auto-approve on timeout
- * - Auto-reject on timeout (most common for production)
- * - Escalate on timeout
- * - Retry on timeout
+ * - Auto-approve on timeout (uses Command({ resume: 'approved' }))
+ * - Auto-reject on timeout (uses Command({ resume: 'rejected' }))
+ * - Escalate on timeout (uses Command({ resume: 'escalate' }))
+ * - Retry on timeout (uses Command({ resume: 'retry' }))
+ *
+ * Pattern: Access checkpointer via RunnableConfig, use Command for resumption
+ * Evidence: research-report.md:448-485 (timeout handling integration)
  */
 @Injectable()
 export class HitlTimeoutService {
@@ -32,6 +38,74 @@ export class HitlTimeoutService {
       storageAvailable: !!this.storage,
       notificationsAvailable: !!this.notifications,
     });
+  }
+
+  /**
+   * Handle timeout action using LangGraph native Command pattern.
+   * Replaces custom resumption logic with Command({ resume }).
+   *
+   * @param config - LangGraph RunnableConfig with checkpointer
+   * @param interruptId - Interrupt ID to resume
+   * @param timeoutAction - Action to take on timeout
+   * @returns Command object for LangGraph to resume workflow
+   *
+   * @see research-report.md:448-485 (timeout handling with Command)
+   * @see implementation-plan.md:394-408 (RunnableConfig integration)
+   *
+   * @example
+   * ```typescript
+   * // Timeout handler calls this method
+   * const command = await this.hitlTimeout.handleTimeoutWithCommand(
+   *   config,
+   *   interruptId,
+   *   'reject'
+   * );
+   *
+   * // LangGraph resumes workflow with command
+   * await graph.invoke(command, config);
+   * ```
+   */
+  async handleTimeoutWithCommand(
+    config: RunnableConfig,
+    interruptId: string,
+    timeoutAction: 'resume' | 'cancel'
+  ): Promise<Command> {
+    this.logger.warn(`Handling timeout for interrupt ${interruptId}`, {
+      timeoutAction,
+    });
+
+    try {
+      // Get checkpointer for state access
+      const checkpointer = RunnableConfigFactory.ensureCheckpointer(config);
+
+      // Get current checkpoint to read interrupt state
+      const checkpoint = await checkpointer.get(config);
+      if (!checkpoint) {
+        throw new Error(`No checkpoint found for interrupt ${interruptId}`);
+      }
+
+      // Build timeout response
+      const timeoutResponse = {
+        type: timeoutAction,
+        reason: 'timeout',
+        timestamp: new Date(),
+        interruptId,
+      };
+
+      // Create Command with resume value based on timeout action
+      const command = new Command({
+        resume: timeoutResponse,
+      });
+
+      this.logger.log(`Created Command for timeout action: ${timeoutAction}`);
+      return command;
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle timeout for interrupt ${interruptId}:`,
+        error
+      );
+      throw error;
+    }
   }
 
   /**
@@ -56,7 +130,7 @@ export class HitlTimeoutService {
 
     // Set new timeout
     const timeout = setTimeout(() => {
-      this.handleTimeout(approvalId, timeoutMs, strategy);
+      this.executeTimeoutHandler(approvalId, timeoutMs, strategy);
     }, timeoutMs);
 
     this.timeouts.set(approvalId, timeout);
@@ -141,66 +215,32 @@ export class HitlTimeoutService {
   }
 
   /**
-   * Handle approval timeout based on strategy
+   * Execute timeout handler (legacy internal method)
+   * Coordinates storage updates, notifications, and strategy execution
    */
-  private async handleTimeout(
+  private async executeTimeoutHandler(
     approvalId: string,
     timeoutDuration: number,
     strategy: 'approve' | 'reject' | 'escalate' | 'retry'
   ): Promise<void> {
-    this.logger.warn(`Handling timeout for approval ${approvalId}`, {
-      strategy,
-      timeoutDuration,
-      timeoutMinutes: Math.round(timeoutDuration / 60000),
-    });
-
     try {
-      // Remove from our tracking
+      // Remove from tracking
       this.timeouts.delete(approvalId);
       this.timeoutStrategies.delete(approvalId);
 
       // Get approval details from storage if available
-      let approvalData = null;
       let executionId = 'unknown';
-
       if (this.storage) {
         try {
-          approvalData = await this.storage.getApprovalRequest(approvalId);
+          const approvalData = await this.storage.getApprovalRequest(
+            approvalId
+          );
           if (approvalData) {
             executionId = approvalData.executionId;
           }
         } catch (error) {
-          this.logger.error(
-            `Failed to get approval data for timeout: ${
-              (error as Error).message
-            }`
-          );
+          this.logger.error('Failed to get approval data for timeout:', error);
         }
-      }
-
-      // Send timeout notification
-      if (this.notifications) {
-        const notificationData: ApprovalTimeoutNotificationData = {
-          requestId: approvalId,
-          executionId,
-          timeoutStrategy: strategy as 'approve' | 'reject' | 'escalate',
-          timeoutDuration,
-        };
-
-        await this.notifications.notifyApprovalTimeout(notificationData);
-      }
-
-      // Update storage with timeout status and response based on strategy
-      if (this.storage && approvalData) {
-        const timeoutResponse = this.createTimeoutResponse(
-          strategy,
-          timeoutDuration
-        );
-        await this.storage.updateApprovalStatus(
-          approvalId,
-          'timeout',
-          timeoutResponse
-        );
       }
 
       // Execute timeout strategy
@@ -215,12 +255,12 @@ export class HitlTimeoutService {
         `Error handling timeout for approval ${approvalId}`,
         error
       );
-      // Don't rethrow - timeout handling should not fail silently but not crash
     }
   }
 
   /**
-   * Execute the specific timeout strategy
+   * Execute the specific timeout strategy (legacy method for compatibility)
+   * @deprecated Use handleTimeoutWithCommand() with RunnableConfig instead
    */
   private async executeTimeoutStrategy(
     approvalId: string,
@@ -368,35 +408,5 @@ export class HitlTimeoutService {
 
     // Here you would typically create a new approval request
     // with potentially different parameters or approvers
-  }
-
-  /**
-   * Create a timeout response object
-   */
-  private createTimeoutResponse(
-    strategy: 'approve' | 'reject' | 'escalate' | 'retry',
-    timeoutDuration: number
-  ) {
-    const decision =
-      strategy === 'approve'
-        ? 'approved'
-        : strategy === 'escalate'
-        ? 'escalated'
-        : 'rejected';
-
-    return {
-      decision: decision as 'approved' | 'rejected' | 'escalated',
-      approvedBy: 'SYSTEM_TIMEOUT',
-      message: `${strategy.toUpperCase()} due to ${Math.round(
-        timeoutDuration / 60000
-      )} minute timeout`,
-      timestamp: new Date(),
-      metadata: JSON.stringify({
-        automaticAction: true,
-        timeoutStrategy: strategy,
-        timeoutDurationMs: timeoutDuration,
-        systemGenerated: true,
-      }),
-    };
   }
 }

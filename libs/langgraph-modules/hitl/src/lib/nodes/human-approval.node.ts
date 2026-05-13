@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type {
-  WorkflowState,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { interrupt } from '@langchain/langgraph';
+import { RunnableConfigStoreHelpers } from '@hive-academy/langgraph-memory';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 
 /**
  * Proposed action for human approval
@@ -157,28 +157,51 @@ export class HumanApprovalNode {
 
   /**
    * Execute human approval checkpoint
+   * @param state - Current workflow state
+   * @param config - RunnableConfig containing checkpointer, store, and thread configuration
+   * @param options - Optional execution options (extractActions, autoApproveThreshold, etc.)
    */
-  async execute<TState extends WorkflowState = WorkflowState>(
-    state: TState,
+  async execute(
+    state: HitlCapableState,
+    config: RunnableConfig,
     options?: {
-      extractActions?: (state: TState) => ProposedAction[];
+      extractActions?: (state: HitlCapableState) => ProposedAction[];
       autoApproveThreshold?: number;
       timeoutMs?: number;
-      skipCondition?: (state: TState) => boolean;
+      skipCondition?: (state: HitlCapableState) => boolean;
     }
-  ): Promise<Partial<TState>> {
-    const { executionId } = state;
+  ): Promise<Partial<HitlCapableState>> {
+    const executionId = state.executionId ?? 'unknown';
+
+    // Validate checkpointer configuration (required for interrupt())
+    const checkpointer = config.configurable?.checkpointer;
+    if (!checkpointer) {
+      this.logger.error(
+        `Checkpointer not configured in RunnableConfig for execution ${executionId}`
+      );
+      throw new Error(
+        'Checkpointer not configured. Human approval requires checkpointer for state persistence.'
+      );
+    }
+
+    // Access BaseStore for cross-workflow memory (optional enhancement) - using type-safe helper
+    const store = RunnableConfigStoreHelpers.getStore(config);
+    if (store) {
+      this.logger.debug(
+        `BaseStore available for approval context storage in execution ${executionId}`
+      );
+    }
 
     // Check skip condition
     if (options?.skipCondition?.(state)) {
       this.logger.debug(
         `Skipping human approval for ${executionId} - condition met`
       );
-      return {} as Partial<TState>;
+      return {};
     }
 
     // Check auto-approve threshold
-    const confidence = state.confidence || 0;
+    const confidence = state.confidence ?? 0;
     const autoApproveThreshold = options?.autoApproveThreshold ?? 0.95;
 
     if (confidence >= autoApproveThreshold) {
@@ -198,10 +221,29 @@ export class HumanApprovalNode {
           timestamp: new Date(),
         },
         approvalReceived: true,
-      } as unknown as Partial<TState>;
+      };
     }
 
     this.logger.log(`Human approval requested for execution ${executionId}`);
+
+    // Retrieve historical approval patterns from BaseStore (if available)
+    let historicalApprovals: unknown[] = [];
+    if (store) {
+      try {
+        const userId = state.userId || 'system';
+        const items = await store.search(['approval-context', userId]);
+        historicalApprovals = items.slice(0, 5); // Get top 5 similar approvals
+        this.logger.debug(
+          `Retrieved ${historicalApprovals.length} historical approvals from BaseStore`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to retrieve historical approvals from BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     // Extract proposed actions
     const proposedActions = options?.extractActions
@@ -217,7 +259,22 @@ export class HumanApprovalNode {
         proposedActions,
         confidence,
         risks: state.risks,
-        metadata: state.metadata,
+        metadata: {
+          ...(state.metadata || {}),
+          historicalApprovals:
+            historicalApprovals.length > 0
+              ? historicalApprovals.map((item) => {
+                  const val = (item as Record<string, unknown>)?.value as
+                    | Record<string, unknown>
+                    | undefined;
+                  return {
+                    executionId: val?.executionId,
+                    confidence: val?.confidence,
+                    timestamp: val?.timestamp,
+                  };
+                })
+              : undefined,
+        },
       },
       timestamp: new Date(),
       timeoutMs: options?.timeoutMs,
@@ -226,6 +283,34 @@ export class HumanApprovalNode {
 
     // Store pending approval
     this.pendingApprovals.set(executionId, approvalRequest);
+
+    // Store approval context in BaseStore for cross-workflow memory (if available)
+    if (store) {
+      try {
+        const userId = state.userId || 'system';
+        await store.put(
+          ['approval-context', userId],
+          `approval-${executionId}`,
+          {
+            executionId,
+            nodeId: state.currentNode,
+            proposedActions,
+            confidence,
+            risks: approvalRequest.context.risks,
+            timestamp: approvalRequest.timestamp,
+          }
+        );
+        this.logger.debug(
+          `Stored approval context in BaseStore for user ${userId}`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to store approval context in BaseStore: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     // Emit event for external systems
     await this.eventEmitter.emit(
@@ -241,30 +326,55 @@ export class HumanApprovalNode {
       - Risks: ${approvalRequest.context.risks?.length || 0}
     `);
 
-    // Return state update to indicate waiting for approval
+    // Use LangGraph native interrupt() to pause workflow execution
+    // Workflow will pause here until resumed via Command
+    // Checkpointer automatically saves state at this interrupt point
+    const humanDecision = interrupt({
+      type: 'approval_required',
+      executionId,
+      nodeId: state.currentNode,
+      approvalRequest,
+      confidence,
+      proposedActions,
+      risks: approvalRequest.context.risks,
+    });
+
+    // When workflow resumes via Command, execution continues here
+    // humanDecision contains the approval response data
+    this.logger.log(
+      `Approval received for ${executionId}: ${JSON.stringify(humanDecision)}`
+    );
+
+    // Process human decision and return state update
+    const approved = humanDecision?.decision === 'approved';
+    const feedback = humanDecision?.feedback;
+
     return {
       humanFeedback: {
-        approved: false,
-        status: 'pending',
-        timestamp: approvalRequest.timestamp,
-        metadata: {
-          requestedAt: approvalRequest.timestamp,
-          proposedActions: proposedActions.length,
-        },
+        approved,
+        status: approved ? 'approved' : 'rejected',
+        approver: humanDecision?.approver || { id: 'unknown' },
+        message: feedback,
+        timestamp: new Date(),
+        metadata: humanDecision?.modifications,
       },
-      waitingForApproval: true,
-      requiresApproval: true,
-    } as unknown as Partial<TState>;
+      confidence: approved
+        ? Math.min((confidence || 0) + 0.1, 1.0)
+        : Math.max((confidence || 0) - 0.2, 0.0),
+      waitingForApproval: false,
+      approvalReceived: approved,
+      rejectionReason: !approved ? feedback : undefined,
+    };
   }
 
   /**
    * Process human feedback when workflow resumes
    */
-  processHumanFeedback<TState extends WorkflowState = WorkflowState>(
-    state: TState,
+  processHumanFeedback(
+    state: HitlCapableState,
     response: HumanApprovalResponse
-  ): Partial<TState> {
-    const { executionId } = state;
+  ): Partial<HitlCapableState> {
+    const executionId = state.executionId ?? 'unknown';
 
     // Remove from pending approvals
     this.pendingApprovals.delete(executionId);
@@ -273,7 +383,7 @@ export class HumanApprovalNode {
     this.logger.log(`Human decision for ${executionId}: ${response.decision}`);
 
     // Adjust confidence based on decision
-    let newConfidence = state.confidence || 0;
+    let newConfidence = state.confidence ?? 0;
     switch (response.decision) {
       case 'approved':
         newConfidence = Math.min(newConfidence + 0.1, 1.0);
@@ -287,7 +397,7 @@ export class HumanApprovalNode {
     }
 
     // Build state update
-    const stateUpdate: Partial<TState> = {
+    const stateUpdate: Partial<HitlCapableState> = {
       humanFeedback: {
         approved: response.decision === 'approved',
         status:
@@ -300,18 +410,18 @@ export class HumanApprovalNode {
         message: response.feedback,
         timestamp: response.timestamp,
         metadata: response.modifications,
-      } as HumanFeedback,
+      },
       confidence: newConfidence,
       waitingForApproval: false,
       approvalReceived: response.decision === 'approved',
       rejectionReason:
         response.decision === 'rejected' ? response.feedback : undefined,
-    } as unknown as Partial<TState>;
+    };
 
     // Add modifications to metadata if provided
     if (response.modifications) {
-      (stateUpdate as any).metadata = {
-        ...(state.metadata || ({} as Record<string, unknown>)),
+      stateUpdate.metadata = {
+        ...(state.metadata ?? {}),
         humanModifications: response.modifications,
       };
     }
@@ -329,11 +439,9 @@ export class HumanApprovalNode {
   /**
    * Extract default proposed actions from state
    */
-  private extractDefaultActions<TState extends WorkflowState>(
-    state: TState
-  ): ProposedAction[] {
+  private extractDefaultActions(state: HitlCapableState): ProposedAction[] {
     const actions: ProposedAction[] = [];
-    const metadata = state.metadata || ({} as Record<string, unknown>);
+    const metadata = (state.metadata ?? {}) as Record<string, unknown>;
 
     // Check for various action types in metadata
     if (metadata.codeGeneration) {

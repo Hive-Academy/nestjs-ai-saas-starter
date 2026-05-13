@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
 
 /**
  * User interruption types
@@ -37,7 +36,7 @@ export interface InterruptionContext {
   /** Additional metadata */
   metadata?: Record<string, unknown>;
   /** Current workflow state */
-  workflowState?: Partial<WorkflowState>;
+  workflowState?: Partial<Record<string, unknown>>;
 }
 
 /**
@@ -154,7 +153,7 @@ export abstract class IUserInterruptionService {
   abstract handleUserResponse(response: UserInterruptionResponse): Promise<{
     success: boolean;
     shouldContinue: boolean;
-    updatedState?: Partial<WorkflowState>;
+    updatedState?: Partial<Record<string, unknown>>;
     error?: string;
   }>;
 

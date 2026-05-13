@@ -27,6 +27,36 @@ import type {
 } from '../../types/core.interface';
 
 /**
+ * Connection configuration interface
+ */
+export interface ConnectionConfig {
+  host: string;
+  port: number;
+  ssl?: boolean;
+  timeout?: number;
+  retryAttempts?: number;
+  retryDelay?: number;
+  /**
+   * Maximum number of concurrent ChromaDB operations
+   * Default: 5
+   * Range: 3-10 recommended for production
+   */
+  maxConcurrentOperations?: number;
+}
+
+/**
+ * Queue metrics interface for operation monitoring
+ */
+export interface QueueMetrics {
+  /** Number of available operation permits */
+  availablePermits: number;
+  /** Number of operations waiting in queue */
+  queueDepth: number;
+  /** Maximum concurrent operations allowed */
+  maxConcurrent: number;
+}
+
+/**
  * Connection management interface
  */
 export interface IChromaConnection {
@@ -63,6 +93,11 @@ export interface IChromaConnection {
    * Reconnect to the database
    */
   reconnect(): Promise<void>;
+
+  /**
+   * Get operation queue metrics for monitoring
+   */
+  getQueueMetrics(): QueueMetrics;
 }
 
 /**

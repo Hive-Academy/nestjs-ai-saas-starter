@@ -2,7 +2,7 @@
 // between HumanApprovalService and ApprovalProcessingService.
 // Keep ONLY type/value definitions here—no service imports.
 
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import type { RequiresApprovalOptions } from '../decorators/approval.decorator';
 import type { ApprovalRiskLevel } from '../decorators/approval.decorator';
 
@@ -28,7 +28,7 @@ export interface HumanApprovalRequest {
   nodeId: string; // Node requesting approval
   message: string; // Approval message
   metadata: Record<string, unknown>; // Request metadata
-  state: WorkflowState; // Current workflow state snapshot
+  state: HitlCapableState; // Current workflow state snapshot
   options: RequiresApprovalOptions; // Approval options
   workflowState: ApprovalWorkflowState; // Internal approval workflow state
   approvers?: string[]; // Assigned approvers

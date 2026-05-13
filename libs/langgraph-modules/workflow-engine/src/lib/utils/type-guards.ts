@@ -1,40 +1,6 @@
-import type {
-  AgentConfig,
-  WorkflowAgentConfig,
-} from '@hive-academy/langgraph-multi-agent';
-import type {
-  EntrypointMetadata,
-  TaskMetadata,
-  NodeMetadata,
-} from '@hive-academy/langgraph-functional-api';
-
-/**
- * Type guard to check if config is AgentConfig
- */
-export function isAgentConfig(
-  config: AgentConfig | WorkflowAgentConfig
-): config is AgentConfig {
-  return (
-    typeof config === 'object' &&
-    config !== null &&
-    'id' in config &&
-    'name' in config
-  );
-}
-
-/**
- * Type guard to check if config is WorkflowAgentConfig
- */
-export function isWorkflowAgentConfig(
-  config: AgentConfig | WorkflowAgentConfig
-): config is WorkflowAgentConfig {
-  return (
-    typeof config === 'object' &&
-    config !== null &&
-    !('id' in config) &&
-    !('name' in config)
-  );
-}
+import type { EntrypointMetadata } from '../decorators/functional/entrypoint.decorator';
+import type { NodeMetadata } from '../decorators/functional/node.decorator';
+import type { TaskMetadata } from '../decorators/functional/task.decorator';
 
 /**
  * Type guard to check if metadata has an id property
@@ -129,16 +95,4 @@ export function getErrorMessage(error: unknown): string {
  */
 export function hasTypeProperty<T>(obj: T): obj is T & { type: unknown } {
   return typeof obj === 'object' && obj !== null && 'type' in obj;
-}
-
-/**
- * Type guard to check if agent config has type property and is specific type
- */
-export function isAgentConfigWithType(
-  config: AgentConfig | WorkflowAgentConfig,
-  type: string
-): config is AgentConfig & { type: string } {
-  return (
-    isAgentConfig(config) && hasTypeProperty(config) && config.type === type
-  );
 }

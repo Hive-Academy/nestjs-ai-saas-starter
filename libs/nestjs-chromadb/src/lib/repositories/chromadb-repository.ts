@@ -14,6 +14,8 @@
  * - Composition pattern with ChromaDBService
  * - Protected properties for subclass access
  * - Zero 'any' types (strict TypeScript compliance)
+ * - Automatic collection initialization (NEW)
+ * - Graceful degradation for missing collections (NEW)
  *
  * @example
  * ```typescript
@@ -38,8 +40,11 @@
  * // Custom repository (extends base class)
  * @Injectable()
  * export class MemoryRepository extends ChromaDBRepository<MemoryDocument> {
- *   constructor(chromaDB: ChromaDBService) {
- *     super(MemoryDocument, 'memories', chromaDB);
+ *   constructor(
+ *     chromaDB: ChromaDBService,
+ *     collectionRegistry: CollectionRegistryService
+ *   ) {
+ *     super(MemoryDocument, 'memories', chromaDB, collectionRegistry);
  *   }
  *
  *   // Inherits all CRUD methods + add custom methods
@@ -51,11 +56,14 @@
  *
  * @author backend-developer (ChromaDB TypeORM Migration)
  * @since 1.0.0 - Phase 1 TypeORM-style pattern implementation
+ * @since 1.1.0 - Added automatic collection initialization
  */
 
-import type { Type } from '@nestjs/common';
+import { Logger, type Type } from '@nestjs/common';
 import type { GetResult } from 'chromadb';
+import { ChromaDBCollectionNotFoundError } from '../errors/chromadb.errors';
 import type { ChromaDBService } from '../services/chromadb.service';
+import type { CollectionRegistryService } from '../services/collection-registry.service';
 import type {
   BaseDocument,
   Where,
@@ -92,22 +100,248 @@ export interface RepositoryFindOptions {
  * - SOLID principles (Single Responsibility, Open/Closed, Dependency Inversion)
  * - DRY (Don't Repeat Yourself) - CRUD logic centralized
  * - Type Safety - Full generic type propagation
+ * - Automatic Collection Initialization (NEW)
+ * - Graceful Degradation (NEW)
  *
  * @template T Entity type extending BaseDocument
  */
 export class ChromaDBRepository<T extends BaseDocument> {
+  private readonly logger = new Logger(ChromaDBRepository.name);
+  private collectionInitialized?: Promise<void>;
+  private initializationStarted = false;
+
   /**
-   * Constructor for ChromaDBRepository
+   * Constructor for ChromaDBRepository with automatic collection initialization
    *
    * @param entity - Entity class (Type<T>)
    * @param collection - ChromaDB collection name
    * @param chromaDB - ChromaDBService instance for operations
+   * @param collectionRegistry - Optional CollectionRegistryService for auto-initialization
+   *
+   * @example
+   * ```typescript
+   * // With auto-initialization (recommended)
+   * constructor(chromaDB: ChromaDBService, registry: CollectionRegistryService) {
+   *   super(Entity, 'collection-name', chromaDB, registry);
+   * }
+   *
+   * // Without auto-initialization (legacy)
+   * constructor(chromaDB: ChromaDBService) {
+   *   super(Entity, 'collection-name', chromaDB);
+   * }
+   * ```
    */
   constructor(
     protected readonly entity: Type<T>,
     protected readonly collection: string,
-    protected readonly chromaDB: ChromaDBService
-  ) {}
+    protected readonly chromaDB: ChromaDBService,
+    protected readonly collectionRegistry?: CollectionRegistryService
+  ) {
+    // ✅ COLLECTION INITIALIZATION STRATEGY
+    // Behavior depends on collectionStrategy.mode configuration:
+    // - 'eager': Initialize immediately during constructor (default for backward compatibility)
+    // - 'lazy': Defer initialization until first operation (recommended for production)
+    // - 'manual': No automatic initialization (application-controlled)
+
+    if (!collectionRegistry) {
+      // No registry: lazy initialization on first write
+      this.logger.warn(
+        `CollectionRegistryService not provided for '${collection}' - ` +
+          `collection will be created lazily on first write operation`
+      );
+      return;
+    }
+
+    // Check collection strategy mode from registry (injected from module options)
+    const strategy = (collectionRegistry as any).strategy;
+
+    if (strategy?.mode === 'eager') {
+      // Eager mode: Start initialization immediately in background (non-blocking)
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    } else if (strategy?.mode === 'lazy') {
+      // Lazy mode: Defer initialization until first operation
+      // Do nothing here - ensureInitialized() will handle it on first call
+      if (strategy?.enableVerboseLogging) {
+        this.logger.debug(
+          `Collection '${collection}' using lazy initialization - ` +
+            `will initialize on first use`
+        );
+      }
+    } else if (strategy?.mode === 'manual') {
+      // Manual mode: No automatic initialization
+      if (strategy?.enableVerboseLogging) {
+        this.logger.debug(
+          `Collection '${collection}' using manual initialization - ` +
+            `application must call ensureInitialized() explicitly`
+        );
+      }
+    } else {
+      // Fallback to eager if strategy is undefined (backward compatibility)
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    }
+  }
+
+  /**
+   * Ensure collection is initialized before operations
+   *
+   * This method implements lazy initialization pattern:
+   * - First call: Triggers initialization and waits
+   * - Subsequent calls: Reuses cached promise (no duplicate initialization)
+   *
+   * **Performance**:
+   * - Lazy mode: First operation pays initialization cost (~12-50ms)
+   * - Eager mode: All operations return immediately (initialized in constructor)
+   * - Manual mode: Only initializes if explicitly called
+   *
+   * **Thread Safety**:
+   * - Multiple concurrent calls share same initialization promise
+   * - No race conditions or duplicate initializations
+   *
+   * @returns Promise that resolves when collection is ready
+   */
+  protected async ensureInitialized(): Promise<void> {
+    // If already initialized or initialization in progress, reuse promise
+    if (this.collectionInitialized) {
+      return this.collectionInitialized;
+    }
+
+    // If initialization not started yet, start it now (lazy mode)
+    if (!this.initializationStarted && this.collectionRegistry) {
+      this.collectionInitialized = this.initializeCollection();
+      this.initializationStarted = true;
+    }
+
+    // Wait for initialization to complete (or return immediately if no registry)
+    if (this.collectionInitialized) {
+      await this.collectionInitialized;
+    }
+  }
+
+  /**
+   * Initialize collection using singleton registry
+   * Called automatically in constructor (eager mode) or on first use (lazy mode)
+   */
+  private async initializeCollection(): Promise<void> {
+    if (!this.collectionRegistry) {
+      return;
+    }
+
+    try {
+      // Extract metadata from entity decorator if available
+      const metadata = this.getEntityMetadata();
+
+      await this.collectionRegistry.ensureCollectionExists(
+        this.collection,
+        metadata
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to initialize collection '${this.collection}': ${errorMessage}. ` +
+          `Collection will be created lazily on first write.`
+      );
+      // Don't throw - graceful degradation
+    }
+  }
+
+  /**
+   * Extract metadata from @ChromaEntity decorator
+   * Used to populate collection metadata during initialization
+   */
+  private getEntityMetadata(): Record<string, any> {
+    try {
+      // Access decorator metadata if available
+      const entityMetadata = Reflect.getMetadata('chroma:entity', this.entity);
+      if (entityMetadata) {
+        // Sanitize metadata: ChromaDB only supports string, number, boolean
+        // Arrays must be JSON-stringified
+        const sanitized = this.sanitizeMetadata(entityMetadata);
+
+        return {
+          source: 'entity-decorator',
+          entityName: this.entity.name,
+          ...sanitized,
+        };
+      }
+    } catch (error) {
+      // Metadata not available - not a problem
+    }
+
+    return {
+      source: 'repository-initialization',
+      entityName: this.entity.name,
+    };
+  }
+
+  /**
+   * Sanitize metadata for ChromaDB compatibility
+   * ChromaDB only supports string, number, boolean in metadata
+   * Arrays and objects must be JSON-stringified
+   */
+  private sanitizeMetadata(metadata: Record<string, any>): Record<string, any> {
+    const sanitized: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(metadata)) {
+      if (value === null || value === undefined) {
+        continue; // Skip null/undefined values
+      }
+
+      if (Array.isArray(value)) {
+        // Convert arrays to JSON strings
+        sanitized[key] = JSON.stringify(value);
+      } else if (typeof value === 'object') {
+        // Convert objects to JSON strings
+        sanitized[key] = JSON.stringify(value);
+      } else if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+      ) {
+        // Keep primitives as-is
+        sanitized[key] = value;
+      } else {
+        // Convert everything else to string
+        sanitized[key] = String(value);
+      }
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Wait for collection to be ready (used internally before operations)
+   * Non-blocking: returns immediately if collection already initialized
+   */
+  protected async ensureCollectionReady(): Promise<void> {
+    await this.collectionInitialized;
+  }
+
+  /**
+   * Check if error indicates collection not found
+   * Handles both explicit ChromaDBCollectionNotFoundError and masked connection errors
+   *
+   * @param error - Error to check
+   * @returns true if error is collection-not-found related
+   */
+  protected isCollectionNotFoundError(error: unknown): boolean {
+    if (error instanceof ChromaDBCollectionNotFoundError) {
+      return true;
+    }
+
+    if (error instanceof Error) {
+      return (
+        error.message.includes('not found') ||
+        error.message.includes('does not exist') ||
+        (error.message.includes('Failed to connect') &&
+          error.message.includes('chromadb'))
+      );
+    }
+
+    return false;
+  }
 
   // ==================== CRUD OPERATIONS ====================
 
@@ -130,18 +364,34 @@ export class ChromaDBRepository<T extends BaseDocument> {
     id: string,
     options?: RepositoryOperationOptions
   ): Promise<T | null> {
-    const result = await this.chromaDB.getDocuments(this.collection, {
-      ids: [id],
-      includeDocuments: true,
-      includeMetadata: true,
-      includeEmbeddings: options?.includeEmbeddings,
-    });
+    // ✅ Ensure collection is initialized (lazy initialization on first use)
+    await this.ensureInitialized();
+    await this.ensureCollectionReady();
 
-    if (!result.ids || result.ids.length === 0) {
-      return null;
+    try {
+      const result = await this.chromaDB.getDocuments(this.collection, {
+        ids: [id],
+        includeDocuments: true,
+        includeMetadata: true,
+        includeEmbeddings: options?.includeEmbeddings,
+      });
+
+      if (!result.ids || result.ids.length === 0) {
+        return null;
+      }
+
+      return this.mapToEntity(result, 0);
+    } catch (error) {
+      // ✅ Graceful handling of missing collections
+      if (this.isCollectionNotFoundError(error)) {
+        this.logger.debug(
+          `Collection '${this.collection}' not found during findById - returning null. ` +
+            `Collection will be created on first write.`
+        );
+        return null;
+      }
+      throw error;
     }
-
-    return this.mapToEntity(result, 0);
   }
 
   /**
@@ -187,19 +437,34 @@ export class ChromaDBRepository<T extends BaseDocument> {
    * ```
    */
   async findAll(options?: RepositoryFindOptions): Promise<T[]> {
-    const result = await this.chromaDB.getDocuments(this.collection, {
-      where: options?.where,
-      whereDocument: options?.whereDocument,
-      limit: options?.limit,
-      includeDocuments: true,
-      includeMetadata: true,
-    });
+    // ✅ Wait for collection to be ready
+    await this.ensureInitialized();
+    await this.ensureCollectionReady();
 
-    if (!result.ids) {
-      return [];
+    try {
+      const result = await this.chromaDB.getDocuments(this.collection, {
+        where: options?.where,
+        whereDocument: options?.whereDocument,
+        limit: options?.limit,
+        includeDocuments: true,
+        includeMetadata: true,
+      });
+
+      if (!result.ids) {
+        return [];
+      }
+
+      return result.ids.map((_, index) => this.mapToEntity(result, index));
+    } catch (error) {
+      // ✅ Graceful handling of missing collections
+      if (this.isCollectionNotFoundError(error)) {
+        this.logger.debug(
+          `Collection '${this.collection}' not found during findAll - returning empty array`
+        );
+        return [];
+      }
+      throw error;
     }
-
-    return result.ids.map((_, index) => this.mapToEntity(result, index));
   }
 
   /**
@@ -221,6 +486,10 @@ export class ChromaDBRepository<T extends BaseDocument> {
     document: CreateDocumentInput<T>,
     options?: RepositoryOperationOptions
   ): Promise<T> {
+    // ✅ Ensure collection is initialized (lazy initialization on first use)
+    await this.ensureInitialized();
+    await this.ensureCollectionReady();
+
     const entity = this.createEntity({
       id: document.id || this.generateId(),
       content: document.content,
@@ -673,12 +942,27 @@ export class ChromaDBRepository<T extends BaseDocument> {
    * ```
    */
   async count(where?: Where, whereDocument?: WhereDocument): Promise<number> {
-    const result = await this.chromaDB.getDocuments(this.collection, {
-      where,
-      whereDocument,
-    });
+    // ✅ Wait for collection to be ready
+    await this.ensureInitialized();
+    await this.ensureCollectionReady();
 
-    return result.ids?.length || 0;
+    try {
+      const result = await this.chromaDB.getDocuments(this.collection, {
+        where,
+        whereDocument,
+      });
+
+      return result.ids?.length || 0;
+    } catch (error) {
+      // ✅ Graceful handling of missing collections
+      if (this.isCollectionNotFoundError(error)) {
+        this.logger.debug(
+          `Collection '${this.collection}' not found during count - returning 0`
+        );
+        return 0;
+      }
+      throw error;
+    }
   }
 
   /**

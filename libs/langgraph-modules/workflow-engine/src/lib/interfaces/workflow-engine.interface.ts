@@ -1,99 +1,58 @@
-// Local interface definitions to avoid external dependencies during build
-// These are duplicated from core to avoid circular dependency issues
+import type { WorkflowError } from '@hive-academy/langgraph-core';
+import type { AnnotationRoot } from '@langchain/langgraph';
 
-export interface WorkflowState {
-  executionId: string;
-  status:
-    | 'pending'
-    | 'active'
-    | 'paused'
-    | 'completed'
-    | 'failed'
-    | 'cancelled';
-  currentNode?: string;
-  completedNodes: string[];
-  confidence: number;
-  messages?: any[];
-  error?: WorkflowError;
-  humanFeedback?: HumanFeedback;
-  metadata?: Record<string, any>;
-  timestamps: {
-    started: Date;
-    updated?: Date;
-    completed?: Date;
-  };
-  retryCount: number;
-  startedAt: Date;
-  completedAt?: Date;
-  previousNode?: string;
-  nextNode?: string;
-  requiresApproval?: boolean;
-  approvalReceived?: boolean;
-  waitingForApproval?: boolean;
-  rejectionReason?: string;
-  lastError?: WorkflowError;
-  risks?: Array<{
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    type: string;
-    description: string;
-  }>;
-  [key: string]: any;
-}
-
-export interface WorkflowError {
-  id: string;
-  nodeId: string;
-  type: 'execution' | 'validation' | 'timeout' | 'permission' | 'unknown';
-  message: string;
-  stackTrace?: string;
-  context?: Record<string, any>;
-  isRecoverable: boolean;
-  suggestedRecovery?: string;
-  timestamp: Date;
-}
-
-export interface HumanFeedback {
-  approved: boolean;
-  status: 'approved' | 'rejected' | 'needs_revision';
-  approver: {
-    id: string;
-    name?: string;
-    role?: string;
-  };
-  message?: string;
-  reason?: string;
-  alternatives?: string[];
-  metadata?: Record<string, any>;
-  timestamp: Date;
-}
-
-export interface WorkflowDefinition<TState = WorkflowState> {
+export interface WorkflowDefinition {
   name: string;
   description?: string;
-  channels?: any;
-  nodes: Array<WorkflowNode<TState>>;
-  edges: Array<WorkflowEdge<TState>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  channels?: AnnotationRoot<any>;
+  nodes: Array<WorkflowNode>;
+  edges: Array<WorkflowEdge>;
   entryPoint: string;
   config?: WorkflowNodeConfig;
 }
 
-export interface WorkflowNode<TState = WorkflowState> {
+export interface WorkflowNode {
   id: string;
   name: string;
   description?: string;
-  handler: (state: TState) => Promise<Partial<TState> | Command<TState>>;
+  handler: (
+    state: Record<string, unknown>
+  ) => Promise<Partial<Record<string, unknown>> | Command>;
   requiresApproval?: boolean;
   config?: WorkflowNodeConfig;
+  /**
+   * Flag indicating if this node is an LLM task with tool calling
+   * @see @LLMTask decorator
+   */
+  isLLMTask?: boolean;
+  /**
+   * LLM task-specific options (only present if isLLMTask = true)
+   */
+  llmTaskOptions?: {
+    /**
+     * Tool names bound to this task
+     */
+    readonly tools: readonly string[];
+    /**
+     * Max tool execution iterations
+     */
+    readonly maxToolIterations: number;
+    /**
+     * Timeout per tool execution (ms)
+     */
+    readonly toolTimeout: number;
+  };
 }
 
-export interface WorkflowEdge<TState = WorkflowState> {
+export interface WorkflowEdge {
   from: string;
-  to: string | ConditionalRouting<TState>;
+  to: string | ConditionalRouting;
   config?: WorkflowEdgeConfig;
 }
 
-export interface ConditionalRouting<TState = WorkflowState> {
-  condition: (state: TState) => string | null;
+export interface ConditionalRouting {
+  condition: (state: Record<string, unknown>) => string;
   routes: Record<string, string>;
   default?: string;
 }
@@ -103,8 +62,8 @@ export interface WorkflowNodeConfig {
   approval?: {
     threshold?: number;
     riskLevel?: 'low' | 'medium' | 'high' | 'critical';
-    condition?: (state: WorkflowState) => boolean;
-    message?: string | ((state: WorkflowState) => string);
+    condition?: (state: Record<string, unknown>) => boolean;
+    message?: string | ((state: Record<string, unknown>) => string);
   };
   retry?: {
     maxAttempts?: number;
@@ -115,21 +74,21 @@ export interface WorkflowNodeConfig {
   timeout?: number;
   streaming?: boolean;
   tools?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface WorkflowEdgeConfig {
   priority?: number;
   minConfidence?: number;
   maxConfidence?: number;
-  condition?: (state: WorkflowState) => boolean;
-  metadata?: Record<string, any>;
+  condition?: (state: Record<string, unknown>) => boolean;
+  metadata?: Record<string, unknown>;
 }
 
-export interface Command<TState = WorkflowState> {
+export interface Command {
   type?: 'goto' | 'update' | 'end' | 'error' | 'retry' | 'skip' | 'stop';
   goto?: string;
-  update?: Partial<TState>;
+  update?: Partial<Record<string, unknown>>;
   error?: Error | WorkflowError;
   reason?: string;
   maxAttempts?: number;
@@ -138,7 +97,7 @@ export interface Command<TState = WorkflowState> {
     node: string;
     delay?: number;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   priority?: 'low' | 'medium' | 'high' | 'critical';
   timestamp?: Date;
 }
@@ -177,17 +136,3 @@ export const WORKFLOW_NODES_KEY = 'workflow:nodes';
 export const WORKFLOW_EDGES_KEY = 'workflow:edges';
 export const WORKFLOW_TOOLS_KEY = 'workflow:tools';
 export const LANGGRAPH_MODULE_OPTIONS = 'LANGGRAPH_MODULE_OPTIONS';
-
-// Import actual implementations from core module
-import {
-  WorkflowStateAnnotation as CoreWorkflowStateAnnotation,
-  createCustomStateAnnotation as coreCreateCustomStateAnnotation,
-  isWorkflow as coreIsWorkflow,
-} from '@hive-academy/langgraph-core';
-
-// Re-export with original names for backward compatibility
-export const WorkflowStateAnnotation = CoreWorkflowStateAnnotation;
-export const createCustomStateAnnotation = coreCreateCustomStateAnnotation;
-export const isWorkflow = coreIsWorkflow;
-
-// Workflow engine specific interfaces can be added here as needed

@@ -1,227 +1,13 @@
-import type { BaseMessage } from '@langchain/core/messages';
-import type { StateGraph, StateGraphArgs } from '@langchain/langgraph';
+import type { StateGraph } from '@langchain/langgraph';
 import type { WorkflowError } from './state-management.interface';
 
-export interface WorkflowState {
-  /**
-   * Unique execution ID
-   */
-  executionId: string;
+/**
+ * @deprecated Use WorkflowError from state-management.interface.ts instead.
+ * Kept as type alias for backward compatibility.
+ */
+export type WorkflowExecutionError = WorkflowError;
 
-  /**
-   * Current workflow status
-   */
-  status:
-    | 'pending'
-    | 'active'
-    | 'paused'
-    | 'completed'
-    | 'failed'
-    | 'cancelled';
-
-  /**
-   * Current node being executed
-   */
-  currentNode?: string;
-
-  /**
-   * Completed nodes
-   */
-  completedNodes: string[];
-
-  /**
-   * Workflow confidence score
-   */
-  confidence: number;
-
-  /**
-   * Messages exchanged in the workflow
-   */
-  messages?: BaseMessage[];
-
-  /**
-   * Error information if workflow failed
-   */
-  error?: WorkflowExecutionError;
-
-  /**
-   * Human feedback if HITL is enabled
-   */
-  humanFeedback?: HumanFeedback;
-
-  /**
-   * Workflow metadata
-   */
-  metadata?: Record<string, any>;
-
-  /**
-   * Timestamps
-   */
-  timestamps: {
-    started: Date;
-    updated?: Date;
-    completed?: Date;
-  };
-
-  /**
-   * Retry count for error handling
-   */
-  retryCount: number;
-
-  /**
-   * Workflow start timestamp
-   */
-  startedAt: Date;
-
-  /**
-   * Workflow completion timestamp
-   */
-  completedAt?: Date;
-
-  /**
-   * Previous node for routing
-   */
-  previousNode?: string;
-
-  /**
-   * Next node for routing
-   */
-  nextNode?: string;
-
-  /**
-   * Whether approval is required
-   */
-  requiresApproval?: boolean;
-
-  /**
-   * Whether approval was received
-   */
-  approvalReceived?: boolean;
-
-  /**
-   * Whether waiting for approval
-   */
-  waitingForApproval?: boolean;
-
-  /**
-   * Rejection reason
-   */
-  rejectionReason?: string;
-
-  /**
-   * Last error
-   */
-  lastError?: WorkflowExecutionError;
-
-  /**
-   * Risk assessments
-   */
-  risks?: Array<{
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    type: string;
-    description: string;
-  }>;
-
-  /**
-   * Custom state properties
-   */
-  [key: string]: any;
-}
-
-export interface WorkflowExecutionError {
-  /**
-   * Error ID
-   */
-  id: string;
-
-  /**
-   * Node where error occurred
-   */
-  nodeId: string;
-
-  /**
-   * Error type
-   */
-  type: 'execution' | 'validation' | 'timeout' | 'permission' | 'unknown';
-
-  /**
-   * Error message
-   */
-  message: string;
-
-  /**
-   * Stack trace if available
-   */
-  stackTrace?: string;
-
-  /**
-   * Error context
-   */
-  context?: Record<string, any>;
-
-  /**
-   * Whether error is recoverable
-   */
-  isRecoverable: boolean;
-
-  /**
-   * Suggested recovery action
-   */
-  suggestedRecovery?: string;
-
-  /**
-   * Timestamp
-   */
-  timestamp: Date;
-}
-
-export interface HumanFeedback {
-  /**
-   * Whether feedback was approved
-   */
-  approved: boolean;
-
-  /**
-   * Approval status
-   */
-  status: 'approved' | 'rejected' | 'needs_revision';
-
-  /**
-   * Approver information
-   */
-  approver: {
-    id: string;
-    name?: string;
-    role?: string;
-  };
-
-  /**
-   * Feedback message
-   */
-  message?: string;
-
-  /**
-   * Reason for decision
-   */
-  reason?: string;
-
-  /**
-   * Suggested alternatives
-   */
-  alternatives?: string[];
-
-  /**
-   * Additional metadata
-   */
-  metadata?: Record<string, any>;
-
-  /**
-   * Timestamp
-   */
-  timestamp: Date;
-}
-
-export interface WorkflowDefinition<TState = WorkflowState> {
+export interface WorkflowDefinition {
   /**
    * Workflow name
    */
@@ -235,17 +21,17 @@ export interface WorkflowDefinition<TState = WorkflowState> {
   /**
    * State channels definition
    */
-  channels?: StateGraphArgs<TState>['channels'];
+  channels?: any;
 
   /**
    * Workflow nodes
    */
-  nodes: Array<WorkflowNode<TState>>;
+  nodes: Array<WorkflowNode>;
 
   /**
    * Workflow edges
    */
-  edges: Array<WorkflowEdge<TState>>;
+  edges: Array<WorkflowEdge>;
 
   /**
    * Entry point node
@@ -258,7 +44,7 @@ export interface WorkflowDefinition<TState = WorkflowState> {
   config?: WorkflowNodeConfig;
 }
 
-export interface WorkflowNode<TState = WorkflowState> {
+export interface WorkflowNode<TState = Record<string, unknown>> {
   /**
    * Node ID
    */
@@ -290,7 +76,7 @@ export interface WorkflowNode<TState = WorkflowState> {
   config?: WorkflowNodeConfig;
 }
 
-export interface WorkflowEdge<TState = WorkflowState> {
+export interface WorkflowEdge<TState = Record<string, unknown>> {
   /**
    * Source node ID
    */
@@ -307,7 +93,7 @@ export interface WorkflowEdge<TState = WorkflowState> {
   config?: WorkflowEdgeConfig;
 }
 
-export interface ConditionalRouting<TState = WorkflowState> {
+export interface ConditionalRouting<TState = Record<string, unknown>> {
   /**
    * Condition function
    */
@@ -347,12 +133,12 @@ export interface WorkflowNodeConfig {
     /**
      * Custom approval condition
      */
-    condition?: (state: WorkflowState) => boolean;
+    condition?: (state: Record<string, unknown>) => boolean;
 
     /**
      * Approval message
      */
-    message?: string | ((state: WorkflowState) => string);
+    message?: string | ((state: Record<string, unknown>) => string);
   };
 
   /**
@@ -420,7 +206,7 @@ export interface WorkflowEdgeConfig {
   /**
    * Custom condition
    */
-  condition?: (state: WorkflowState) => boolean;
+  condition?: (state: Record<string, unknown>) => boolean;
 
   /**
    * Edge metadata
@@ -428,7 +214,7 @@ export interface WorkflowEdgeConfig {
   metadata?: Record<string, any>;
 }
 
-export interface Command<TState = WorkflowState> {
+export interface Command<TState = Record<string, unknown>> {
   /**
    * Command type
    */
@@ -588,7 +374,7 @@ export interface StreamFilter {
   filter: (data: any) => boolean;
 }
 
-export interface WorkflowResult<TState = WorkflowState> {
+export interface WorkflowResult<TState = Record<string, unknown>> {
   /**
    * Final state
    */
@@ -625,7 +411,7 @@ export interface WorkflowResult<TState = WorkflowState> {
   error?: WorkflowError;
 }
 
-export interface CompiledWorkflow<TState = WorkflowState> {
+export interface CompiledWorkflow<TState = Record<string, unknown>> {
   /**
    * Invoke the workflow with initial state
    */
@@ -703,4 +489,20 @@ export interface WorkflowMetadata {
    * Last modified timestamp
    */
   modified?: Date;
+}
+
+/**
+ * Core workflow provider interface
+ * All workflow implementations must conform to this interface
+ *
+ * This interface enables the central registry to manage workflows
+ * without depending on specific workflow implementations.
+ */
+export interface IWorkflowProvider {
+  id: string;
+  name: string;
+  description?: string;
+  execute: (input: any, config?: any) => Promise<any>;
+  executeWithStreaming?: (input: any, config?: any) => AsyncGenerator<any>;
+  metadata?: Record<string, any>;
 }

@@ -5,18 +5,6 @@
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*", "**/tests/**/*"],
   "references": [
     {
-      "path": "../core"
-    },
-    {
-      "path": "../hitl"
-    },
-    {
-      "path": "../streaming"
-    },
-    {
-      "path": "../checkpoint"
-    },
-    {
       "path": "./tsconfig.lib.json"
     }
   ]

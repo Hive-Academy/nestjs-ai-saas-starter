@@ -1,395 +1,234 @@
-# LangGraph Core Module
+# @hive-academy/langgraph-core
 
 ## Overview
 
-**@hive-academy/langgraph-core** is a TypeScript library providing foundational interfaces, state annotations, and adapter patterns for building type-safe LangGraph workflows. This is a **type-only library** with minimal runtime exports.
+Foundational type definitions, interfaces, and shared constants for LangGraph workflows. This is a **type-only library** that provides the building blocks for workflow state management and annotations.
 
-## Installation
+**Purpose:**
 
-```bash
-npm install @hive-academy/langgraph-core
-```
+- Define workflow state interfaces
+- Provide state annotation utilities (AgentStateAnnotation)
+- Shared constants and metadata keys
+- Integration adapters
 
-**Dependencies:**
+---
 
-- `@langchain/langgraph` ^0.4.3
-- `@langchain/core` ^0.3.68
-- `@nestjs/common` ^11.0.0
-- `reflect-metadata` ^0.1.13
+## State Annotations (Primary Approach)
 
-## Quick Start
+State in LangGraph is defined through **annotations** which specify reducers and defaults for each field. This library provides `AgentStateAnnotation` as the canonical annotation.
+
+### AgentStateAnnotation (Recommended)
+
+The primary annotation for all LangGraph workflows. This is what `StateGraph` actually receives at runtime.
 
 ```typescript
-import {
-  WorkflowState,
-  WorkflowDefinition,
-  WorkflowStateAnnotation,
-  createCustomStateAnnotation,
-} from '@hive-academy/langgraph-core';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 
-// Define your workflow state
-interface MyWorkflowState extends WorkflowState {
-  userInput: string;
-  result?: string;
-}
-
-// Create custom state annotation
-const MyStateAnnotation = createCustomStateAnnotation({
-  userInput: {
-    default: '',
-    reducer: (current: string, update: string) => update || current,
-  },
-  result: {
-    default: undefined,
-    reducer: (current: string | undefined, update: string | undefined) => update || current,
-  },
-});
-
-// Define workflow
-const workflow: WorkflowDefinition<MyWorkflowState> = {
+// Use directly as the channels parameter in @FunctionalWorkflow
+@FunctionalWorkflow({
   name: 'my-workflow',
-  nodes: [
-    {
-      id: 'process',
-      name: 'Process Input',
-      handler: async (state) => ({
-        result: `Processed: ${state.userInput}`,
-        status: 'completed',
-      }),
-    },
-  ],
-  edges: [{ from: 'process', to: 'end' }],
-  entryPoint: 'process',
-};
+  channels: AgentStateAnnotation,
+})
 ```
 
-## Core Exports
-
-### Type-Only Exports
-
-```typescript
-// Primary workflow interfaces
-export type {
-  WorkflowState,
-  WorkflowDefinition,
-  WorkflowNode,
-  WorkflowEdge,
-  WorkflowExecutionError,
-  WorkflowMetadata,
-  Command,
-  ConditionalRouting,
-  HumanFeedback,
-} from '@hive-academy/langgraph-core';
-
-// State management interfaces
-export type {
-  BaseWorkflowState,
-  StateManager,
-  StateTransformer,
-  StateValidator,
-  WorkflowError,
-  WorkflowTimestamps,
-} from '@hive-academy/langgraph-core';
-
-// Configuration interfaces
-export type {
-  LangGraphModuleOptions,
-  LangGraphModuleAsyncOptions,
-  WorkflowNodeConfig,
-  WorkflowEdgeConfig,
-} from '@hive-academy/langgraph-core';
-```
-
-### Runtime Exports
-
-```typescript
-// State annotations
-export { WorkflowStateAnnotation, createCustomStateAnnotation } from '@hive-academy/langgraph-core';
-
-// Utilities
-export { isWorkflow, generateNodeId, generateExecutionId } from '@hive-academy/langgraph-core';
-
-// Constants
-export { CommandType } from '@hive-academy/langgraph-core';
-
-// Integration adapters (NoOp implementations)
-export {
-  NoOpCheckpointAdapter,
-  NoOpStreamingService,
-  ICheckpointAdapter,
-  IStreamingService,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
-```
-
-## Key Interfaces
-
-### WorkflowState
-
-The core state interface for all LangGraph workflows:
-
-```typescript
-interface WorkflowState {
-  // Core identifiers
-  executionId: string;
-  status: 'pending' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
-
-  // Execution tracking
-  currentNode?: string;
-  completedNodes: string[];
-  confidence: number;
-  retryCount: number;
-
-  // Human oversight
-  humanFeedback?: HumanFeedback;
-  requiresApproval?: boolean;
-  approvalReceived?: boolean;
-
-  // Error handling
-  error?: WorkflowExecutionError;
-  lastError?: WorkflowExecutionError;
-
-  // Timestamps
-  timestamps: { started: Date; updated?: Date; completed?: Date };
-  startedAt: Date;
-  completedAt?: Date;
-
-  // Communication
-  messages?: BaseMessage[];
-
-  // Extensible
-  metadata?: Record<string, any>;
-  [key: string]: any;
-}
-```
-
-### WorkflowDefinition
-
-Type-safe workflow structure:
-
-```typescript
-interface WorkflowDefinition<TState = WorkflowState> {
-  name: string;
-  description?: string;
-  channels?: StateGraphArgs<TState>['channels'];
-  nodes: Array<WorkflowNode<TState>>;
-  edges: Array<WorkflowEdge<TState>>;
-  entryPoint: string;
-  config?: WorkflowNodeConfig;
-}
-```
-
-### Command
-
-Workflow control flow commands:
-
-```typescript
-interface Command<TState = WorkflowState> {
-  type?: 'goto' | 'update' | 'end' | 'error' | 'retry' | 'skip' | 'stop';
-  goto?: string;
-  update?: Partial<TState>;
-  error?: Error | WorkflowError;
-  reason?: string;
-  metadata?: Record<string, any>;
-}
-```
-
-## State Annotations
-
-### Default Annotation
-
-Use the built-in `WorkflowStateAnnotation`:
-
-```typescript
-import { WorkflowStateAnnotation } from '@hive-academy/langgraph-core';
-
-// This provides all standard workflow state fields with intelligent reducers
-const workflow = {
-  channels: WorkflowStateAnnotation,
-  // ... rest of workflow
-};
-```
+**Built-in Fields**: `messages`, `next`, `current`, `scratchpad`, `task`, `threadId`, `userId`, `metadata`
 
 ### Custom Annotations
 
-Create custom state annotations with specific reducers:
+Extend `AgentStateAnnotation` with custom fields using `Annotation.Root` from `@langchain/langgraph`:
 
 ```typescript
-import { createCustomStateAnnotation } from '@hive-academy/langgraph-core';
+import { Annotation } from '@langchain/langgraph';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 
-const CustomState = createCustomStateAnnotation({
-  // Simple field
-  userQuery: {
-    default: '',
-    reducer: (current: string, update: string) => update || current,
-  },
+const MyAnnotation = Annotation.Root({
+  ...AgentStateAnnotation.spec,
 
-  // Array with deduplication
-  tags: {
-    default: [],
-    reducer: (current: string[], update: string[]) => {
-      return [...new Set([...current, ...update])];
-    },
-  },
+  // Messages accumulate (append)
+  customMessages: Annotation<string[]>({
+    reducer: (existing, incoming) => [...existing, ...incoming],
+    default: () => [],
+  }),
 
-  // Complex object with deep merge
-  context: {
-    default: () => ({ settings: {}, history: [] }),
-    reducer: (current: any, update: any) => ({
-      ...current,
-      ...update,
-      history: [...(current.history || []), ...(update.history || [])],
-      settings: { ...current.settings, ...update.settings },
-    }),
-  },
+  // Counter adds up
+  counter: Annotation<number>({
+    reducer: (existing, incoming) => existing + incoming,
+    default: () => 0,
+  }),
+
+  // Latest value wins
+  status: Annotation<string>({
+    reducer: (existing, incoming) => incoming,
+    default: () => 'pending',
+  }),
+});
+
+// Derive TypeScript type from annotation
+type MyState = typeof MyAnnotation.State;
+```
+
+You can also use `createCustomAgentStateAnnotation` for a convenience wrapper:
+
+```typescript
+import { createCustomAgentStateAnnotation } from '@hive-academy/langgraph-core';
+
+const MyAnnotation = createCustomAgentStateAnnotation({
+  customField: Annotation<string>({
+    reducer: (current, update) => update ?? current,
+    default: () => '',
+  }),
 });
 ```
 
-## Integration Adapters
+**Reducer Strategies:**
 
-The core module provides abstract interfaces and NoOp implementations for optional integrations:
+- **Append**: `[...existing, ...incoming]` (for arrays)
+- **Add**: `existing + incoming` (for numbers)
+- **Replace**: `incoming` (for simple values)
+- **Merge**: `{ ...existing, ...incoming }` (for objects)
 
-### Checkpoint Integration
+---
+
+## State Interfaces (Legacy)
+
+### WorkflowState (Deprecated)
+
+`WorkflowState` is a plain TypeScript interface that was historically used as a generic constraint (e.g. `TState extends WorkflowState`). However, **`StateGraph` does not accept plain interfaces** -- it requires annotations (`AnnotationRoot`, `StateSchema`, or `ZodObject`).
+
+**Do not use `WorkflowState` as a generic constraint for `StateGraph` or handler signatures.** It remains exported for backward compatibility but should not be used in new code.
+
+```typescript
+// DEPRECATED - do not use in new code
+import { WorkflowState } from '@hive-academy/langgraph-core';
+
+// CORRECT - use annotations instead
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
+type AgentState = typeof AgentStateAnnotation.State;
+```
+
+### FunctionalWorkflowState
+
+Specialized state for functional workflows (task/node-based). Still available for casting `context.state` in task handlers but prefer annotation-derived types.
+
+---
+
+## Metadata Keys
+
+Constants for metadata storage:
 
 ```typescript
 import {
-  ICheckpointAdapter,
-  NoOpCheckpointAdapter,
-  createCheckpointIntegration,
+  WORKFLOW_METADATA_KEY,
+  WORKFLOW_NODES_KEY,
+  WORKFLOW_EDGES_KEY,
+  WORKFLOW_TOOLS_KEY,
 } from '@hive-academy/langgraph-core';
 
-// Use NoOp when checkpointing is disabled
-const adapter = new NoOpCheckpointAdapter();
-
-// Create integration helper
-const integration = createCheckpointIntegration({
-  adapter,
-  config: {
-    enabled: false,
-    autoCheckpoint: { enabled: false },
-  },
-});
+// Used internally by decorators
+Reflect.defineMetadata(WORKFLOW_METADATA_KEY, config, target);
 ```
 
-### Streaming Integration
-
-```typescript
-import {
-  IStreamingService,
-  NoOpStreamingService,
-  StreamEventType,
-} from '@hive-academy/langgraph-core';
-
-// NoOp implementation when streaming is disabled
-const streamingService = new NoOpStreamingService();
-
-// Check if streaming is enabled
-const isEnabled = !(streamingService instanceof NoOpStreamingService);
-```
-
-### Memory Integration
-
-```typescript
-import { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-core';
-
-// Validate memory adapter
-const adapter = { store: async () => {}, retrieve: async () => [] };
-const isValid = isMemoryAdapter(adapter); // true
-```
-
-## Utilities
-
-### ID Generation
-
-```typescript
-import { generateNodeId, generateExecutionId } from '@hive-academy/langgraph-core';
-
-const executionId = generateExecutionId(); // 'exec_1703123456789_abc123'
-const nodeId = generateNodeId('process'); // 'process_1703123456789_def456'
-```
-
-### Workflow Validation
-
-```typescript
-import { isWorkflow } from '@hive-academy/langgraph-core';
-
-const workflow = {
-  /* workflow definition */
-};
-const valid = isWorkflow(workflow); // boolean
-```
-
-## Command Patterns
-
-Use commands for sophisticated control flow:
-
-```typescript
-async function smartHandler(state: WorkflowState): Promise<Partial<WorkflowState> | Command> {
-  // Navigate to different node
-  if (state.confidence < 0.5) {
-    return {
-      type: 'goto',
-      goto: 'human-review',
-      reason: 'Low confidence requires review',
-    };
-  }
-
-  // Update state and continue
-  if (state.confidence > 0.8) {
-    return {
-      type: 'update',
-      update: { status: 'validated' },
-      reason: 'High confidence validation',
-    };
-  }
-
-  // End workflow
-  return {
-    type: 'end',
-    reason: 'Processing complete',
-  };
-}
-```
-
-## Integration with Other Modules
-
-This core module is designed to be used with other LangGraph modules:
-
-```typescript
-// Use with workflow-engine for execution
-import { WorkflowExecutionService } from '@hive-academy/langgraph-workflow-engine';
-import { WorkflowDefinition } from '@hive-academy/langgraph-core';
-
-// Use with streaming for real-time processing
-import { TokenStreamingService } from '@hive-academy/langgraph-streaming';
-import { IStreamingService } from '@hive-academy/langgraph-core';
-
-// Use with memory for context management
-import { MemoryService } from '@hive-academy/langgraph-memory';
-import { IMemoryAdapter } from '@hive-academy/langgraph-core';
-```
+---
 
 ## Best Practices
 
-1. **Always extend WorkflowState** for custom state interfaces
-2. **Use createCustomStateAnnotation** for additional fields with proper reducers
-3. **Implement proper error handling** in node handlers
-4. **Use commands for complex control flow** instead of just state updates
-5. **Validate workflows** with `isWorkflow()` utility
-6. **Use NoOp adapters** when optional features are disabled
+### 1. Use Annotations for State Definition
 
-## TypeScript Configuration
+```typescript
+// CORRECT: Extend AgentStateAnnotation with custom fields
+import { Annotation } from '@langchain/langgraph';
+import { AgentStateAnnotation } from '@hive-academy/langgraph-core';
 
-Ensure proper TypeScript configuration:
+const MyAnnotation = Annotation.Root({
+  ...AgentStateAnnotation.spec,
+  customField: Annotation<string>({
+    reducer: (c, u) => u ?? c,
+    default: () => '',
+  }),
+});
 
-```json
-{
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strict": true
-  }
+// WRONG: Extending WorkflowState interface (does not work with StateGraph)
+interface MyState extends WorkflowState {
+  customField: string;
 }
 ```
 
-This core module provides the foundation for building sophisticated, type-safe LangGraph workflows with proper state management and integration patterns.
+### 2. Use Type-Safe State via Annotation Types
+
+```typescript
+// CORRECT: Derive type from annotation
+type MyState = typeof MyAnnotation.State;
+
+@Task()
+async process(context: TaskExecutionContext): Promise<TaskExecutionResult> {
+  const state = context.state as MyState;
+  // TypeScript knows all fields
+  return { state: { ...state, processed: true } };
+}
+
+// WRONG
+@Task()
+async process(context: TaskExecutionContext) {
+  const state: any = context.state;
+  // Lost type safety
+}
+```
+
+### 3. Define Reducers for Complex Merging
+
+```typescript
+// CORRECT: Custom reducer for message accumulation
+const annotation = Annotation.Root({
+  ...AgentStateAnnotation.spec,
+  messages: Annotation<BaseMessage[]>({
+    reducer: (existing, incoming) => [...existing, ...incoming],
+    default: () => [],
+  }),
+});
+
+// WRONG: Plain interface (no reducer, messages get replaced)
+interface State {
+  messages: BaseMessage[];
+}
+```
+
+---
+
+## Reference
+
+### Key Exports
+
+```typescript
+import {
+  // Interfaces (legacy - prefer annotation-derived types)
+  WorkflowState, // DEPRECATED - do not use as StateGraph generic constraint
+  FunctionalWorkflowState,
+  WorkflowDefinition,
+  Command,
+  HumanFeedback,
+  WorkflowError,
+
+  // Annotations (primary state definition approach)
+  AgentStateAnnotation,
+  createCustomAgentStateAnnotation,
+
+  // Constants
+  WORKFLOW_METADATA_KEY,
+  WORKFLOW_NODES_KEY,
+  WORKFLOW_EDGES_KEY,
+  WORKFLOW_TOOLS_KEY,
+
+  // Utils
+  isWorkflow,
+  generateId,
+  NodeHandler,
+  CommandType,
+} from '@hive-academy/langgraph-core';
+```
+
+### Removed Exports
+
+The following were removed as dead code and are no longer available:
+
+- `WorkflowStateAnnotation` -- never used at runtime; use `AgentStateAnnotation` instead
+- `createCustomStateAnnotation` -- use `createCustomAgentStateAnnotation` or `Annotation.Root` directly

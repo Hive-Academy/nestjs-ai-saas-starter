@@ -4,17 +4,13 @@
  * without creating a direct dependency
  */
 
-import type {
-  WorkflowState,
-  WorkflowNode,
-  WorkflowEdge,
-} from './workflow-engine.interface';
+import type { WorkflowNode, WorkflowEdge } from './workflow-engine.interface';
 
 /**
- * Functional workflow definition from decorator patterns
+ * Functional workflow definition from decorator patterns (Bridge Interface)
  * Matches the structure from functional-api without direct import
  */
-export interface FunctionalWorkflowDefinition {
+export interface BridgeFunctionalWorkflowDefinition {
   readonly name: string;
   readonly entrypoint: string;
   readonly tasks: Map<string, FunctionalTaskDefinition>;
@@ -40,12 +36,10 @@ export interface FunctionalTaskDefinition {
 /**
  * Declarative workflow definition from @Node/@Edge decorators
  */
-export interface DeclarativeWorkflowDefinition<
-  TState extends WorkflowState = WorkflowState
-> {
+export interface DeclarativeWorkflowDefinition {
   readonly className: string;
-  readonly nodes: WorkflowNode<TState>[];
-  readonly edges: WorkflowEdge<TState>[];
+  readonly nodes: WorkflowNode[];
+  readonly edges: WorkflowEdge[];
   readonly entryPoint: string;
   readonly metadata?: Record<string, unknown>;
 }
@@ -53,29 +47,25 @@ export interface DeclarativeWorkflowDefinition<
 /**
  * Unified decorator definition that can handle both functional and declarative patterns
  */
-export type DecoratorDefinition<TState extends WorkflowState = WorkflowState> =
-  | FunctionalWorkflowDefinition
-  | DeclarativeWorkflowDefinition<TState>;
+export type DecoratorDefinition =
+  | BridgeFunctionalWorkflowDefinition
+  | DeclarativeWorkflowDefinition;
 
 /**
  * Type guard for functional workflow definition
  */
-export function isFunctionalDefinition<
-  TState extends WorkflowState = WorkflowState
->(
-  definition: DecoratorDefinition<TState>
-): definition is FunctionalWorkflowDefinition {
+export function isFunctionalDefinition(
+  definition: DecoratorDefinition
+): definition is BridgeFunctionalWorkflowDefinition {
   return 'tasks' in definition && 'dependencies' in definition;
 }
 
 /**
  * Type guard for declarative workflow definition
  */
-export function isDeclarativeDefinition<
-  TState extends WorkflowState = WorkflowState
->(
-  definition: DecoratorDefinition<TState>
-): definition is DeclarativeWorkflowDefinition<TState> {
+export function isDeclarativeDefinition(
+  definition: DecoratorDefinition
+): definition is DeclarativeWorkflowDefinition {
   return (
     'nodes' in definition && 'edges' in definition && !('tasks' in definition)
   );
@@ -117,18 +107,16 @@ export interface DecoratorBridgeConfig {
 /**
  * Result of decorator definition translation
  */
-export interface DecoratorTranslationResult<
-  TState extends WorkflowState = WorkflowState
-> {
+export interface DecoratorTranslationResult {
   /**
    * The translated workflow nodes
    */
-  nodes: WorkflowNode<TState>[];
+  nodes: WorkflowNode[];
 
   /**
    * The translated workflow edges
    */
-  edges: WorkflowEdge<TState>[];
+  edges: WorkflowEdge[];
 
   /**
    * The entry point node ID
@@ -140,7 +128,7 @@ export interface DecoratorTranslationResult<
    */
   metadata: {
     source: 'functional' | 'declarative';
-    originalDefinition: DecoratorDefinition<TState>;
+    originalDefinition: DecoratorDefinition;
     translationTime: number;
     warnings?: string[];
   };

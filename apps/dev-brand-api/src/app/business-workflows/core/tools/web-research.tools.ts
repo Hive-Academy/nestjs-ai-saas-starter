@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TavilySearch } from '@langchain/tavily';
-import { Tool } from '@hive-academy/langgraph-multi-agent';
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
+import { z } from 'zod';
 
 // Define proper TypeScript interfaces for Tavily responses
 interface TavilySearchResult {
@@ -117,6 +118,14 @@ export class WebResearchTools {
     name: 'web-search',
     description:
       'Search the web using Tavily API for general information with configurable depth, result limits, and domain filtering',
+    schema: z.object({
+      query: z.string().describe('The search query'),
+      maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
+      searchDepth: z.enum(['basic', 'advanced']).optional().default('basic').describe('Search depth'),
+      includeAnswer: z.boolean().optional().default(false).describe('Whether to include an AI-generated answer'),
+      includeDomains: z.array(z.string()).optional().describe('Domains to include in results'),
+      excludeDomains: z.array(z.string()).optional().describe('Domains to exclude from results'),
+    }),
   })
   async webSearch({
     query,
@@ -199,6 +208,12 @@ export class WebResearchTools {
     name: 'news-search',
     description:
       'Search for news articles using Tavily API with timeframe filtering (day/week/month) and category classification (tech/business/science/health)',
+    schema: z.object({
+      query: z.string().describe('The news search query'),
+      timeframe: z.enum(['day', 'week', 'month']).optional().default('week').describe('News timeframe'),
+      maxResults: z.number().optional().default(10).describe('Maximum number of articles'),
+      category: z.enum(['general', 'tech', 'business', 'science', 'health']).optional().default('general').describe('News category'),
+    }),
   })
   async newsSearch({
     query,
@@ -279,6 +294,11 @@ export class WebResearchTools {
     name: 'social-profile-search',
     description:
       'Search for social media profiles across multiple platforms (LinkedIn, Twitter, GitHub, Dev.to, etc.) with intelligent username extraction',
+    schema: z.object({
+      query: z.string().describe('Person or entity name to search for'),
+      platforms: z.array(z.string()).describe('List of platforms to search (e.g. ["linkedin", "github", "twitter"])'),
+      limit: z.number().optional().default(5).describe('Maximum number of profiles to return'),
+    }),
   })
   async searchSocialProfiles({
     query,
@@ -350,6 +370,12 @@ export class WebResearchTools {
     name: 'research-search',
     description:
       'Comprehensive research search using Tavily API with academic source integration, credibility assessment, and multi-depth analysis (summary/detailed/comprehensive)',
+    schema: z.object({
+      topic: z.string().describe('Research topic to investigate'),
+      includeAcademic: z.boolean().optional().default(false).describe('Whether to include academic sources'),
+      minSources: z.number().optional().default(5).describe('Minimum number of sources to gather'),
+      analysisDepth: z.enum(['summary', 'detailed', 'comprehensive']).optional().default('detailed').describe('Depth of research analysis'),
+    }),
   })
   async researchSearch({
     topic,

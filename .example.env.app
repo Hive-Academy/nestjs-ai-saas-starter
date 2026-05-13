@@ -45,7 +45,7 @@ OPENAI_MAX_INPUT_TOKENS=8191
 # HuggingFace Embedding Configuration (if using huggingface provider)
 HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 HUGGINGFACE_MODEL=sentence-transformers/all-MiniLM-L6-v2
-HUGGINGFACE_API_ENDPOINT=https://api-inference.huggingface.co/pipeline/feature-extraction
+HUGGINGFACE_API_ENDPOINT=https://router.huggingface.co/hf-inference/pipeline/feature-extraction
 HUGGINGFACE_DIMENSIONS=384
 HUGGINGFACE_BATCH_SIZE=50
 
@@ -77,29 +77,19 @@ LOG_EMBEDDING_OPERATIONS=false
 # OTHER APPLICATION SETTINGS
 # =============================================================================
 
-# Debug Configuration  
+# Debug Configuration
 DEBUG_ENABLED=true
 DEBUG_LOG_LEVEL=info
 LANGGRAPH_DEBUG=false
 
-# Checkpoint Module (App-level settings)
-CHECKPOINT_ENABLED=true
-CHECKPOINT_STORAGE=memory
-CHECKPOINT_MAX_COUNT=100
-CHECKPOINT_INTERVAL_MS=1000
-CHECKPOINT_MAX_AGE=604800000          # 7 days in milliseconds
-CHECKPOINT_MAX_PER_THREAD=100         # Max checkpoints per thread
-CHECKPOINT_CLEANUP_INTERVAL=3600000   # 1 hour in milliseconds
-CHECKPOINT_SQLITE_PATH=./data/checkpoints.db
-CHECKPOINT_REDIS_PREFIX=checkpoints:
-CHECKPOINT_REDIS_TTL=86400            # 24 hours in seconds
+
 
 # Redis configuration (if using redis storage for checkpoints)
 REDIS_URL=redis://localhost:6379
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# PostgreSQL configuration (if using postgres storage for checkpoints) 
+# PostgreSQL configuration (if using postgres storage for checkpoints)
 POSTGRES_CONNECTION_STRING=
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
@@ -116,21 +106,8 @@ MONITORING_ALERTING_ENABLED=true
 MONITORING_ERROR_RATE_THRESHOLD=0.05
 MONITORING_LATENCY_THRESHOLD_MS=5000
 
-# Time Travel Module (App-level settings)
-TIME_TRAVEL_ENABLED=true
-TIME_TRAVEL_MAX_SNAPSHOTS=50
-TIME_TRAVEL_DEBUG_MODE=false
 
-# Streaming Module (App-level settings)
-STREAMING_ENABLED=true
-STREAMING_TOKENS=true
-STREAMING_EVENTS=true
-STREAMING_PROGRESS=true
 
-# WebSocket Configuration (App-level settings)
-WEBSOCKET_ENABLED=true
-WEBSOCKET_PORT=3001
-WEBSOCKET_CORS=true
 
 # HITL (Human-in-the-Loop) Module (App-level settings)
 HITL_ENABLED=true
@@ -141,10 +118,6 @@ HITL_RISK_HIGH=0.8
 HITL_RISK_CRITICAL=0.95
 HITL_TIMEOUT_MS=1800000
 
-# Tool System (App-level settings)
-TOOLS_AUTO_DISCOVER=true
-TOOLS_VALIDATION=true
-TOOLS_CACHE=true
 
 # Compilation (App-level settings)
 COMPILATION_CACHE=true

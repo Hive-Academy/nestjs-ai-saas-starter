@@ -7,13 +7,31 @@
  * Usage:
  * ```typescript
  * import {
- *   GlassmorphismCardComponent,
+ *   LibraryShowcaseCardComponent,
  *   SectionContainerComponent,
+ *   LibraryShowcaseGridComponent,
+ *   SectionDividerComponent,
  *   SectionParticleBackgroundComponent
  * } from '@shared/components';
  * ```
  */
 
-export { GlassmorphismCardComponent } from './glassmorphism-card.component';
-export { SectionContainerComponent } from './section-container.component';
-export { SectionParticleBackgroundComponent } from './section-particle-background.component';
+export { SectionDividerComponent } from './section-divider.component';
+export { CodeSnippetComponent } from './code-snippet.component';
+export { DecorativePatternComponent } from './decorative-patterns.component';
+export {
+  ScrollingCodeTimelineComponent,
+  type TimelineStep,
+} from './scrolling-code-timeline.component';
+
+// Phase 3: Streaming UI Components
+export { TokenStreamDisplayComponent } from './token-stream-display.component';
+export {
+  ProgressIndicatorComponent,
+  type ProgressData,
+} from './progress-indicator.component';
+export {
+  AgentStatusPanelComponent,
+  type AgentStatus,
+  type AgentStatusType,
+} from './agent-status-panel.component';

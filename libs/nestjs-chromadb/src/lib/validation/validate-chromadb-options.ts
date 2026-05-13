@@ -75,9 +75,16 @@ export function validateChromaDBOptions(options: ChromaDBModuleOptions): void {
     'connection.port must be a positive integer'
   );
 
-  if (host && !/^https?:\/\//i.test(host)) {
-    // Warn but do not fail – aligns with quick fix guidance
-    logger.warn('ChromaDB host should include protocol (http:// or https://)');
+  if (host && /^https?:\/\//i.test(host)) {
+    // Warn if host INCLUDES protocol - ChromaDB client adds it automatically
+    logger.warn(
+      'ChromaDB host should NOT include protocol (http:// or https://). ' +
+        'The ChromaDB client automatically adds the protocol based on the ssl option. ' +
+        `Remove protocol from host: "${host}" → "${host.replace(
+          /^https?:\/\//i,
+          ''
+        )}"`
+    );
   }
 
   if (options.batchSize !== undefined) {

@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "useTui": false,
   "workspaceLayout": {
     "appsDir": "apps",
     "libsDir": "libs"
@@ -36,17 +37,13 @@
       "exclude": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
-        "libs/langgraph-modules/streaming/*",
         "libs/langgraph-modules/workflow-engine/*",
-        "libs/langgraph-modules/time-travel/*",
-        "libs/langgraph-modules/multi-agent/*",
-        "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/langgraph-modules/adapters/*"
       ]
     },
     {
@@ -77,17 +74,13 @@
       "include": [
         "libs/nestjs-chromadb/*",
         "libs/nestjs-neo4j/*",
-        "libs/langgraph-modules/checkpoint/*",
         "libs/langgraph-modules/core/*",
         "libs/langgraph-modules/hitl/*",
-        "libs/langgraph-modules/streaming/*",
         "libs/langgraph-modules/workflow-engine/*",
-        "libs/langgraph-modules/time-travel/*",
-        "libs/langgraph-modules/multi-agent/*",
-        "libs/langgraph-modules/functional-api/*",
         "libs/langgraph-modules/memory/*",
         "libs/langgraph-modules/monitoring/*",
-        "libs/langgraph-modules/platform/*"
+        "libs/langgraph-modules/platform/*",
+        "libs/langgraph-modules/adapters/*"
       ],
       "options": {
         "typecheck": {
@@ -97,7 +90,8 @@
             "command": "tsc --noEmit --skipLibCheck"
           }
         }
-      }
+      },
+      "exclude": ["libs/langgraph-modules/adapters/*"]
     },
     {
       "plugin": "@nx/playwright/plugin",
@@ -138,18 +132,14 @@
     "projects": [
       "libs/nestjs-chromadb",
       "libs/nestjs-neo4j",
-      "libs/langgraph-modules/checkpoint",
       "libs/langgraph-modules/core",
       "libs/langgraph-modules/hitl",
-      "libs/langgraph-modules/streaming",
       "libs/langgraph-modules/workflow-engine",
-      "libs/langgraph-modules/time-travel",
-      "libs/langgraph-modules/multi-agent",
-      "libs/langgraph-modules/functional-api",
       "libs/langgraph-modules/memory",
       "libs/langgraph-modules/monitoring",
       "libs/langgraph-modules/platform",
-      "angular-3d"
+      "libs/langgraph-modules/adapters",
+      "libs/langgraph-angular"
     ],
     "version": {
       "preVersionCommand": "nx run-many -t build --exclude dev-brand-api",

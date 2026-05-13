@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { type WorkflowState, generateId } from '@hive-academy/langgraph-core';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { generateId } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { ApprovalChainService } from './approval-chain.service';
 import { ConfidenceEvaluatorService } from './confidence-evaluator.service';
 import { ApprovalTimeoutService } from './approval-timeout.service';
 import { ApprovalStreamingService } from './approval-streaming.service';
-import { HitlCheckpointService } from './hitl-checkpoint.service';
 import { HITL_EVENTS, HITL_DEFAULTS } from '../constants';
 import {
   EscalationStrategy,
@@ -24,6 +25,11 @@ interface IHitlStorageService {
 /**
  * Service for creating and setting up approval requests
  * Handles the complex request creation process
+ *
+ * **TASK_2025_040 Phase 1** (Migration to LangGraph Native Interruption):
+ * - Removed HitlCheckpointService dependency (uses LangGraph checkpointer via config)
+ * - Methods now accept RunnableConfig parameter for checkpoint access
+ * - No more custom checkpoint logic - LangGraph handles state persistence
  */
 @Injectable()
 export class HitlApprovalRequestService {
@@ -34,24 +40,27 @@ export class HitlApprovalRequestService {
     private readonly approvalChainService: ApprovalChainService,
     private readonly confidenceEvaluator: ConfidenceEvaluatorService,
     private readonly approvalTimeoutService: ApprovalTimeoutService,
-    private readonly approvalStreamingService: ApprovalStreamingService,
-    private readonly hitlCheckpointService: HitlCheckpointService
+    private readonly approvalStreamingService: ApprovalStreamingService
   ) {
     this.logger.log('📝 HITL Approval Request Service initialized');
   }
 
   /**
    * Create and setup a human approval request
+   *
+   * **Phase 1 Change**: Added optional config parameter for LangGraph checkpointer access
+   * Config is optional for backward compatibility with decorator-based approvals
    */
   async createApprovalRequest(
     executionId: string,
     nodeId: string,
     message: string,
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RequiresApprovalOptions = {},
     hitlStorage: IHitlStorageService,
     approvalCache: Map<string, HumanApprovalRequest>,
-    handleTimeout: (requestId: string) => Promise<void>
+    handleTimeout: (requestId: string) => Promise<void>,
+    config?: RunnableConfig
   ): Promise<HumanApprovalRequest> {
     const requestId = generateId('approval');
 
@@ -131,11 +140,8 @@ export class HitlApprovalRequestService {
       await this.approvalStreamingService.streamApprovalRequest(request);
     }
 
-    // Save checkpoint after approval is created via checkpoint service
-    await this.hitlCheckpointService.saveApprovalState(
-      request,
-      'approval_created'
-    );
+    // NOTE: State persistence handled by LangGraph checkpointer (via config parameter)
+    // No manual checkpoint saving needed - LangGraph automatically persists state
 
     this.logger.log(
       `Approval request ${requestId} created for execution ${executionId}`
@@ -146,6 +152,8 @@ export class HitlApprovalRequestService {
 
   /**
    * Setup approval chain if configured
+   *
+   * **Phase 1 Change**: No checkpoint saving - LangGraph handles persistence
    */
   private async setupApprovalChain(
     request: HumanApprovalRequest,
@@ -173,13 +181,8 @@ export class HitlApprovalRequestService {
           approvalRequest.chain[approvalRequest.currentLevel];
         request.approvers = currentLevelObj.approvers.map((a) => a.id);
 
-        // Save chain progress checkpoint via checkpoint service
-        await this.hitlCheckpointService.saveChainProgress(
-          request,
-          currentLevelObj.priority,
-          request.approvers || [],
-          'initiated'
-        );
+        // NOTE: Chain progress tracked via Neo4j adapter storage
+        // LangGraph checkpointer handles workflow state persistence
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to initiate approval chain: ${errorMsg}`);

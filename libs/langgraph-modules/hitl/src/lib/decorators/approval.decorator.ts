@@ -1,11 +1,15 @@
 import 'reflect-metadata';
 
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
+import type { RunnableConfig } from '@langchain/core/runnables';
+import { UnauthorizedException } from '@nestjs/common';
 
 import type { HumanApprovalService } from '../services/human-approval.service';
 import type { ConfidenceEvaluatorService } from '../services/confidence-evaluator.service';
 import type { ApprovalChainService } from '../services/approval-chain.service';
 import { getHitlConfigWithDefaults } from '../utils/hitl-config.accessor';
+import { getApprovalEvaluatorService } from '../utils/approval-service.locator';
+import { WorkflowAuthContextService } from '@hive-academy/langgraph-workflow-engine';
 
 /**
  * Risk level enumeration for approval decisions
@@ -33,7 +37,7 @@ export enum EscalationStrategy {
  */
 export interface RequiresApprovalOptions {
   /** Condition function to determine if approval is needed */
-  when?: (state: WorkflowState) => boolean;
+  when?: (state: HitlCapableState) => boolean;
 
   /** Confidence threshold below which approval is required (0-1) */
   confidenceThreshold?: number;
@@ -42,10 +46,10 @@ export interface RequiresApprovalOptions {
   riskThreshold?: ApprovalRiskLevel;
 
   /** Message to show when requesting approval */
-  message?: string | ((state: WorkflowState) => string);
+  message?: string | ((state: HitlCapableState) => string);
 
   /** Additional metadata to include with approval request */
-  metadata?: (state: WorkflowState) => Record<string, unknown>;
+  metadata?: (state: HitlCapableState) => Record<string, unknown>;
 
   /** Timeout for approval in milliseconds */
   timeoutMs?: number;
@@ -68,7 +72,7 @@ export interface RequiresApprovalOptions {
     /** Skip if in safe mode */
     safeMode?: boolean;
     /** Custom skip condition */
-    custom?: (state: WorkflowState) => boolean;
+    custom?: (state: HitlCapableState) => boolean;
   };
 
   /** Risk assessment configuration */
@@ -78,7 +82,7 @@ export interface RequiresApprovalOptions {
     /** Risk factors to consider */
     factors?: string[];
     /** Custom risk evaluator */
-    evaluator?: (state: WorkflowState) => {
+    evaluator?: (state: HitlCapableState) => {
       level: ApprovalRiskLevel;
       factors: string[];
       score: number;
@@ -98,9 +102,20 @@ export interface RequiresApprovalOptions {
   /** Custom approval handlers */
   handlers?: {
     /** Pre-approval hook */
-    beforeApproval?: (state: WorkflowState) => Promise<void>;
+    beforeApproval?: (state: HitlCapableState) => Promise<void>;
     /** Post-approval hook */
-    afterApproval?: (state: WorkflowState, approved: boolean) => Promise<void>;
+    afterApproval?: (
+      state: HitlCapableState,
+      approved: boolean
+    ) => Promise<void>;
+  };
+
+  /** Approver authorization requirements */
+  approverAuth?: {
+    roles?: string[];
+    permissions?: string[];
+    tiers?: ('free' | 'pro' | 'enterprise')[];
+    requireChainMembership?: boolean;
   };
 }
 
@@ -125,9 +140,13 @@ export interface RequiresApprovalOptions {
  *   skipConditions: {
  *     highConfidence: 0.95,
  *     userRole: ['admin', 'lead-developer']
+ *   },
+ *   approverAuth: {
+ *     roles: ['admin', 'manager'],
+ *     tiers: ['enterprise']
  *   }
  * })
- * async performRiskyOperation(state: WorkflowState) {
+ * async performRiskyOperation(state: HitlCapableState) {
  *   // This will route to approval based on confidence and risk assessment
  *   return { result: 'completed' };
  * }
@@ -171,10 +190,46 @@ export function RequiresApproval(
 
     descriptor.value = async function (
       this: any,
-      state: WorkflowState
+      state: HitlCapableState,
+      config?: RunnableConfig
     ): Promise<any> {
       try {
-        // Get services from DI container (if available)
+        // ✅ REFACTORED: Get ApprovalEvaluatorService from service locator
+        // No manual injection required - service automatically available from module
+        const evaluatorService = getApprovalEvaluatorService();
+
+        if (!evaluatorService) {
+          throw new Error(
+            `ApprovalEvaluatorService not initialized. ` +
+              `Ensure HitlModule.forRoot() is imported in your root module.`
+          );
+        }
+
+        // ✅ TASK 3.1: Extract user context from RunnableConfig
+        // Evidence: hitl-auth-analysis.md:129-153
+        // This enables skip condition validation and stores approver auth for service validation
+        const user = WorkflowAuthContextService.extractUserContext(config);
+
+        if (!user) {
+          throw new UnauthorizedException(
+            `Approval operations require authentication`
+          );
+        }
+
+        // ✅ TASK 3.1: Store approver auth requirements in state for later validation
+        // Evidence: hitl-auth-analysis.md:147-153
+        // HumanApprovalService.processApprovalResponse() will validate against this
+        if (mergedOptions.approverAuth) {
+          // Store in state metadata for approval service validation
+          // Type assertion needed as WorkflowState has readonly index signature
+          (state as any)._approvalContext = {
+            requesterId: user.userId,
+            requesterRoles: user.roles,
+            approverAuth: mergedOptions.approverAuth,
+          };
+        }
+
+        // Get other services from DI container (for advanced evaluation)
         const humanApprovalService = this
           .humanApprovalService as HumanApprovalService;
         const confidenceEvaluator = this
@@ -183,12 +238,16 @@ export function RequiresApproval(
           .approvalChainService as ApprovalChainService;
 
         // Run pre-approval hook if defined
-        if (options.handlers?.beforeApproval) {
-          await options.handlers.beforeApproval(state);
+        if (mergedOptions.handlers?.beforeApproval) {
+          await mergedOptions.handlers.beforeApproval(state);
         }
 
-        // Check skip conditions first
-        const shouldSkip = await this.evaluateSkipConditions(state, options);
+        // ✅ REFACTORED: Use service delegation instead of prototype methods
+        const shouldSkip = await evaluatorService.evaluateSkipConditions(
+          state,
+          mergedOptions
+        );
+
         if (shouldSkip) {
           if (this.logger) {
             this.logger.debug(
@@ -197,12 +256,14 @@ export function RequiresApproval(
               )} - skip conditions met`
             );
           }
-          return originalMethod.call(this, state);
+          return originalMethod.call(this, state, config);
         }
 
         // Check if already approved
         const approvalKey = `approved_${String(propertyKey)}`;
-        const alreadyApproved = state[approvalKey] || state.approvalReceived;
+        const alreadyApproved =
+          (state as Record<string, unknown>)[approvalKey] ||
+          state.approvalReceived;
 
         if (alreadyApproved) {
           if (this.logger) {
@@ -210,13 +271,13 @@ export function RequiresApproval(
               `Approval already received for ${String(propertyKey)}`
             );
           }
-          return originalMethod.call(this, state);
+          return originalMethod.call(this, state, config);
         }
 
-        // Evaluate if approval is needed
-        const needsApproval = await this.evaluateApprovalRequired(
+        // ✅ REFACTORED: Use service delegation for approval evaluation
+        const needsApproval = await evaluatorService.evaluateApprovalRequired(
           state,
-          options,
+          mergedOptions,
           {
             humanApprovalService,
             confidenceEvaluator,
@@ -225,19 +286,20 @@ export function RequiresApproval(
         );
 
         if (needsApproval) {
-          return await this.routeToApproval(
+          // ✅ REFACTORED: Use service delegation for routing
+          return await evaluatorService.routeToApproval(
             state,
-            options,
+            mergedOptions,
             String(propertyKey)
           );
         }
 
         // Execute the original method
-        const result = await originalMethod.call(this, state);
+        const result = await originalMethod.call(this, state, config);
 
         // Run post-approval hook if defined
-        if (options.handlers?.afterApproval) {
-          await options.handlers.afterApproval(state, true);
+        if (mergedOptions.handlers?.afterApproval) {
+          await mergedOptions.handlers.afterApproval(state, true);
         }
 
         return result;
@@ -250,9 +312,9 @@ export function RequiresApproval(
         }
 
         // Run post-approval hook with failure
-        if (options.handlers?.afterApproval) {
+        if (mergedOptions.handlers?.afterApproval) {
           try {
-            await options.handlers.afterApproval(state, false);
+            await mergedOptions.handlers.afterApproval(state, false);
           } catch (hookError) {
             if (this.logger) {
               this.logger.error('Error in afterApproval hook:', hookError);
@@ -264,166 +326,33 @@ export function RequiresApproval(
       }
     };
 
-    // Add helper methods to the decorated class
-    if (!target.evaluateSkipConditions) {
-      target.evaluateSkipConditions = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions
-      ): Promise<boolean> {
-        const skip = options.skipConditions;
-        if (!skip) {
-          return false;
-        }
-
-        // High confidence skip
-        if (
-          skip.highConfidence &&
-          (state.confidence || 0) >= skip.highConfidence
-        ) {
-          return true;
-        }
-
-        // User role skip
-        if (skip.userRole && state.metadata?.userRole) {
-          const userRole = state.metadata.userRole as string;
-          if (skip.userRole.includes(userRole)) {
-            return true;
-          }
-        }
-
-        // Safe mode skip
-        if (skip.safeMode && state.metadata?.safeMode === true) {
-          return true;
-        }
-
-        // Custom skip condition
-        if (skip.custom) {
-          return skip.custom(state);
-        }
-
-        return false;
-      };
-    }
-
-    if (!target.evaluateApprovalRequired) {
-      target.evaluateApprovalRequired = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions,
-        services: {
-          humanApprovalService?: HumanApprovalService;
-          confidenceEvaluator?: ConfidenceEvaluatorService;
-          approvalChainService?: ApprovalChainService;
-        }
-      ): Promise<boolean> {
-        // Custom condition check
-        if (options.when?.(state)) {
-          return true;
-        }
-
-        // Confidence threshold check
-        if (options.confidenceThreshold !== undefined) {
-          const confidence = services.confidenceEvaluator
-            ? await services.confidenceEvaluator.evaluateConfidence(state)
-            : state.confidence || 0;
-
-          if (confidence < options.confidenceThreshold) {
-            if (this.logger) {
-              this.logger.debug(
-                `Approval required: confidence ${confidence} < threshold ${options.confidenceThreshold}`
-              );
-            }
-            return true;
-          }
-        }
-
-        // Risk assessment check
-        if (options.riskAssessment?.enabled && services.confidenceEvaluator) {
-          const riskAssessment = await services.confidenceEvaluator.assessRisk(
-            state,
-            {
-              factors: options.riskAssessment.factors || [],
-              customEvaluator: options.riskAssessment.evaluator,
-            }
-          );
-
-          if (options.riskThreshold) {
-            const riskLevels = {
-              [ApprovalRiskLevel.LOW]: 1,
-              [ApprovalRiskLevel.MEDIUM]: 2,
-              [ApprovalRiskLevel.HIGH]: 3,
-              [ApprovalRiskLevel.CRITICAL]: 4,
-            };
-
-            const currentRiskLevel =
-              riskLevels[riskAssessment.level as ApprovalRiskLevel];
-            const thresholdLevel = riskLevels[options.riskThreshold];
-
-            if (currentRiskLevel >= thresholdLevel) {
-              if (this.logger) {
-                this.logger.debug(
-                  `Approval required: risk level ${riskAssessment.level} >= threshold ${options.riskThreshold}`
-                );
-              }
-              return true;
-            }
-          }
-        }
-
-        return false;
-      };
-    }
-
-    if (!target.routeToApproval) {
-      target.routeToApproval = async function (
-        state: WorkflowState,
-        options: RequiresApprovalOptions,
-        nodeId: string
-      ): Promise<any> {
-        // Generate approval message
-        const message =
-          typeof options.message === 'function'
-            ? options.message(state)
-            : options.message || `Approval required for ${nodeId}`;
-
-        // Generate metadata
-        const metadata = options.metadata ? options.metadata(state) : {};
-
-        if (this.logger) {
-          this.logger.log(`Routing to approval: ${message}`);
-        }
-
-        return {
-          type: 'goto',
-          goto: 'human_approval',
-          update: {
-            waitingForApproval: true,
-            approvalRequest: {
-              nodeId,
-              message,
-              metadata: {
-                ...metadata,
-                confidenceThreshold: options.confidenceThreshold,
-                riskThreshold: options.riskThreshold,
-                chainId: options.chainId,
-                escalationStrategy: options.escalationStrategy,
-                timeoutMs: options.timeoutMs,
-                onTimeout: options.onTimeout || 'reject',
-              },
-              requestedAt: new Date(),
-            },
-          },
-          metadata: {
-            approvalOptions: options,
-            nodeId,
-            timestamp: new Date(),
-          },
-        };
-      };
-    }
+    // ✅ ARCHITECTURE: Service Locator Pattern
+    // ApprovalEvaluatorService accessed via service locator (no manual injection required)
+    // Service is stored globally by HitlModule during initialization
+    // This eliminates the need for consumers to inject ApprovalEvaluatorService
 
     return descriptor;
   };
 }
+
+/**
+ * ARCHITECTURE NOTES
+ *
+ * Service Access Pattern:
+ * - ApprovalEvaluatorService accessed via service locator (getApprovalEvaluatorService())
+ * - No manual injection required in consumer classes
+ * - Service automatically available when HitlModule.forRoot() is imported
+ *
+ * Previous Architecture (REMOVED):
+ * - Required manual injection: constructor(@Inject(...) private approvalEvaluator)
+ * - Error-prone: Easy to forget injection
+ * - Poor DX: Extra boilerplate in every consumer class
+ *
+ * New Architecture (CURRENT):
+ * - Automatic service access via service locator
+ * - Zero boilerplate in consumer classes
+ * - Just use @RequiresApproval() - it works!
+ */
 
 /**
  * Get approval options from a method
@@ -441,7 +370,7 @@ export function getApprovalOptions(
  * @example
  * ```typescript
  * @ApprovalHandler()
- * async handleApproval(state: WorkflowState, feedback: HumanFeedback) {
+ * async handleApproval(state: HitlCapableState, feedback: HumanFeedback) {
  *   if (feedback.approved) {
  *     return { type: 'goto', goto: 'continue' };
  *   } else {

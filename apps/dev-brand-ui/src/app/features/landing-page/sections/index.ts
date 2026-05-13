@@ -7,6 +7,7 @@
 
 // Core landing page sections
 export { HeroSectionComponent } from './hero-section.component';
+export { MetaballHeroSectionComponent } from './metaball-hero-section.component';
 
 // Type definitions for landing page
 export interface LandingPageSection {

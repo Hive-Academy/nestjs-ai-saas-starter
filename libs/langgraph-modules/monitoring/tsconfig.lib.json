@@ -12,15 +12,6 @@
   "references": [
     {
       "path": "../core/tsconfig.lib.json"
-    },
-    {
-      "path": "../hitl/tsconfig.lib.json"
-    },
-    {
-      "path": "../streaming/tsconfig.lib.json"
-    },
-    {
-      "path": "../checkpoint/tsconfig.lib.json"
     }
   ]
 }

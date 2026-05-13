@@ -11,7 +11,7 @@
  */
 
 import 'reflect-metadata';
-import { int } from 'neo4j-driver';
+import { int, isInt } from 'neo4j-driver';
 
 /**
  * Unified safety configuration combining all validation and transformation features
@@ -784,6 +784,12 @@ function transformForNeo4j(args: any[], config: Required<SafeConfig>): any[] {
 function transformValueForNeo4j(obj: any, config: Required<SafeConfig>): any {
   if (obj === null || obj === undefined) {
     return obj;
+  }
+
+  // Convert Neo4j Integer/Long objects to JS primitives FIRST
+  // This handles Integer objects coming FROM database results
+  if (isInt(obj)) {
+    return obj.toNumber();
   }
 
   if (Array.isArray(obj)) {

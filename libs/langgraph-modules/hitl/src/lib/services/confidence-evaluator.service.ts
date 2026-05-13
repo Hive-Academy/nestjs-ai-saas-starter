@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { WorkflowState } from '@hive-academy/langgraph-core';
+import type { HitlCapableState } from '../interfaces/hitl-state.interface';
 import { ApprovalRiskLevel } from '../decorators/approval.decorator';
 import { HITL_EVENTS, RISK_WEIGHTS } from '../constants';
 import type { IConfidenceStorageService } from '../interfaces/confidence-storage.interface';
@@ -46,7 +46,7 @@ export interface RiskAssessment {
  */
 export interface RiskAssessmentOptions {
   factors?: string[];
-  customEvaluator?: (state: WorkflowState) => {
+  customEvaluator?: (state: HitlCapableState) => {
     level: ApprovalRiskLevel;
     factors: string[];
     score: number;
@@ -73,7 +73,7 @@ export interface ApprovalPattern {
  */
 export interface ConfidenceEvaluationContext {
   /** Current workflow state */
-  state: WorkflowState;
+  state: HitlCapableState;
 
   /** Historical patterns for this node */
   historicalPattern?: ApprovalPattern;
@@ -102,21 +102,21 @@ export interface ConfidenceEvaluationContext {
  */
 export interface MLIntegrationHooks {
   /** Predict confidence based on state */
-  predictConfidence?: (state: WorkflowState) => Promise<number>;
+  predictConfidence?: (state: HitlCapableState) => Promise<number>;
 
   /** Predict risk level */
-  predictRisk?: (state: WorkflowState) => Promise<ApprovalRiskLevel>;
+  predictRisk?: (state: HitlCapableState) => Promise<ApprovalRiskLevel>;
 
   /** Learn from approval outcome */
   learnFromOutcome?: (
-    state: WorkflowState,
+    state: HitlCapableState,
     approved: boolean,
     confidence: number,
     actualOutcome: 'success' | 'failure'
   ) => Promise<void>;
 
   /** Get recommendation */
-  getRecommendation?: (state: WorkflowState) => Promise<{
+  getRecommendation?: (state: HitlCapableState) => Promise<{
     shouldApprove: boolean;
     confidence: number;
     reasoning: string[];
@@ -152,20 +152,24 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
     }
   }
 
+  /**
+   * Module initialization: Service ready for lazy-loading
+   *
+   * PHASE 1 CHANGE: Removed automatic pattern loading from onModuleInit()
+   * - Old behavior: Queried ChromaDB for ALL patterns at startup
+   * - New behavior: Patterns loaded lazily when evaluateConfidence() is called
+   * - Impact: Zero startup queries, instant application start
+   */
   async onModuleInit(): Promise<void> {
-    this.logger.log(
-      'Confidence Evaluator Service initializing with persistent storage'
-    );
-
     if (this.confidenceStorage) {
-      await this.loadHistoricalPatterns();
+      // Initialize ML hooks without loading data
       await this.initializeMLHooks();
       this.logger.log(
-        '✅ Confidence Evaluator Service initialized with storage adapter'
+        '✅ ConfidenceEvaluatorService initialized (lazy-loading enabled - patterns load on-demand)'
       );
     } else {
       this.logger.warn(
-        '⚠️  Confidence Evaluator Service running in degraded mode without storage'
+        '⚠️  ConfidenceEvaluatorService running without storage adapter - confidence learning disabled'
       );
     }
   }
@@ -174,7 +178,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Evaluate confidence level for workflow state
    */
   async evaluateConfidence(
-    state: WorkflowState,
+    state: HitlCapableState,
     context?: Partial<ConfidenceEvaluationContext>
   ): Promise<number> {
     const evaluationContext: ConfidenceEvaluationContext = {
@@ -182,9 +186,9 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       ...context,
     };
 
-    this.logger.debug(
-      `Evaluating confidence for execution ${state.executionId}`
-    );
+    const executionId = state.executionId ?? 'unknown';
+
+    this.logger.debug(`Evaluating confidence for execution ${executionId}`);
 
     try {
       // Get base confidence from state
@@ -219,25 +223,25 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       if (this.confidenceStorage) {
         try {
           await this.confidenceStorage.storeConfidenceHistory(
-            state.executionId,
+            executionId,
             factors
           );
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(executionId, factors);
         } catch (error) {
           this.logger.error(
             `Failed to store confidence history in adapter: ${error}`
           );
           // Cache-only fallback for this execution
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(executionId, factors);
         }
       } else {
         // Cache-only mode
-        this.historyCache.set(state.executionId, factors);
+        this.historyCache.set(executionId, factors);
       }
 
       // Emit evaluation event
       await this.eventEmitter.emit(HITL_EVENTS.CONFIDENCE_EVALUATED, {
-        executionId: state.executionId,
+        executionId,
         confidence,
         factors: factors.map((f) => ({
           name: f.name,
@@ -266,7 +270,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Assess risk level for workflow state
    */
   async assessRisk(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions = {}
   ): Promise<RiskAssessment> {
     this.logger.debug(`Assessing risk for execution ${state.executionId}`);
@@ -387,18 +391,17 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Get confidence factors for a state
    */
   async getConfidenceFactors(
-    state: WorkflowState
+    state: HitlCapableState
   ): Promise<Record<string, number>> {
-    let factors = this.historyCache.get(state.executionId);
+    const execId = state.executionId ?? 'unknown';
+    let factors = this.historyCache.get(execId);
 
     // Load from storage if not in cache
     if (!factors && this.confidenceStorage) {
       try {
-        factors = await this.confidenceStorage.getConfidenceHistory(
-          state.executionId
-        );
+        factors = await this.confidenceStorage.getConfidenceHistory(execId);
         if (factors) {
-          this.historyCache.set(state.executionId, factors);
+          this.historyCache.set(execId, factors);
         }
       } catch (error) {
         this.logger.error(
@@ -423,7 +426,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Learn from approval outcome for future predictions
    */
   async learnFromApprovalOutcome(
-    state: WorkflowState,
+    state: HitlCapableState,
     approved: boolean,
     confidence: number,
     actualOutcome?: 'success' | 'failure'
@@ -504,7 +507,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
       if (this.confidenceStorage && actualOutcome) {
         try {
           await this.confidenceStorage.storeConfidenceOutcome({
-            executionId: state.executionId,
+            executionId: state.executionId ?? 'unknown',
             approved,
             actualOutcome,
             humanConfidence: confidence,
@@ -568,7 +571,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   /**
    * Get ML recommendation if available
    */
-  async getMLRecommendation(state: WorkflowState): Promise<
+  async getMLRecommendation(state: HitlCapableState): Promise<
     | {
         shouldApprove: boolean;
         confidence: number;
@@ -732,41 +735,43 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
   }
 
   /**
-   * Load historical patterns from persistent storage
+   * Load patterns for specific execution (lazy-loading)
+   *
+   * PHASE 1 NEW METHOD: Replaces automatic loading
+   * Call this when workflows need confidence evaluation, not at startup
+   *
+   * @param executionId - Workflow execution ID
+   * @returns Number of patterns loaded
    */
-  private async loadHistoricalPatterns(): Promise<void> {
+  async loadPatternsForExecution(executionId: string): Promise<number> {
     if (!this.confidenceStorage) {
-      this.logger.warn(
-        'No storage adapter available - cannot load historical patterns'
+      this.logger.debug(
+        `No storage adapter - skipping pattern loading for ${executionId}`
       );
-      return;
+      return 0;
     }
 
     try {
-      // Load all patterns from adapter storage, not stub comment
-      const allPatterns = await this.confidenceStorage.getAllActivePatterns();
-      allPatterns.forEach((pattern) => {
-        this.patternCache.set(pattern.nodeId, pattern);
-      });
+      // Load patterns for specific execution only
+      const executionHistory =
+        await (this.confidenceStorage.getHistoricalFactors?.(executionId) ??
+          this.confidenceStorage.getConfidenceHistory(executionId));
 
-      const allHistory = await this.confidenceStorage.getAllActiveHistory();
-      Object.entries(allHistory).forEach(([executionId, factors]) => {
-        this.historyCache.set(executionId, factors);
-      });
+      if (executionHistory) {
+        this.historyCache.set(executionId, executionHistory);
+        this.logger.debug(
+          `✅ Loaded ${executionHistory.length} confidence factors for execution ${executionId}`
+        );
+        return executionHistory.length;
+      }
 
-      this.logger.log(
-        `✅ Loaded ${allPatterns.length} patterns and ${
-          Object.keys(allHistory).length
-        } history entries from persistent storage`
-      );
+      return 0;
     } catch (error) {
-      this.logger.error(
-        '❌ CRITICAL: Failed to load confidence data - service will fail fast',
-        error
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to load patterns for execution ${executionId}: ${errorMsg}. Continuing with default confidence.`
       );
-      throw new Error(
-        'Cannot initialize ConfidenceEvaluatorService without persistent storage access'
-      );
+      return 0;
     }
   }
 
@@ -839,7 +844,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    * Calculate risk factors
    */
   private async calculateRiskFactors(
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions
   ): Promise<RiskAssessment['details']> {
     const details = {
@@ -961,7 +966,7 @@ export class ConfidenceEvaluatorService implements OnModuleInit {
    */
   private async enhanceRiskAssessment(
     assessment: RiskAssessment,
-    state: WorkflowState,
+    state: HitlCapableState,
     options: RiskAssessmentOptions
   ): Promise<RiskAssessment> {
     if (!assessment.details.security) {

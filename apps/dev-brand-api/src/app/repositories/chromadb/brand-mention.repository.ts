@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Retry,
 } from '@hive-academy/nestjs-chromadb';
@@ -15,8 +16,11 @@ import { BrandMentionEntity } from '../../entities/chromadb/brand-mention.entity
  */
 @Injectable()
 export class BrandMentionRepository extends ChromaDBRepository<BrandMentionEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(BrandMentionEntity, 'brand-mentions', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(BrandMentionEntity, 'brand-mentions', chromaDB, collectionRegistry);
   }
 
   /**

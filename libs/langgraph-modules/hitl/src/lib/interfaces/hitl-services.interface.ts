@@ -2,59 +2,15 @@ import type {
   HumanApprovalRequest,
   HumanApprovalResponse,
 } from '../services/approval-workflow.types';
-import type { BaseCheckpointTuple } from '@hive-academy/langgraph-core';
-
-/**
- * Interface for HITL Memory Learning Service
- * Handles feedback processing and learning from human decisions
- */
-export interface IHitlMemoryLearningService {
-  /**
-   * Learn from human approval feedback
-   * @param request The original approval request
-   * @param response The human response containing feedback
-   */
-  learnFromHumanFeedback(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): Promise<void>;
-
-  /**
-   * Store detailed feedback as a separate learning entry
-   * @param request The original approval request
-   * @param response The human response
-   * @param learningThreadId Thread ID for the learning session
-   */
-  storeDetailedFeedback(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse,
-    learningThreadId: string
-  ): Promise<void>;
-
-  /**
-   * Assess the quality of feedback provided
-   * @param response The human response
-   * @returns Quality rating
-   */
-  assessFeedbackQuality(
-    response: HumanApprovalResponse
-  ): 'high' | 'medium' | 'low';
-
-  /**
-   * Calculate the importance of feedback for learning
-   * @param request The original approval request
-   * @param response The human response
-   * @returns Importance score (0-1)
-   */
-  calculateFeedbackImportance(
-    request: HumanApprovalRequest,
-    response: HumanApprovalResponse
-  ): number;
-}
+import type { RunnableConfig } from '@langchain/core/runnables';
 
 /**
  * Interface for HITL Checkpoint Service
  * Handles state persistence and workflow checkpointing
+ *
+ * @deprecated DELETED in TASK_2025_040 Phase 1 - Replaced by LangGraph native checkpointer
+ * Access checkpointer via RunnableConfig parameter instead of service injection.
+ * @see RunnableConfigFactory.getCheckpointer()
  */
 export interface IHitlCheckpointService {
   /**
@@ -124,7 +80,7 @@ export interface IHitlCheckpointService {
     executionId: string,
     nodeId: string,
     limit?: number
-  ): Promise<readonly BaseCheckpointTuple[]>;
+  ): Promise<readonly any[]>;
 
   /**
    * Cleanup old approval checkpoints
@@ -205,6 +161,10 @@ export interface IHitlValidationService {
 /**
  * Interface for HITL Recovery Service
  * Handles service recovery and persistence management
+ *
+ * @deprecated DELETED in TASK_2025_040 Phase 2 - Replaced by LangGraph native recovery
+ * Recovery handled automatically by checkpointer. Use checkpointer.list() to find pending threads.
+ * @see RunnableConfigFactory.ensureCheckpointer()
  */
 export interface IHitlRecoveryService {
   /**
@@ -258,4 +218,51 @@ export interface IHitlRecoveryService {
     lastRecoveryTime?: Date;
     issues: string[];
   }>;
+}
+
+/**
+ * Interface for HITL Notification Service (Phase 3)
+ * Handles notifications by polling __interrupt__ field
+ */
+export interface IHitlNotificationService {
+  /**
+   * Poll for notifications from checkpointer __interrupt__ field
+   * @param config - LangGraph RunnableConfig with checkpointer
+   * @param threadId - Workflow thread ID
+   * @param checkpointNs - Checkpoint namespace
+   */
+  pollForNotifications(
+    config: RunnableConfig,
+    threadId: string,
+    checkpointNs?: string
+  ): Promise<any | null>;
+
+  /**
+   * Send approval request notification
+   */
+  notifyApprovalRequest(data: any): Promise<void>;
+
+  /**
+   * Send approval response notification
+   */
+  notifyApprovalResponse(data: any): Promise<void>;
+}
+
+/**
+ * Interface for HITL Timeout Service (Phase 3)
+ * Handles timeout actions using Command pattern
+ */
+export interface IHitlTimeoutService {
+  /**
+   * Handle timeout action using LangGraph native Command pattern
+   * @param config - LangGraph RunnableConfig with checkpointer
+   * @param interruptId - Interrupt ID to resume
+   * @param timeoutAction - Action to take on timeout
+   * @returns Command object for LangGraph to resume workflow
+   */
+  handleTimeoutWithCommand(
+    config: RunnableConfig,
+    interruptId: string,
+    timeoutAction: 'resume' | 'cancel'
+  ): Promise<any>;
 }

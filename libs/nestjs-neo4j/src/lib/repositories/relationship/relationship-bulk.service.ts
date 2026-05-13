@@ -18,6 +18,7 @@ import {
 import { NeogmaService } from '../../services/neogma.service';
 import { NeogmaQueryBuilderService } from '../../query-builder/neogma-query-builder.service';
 import { NeogmaQueryRunnerService } from '../../query-builder/neogma-query-runner.service';
+import { ParameterBindingUtility } from '../../utilities/parameter-binding.utility';
 
 /**
  * Bulk operations service for relationships
@@ -63,32 +64,31 @@ export class RelationshipBulkOperationsService<
     sourceId: string,
     options?: RelationshipQueryOptions & { hard?: boolean }
   ): Promise<number> {
-    const deleteClause = options?.hard
-      ? 'DELETE rel'
-      : 'SET rel.deletedAt = $deletedAt';
+    const params: Record<string, unknown> = { sourceId };
+    let whereClause = '';
+    let deleteClause = '';
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->()`
-    );
-
-    if (!options?.hard) {
-      builder.raw('WHERE rel.deletedAt IS NULL');
+    if (options?.hard) {
+      deleteClause = 'DELETE rel';
+    } else {
+      whereClause = 'WHERE rel.deletedAt IS NULL';
+      deleteClause = 'SET rel.deletedAt = $deletedAt';
+      params.deletedAt = new Date().toISOString();
     }
 
-    builder.raw(deleteClause).return('count(rel) as deletedCount');
+    const baseQuery = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->()
+      ${whereClause}
+      ${deleteClause}
+      RETURN count(rel) as deletedCount
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(sourceId, 'sourceId');
-
-    if (!options?.hard) {
-      bindParam.add(new Date().toISOString(), 'deletedAt');
-    }
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    const { query, params: boundParams } = ParameterBindingUtility.autoBind(
+      baseQuery,
+      params
     );
+
+    const queryResult = await this.queryRunner.executeRaw(query, boundParams);
 
     return (
       (queryResult.records?.[0]?.get('deletedCount')?.toInt() as number) || 0
@@ -102,32 +102,31 @@ export class RelationshipBulkOperationsService<
     targetId: string,
     options?: RelationshipQueryOptions & { hard?: boolean }
   ): Promise<number> {
-    const deleteClause = options?.hard
-      ? 'DELETE rel'
-      : 'SET rel.deletedAt = $deletedAt';
+    const params: Record<string, unknown> = { targetId };
+    let whereClause = '';
+    let deleteClause = '';
 
-    const builder = this.queryBuilder.createBuilder();
-    builder.match(
-      `()-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-    );
-
-    if (!options?.hard) {
-      builder.raw('WHERE rel.deletedAt IS NULL');
+    if (options?.hard) {
+      deleteClause = 'DELETE rel';
+    } else {
+      whereClause = 'WHERE rel.deletedAt IS NULL';
+      deleteClause = 'SET rel.deletedAt = $deletedAt';
+      params.deletedAt = new Date().toISOString();
     }
 
-    builder.raw(deleteClause).return('count(rel) as deletedCount');
+    const baseQuery = `
+      MATCH ()-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+      ${whereClause}
+      ${deleteClause}
+      RETURN count(rel) as deletedCount
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(targetId, 'targetId');
-
-    if (!options?.hard) {
-      bindParam.add(new Date().toISOString(), 'deletedAt');
-    }
-
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
+    const { query, params: boundParams } = ParameterBindingUtility.autoBind(
+      baseQuery,
+      params
     );
+
+    const queryResult = await this.queryRunner.executeRaw(query, boundParams);
 
     return (
       (queryResult.records?.[0]?.get('deletedCount')?.toInt() as number) || 0
@@ -225,19 +224,24 @@ export class RelationshipBulkOperationsService<
       };
     });
 
-    const builder = this.queryBuilder.createBuilder();
-    builder
-      .raw('UNWIND $relationshipData as relData')
-      .match(`(source:${this.sourceLabel} {id: relData.sourceId})`)
-      .match(`(target:${this.targetLabel} {id: relData.targetId})`)
-      .create(`(source)-[rel:${this.relationshipType}]->(target)`)
-      .raw('SET rel = relData.properties')
-      .return(returnVars.join(', '));
+    const baseQuery = `
+      UNWIND $relationshipData as relData
+      MATCH (source:${this.sourceLabel} {id: relData.sourceId})
+      MATCH (target:${this.targetLabel} {id: relData.targetId})
+      CREATE (source)-[rel:${this.relationshipType}]->(target)
+      SET rel = relData.properties
+      RETURN ${returnVars.join(', ')}
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(relationshipData, 'relationshipData');
+    const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+      relationshipData,
+    });
 
-    return this.executeRelationshipQuery(builder, options);
+    const queryResult = await this.queryRunner.executeRaw(query, params);
+
+    return queryResult.records.map((record) =>
+      this.buildRelationshipResult(record, options)
+    );
   }
 
   /**
@@ -311,22 +315,20 @@ export class RelationshipBulkOperationsService<
 
     const returnVars = this.buildReturnVars(options);
 
-    const builder = this.queryBuilder.createBuilder();
-    builder
-      .match(`(source:${this.sourceLabel} {id: $sourceId})`)
-      .match(`(target:${this.targetLabel} {id: $targetId})`)
-      .create(`(source)-[rel:${this.relationshipType} $properties]->(target)`)
-      .return(returnVars.join(', '));
+    const baseQuery = `
+      MATCH (source:${this.sourceLabel} {id: $sourceId})
+      MATCH (target:${this.targetLabel} {id: $targetId})
+      CREATE (source)-[rel:${this.relationshipType} $properties]->(target)
+      RETURN ${returnVars.join(', ')}
+    `;
 
-    const bindParam = builder.getBindParam();
-    bindParam.add(data.sourceId, 'sourceId');
-    bindParam.add(data.targetId, 'targetId');
-    bindParam.add(relationshipData, 'properties');
+    const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+      sourceId: data.sourceId,
+      targetId: data.targetId,
+      properties: relationshipData,
+    });
 
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
-    );
+    const queryResult = await this.queryRunner.executeRaw(query, params);
 
     if (!queryResult.records || queryResult.records.length === 0) {
       throw new Error(`Failed to create relationship ${this.relationshipType}`);
@@ -354,27 +356,31 @@ export class RelationshipBulkOperationsService<
           .map((key) => `rel.${key} = $${key}`)
           .join(', ');
 
-        const builder = this.queryBuilder.createBuilder();
-        builder.match(
-          `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
+        const softDeleteFilter = !options?.includeSoftDeleted
+          ? 'WHERE rel.deletedAt IS NULL'
+          : '';
+
+        const baseQuery = `
+          MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${
+          this.relationshipType
+        }]->(target:${this.targetLabel} {id: $targetId})
+          ${softDeleteFilter}
+          SET ${setClause}
+          RETURN ${returnVars.join(', ')}
+        `;
+
+        const params = {
+          sourceId: op.sourceId,
+          targetId: op.targetId,
+          ...updateData,
+        };
+
+        const { query, params: boundParams } = ParameterBindingUtility.autoBind(
+          baseQuery,
+          params
         );
 
-        this.addSoftDeleteFilter(builder, options);
-
-        builder.raw(`SET ${setClause}`).return(returnVars.join(', '));
-
-        const bindParam = builder.getBindParam();
-        bindParam.add(op.sourceId, 'sourceId');
-        bindParam.add(op.targetId, 'targetId');
-
-        Object.entries(updateData).forEach(([key, value]) => {
-          bindParam.add(value, key);
-        });
-
-        await this.queryRunner.executeRaw(
-          builder.getStatement(),
-          bindParam.get()
-        );
+        await this.queryRunner.executeRaw(query, boundParams);
 
         results.push({ success: true });
       } catch (error) {
@@ -399,33 +405,34 @@ export class RelationshipBulkOperationsService<
 
     for (const op of operations) {
       try {
-        const builder = this.queryBuilder.createBuilder();
-        builder.match(
-          `(source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})`
-        );
+        const params: Record<string, unknown> = {
+          sourceId: op.sourceId,
+          targetId: op.targetId,
+        };
+        let whereClause = '';
+        let actionClause = '';
 
         if (options && 'hard' in options && options.hard) {
-          builder.raw('DELETE rel');
+          actionClause = 'DELETE rel';
         } else {
-          builder
-            .raw('WHERE rel.deletedAt IS NULL')
-            .raw('SET rel.deletedAt = $deletedAt');
+          whereClause = 'WHERE rel.deletedAt IS NULL';
+          actionClause = 'SET rel.deletedAt = $deletedAt';
+          params.deletedAt = new Date().toISOString();
         }
 
-        builder.return('count(rel) > 0 as deleted');
+        const baseQuery = `
+          MATCH (source:${this.sourceLabel} {id: $sourceId})-[rel:${this.relationshipType}]->(target:${this.targetLabel} {id: $targetId})
+          ${whereClause}
+          ${actionClause}
+          RETURN count(rel) > 0 as deleted
+        `;
 
-        const bindParam = builder.getBindParam();
-        bindParam.add(op.sourceId, 'sourceId');
-        bindParam.add(op.targetId, 'targetId');
-
-        if (!(options && 'hard' in options && options.hard)) {
-          bindParam.add(new Date().toISOString(), 'deletedAt');
-        }
-
-        await this.queryRunner.executeRaw(
-          builder.getStatement(),
-          bindParam.get()
+        const { query, params: boundParams } = ParameterBindingUtility.autoBind(
+          baseQuery,
+          params
         );
+
+        await this.queryRunner.executeRaw(query, boundParams);
 
         results.push({ success: true });
       } catch (error) {
@@ -468,42 +475,32 @@ export class RelationshipBulkOperationsService<
   ): Promise<RelationshipResult<TRel, TSource, TTarget>[]> {
     if (operations.length === 0) return [];
 
-    const builder = this.queryBuilder.createBuilder();
-    const bindParam = builder.getBindParam();
-
-    // Add operations as parameter
-    const opsParam = bindParam.add(
-      operations.map((op) => ({
-        sourceId: op.sourceId,
-        targetId: op.targetId,
-        type: op.type,
-        properties: op.properties || {},
-        onCreate: op.onCreate || {},
-        onMatch: op.onMatch || {},
-      }))
-    );
-
-    // Build UNWIND + MERGE query
-    builder
-      .raw(`UNWIND $${opsParam} AS op`)
-      .match(`(source:${this.sourceLabel} {id: op.sourceId})`)
-      .match(`(target:${this.targetLabel} {id: op.targetId})`)
-      .raw(`MERGE (source)-[r:${this.relationshipType}]->(target)`)
-      .raw(
-        'ON CREATE SET r += op.properties, r += op.onCreate, r.createdAt = datetime()'
-      )
-      .raw(
-        'ON MATCH SET r += op.properties, r += op.onMatch, r.updatedAt = datetime()'
-      );
-
-    // Add return clause based on options
     const returnVars = this.buildReturnVars(options);
-    builder.return(returnVars.join(', '));
 
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
-    );
+    const opsData = operations.map((op) => ({
+      sourceId: op.sourceId,
+      targetId: op.targetId,
+      type: op.type,
+      properties: op.properties || {},
+      onCreate: op.onCreate || {},
+      onMatch: op.onMatch || {},
+    }));
+
+    const baseQuery = `
+      UNWIND $opsData AS op
+      MATCH (source:${this.sourceLabel} {id: op.sourceId})
+      MATCH (target:${this.targetLabel} {id: op.targetId})
+      MERGE (source)-[r:${this.relationshipType}]->(target)
+      ON CREATE SET r += op.properties, r += op.onCreate, r.createdAt = datetime()
+      ON MATCH SET r += op.properties, r += op.onMatch, r.updatedAt = datetime()
+      RETURN ${returnVars.join(', ')}
+    `;
+
+    const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+      opsData,
+    });
+
+    const queryResult = await this.queryRunner.executeRaw(query, params);
 
     return queryResult.records.map((record) =>
       this.buildRelationshipResult(record, options)
@@ -541,43 +538,34 @@ export class RelationshipBulkOperationsService<
     if (operations.length === 0) return [];
 
     const targetLabel = options?.targetLabel || this.targetLabel;
-    const builder = this.queryBuilder.createBuilder();
-    const bindParam = builder.getBindParam();
+    const returnVars = this.buildReturnVars(options);
 
-    // Add operations as parameter
-    const opsParam = bindParam.add(
-      operations.map((op) => ({
-        sourceId: op.sourceId,
-        targetKey:
-          typeof op.targetKey === 'string' ? op.targetKey : op.targetKey,
-        type: op.type,
-        targetProps: op.targetProperties || {},
-        relProps: op.relationshipProperties || {},
-      }))
-    );
+    const opsData = operations.map((op) => ({
+      sourceId: op.sourceId,
+      targetKey: typeof op.targetKey === 'string' ? op.targetKey : op.targetKey,
+      type: op.type,
+      targetProps: op.targetProperties || {},
+      relProps: op.relationshipProperties || {},
+    }));
 
-    // Build UNWIND + MERGE query with node creation
     const targetKeyProperty =
       typeof operations[0]?.targetKey === 'string' ? 'name' : 'id';
 
-    builder
-      .raw(`UNWIND $${opsParam} AS op`)
-      .match(`(source:${this.sourceLabel} {id: op.sourceId})`)
-      .raw(`MERGE (target:${targetLabel} {${targetKeyProperty}: op.targetKey})`)
-      .raw(
-        'ON CREATE SET target += op.targetProps, target.createdAt = datetime()'
-      )
-      .raw(`MERGE (source)-[r:${this.relationshipType}]->(target)`)
-      .raw('ON CREATE SET r += op.relProps, r.createdAt = datetime()');
+    const baseQuery = `
+      UNWIND $opsData AS op
+      MATCH (source:${this.sourceLabel} {id: op.sourceId})
+      MERGE (target:${targetLabel} {${targetKeyProperty}: op.targetKey})
+      ON CREATE SET target += op.targetProps, target.createdAt = datetime()
+      MERGE (source)-[r:${this.relationshipType}]->(target)
+      ON CREATE SET r += op.relProps, r.createdAt = datetime()
+      RETURN ${returnVars.join(', ')}
+    `;
 
-    // Add return clause based on options
-    const returnVars = this.buildReturnVars(options);
-    builder.return(returnVars.join(', '));
+    const { query, params } = ParameterBindingUtility.autoBind(baseQuery, {
+      opsData,
+    });
 
-    const queryResult = await this.queryRunner.executeRaw(
-      builder.getStatement(),
-      bindParam.get()
-    );
+    const queryResult = await this.queryRunner.executeRaw(query, params);
 
     return queryResult.records.map((record) =>
       this.buildRelationshipResult(record, options)

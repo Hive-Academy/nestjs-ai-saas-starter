@@ -1,40 +1,36 @@
 import { generateId } from '@hive-academy/langgraph-core';
-import { Edge, Node } from '@hive-academy/langgraph-functional-api';
-import { Agent, LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { Edge, Node } from '@hive-academy/langgraph-workflow-engine';
 import {
-  EventStreamProcessorService,
-  StreamProgress,
-  StreamToken,
-} from '@hive-academy/langgraph-streaming';
-import { RequiresApproval } from '@hive-academy/langgraph-hitl';
-import {
-  DeclarativeWorkflowBase,
-  MetadataProcessorService,
-  SubgraphManagerService,
-  WorkflowGraphBuilderService,
-  WorkflowStreamService,
+  Agent,
+  LlmProviderService,
 } from '@hive-academy/langgraph-workflow-engine';
+// Removed deleted streaming package imports:
+// - EventStreamProcessorService (deleted)
+// - StreamProgress (deleted)
+// - StreamToken (deleted)
+// Migration: Decorators removed, streaming now uses LangGraph native graph.stream()
+import { RequiresApproval } from '@hive-academy/langgraph-hitl';
+// Removed deleted services and base class (no longer needed):
+// - DeclarativeWorkflowBase (not exported, decorator-driven architecture)
+// - WorkflowGraphBuilderService (deleted in consolidation)
+// - SubgraphManagerService (deleted in consolidation)
+// - WorkflowStreamService (deleted with streaming package)
+// - MetadataProcessorService (not needed without base class)
+// - EventEmitter2 (not needed without base class)
 import { AIMessage } from '@langchain/core/messages';
-import { Inject, Injectable, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Injectable } from '@nestjs/common';
 import { LLMProviderError } from '../../core/errors/business-workflow.errors';
 import { PersonalBrandMemoryService } from '../../core/memory/personal-brand-memory.service';
 import { Optimize } from '../../core/performance/optimization.decorators';
 import { Validate } from '../../core/validation/workflow.validators';
-import type { TypedWorkflowAgentState } from '../../types';
+import type { TypedAgentState } from '../../types';
 import type { BrandStrategy } from '../shared/agent.types';
 import type { ContentCreatorMetadata } from '../shared/metadata.types';
 import {
   buildDevToPrompt,
   buildLinkedInPrompt,
 } from './content-creator.prompts';
-import {
-  buildFinalContentMessage,
-  calculateQualityScore,
-  optimizeDevToContent,
-  optimizeLinkedInContent,
-  predictEngagement,
-} from './content-creator.utils';
+import { buildFinalContentMessage } from './content-creator.utils';
 
 /**
  * Enhanced Content Creator Agent - Workflow Agent Type
@@ -81,47 +77,20 @@ import {
   executionTime: 'medium',
   workflow: {
     name: 'content-creator-workflow',
-    type: 'functional-node', // 🔑 Explicit node-based workflow type
-    // 🆕 DEFAULTS APPLIED: streaming, confidenceThreshold, metrics now inherit from module config
-    enableInternalCheckpointing: false, // Override default true (no checkpointing needed)
-    internalTimeout: 45000, // Override default 60000 (45 seconds for content generation)
-    // 🆕 enableInternalStreaming, enableErrorRecovery, maxInternalRetries,
-    // enableStepProgress, stateKey now use module defaults
-    // 🆕 multiAgentStreaming uses module defaults
-
-    // Multi-agent interruption configuration - HITL for content approval
-    multiAgentInterruption: {
-      enabled: true, // Override default false - Enable approval for content before publishing
-      interruptBefore: ['content-creator'], // Pause before content creation for review
-    },
+    type: 'functional-node',
+    streaming: true,
+    confidenceThreshold: 0.8,
+    metrics: true,
   },
 })
 @Injectable()
-export class ContentCreatorAgent extends DeclarativeWorkflowBase<
-  TypedWorkflowAgentState<ContentCreatorMetadata>
-> {
+export class ContentCreatorAgent {
   constructor(
     private readonly llm: LlmProviderService,
-    private readonly memory: PersonalBrandMemoryService,
-    @Inject(EventEmitter2) eventEmitter: EventEmitter2,
-    @Inject(WorkflowGraphBuilderService)
-    graphBuilder: WorkflowGraphBuilderService,
-    @Inject(SubgraphManagerService) subgraphManager: SubgraphManagerService,
-    @Inject(MetadataProcessorService)
-    metadataProcessor: MetadataProcessorService,
-    @Optional()
-    @Inject(WorkflowStreamService)
-    streamService?: WorkflowStreamService,
-    @Optional() eventProcessor?: EventStreamProcessorService
+    private readonly memory: PersonalBrandMemoryService
   ) {
-    super(
-      eventEmitter,
-      graphBuilder,
-      subgraphManager,
-      metadataProcessor,
-      streamService,
-      eventProcessor
-    );
+    // No super() call - no base class
+    // Agents use @Agent decorator for orchestration (decorator-driven, not inheritance-driven)
   }
 
   /**
@@ -129,10 +98,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * Initializes content creation and extracts key parameters
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true, includeETA: true })
   async initializeContentCreation(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername || 'developer';
     const achievements = state.metadata.achievements || [];
 
@@ -146,6 +114,13 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
         contentStartTime: new Date(),
         workflowInstanceId: generateId('content'),
         targetPlatforms: ['linkedin', 'devto'],
+        // ✅ NEW: Emit custom progress at start
+        customProgress: {
+          agent: 'content-creator',
+          stage: 'gathering-context',
+          message: `Initializing content creation for ${githubUsername}...`,
+          percentage: 10,
+        },
       },
     };
   }
@@ -155,10 +130,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * REAL BUSINESS LOGIC: Memory service integration for brand consistency
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   async gatherBrandContext(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
 
     try {
@@ -195,11 +169,9 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
 
   /**
    * Generate platform-specific content using LLM
-   * REAL BUSINESS LOGIC: AI-powered content generation with brand consistency
+   * ENHANCED: Optional linkedin-formatter and devto-formatter tool suggestions
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
-  @StreamToken({ enabled: true, format: 'structured' })
   @Validate
   @Optimize({
     cache: { ttl: 600000, maxSize: 50 },
@@ -208,8 +180,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     metrics: { trackExecutionTime: true, trackErrorRate: true },
   })
   async generatePlatformContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const achievements = state.metadata.achievements || [];
     const brandVoice = state.metadata.brandVoice;
@@ -244,13 +216,35 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
         brandStrategy
       );
 
+      // Enhanced prompts with optional tool suggestions
+      const linkedinEnhanced = `${linkedinPrompt}
+
+You may optionally use the linkedin-formatter tool to ensure professional LinkedIn formatting, proper hashtag usage, and platform-specific best practices if you need structured formatting guidance.`;
+
+      const devtoEnhanced = `${devtoPrompt}
+
+You may optionally use the devto-formatter tool to apply Dev.to markdown conventions, code block formatting, and community engagement patterns if you need technical blogging best practices.`;
+
       const [linkedinResponse, devtoResponse] = await Promise.all([
-        model.invoke([{ role: 'user', content: linkedinPrompt }]),
-        model.invoke([{ role: 'user', content: devtoPrompt }]),
+        model.invoke([
+          ...state.messages,
+          { role: 'user', content: linkedinEnhanced },
+        ]),
+        model.invoke([
+          ...state.messages,
+          { role: 'user', content: devtoEnhanced },
+        ]),
       ]);
 
-      const linkedinContent = linkedinResponse.content.toString();
-      const devtoContent = devtoResponse.content.toString();
+      // Extract formatted content (with fallback to direct LLM response)
+      const linkedinContent = this.extractFormattedContentOrFallback(
+        linkedinResponse,
+        'linkedin-formatter'
+      );
+      const devtoContent = this.extractFormattedContentOrFallback(
+        devtoResponse,
+        'devto-formatter'
+      );
 
       // Validate generated content quality
       if (!linkedinContent || linkedinContent.length < 50) {
@@ -272,6 +266,7 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
       }
 
       return {
+        messages: [...state.messages, linkedinResponse, devtoResponse],
         metadata: {
           ...state.metadata,
           currentStep: 'content-generated',
@@ -304,13 +299,12 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
 
   /**
    * Optimize content for engagement and platform best practices
-   * REAL BUSINESS LOGIC: Platform-specific optimization and enhancement
+   * MIGRATED: LLM-autonomous tool selection for content-optimizer and engagement-predictor
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   async optimizeContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const rawLinkedinContent = state.metadata.rawLinkedinContent;
     const rawDevtoContent = state.metadata.rawDevtoContent;
     const achievements = state.metadata.achievements || [];
@@ -320,22 +314,62 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
         throw new Error('Raw content is required for optimization');
       }
 
-      const optimizedLinkedin = optimizeLinkedInContent(
-        rawLinkedinContent,
-        achievements
-      );
-      const optimizedDevto = optimizeDevToContent(
-        rawDevtoContent,
-        achievements
-      );
+      // LLM with bound tools decides autonomously to call content-optimizer and engagement-predictor
+      const optimizationPrompt = `Optimize the following content for LinkedIn and Dev.to platforms:
 
-      const linkedinEngagement = predictEngagement(
-        'linkedin',
-        optimizedLinkedin
+**LinkedIn Content:**
+${rawLinkedinContent}
+
+**Dev.to Content:**
+${rawDevtoContent}
+
+**Achievements Context:**
+${JSON.stringify(achievements, null, 2)}
+
+Use the content-optimizer tool to enhance both pieces of content for:
+- Platform-specific best practices (hashtags, formatting, tone)
+- Engagement optimization (hooks, calls-to-action, readability)
+- SEO and discoverability improvements
+
+Then use the engagement-predictor tool to forecast expected engagement metrics (likes, comments, shares) for both optimized versions.
+
+Return the optimized content and engagement predictions.`;
+
+      const model = await this.llm.getLLM({
+        temperature: 0.5,
+        maxTokens: 2500,
+      });
+
+      const response = await model.invoke([
+        ...state.messages,
+        { role: 'user', content: optimizationPrompt },
+      ]);
+
+      // Extract tool results from messages
+      const toolMessages = this.extractToolMessages([
+        ...state.messages,
+        response,
+      ]);
+
+      // Parse optimized content from tool results (with fallback to raw content)
+      const optimizedLinkedin =
+        this.extractOptimizedContent(toolMessages, 'linkedin') ||
+        rawLinkedinContent;
+      const optimizedDevto =
+        this.extractOptimizedContent(toolMessages, 'devto') || rawDevtoContent;
+
+      // Parse engagement predictions from tool results (with fallback to defaults)
+      const linkedinEngagement = this.extractEngagementPrediction(
+        toolMessages,
+        'linkedin'
       );
-      const devtoEngagement = predictEngagement('devto', optimizedDevto);
+      const devtoEngagement = this.extractEngagementPrediction(
+        toolMessages,
+        'devto'
+      );
 
       return {
+        messages: [...state.messages, response],
         metadata: {
           ...state.metadata,
           currentStep: 'content-optimized',
@@ -364,32 +398,32 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
 
   /**
    * Assess content quality - decision point in workflow
+   * MIGRATED: Uses quality scores from quality-scorer tool (via extractQualityScore helper)
    */
   @Node({ type: 'condition' })
   async assessContentQuality(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+    state: TypedAgentState<ContentCreatorMetadata>
   ): Promise<{ route: string }> {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
-    const achievements = state.metadata.achievements || [];
 
+    // Extract quality scores from tool results in message history
+    const toolMessages = this.extractToolMessages(state.messages);
+    const linkedinQuality = this.extractQualityScore(toolMessages, 'linkedin');
+    const devtoQuality = this.extractQualityScore(toolMessages, 'devto');
+
+    // Average quality score across both platforms
+    const overallQuality = (linkedinQuality + devtoQuality) / 2;
+
+    // Basic validation: ensure substantial content exists
     const hasSubstantialContent =
       linkedinContent &&
       devtoContent &&
       linkedinContent.length > 100 &&
       devtoContent.length > 100;
-    const hasAchievements = achievements.length > 0;
-    const linkedinEngagement = state.metadata.linkedinEngagement || 0;
-    const devtoEngagement = state.metadata.devtoEngagement || 0;
 
-    const qualityScore = calculateQualityScore({
-      hasSubstantialContent: !!hasSubstantialContent,
-      hasAchievements,
-      linkedinEngagement,
-      devtoEngagement,
-      contentLength:
-        (linkedinContent?.length || 0) + (devtoContent?.length || 0),
-    });
+    // Route based on quality score and content validation
+    const qualityScore = hasSubstantialContent ? overallQuality : 0.5;
 
     return {
       route: qualityScore > 0.7 ? 'high-quality' : 'standard',
@@ -406,7 +440,6 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    * - WebSocket events: interruption_request, interruption_resolved
    */
   @Node({ type: 'standard' })
-  @StreamProgress({ enabled: true })
   @RequiresApproval({
     confidenceThreshold: 0.75,
     timeoutMs: 300000, // 5 minutes for content review
@@ -450,8 +483,8 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
     }),
   })
   async finalizeContent(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
-  ): Promise<Partial<TypedWorkflowAgentState<ContentCreatorMetadata>>> {
+    state: TypedAgentState<ContentCreatorMetadata>
+  ): Promise<Partial<TypedAgentState<ContentCreatorMetadata>>> {
     const githubUsername = state.metadata.githubUsername;
     const linkedinContent = state.metadata.linkedinContent || '';
     const devtoContent = state.metadata.devtoContent || '';
@@ -480,9 +513,122 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
           Date.now() -
           (state.metadata.contentStartTime?.getTime() || Date.now()),
         finalStage: true,
+        // ✅ NEW: Emit completion progress
+        customProgress: {
+          agent: 'content-creator',
+          stage: 'completed',
+          message: `Content created for ${githubUsername}: LinkedIn (${linkedinContent.length} chars), Dev.to (${devtoContent.length} chars)`,
+          percentage: 100,
+        },
       },
       next: undefined,
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MESSAGE PARSING HELPERS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Extract tool messages from messages array
+   */
+  private extractToolMessages(messages: any[]): any[] {
+    return messages.filter((msg) => msg.type === 'tool' || msg.tool_calls);
+  }
+
+  /**
+   * Extract optimized content from tool results
+   */
+  private extractOptimizedContent(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): string {
+    const optimizerMsg = toolMessages.find(
+      (msg) =>
+        msg.name === 'content-optimizer' && msg.content?.includes(platform)
+    );
+
+    if (!optimizerMsg) {
+      return ''; // Fallback handled by caller
+    }
+
+    try {
+      const result = JSON.parse(optimizerMsg.content);
+      return result.optimizedContent || '';
+    } catch {
+      return optimizerMsg.content || '';
+    }
+  }
+
+  /**
+   * Extract engagement prediction from tool results
+   */
+  private extractEngagementPrediction(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): number {
+    const engagementMsg = toolMessages.find(
+      (msg) =>
+        msg.name === 'engagement-predictor' && msg.content?.includes(platform)
+    );
+
+    if (!engagementMsg) {
+      return 0.5; // Default engagement score
+    }
+
+    try {
+      const result = JSON.parse(engagementMsg.content);
+      return result.predictions?.likes?.estimate || 0.5;
+    } catch {
+      return 0.5;
+    }
+  }
+
+  /**
+   * Extract quality score from tool results
+   */
+  private extractQualityScore(
+    toolMessages: any[],
+    platform: 'linkedin' | 'devto'
+  ): number {
+    const qualityMsg = toolMessages.find(
+      (msg) => msg.name === 'quality-scorer' && msg.content?.includes(platform)
+    );
+
+    if (!qualityMsg) {
+      return 0.75; // Default quality score
+    }
+
+    try {
+      const result = JSON.parse(qualityMsg.content);
+      return result.overallScore || 0.75;
+    } catch {
+      return 0.75;
+    }
+  }
+
+  /**
+   * Extract formatted content from tool result or fallback to LLM response
+   */
+  private extractFormattedContentOrFallback(
+    response: any,
+    toolName: string
+  ): string {
+    // Check if LLM used the tool
+    const toolMessage = response.tool_calls?.find(
+      (tc: any) => tc.name === toolName
+    );
+    if (toolMessage) {
+      try {
+        const result = JSON.parse(toolMessage.output || '{}');
+        return result.formattedContent || response.content.toString();
+      } catch {
+        return response.content.toString();
+      }
+    }
+
+    // Fallback to direct LLM response
+    return response.content.toString();
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -518,24 +664,22 @@ export class ContentCreatorAgent extends DeclarativeWorkflowBase<
    */
   @Edge('assessContentQuality', 'finalizeContent')
   shouldProceedToFinalize(
-    state: TypedWorkflowAgentState<ContentCreatorMetadata>
+    state: TypedAgentState<ContentCreatorMetadata>
   ): boolean {
     const linkedinContent = state.metadata.linkedinContent;
     const devtoContent = state.metadata.devtoContent;
-    const achievements = state.metadata.achievements || [];
-    const linkedinEngagement = state.metadata.linkedinEngagement || 0;
-    const devtoEngagement = state.metadata.devtoEngagement || 0;
 
-    const qualityScore = calculateQualityScore({
-      hasSubstantialContent:
-        (linkedinContent?.length || 0) > 100 &&
-        (devtoContent?.length || 0) > 100,
-      hasAchievements: achievements.length > 0,
-      linkedinEngagement,
-      devtoEngagement,
-      contentLength:
-        (linkedinContent?.length || 0) + (devtoContent?.length || 0),
-    });
+    // Extract quality scores from tool results
+    const toolMessages = this.extractToolMessages(state.messages);
+    const linkedinQuality = this.extractQualityScore(toolMessages, 'linkedin');
+    const devtoQuality = this.extractQualityScore(toolMessages, 'devto');
+    const overallQuality = (linkedinQuality + devtoQuality) / 2;
+
+    // Basic validation
+    const hasSubstantialContent =
+      (linkedinContent?.length || 0) > 100 && (devtoContent?.length || 0) > 100;
+
+    const qualityScore = hasSubstantialContent ? overallQuality : 0.5;
 
     return qualityScore > 0.0; // Always proceed to finalize
   }

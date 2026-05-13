@@ -1,9 +1,5 @@
-import type { WorkflowEngineModuleOptions } from '../workflow-engine.module';
-import type {
-  IStreamingService,
-  ICheckpointAdapter,
-  IMemoryAdapter,
-} from '@hive-academy/langgraph-core';
+import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import type { WorkflowEngineModuleOptions } from '../interfaces/functional/module-options.interface';
 
 /**
  * Global storage for workflow engine module configuration
@@ -35,11 +31,11 @@ export function getWorkflowEngineConfig(): WorkflowEngineModuleOptions {
  */
 export function getWorkflowEngineConfigWithDefaults(): Omit<
   Required<WorkflowEngineModuleOptions>,
-  'streamingAdapter' | 'checkpointAdapter' | 'memoryAdapter'
+  'checkpointer' | 'tools' | 'llm'
 > & {
-  streamingAdapter?: IStreamingService;
-  checkpointAdapter?: ICheckpointAdapter;
-  memoryAdapter?: IMemoryAdapter;
+  checkpointer?: BaseCheckpointSaver;
+  tools?: any[];
+  llm?: any;
 } {
   const config = getWorkflowEngineConfig();
 
@@ -60,11 +56,8 @@ export function getWorkflowEngineConfigWithDefaults(): Omit<
       logLevel: config.debugging?.logLevel ?? 'info',
       traceExecution: config.debugging?.traceExecution ?? false,
     },
-    agents: config.agents ?? [],
-    tools: config.tools ?? [],
-    workflows: config.workflows ?? [],
-    streamingAdapter: config.streamingAdapter,
-    checkpointAdapter: config.checkpointAdapter,
-    memoryAdapter: config.memoryAdapter,
+    checkpointer: config.checkpointer,
+    tools: config.tools,
+    llm: config.llm,
   };
 }

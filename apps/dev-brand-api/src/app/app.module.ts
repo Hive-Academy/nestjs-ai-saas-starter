@@ -1,60 +1,55 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ClsModule } from 'nestjs-cls';
 
 // Core library imports
 import {
-  IGraphService,
-  IVectorService,
   MemoryModule,
   MemoryModuleOptions,
+  IThreadRegistryStore,
 } from '@hive-academy/langgraph-memory';
 import { ChromaDBModule } from '@hive-academy/nestjs-chromadb';
 import { Neo4jModule } from '@hive-academy/nestjs-neo4j';
 
-// Adapters Module - Provides memory and HITL adapters with token injection
-import { AdaptersModule } from './adapters';
+// Adapters Module - Generic adapters from shared package
+import { LangGraphAdaptersModule } from '@hive-academy/langgraph-adapters';
+
+// Application-specific repositories
+import { RepositoryModule } from './repositories/repository.module';
 
 // Remove non-existent entity and repository imports for now
 
 // LangGraph modules with proper streaming integration
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
-import { FunctionalApiModule } from '@hive-academy/langgraph-functional-api';
 import {
   HitlModule,
   HitlModuleOptions,
-  IHitlStorageService,
-  IUserInterruptionStorageService,
+  IApprovalChainStorageService,
   IConfidenceStorageService,
   IFeedbackStorageService,
-  IApprovalChainStorageService,
+  IHitlStorageService,
+  IUserInterruptionStorageService,
 } from '@hive-academy/langgraph-hitl';
 import { MonitoringModule } from '@hive-academy/langgraph-monitoring';
-import { MultiAgentModule } from '@hive-academy/langgraph-multi-agent';
-import { StreamingModule } from '@hive-academy/langgraph-streaming';
-import { TimeTravelModule } from '@hive-academy/langgraph-time-travel';
 import {
   WorkflowEngineModule,
   WorkflowEngineModuleOptions,
 } from '@hive-academy/langgraph-workflow-engine';
 
-import { getCheckpointConfig } from './config/checkpoint.config';
+import { getCheckpointSaver } from './config/checkpoint.config';
 import { getChromaDBConfig } from './config/chromadb.config';
-import { getFunctionalApiConfig } from './config/functional-api.config';
 import { getHitlConfig } from './config/hitl.config';
 import { getMemoryConfig } from './config/memory.config';
 import { getMonitoringConfig } from './config/monitoring.config';
-import { getMultiAgentConfig } from './config/multi-agent.config';
 import { getNeo4jConfig } from './config/neo4j.config';
-import { getStreamingConfig } from './config/streaming.config';
-import { getTimeTravelConfig } from './config/time-travel.config';
 import { getWorkflowEngineConfig } from './config/workflow-engine.config';
 
 // Health check
 import { TerminusModule } from '@nestjs/terminus';
+import { AuthModule } from './auth/auth.module';
+import { DevBrandController } from './controllers/devbrand.controller';
 import { HealthController } from './controllers/health.controller';
 import { PerformanceController } from './controllers/performance.controller';
-import { DevBrandController } from './controllers/devbrand.controller';
 
 // Performance monitoring
 import { PerformanceDashboardService } from './services/performance-dashboard.service';
@@ -68,24 +63,32 @@ import { ContentStrategyEngine } from './services/content-strategy-engine.servic
 // Competitive Intelligence
 import { CompetitiveIntelligenceService } from './services/competitive-intelligence.service';
 
-// Business modules
-import { BusinessWorkflowsModule } from './business-workflows/business-workflows.module';
+// Tool classes for WorkflowEngineModule
+import { ContentCreatorAgent } from './business-workflows/agents/content-creator/content-creator.agent';
+import { GitHubCodeAnalyzerAgent } from './business-workflows/agents/github-code-analyzer/github-code-analyzer.agent';
+import { PersonalBrandStrategistAgent } from './business-workflows/agents/personal-brand-strategist/personal-brand-strategist.agent';
+import { ResearcherAgent } from './business-workflows/agents/researcher.agent';
+import { PremiumStrategyAgent } from './business-workflows/agents/premium-strategy.agent';
+import { PersonalBrandMemoryService } from './business-workflows/core';
+import { BrandStrategistTools } from './business-workflows/core/tools/brand-strategist.tools';
+import { ContentCreatorTools } from './business-workflows/core/tools/content-creator.tools';
+import { FileOperationTools } from './business-workflows/core/tools/file-operation.tools';
+import { GitHubIntegrationTools } from './business-workflows/core/tools/github-integration.tools';
+import { WebResearchTools } from './business-workflows/core/tools/web-research.tools';
+import { PremiumAnalyticsTool } from './business-workflows/tools/premium-analytics.tool';
+import { ResearchChatController } from './business-workflows/controllers/research-chat.controller';
 
-// App streaming manager
-import { AppStreamingManager } from './services/app-streaming-manager.service';
-
-// Core interface for adapter pattern
-import {
-  ICheckpointAdapter,
-  IMemoryAdapter,
-  IStreamingService,
-} from '@hive-academy/langgraph-core';
+import { DevBrandChatWorkflow } from './business-workflows/workflows/devbrand-chat.workflow';
+import { DevBrandSupervisorWorkflow } from './business-workflows/workflows/devbrand-supervisor.workflow';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Authentication Module - JWT with WorkOS
+    AuthModule,
 
     // CRITICAL: Global EventEmitter - provided once for entire app
     // Increased maxListeners from 10 to 20 to prevent false-positive warnings
@@ -97,6 +100,26 @@ import {
       maxListeners: 20,
       verboseMemoryLeak: false,
       ignoreErrors: false,
+    }),
+
+    // ClsModule for async context propagation - used by security decorators
+    // NOTE: User context is set by JwtAuthGuard (guard phase runs after middleware),
+    // so we only initialize the CLS namespace here without trying to read req.user.
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        setup: (cls, req) => {
+          // Set additional context for audit logging (available before auth)
+          cls.set(
+            'ipAddress',
+            req.ip ||
+              req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
+              req.connection?.remoteAddress
+          );
+          cls.set('sessionId', req.sessionID || req.session?.id);
+        },
+      },
     }),
 
     // Core database modules - Enhanced with decorator and performance support
@@ -126,55 +149,33 @@ import {
         getNeo4jConfig(configService),
     }),
 
-    // Adapters module (imports RepositoryModule, provides adapter tokens)
-    AdaptersModule,
+    // Generic adapters from shared package
+    LangGraphAdaptersModule.forRoot(),
 
-    // Memory module with adapters - injects tokens from AdaptersModule
+    // Application-specific repositories (analytics and business domain)
+    RepositoryModule,
+
+    // Memory module with BaseStore pattern and thread registry adapter
     MemoryModule.forRootAsync({
-      imports: [AdaptersModule], // Import to access exported adapter tokens
+      imports: [LangGraphAdaptersModule],
       useFactory: async (
-        vectorAdapter: IVectorService,
-        graphAdapter: IGraphService
-      ): Promise<MemoryModuleOptions> => ({
-        ...getMemoryConfig(),
-        adapters: {
-          vector: vectorAdapter,
-          graph: graphAdapter,
-        },
-      }),
-      inject: ['IVectorService', 'IGraphService'],
+        threadRegistryAdapter: IThreadRegistryStore
+      ): Promise<MemoryModuleOptions> => {
+        return {
+          ...getMemoryConfig(),
+          threadRegistry: {
+            adapter: threadRegistryAdapter, // Inject adapter instance via token
+            defaultLimit: 50,
+          },
+        };
+      },
+      inject: ['THREAD_REGISTRY_ADAPTER'], // Inject via token from LangGraphAdaptersModule
     }),
 
-    // Checkpoint module with new adapter pattern
-    LanggraphModulesCheckpointModule.forRootAsync({
-      useFactory: async () => {
-        const config = await getCheckpointConfig();
-        return config;
-      },
-    }),
-
-    // PROPERLY CONFIGURED STREAMING MODULE
-    StreamingModule.forRoot({
-      ...getStreamingConfig(),
-      websocket: {
-        enabled: true,
-        port: 3000, // Using main server port
-      },
-      gateway: {
-        enabled: true,
-        cors: {
-          origin: true,
-          credentials: true,
-        },
-      },
-    }),
-
-    // HITL module WITH CHECKPOINT AND MEMORY INTEGRATION - adapter injection
+    // HITL module - Neo4j storage adapters (NO checkpoint injection needed)
     HitlModule.forRootAsync({
-      imports: [AdaptersModule], // Import to access HITL adapter tokens
+      imports: [LangGraphAdaptersModule],
       useFactory: async (
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter,
         hitlStorage: IHitlStorageService,
         interruptionStorage: IUserInterruptionStorageService,
         confidenceStorage: IConfidenceStorageService,
@@ -182,8 +183,6 @@ import {
         approvalChainStorage: IApprovalChainStorageService
       ): Promise<HitlModuleOptions> => ({
         ...getHitlConfig(),
-        checkpointAdapter,
-        memoryAdapter,
         adapters: {
           storage: hitlStorage,
           interruptionStorage: interruptionStorage,
@@ -193,8 +192,6 @@ import {
         },
       }),
       inject: [
-        'ICheckpointAdapter',
-        'IMemoryAdapter',
         'HITL_STORAGE',
         'HITL_INTERRUPTION_STORAGE',
         'HITL_CONFIDENCE_STORAGE',
@@ -203,95 +200,73 @@ import {
       ],
     }),
 
-    // Workflow engine WITH STREAMING, CHECKPOINT, AND MEMORY - adapter injection
+    // Workflow engine with LangGraph native checkpoint (RedisSaver for production)
     WorkflowEngineModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ): Promise<WorkflowEngineModuleOptions> => {
-        return {
-          ...getWorkflowEngineConfig(),
-          streamingAdapter,
-          checkpointAdapter,
-          memoryAdapter,
-        };
-      },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    }),
+      useFactory: async (): Promise<WorkflowEngineModuleOptions> => {
+        // Create LangGraph native checkpointer (RedisSaver/SqliteSaver/MemorySaver)
+        const checkpointer = await getCheckpointSaver();
 
-    // Multi-agent module WITH STREAMING AND MEMORY - adapter injection
-    MultiAgentModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ) => {
         return {
-          ...getMultiAgentConfig(),
-          streamingAdapter,
-          checkpointAdapter,
-          memoryAdapter,
+          ...getWorkflowEngineConfig(), // Includes LLM config from .env.llm
+          checkpointer, // LangGraph BaseCheckpointSaver (not ICheckpointAdapter)
+          tools: [
+            GitHubIntegrationTools,
+            BrandStrategistTools,
+            WebResearchTools,
+            ContentCreatorTools,
+            FileOperationTools,
+            PremiumAnalyticsTool,
+          ], // Register 6 tool class TYPES (not instances)
         };
       },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
-    }),
-
-    // Functional API with STREAMING, CHECKPOINT, AND MEMORY - adapter injection
-    FunctionalApiModule.forRootAsync({
-      useFactory: async (
-        streamingAdapter: IStreamingService,
-        checkpointAdapter: ICheckpointAdapter,
-        memoryAdapter: IMemoryAdapter
-      ): Promise<any> => {
-        return {
-          ...getFunctionalApiConfig(),
-          streamingAdapter,
-          checkpointAdapter,
-          memoryAdapter,
-        };
-      },
-      inject: ['IStreamingService', 'ICheckpointAdapter', 'IMemoryAdapter'],
+      inject: [], // No injection needed - we're passing class types directly
     }),
 
     // Monitoring module
     MonitoringModule.forRoot(getMonitoringConfig()),
 
-    // Time-Travel module (dev/staging only by default) WITH CHECKPOINT AND MEMORY - adapter injection
-    ...(process.env.NODE_ENV !== 'production' ||
-    process.env.ENABLE_TIME_TRAVEL_PROD === 'true'
-      ? [
-          TimeTravelModule.forRootAsync({
-            useFactory: async (
-              checkpointAdapter: ICheckpointAdapter,
-              memoryAdapter: IMemoryAdapter
-            ) => ({
-              ...getTimeTravelConfig(),
-              checkpointAdapter,
-              memoryAdapter,
-            }),
-            inject: ['ICheckpointAdapter', 'IMemoryAdapter'],
-          }),
-        ]
-      : []),
+    // NOTE: CheckpointModule removed - migrated to LangGraph native (RedisSaver/SqliteSaver)
+    // NOTE: TimeTravelModule removed - package deleted in consolidation
 
     // Health checks
     TerminusModule.forRoot({
       logger: false,
       errorLogStyle: 'pretty',
     }),
-
-    // Business modules
-    BusinessWorkflowsModule,
   ],
-  controllers: [HealthController, PerformanceController, DevBrandController],
+  controllers: [
+    HealthController,
+    PerformanceController,
+    DevBrandController,
+    ResearchChatController,
+  ],
   providers: [
-    AppStreamingManager,
     PerformanceDashboardService,
     BrandMonitoringService,
     ContentStrategyEngine,
     CompetitiveIntelligenceService,
-    // All adapters are now provided by AdaptersModule
+
+    // MVP Core Agents - Using new decorator architecture
+    GitHubCodeAnalyzerAgent,
+    PersonalBrandStrategistAgent, // Reference implementation with workflow-agent type
+    ContentCreatorAgent,
+    ResearcherAgent, // Standalone research agent with HITL
+    PremiumStrategyAgent, // Premium tier agent
+
+    // MVP Functional-API Workflows
+    DevBrandSupervisorWorkflow, // Multi-agent coordination
+    DevBrandChatWorkflow, // Chat interface workflow
+
+    // Core Business Services
+    PersonalBrandMemoryService, // ChromaDB + Neo4j integration (repositories injected from RepositoryModule)
+
+    // MVP Tools - Kept per user request
+    WebResearchTools, // Social media profile searching
+    GitHubIntegrationTools, // GitHub API integration
+    BrandStrategistTools, // Brand strategy and optimization tools
+    ContentCreatorTools,
+    FileOperationTools, // Local report management
+    PremiumAnalyticsTool, // Premium tier tool
   ],
 })
 export class AppModule {}

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ChromaDBRepository,
   ChromaDBService,
+  CollectionRegistryService,
   Profiled,
   Retry,
   Cached,
@@ -31,8 +32,11 @@ export interface TrendAnalysis {
  */
 @Injectable()
 export class TechTrendsRepository extends ChromaDBRepository<TechTrendEntity> {
-  constructor(chromaDB: ChromaDBService) {
-    super(TechTrendEntity, 'tech-trends', chromaDB);
+  constructor(
+    chromaDB: ChromaDBService,
+    collectionRegistry: CollectionRegistryService
+  ) {
+    super(TechTrendEntity, 'tech-trends', chromaDB, collectionRegistry);
   }
 
   /**

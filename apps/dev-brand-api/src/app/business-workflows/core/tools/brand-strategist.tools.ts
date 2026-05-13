@@ -6,9 +6,9 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { Tool } from '@hive-academy/langgraph-multi-agent';
+import { Tool } from '@hive-academy/langgraph-workflow-engine';
 import { PersonalBrandMemoryService } from '../memory/personal-brand-memory.service';
-import { LlmProviderService } from '@hive-academy/langgraph-multi-agent';
+import { LlmProviderService } from '@hive-academy/langgraph-workflow-engine';
 import type { BrandData, BrandAnalysis } from '../../agents/shared/agent.types';
 
 /**

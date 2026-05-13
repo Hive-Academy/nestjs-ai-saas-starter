@@ -1,4 +1,5 @@
 import type { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -15,13 +16,24 @@ export const routes: Routes = [
     title: 'NestJS AI SaaS Starter - Enterprise AI Platform',
   },
   {
-    path: 'library/:slug',
+    path: 'devbrand-poc',
     loadComponent: () =>
-      import('./features/library-details/library-detail-page.component').then(
-        (m) => m.LibraryDetailPageComponent
+      import('./features/devbrand-poc/pages/devbrand-poc-page.component').then(
+        (m) => m.DevbrandPocPageComponent
       ),
-    title: 'Library Details',
+    canActivate: [authGuard],
+    title: 'DevBrand Workflow POC - Real-time LangGraph Demo',
   },
+  {
+    path: 'research-chat',
+    loadComponent: () =>
+      import('./features/research-chat/research-chat.component').then(
+        (m) => m.ResearchChatComponent
+      ),
+    canActivate: [authGuard],
+    title: 'Research Chat - Autonomous AI Research Agent',
+  },
+
   {
     path: '**',
     redirectTo: '/landing',

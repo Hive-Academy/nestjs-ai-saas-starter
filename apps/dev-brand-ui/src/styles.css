@@ -1,5 +1,89 @@
+/* Prism.js Syntax Highlighting - MUST come before @tailwind directives */
+@import 'prismjs/themes/prism-okaidia.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* You can add global styles to this file, and also import other style files */
+
+@layer utilities {
+  /* 3D Text Effects - Reusable classes for section titles */
+
+  /* Classic 3D text with shadow layers */
+  .text-3d {
+    text-shadow: 1px 1px 0 rgba(99, 102, 241, 0.3),
+      2px 2px 0 rgba(99, 102, 241, 0.25), 3px 3px 0 rgba(99, 102, 241, 0.2),
+      4px 4px 0 rgba(99, 102, 241, 0.15), 5px 5px 0 rgba(99, 102, 241, 0.1),
+      6px 6px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Extruded 3D text with gradient shadow */
+  .text-3d-extruded {
+    text-shadow: 1px 1px 0 rgba(99, 102, 241, 0.4),
+      2px 2px 0 rgba(99, 102, 241, 0.35), 3px 3px 0 rgba(99, 102, 241, 0.3),
+      4px 4px 0 rgba(99, 102, 241, 0.25), 5px 5px 0 rgba(99, 102, 241, 0.2),
+      6px 6px 0 rgba(99, 102, 241, 0.15), 7px 7px 0 rgba(99, 102, 241, 0.1),
+      8px 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Subtle 3D text (lighter effect) */
+  .text-3d-subtle {
+    text-shadow: 1px 1px 0 rgba(99, 102, 241, 0.2),
+      2px 2px 0 rgba(99, 102, 241, 0.15), 3px 3px 0 rgba(99, 102, 241, 0.1),
+      4px 4px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Bold 3D text (stronger effect) */
+  .text-3d-bold {
+    text-shadow: 1px 1px 0 rgba(99, 102, 241, 0.5),
+      2px 2px 0 rgba(99, 102, 241, 0.45), 3px 3px 0 rgba(99, 102, 241, 0.4),
+      4px 4px 0 rgba(99, 102, 241, 0.35), 5px 5px 0 rgba(99, 102, 241, 0.3),
+      6px 6px 0 rgba(99, 102, 241, 0.25), 7px 7px 0 rgba(99, 102, 241, 0.2),
+      8px 8px 0 rgba(99, 102, 241, 0.15), 9px 9px 0 rgba(99, 102, 241, 0.1),
+      10px 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Purple gradient 3D text */
+  .text-3d-purple {
+    text-shadow: 1px 1px 0 rgba(168, 85, 247, 0.3),
+      2px 2px 0 rgba(168, 85, 247, 0.25), 3px 3px 0 rgba(168, 85, 247, 0.2),
+      4px 4px 0 rgba(168, 85, 247, 0.15), 5px 5px 0 rgba(168, 85, 247, 0.1),
+      6px 6px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Gradient 3D text (indigo to purple) */
+  .text-3d-gradient {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 1px 1px 0 rgba(99, 102, 241, 0.2),
+      2px 2px 0 rgba(99, 102, 241, 0.18), 3px 3px 0 rgba(99, 102, 241, 0.16),
+      4px 4px 0 rgba(99, 102, 241, 0.14), 5px 5px 0 rgba(99, 102, 241, 0.12),
+      6px 6px 15px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Neon 3D text effect */
+  .text-3d-neon {
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.8),
+      0 0 20px rgba(99, 102, 241, 0.6), 0 0 30px rgba(99, 102, 241, 0.4),
+      1px 1px 0 rgba(99, 102, 241, 0.3), 2px 2px 0 rgba(99, 102, 241, 0.25),
+      3px 3px 0 rgba(99, 102, 241, 0.2), 4px 4px 0 rgba(99, 102, 241, 0.15),
+      5px 5px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Embossed 3D text (inset effect) */
+  .text-3d-embossed {
+    text-shadow: -1px -1px 0 rgba(255, 255, 255, 0.8),
+      1px 1px 0 rgba(0, 0, 0, 0.3), 2px 2px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Floating 3D text (with lift effect) */
+  .text-3d-float {
+    text-shadow: 0 1px 0 rgba(99, 102, 241, 0.3),
+      0 2px 0 rgba(99, 102, 241, 0.25), 0 3px 0 rgba(99, 102, 241, 0.2),
+      0 4px 0 rgba(99, 102, 241, 0.15), 0 5px 0 rgba(99, 102, 241, 0.1),
+      0 10px 20px rgba(0, 0, 0, 0.15);
+  }
+}

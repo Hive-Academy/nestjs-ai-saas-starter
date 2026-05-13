@@ -1,0 +1,31 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Functional API: Code brackets with function composition -->
+
+  <!-- Left curly brace -->
+  <path d="M 100 60 Q 80 60 80 80 L 80 110 Q 80 120 70 120 Q 80 120 80 130 L 80 160 Q 80 180 100 180"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Right curly brace -->
+  <path d="M 156 60 Q 176 60 176 80 L 176 110 Q 176 120 186 120 Q 176 120 176 130 L 176 160 Q 176 180 156 180"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Function composition symbols -->
+  <!-- fn symbol -->
+  <text x="108" y="90" font-family="monospace" font-size="24" fill="#6366F1" font-weight="bold">fn</text>
+
+  <!-- Composition arrow -->
+  <line x1="110" y1="110" x2="146" y2="110" stroke="#6366F1" stroke-width="2"/>
+  <polygon points="146,110 138,106 138,114" fill="#6366F1"/>
+
+  <!-- Piped functions (three circles showing pipeline) -->
+  <circle cx="118" cy="135" r="8" fill="none" stroke="#6366F1" stroke-width="2"/>
+  <circle cx="128" cy="150" r="8" fill="none" stroke="#6366F1" stroke-width="2"/>
+  <circle cx="138" cy="135" r="8" fill="none" stroke="#6366F1" stroke-width="2"/>
+
+  <!-- Connection lines between pipes -->
+  <line x1="123" y1="139" x2="128" y2="144" stroke="#6366F1" stroke-width="2"/>
+  <line x1="128" y1="156" x2="133" y2="139" stroke="#6366F1" stroke-width="2"/>
+
+  <!-- Lambda symbol (decorative) -->
+  <text x="120" y="175" font-family="serif" font-size="20" fill="#6366F1" opacity="0.6">λ</text>
+</svg>

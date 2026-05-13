@@ -60,6 +60,15 @@
       "options": {
         "passWithNoTests": true
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.app.json --strict",
+        "cwd": "apps/dev-brand-api"
+      },
+      "dependsOn": ["^typecheck"],
+      "cache": false
     }
   }
 }

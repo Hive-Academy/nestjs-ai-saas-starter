@@ -27,17 +27,14 @@ const NODE_MODULES_HIVE = path.join(
 const HIVE_LIBRARIES = [
   'nestjs-chromadb',
   'nestjs-neo4j',
-  'langgraph-checkpoint',
+  'langgraph-adapters',
   'langgraph-core',
-  'langgraph-functional-api',
   'langgraph-hitl',
   'langgraph-memory',
   'langgraph-monitoring',
-  'langgraph-multi-agent',
   'langgraph-platform',
-  'langgraph-streaming',
-  'langgraph-time-travel',
   'langgraph-workflow-engine',
+  'langgraph-angular',
 ];
 
 function log(message, type = 'info') {

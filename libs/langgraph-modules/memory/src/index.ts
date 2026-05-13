@@ -1,171 +1,57 @@
-// Main module
-export { MemoryModule } from './lib/memory.module';
+/**
+ * @hive-academy/langgraph-memory
+ *
+ * Thin memory layer implementing LangGraph BaseStore pattern.
+ * Provides direct ChromaDB-backed storage for workflow state persistence.
+ *
+ * Architecture: Repository pattern with type-safe injection
+ * - ChromaDBBaseStore: LangGraph BaseStore implementation
+ * - LangGraphStoreRepository: Type-safe ChromaDB repository
+ * - BASE_STORE_TOKEN: Typed injection token
+ * - RunnableConfigStoreHelpers: Type-safe config access utilities
+ */
 
-// Core services
-export { MemoryService } from './lib/services/memory.service';
-export { MemoryStorageService } from './lib/services/memory-storage.service';
-export { MemoryGraphService } from './lib/services/memory-graph.service';
-export { AgentMemoryBridgeService } from './lib/services/agent-memory-bridge.service';
+// ============================================================
+// Memory Module - BaseStore Pattern
+// ============================================================
 
-// Specialized agent memory services (TASK_2025_006)
-export { AgentMemoryCoreService } from './lib/services/agent-memory-core.service';
-export { AgentMemoryContextService } from './lib/services/agent-memory-context.service';
-export { AgentMemoryCheckpointService } from './lib/services/agent-memory-checkpoint.service';
-export { AgentMemoryStatsService } from './lib/services/agent-memory-stats.service';
+// Module
+export * from './lib/memory.module';
 
-// Interfaces
-export type {
-  MemoryEntry,
-  MemoryMetadata,
-  MemorySearchOptions,
-  MemorySummarizationOptions,
-  MemoryConfig,
-  MemoryRetentionPolicy,
-  MemoryStats,
-  UserMemoryPatterns as BaseUserMemoryPatterns,
-  MemoryServiceInterface,
-  MemoryOperationMetrics,
-  SerializableValue,
-  SerializableArray,
-  SerializableObject,
-  MetadataValue,
-} from './lib/interfaces/memory.interface';
+// Store Implementation
+export { ChromaDBBaseStore } from './lib/stores/chromadb-base-store';
 
-export type {
-  MemoryModuleOptions,
-  MemoryModuleAsyncOptions,
-  MemoryOptionsFactory,
-} from './lib/interfaces/memory-module-options.interface';
+// Repository & Entity
+export { LangGraphStoreRepository } from './lib/repositories/langgraph-store.repository';
+export { LangGraphStoreEntity } from './lib/entities/langgraph-store.entity';
+export type { LangGraphStoreMetadata } from './lib/entities/langgraph-store.entity';
+
+// Typed Injection Tokens
+export {
+  BASE_STORE_TOKEN,
+  type BaseStoreTokenType,
+} from './lib/tokens/base-store.token';
 
 export {
-  DEFAULT_AGENTIC_CONFIG,
-  DEFAULT_RAG_CONFIG,
-  DEFAULT_AGENT_MEMORY_CONFIG,
-  DEFAULT_STORE_CONFIG,
-} from './lib/interfaces/memory-module-options.interface';
+  THREAD_REGISTRY_TOKEN,
+  type ThreadRegistryTokenType,
+} from './lib/tokens/thread-registry.token';
 
-// Adapter Pattern Interfaces
-export { IVectorService } from './lib/interfaces/vector-service.interface';
-export { IGraphService } from './lib/interfaces/graph-service.interface';
-
-// Memory Adapter Interfaces (re-exported from core)
-// Note: ExtendedMemoryAdapter, MemoryManagerAdapter, MemoryAdapterFactory removed
-// Use IMemoryAdapter from core and AgentMemoryBridgeService for implementations
-
-// Re-export core memory adapter interfaces for convenience
-export { IMemoryAdapter, isMemoryAdapter } from '@hive-academy/langgraph-core';
-
-export type {
-  AgentState,
-  AgentMemoryContext,
-  UserMemoryPatterns,
-  Store,
-  MemorySearchOptions as CoreMemorySearchOptions,
-} from '@hive-academy/langgraph-core';
-
-// NEW: LangGraph Store Interface (LangGraph 2025 Compliance)
-export type {
-  Item,
-  Store as MemoryStore,
-} from './lib/interfaces/langgraph-store.interface';
+// Thread Registry Interface & Types
 export {
-  ChromaLangGraphStore,
-  LangGraphStoreFactory,
-  NamespaceUtils,
-  isValidItem,
-} from './lib/interfaces/langgraph-store.interface';
+  IThreadRegistryStore,
+  type ThreadMetadata,
+  type ThreadListOptions,
+} from './lib/interfaces/thread-registry-store.interface';
 
-// NEW: Agent State Integration Interfaces (local extensions)
-export type {
-  IAgentMemoryService,
-  AgentMemory,
-  AgentMemoryConfig,
-  AgentMemoryStats,
-  IAgentMemoryBridge,
-} from './lib/interfaces/agent-memory.interface';
+// Type-Safe Utilities
+export { RunnableConfigStoreHelpers } from './lib/utils/runnable-config-store.helpers';
 
-export type {
-  VectorStoreData,
-  VectorSearchQuery,
-  VectorSearchResult,
-  VectorStats,
-  VectorGetOptions,
-  VectorGetResult,
-} from './lib/interfaces/vector-service.interface';
-
-export type {
-  GraphNodeData,
-  GraphRelationshipData,
-  TraversalSpec,
-  GraphTraversalResult,
-  GraphQueryResult,
-  GraphStats,
-  GraphOperation,
-  GraphBatchResult,
-  GraphFindCriteria,
-  GraphNode,
-  GraphRelationship,
-  GraphPath,
-} from './lib/interfaces/graph-service.interface';
-
-// Adapter Implementations
-// NOTE: Adapters have been moved to application layer for proper separation of concerns
-// Applications should implement their own adapters extending IVectorService and IGraphService
-
-// Adapter Error Types
-export {
-  InvalidCollectionError,
-  InvalidInputError,
-  VectorOperationError,
-} from './lib/interfaces/vector-service.interface';
-
-export {
-  InvalidNodeError,
-  InvalidInputError as GraphInvalidInputError,
-  SecurityError,
-  GraphOperationError,
-  TransactionError,
-} from './lib/interfaces/graph-service.interface';
+// LangGraph BaseStore Types (re-export for consumer convenience)
+export type { BaseStore, Item } from '@langchain/langgraph-checkpoint';
 
 // Constants
-export {
-  MEMORY_CONFIG,
-  MEMORY_SERVICE,
-  DEFAULT_MEMORY_CONFIG,
-  MEMORY_TYPES,
-  EVICTION_STRATEGIES,
-  SUMMARIZATION_STRATEGIES,
-} from './lib/constants/memory.constants';
+export * from './lib/constants/store-namespaces';
 
-// Store namespace constants (TASK_2025_008 Phase 2)
-export {
-  STORE_COLLECTIONS,
-  validateNamespace,
-  NamespaceBuilder,
-  extractModule,
-  matchesPattern,
-} from './lib/constants/store-namespaces';
-
-export type {
-  StoreCollectionKey,
-  NamespaceValidationResult,
-  NamespaceValidationOptions,
-} from './lib/constants/store-namespaces';
-
-// Validation schemas
-export {
-  MemoryEntrySchema,
-  MemorySearchOptionsSchema,
-} from './lib/interfaces/memory.interface';
-
-// Error types
-export {
-  MemoryException,
-  MemoryNotFoundException,
-  MemoryStorageException,
-  MemoryValidationException,
-  MemoryQuotaExceededException,
-  MemoryConfigurationException,
-  extractErrorMessage,
-  wrapMemoryError,
-} from './lib/errors/memory.errors';
+// Errors
+export * from './lib/errors/memory.errors';

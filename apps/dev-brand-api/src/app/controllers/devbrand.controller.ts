@@ -1,10 +1,24 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Param,
   Logger,
   BadRequestException,
+  HttpException,
+  HttpStatus,
+  Sse,
+  Req,
+  UnauthorizedException,
+  NotFoundException,
+  InternalServerErrorException,
+  Inject,
+  Optional,
+  UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -12,39 +26,55 @@ import {
   ApiProperty,
 } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
+import { Observable } from 'rxjs';
+import type { MessageEvent } from '@nestjs/common';
 import { DevBrandSupervisorWorkflow } from '../business-workflows/workflows/devbrand-supervisor.workflow';
+import type { DomainStreamEvent } from '@hive-academy/langgraph-workflow-engine';
+import { WorkflowResumptionService } from '@hive-academy/langgraph-workflow-engine';
+import { generateThreadId } from '@hive-academy/langgraph-core';
+import {
+  SupervisorConversationHistoryResponseDto,
+  NewConversationResponseDto,
+  NewConversationDto,
+  ConversationListResponseDto,
+  ConversationSummaryDto,
+} from '../business-workflows/controllers/dto/conversation.dto';
+import {
+  THREAD_REGISTRY_TOKEN,
+  type IThreadRegistryStore,
+  type ThreadMetadata,
+} from '@hive-academy/langgraph-memory';
 
 /**
- * DevBrand Workflow Controller - Simplified Architecture
+ * 🎯 DEVBRAND WORKFLOW CONTROLLER - SSE STREAMING PATTERN
  *
- * This controller exposes a single endpoint to start the DevBrand workflow.
- * All streaming, progress updates, HITL interruptions, and token streaming
- * are handled AUTOMATICALLY by the existing infrastructure:
+ * REST API endpoints for DevBrandSupervisorWorkflow with Server-Sent Events (SSE) streaming
  *
- * Architecture Flow:
+ * Architecture Pattern (Following ResearchChatController):
  * ┌──────────────────────────────────────────────────────────────────┐
- * │ 1. POST /devbrand/execute → Returns executionId immediately      │
- * │ 2. Workflow starts in background → executeWithStreaming()        │
- * │ 3. WorkflowStreamService emits events via EventEmitter2:         │
- * │    - workflow.stream.${executionId}                              │
- * │    - workflow.token.${executionId}                               │
- * │    - workflow.progress.${executionId}                            │
- * │ 4. WebSocketBridgeService listens via @OnEvent decorators        │
- * │ 5. StreamingWebSocketService broadcasts to subscribed clients    │
- * │ 6. Clients receive events on ws://localhost:8080/streaming       │
+ * │ 1. POST /api/devbrand/execute → Returns executionId immediately  │
+ * │ 2. GET /api/devbrand/stream/:id → SSE stream (EventSource)       │
+ * │ 3. DevBrandWorkflow.executeWithStreaming() → LangGraph.stream()  │
+ * │ 4. Stream yields workflow state updates in real-time             │
+ * │ 5. HITL interruption pauses workflow when needed                 │
  * └──────────────────────────────────────────────────────────────────┘
  *
- * NO manual SSE transformation! NO custom event mapping!
- * NO duplicate infrastructure! Everything is already built.
+ * Endpoints:
+ * - POST /api/devbrand/execute - Start workflow (returns executionId)
+ * - GET /api/devbrand/stream/:executionId - SSE streaming endpoint
  *
- * Key Services (Already Running):
- * - StreamingWebSocketService: Port 8080, Socket.io server
- * - WebSocketBridgeService: Event routing with @OnEvent('workflow.stream.*')
- * - WorkflowStreamService: Embedded in workflow-engine, emits EventEmitter2 events
- * - TokenStreamingService: Character-by-character LLM streaming
- * - HumanApprovalService: HITL interruptions with Neo4j storage
+ * SSE Streaming Format:
+ * - event: workflow-update
+ * - data: { executionId, nodeName, state, timestamp }
  *
- * See: libs/langgraph-modules/streaming/CLAUDE.md for full architecture
+ * Frontend Integration (Angular):
+ * ```typescript
+ * const eventSource = new EventSource(`/api/devbrand/stream/${executionId}`);
+ * eventSource.addEventListener('workflow-update', (event) => {
+ *   const data = JSON.parse(event.data);
+ *   // Handle state updates
+ * });
+ * ```
  */
 
 export class ExecuteDevBrandDto {
@@ -81,34 +111,15 @@ export class ExecuteDevBrandResponseDto {
   @ApiProperty({
     description: 'Human-readable message',
     example:
-      'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
+      'Workflow started successfully. Connect to SSE stream for real-time updates.',
   })
   message!: string;
 
   @ApiProperty({
-    description: 'WebSocket URL for real-time updates',
-    example: 'ws://localhost:8080/streaming',
+    description: 'SSE stream URL for real-time updates',
+    example: '/api/devbrand/stream/devbrand-1697456789',
   })
-  websocketUrl!: string;
-
-  @ApiProperty({
-    description: 'WebSocket integration instructions',
-    example: {
-      connect: 'io("ws://localhost:8080/streaming")',
-      subscribe:
-        'socket.emit("subscribe_execution", { executionId: "devbrand-123" })',
-      events: [
-        'stream_update - Workflow events',
-        'token_update - LLM token streaming',
-        'interruption_request - HITL requests',
-      ],
-    },
-  })
-  websocketInstructions!: {
-    connect: string;
-    subscribe: string;
-    events: string[];
-  };
+  streamUrl!: string;
 }
 
 @ApiTags('DevBrand Workflow')
@@ -116,149 +127,459 @@ export class ExecuteDevBrandResponseDto {
 export class DevBrandController {
   private readonly logger = new Logger(DevBrandController.name);
 
-  constructor(private readonly devBrandWorkflow: DevBrandSupervisorWorkflow) {}
+  // Store active workflow streams (executionId → async generator)
+  private readonly activeStreams = new Map<
+    string,
+    AsyncGenerator<DomainStreamEvent, void, unknown>
+  >();
+
+  constructor(
+    private readonly devBrandWorkflow: DevBrandSupervisorWorkflow,
+    private readonly workflowResumptionService: WorkflowResumptionService,
+    @Optional()
+    @Inject(THREAD_REGISTRY_TOKEN)
+    private readonly threadRegistry?: IThreadRegistryStore
+  ) {
+    if (!this.threadRegistry) {
+      this.logger.log(
+        '⚠️  ThreadRegistryStore not configured - conversation list will be empty'
+      );
+    }
+  }
 
   /**
-   * Start DevBrand Workflow
-   *
-   * Starts the DevBrand personal branding workflow for a GitHub user.
-   * Returns executionId immediately for WebSocket subscription.
-   *
-   * The workflow includes:
-   * 1. GitHubCodeAnalyzerAgent - Analyzes repositories, extracts achievements
-   * 2. PersonalBrandStrategistAgent - Develops brand strategy and positioning
-   * 3. ContentCreatorAgent - Generates platform-specific content (LinkedIn, Dev.to)
-   *
-   * All agents have @StreamToken and @StreamProgress decorators enabled.
-   * HITL interruptions are configured via @MultiAgent decorator metadata.
-   *
-   * Real-time Updates:
-   * - Connect to: ws://localhost:8080/streaming
-   * - Subscribe with: socket.emit('subscribe_execution', { executionId })
-   * - Receive events: stream_update, token_update, interruption_request, etc.
-   *
-   * @param dto ExecuteDevBrandDto with githubUsername and optional userId
-   * @returns ExecuteDevBrandResponseDto with executionId and WebSocket instructions
+   * Start DevBrand workflow (non-blocking)
+   * Returns executionId immediately for SSE subscription
    */
+  @UseGuards(JwtAuthGuard)
   @Post('execute')
   @ApiOperation({
     summary: 'Start DevBrand workflow',
     description: `
       Starts the DevBrand personal branding workflow for a GitHub user.
-      Returns executionId immediately. Use the executionId to subscribe to
-      real-time updates via WebSocket (ws://localhost:8080/streaming).
+      Returns executionId immediately. Use the executionId to connect to
+      SSE stream endpoint for real-time updates.
 
       Workflow includes:
       - GitHub code analysis (repositories, technologies, achievements)
       - Personal brand strategy development (positioning, target audience)
       - Multi-platform content creation (LinkedIn, Dev.to)
 
-      All streaming, progress updates, and HITL interruptions are automatically
-      broadcast via the existing WebSocket infrastructure. No polling required.
+      All streaming and HITL interruptions are delivered via SSE.
     `,
   })
   @ApiResponse({
     status: 201,
     type: ExecuteDevBrandResponseDto,
     description:
-      'Workflow started successfully. Use executionId to subscribe via WebSocket.',
+      'Workflow started successfully. Connect to SSE stream endpoint.',
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid request (missing githubUsername)',
   })
   async executeDevBrand(
-    @Body() dto: ExecuteDevBrandDto
+    @Body() dto: ExecuteDevBrandDto,
+    @Req() request: Request
   ): Promise<ExecuteDevBrandResponseDto> {
-    if (!dto.githubUsername) {
-      throw new BadRequestException('githubUsername is required');
-    }
-
-    const executionId = `devbrand-${Date.now()}`;
-    const userId = dto.userId || 'anonymous';
-
+    const userId = request.user!.id;
     this.logger.log(
-      `🚀 Starting DevBrand workflow for GitHub user: ${dto.githubUsername} (executionId: ${executionId})`
+      `🚀 Starting DevBrand workflow for: ${dto.githubUsername}, user: ${userId}`
     );
 
-    // Start workflow in background (non-blocking)
-    // The executeWithStreaming() method returns an async iterator
-    // Events are automatically emitted via:
-    //   WorkflowStreamService → EventEmitter2 → WebSocketBridgeService → StreamingWebSocketService
-    this.startWorkflowInBackground(executionId, userId, dto.githubUsername);
-
-    // Return immediately with WebSocket subscription instructions
-    return {
-      executionId,
-      status: 'started',
-      message:
-        'Workflow started successfully. Connect to WebSocket to receive real-time updates.',
-      websocketUrl: 'ws://localhost:8080/streaming',
-      websocketInstructions: {
-        connect:
-          'io("ws://localhost:8080/streaming", { transports: ["websocket", "polling"] })',
-        subscribe: `socket.emit("subscribe_execution", { executionId: "${executionId}" })`,
-        events: [
-          'stream_update - Workflow state changes (agent started, completed, routing)',
-          'token_update - Real-time LLM token streaming (character-by-character)',
-          'interruption_request - HITL approval requests from agents',
-          'interruption_resolved - HITL responses processed, workflow continuing',
-          'error - Workflow errors and failures',
-        ],
-      },
-    };
-  }
-
-  /**
-   * Start workflow execution in background
-   *
-   * Consumes the async iterator from executeWithStreaming().
-   * All events are automatically broadcast by the streaming infrastructure:
-   * - WorkflowStreamService emits via EventEmitter2
-   * - WebSocketBridgeService listens with @OnEvent decorators
-   * - StreamingWebSocketService broadcasts to subscribed WebSocket clients
-   *
-   * No manual event transformation needed!
-   */
-  private async startWorkflowInBackground(
-    executionId: string,
-    userId: string,
-    githubUsername: string
-  ): Promise<void> {
     try {
-      // Get the streaming iterator from workflow
-      // This returns AsyncIterableIterator<any> with workflow events
+      // Validate input
+      if (!dto.githubUsername || dto.githubUsername.trim().length === 0) {
+        throw new BadRequestException('GitHub username cannot be empty');
+      }
+
+      const executionId = `devbrand-${Date.now()}`;
+
+      // Create async generator for streaming - userId comes from authenticated JWT context
       const stream = this.devBrandWorkflow.executeWithStreaming({
         userId,
-        githubUsername,
+        githubUsername: dto.githubUsername.trim(),
         executionId,
       });
 
-      // Consume the stream
-      // Events are automatically emitted by WorkflowStreamService via EventEmitter2
-      // WebSocketBridgeService listens via @OnEvent('workflow.stream.*', 'workflow.token.*', etc.)
-      // StreamingWebSocketService broadcasts to all clients subscribed to this executionId
-      for await (const event of stream) {
-        // Just consume - events are automatically broadcast
-        // WorkflowStreamService emits:
-        //   - workflow.stream.${executionId} (line 358)
-        //   - workflow.token.${executionId} (line 454, 553, 634)
-        //   - workflow.progress.${executionId} (line 676)
-        //   - workflow.milestone.${executionId} (line 694)
-        this.logger.debug(
-          `Event processed for ${executionId}: ${event?.type || 'unknown'}`
+      // Store stream for SSE endpoint
+      this.activeStreams.set(executionId, stream);
+
+      // Auto-cleanup after 30 minutes
+      setTimeout(() => {
+        this.activeStreams.delete(executionId);
+        this.logger.log(`🧹 Cleaned up stream for ${executionId}`);
+      }, 30 * 60 * 1000);
+
+      this.logger.log(
+        `✅ DevBrand workflow started: ${executionId} - Connect to /api/devbrand/stream/${executionId}`
+      );
+
+      return {
+        executionId,
+        status: 'started',
+        message:
+          'Workflow started successfully. Connect to stream URL for real-time updates.',
+        streamUrl: `/api/devbrand/stream/${executionId}`,
+      };
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to start workflow:`, error.message);
+      throw new HttpException(
+        error.message || 'Failed to start DevBrand workflow',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  /**
+   * Server-Sent Events (SSE) streaming endpoint
+   * Streams workflow state updates in real-time
+   */
+  @Get('stream/:executionId')
+  @Sse()
+  streamWorkflow(
+    @Param('executionId') executionId: string
+  ): Observable<MessageEvent> {
+    this.logger.log(`📡 SSE stream connected for ${executionId}`);
+
+    return new Observable((subscriber) => {
+      const stream = this.activeStreams.get(executionId);
+
+      if (!stream) {
+        this.logger.warn(`Stream not found for ${executionId}`);
+        // Send as SSE event (not subscriber.error) to prevent EventSource auto-reconnect loop
+        subscriber.next({
+          data: {
+            type: 'workflow_error',
+            executionId,
+            message: `Stream not found for ${executionId}. It may have already completed or expired.`,
+            timestamp: new Date().toISOString(),
+          },
+          type: 'workflow_error',
+        } as MessageEvent);
+        subscriber.complete();
+        return;
+      }
+
+      // Consume async generator and emit SSE events
+      (async () => {
+        try {
+          for await (const event of stream) {
+            // Format as SSE MessageEvent
+            subscriber.next({
+              data: event,
+              type: 'workflow-update',
+            } as MessageEvent);
+
+            // Check if workflow completed (state only exists on workflow-update events)
+            const workflowState =
+              event.type === 'workflow-update'
+                ? (event.state as Record<string, unknown> | undefined)
+                : undefined;
+            const stateStatus = workflowState?.['status'];
+            const stateMetadata = workflowState?.['metadata'] as
+              | Record<string, unknown>
+              | undefined;
+            if (
+              stateStatus === 'completed' ||
+              stateMetadata?.['workflowCompleted']
+            ) {
+              this.logger.log(`✅ Workflow completed: ${executionId}`);
+              subscriber.next({
+                data: {
+                  type: 'workflow_complete',
+                  executionId,
+                  finalState: workflowState,
+                  timestamp: new Date().toISOString(),
+                },
+                type: 'workflow_complete',
+              } as MessageEvent);
+              subscriber.complete();
+              this.activeStreams.delete(executionId);
+              break;
+            }
+          }
+        } catch (error: any) {
+          this.logger.error(
+            `❌ Stream error for ${executionId}:`,
+            error.message
+          );
+          // Send error as SSE event (not subscriber.error) so the client receives it
+          // before the connection closes. subscriber.error() causes an abrupt close
+          // which triggers EventSource auto-reconnect → infinite loop.
+          subscriber.next({
+            data: {
+              type: 'workflow_error',
+              executionId,
+              message: error.message || 'Workflow execution failed',
+              timestamp: new Date().toISOString(),
+            },
+            type: 'workflow_error',
+          } as MessageEvent);
+          subscriber.complete(); // Clean close prevents auto-reconnect
+          this.activeStreams.delete(executionId);
+        }
+      })();
+    });
+  }
+
+  /**
+   * CONVERSATION HISTORY ENDPOINTS (TASK_2025_050)
+   * Following patterns from controller-implementation-guide.md
+   * Supervisor-specific: Uses DevBrandSupervisorWorkflow with agent coordination metadata
+   */
+
+  /**
+   * Get conversation list for authenticated user
+   * @route GET /devbrand/conversation/list
+   * @returns Last 10 supervisor conversations with preview, status, agent coordination
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:483-507
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('conversation/list')
+  async getConversationList(
+    @Req() request: Request
+  ): Promise<ConversationListResponseDto> {
+    const userId = request.user!.id;
+
+    this.logger.log(
+      `📋 Retrieving supervisor conversation list for user: ${userId}`
+    );
+
+    try {
+      // Check if ThreadRegistryStore available
+      if (!this.threadRegistry) {
+        this.logger.log('Thread registry unavailable - returning empty list');
+        return {
+          conversations: [],
+          totalCount: 0,
+          hasMore: false,
+        };
+      }
+
+      // Retrieve threads from registry
+      const threads = await this.threadRegistry.listThreads(userId, {
+        limit: 50,
+        orderBy: 'lastMessageAt',
+        orderDirection: 'DESC',
+      });
+
+      // Map ThreadMetadata to ConversationSummaryDto
+      const conversations: ConversationSummaryDto[] = threads.map(
+        (thread: ThreadMetadata) => ({
+          threadId: thread.threadId,
+          preview:
+            thread.title ||
+            `Conversation ${thread.createdAt.toLocaleDateString()}`,
+          timestamp: thread.lastMessageAt.toISOString(),
+          status: 'active' as const,
+          metadata:
+            (thread.metadata as
+              | {
+                  query?: string;
+                  reportTitle?: string;
+                  researchStatus?: string;
+                }
+              | undefined) || {},
+          unread: false,
+        })
+      );
+
+      return {
+        conversations,
+        totalCount: threads.length,
+        hasMore: threads.length === 50, // Basic pagination check
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to retrieve conversation list for user ${userId}:`,
+        error.message
+      );
+      throw new InternalServerErrorException(
+        'Failed to retrieve conversation list'
+      );
+    }
+  }
+
+  /**
+   * Get conversation history for specific supervisor thread
+   * @route GET /devbrand/conversation/history/:threadId
+   * @returns Complete conversation with agent coordination (currentAgent, nextAgent, agentHistory)
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:509-594, controller-implementation-guide.md:393-485
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('conversation/history/:threadId')
+  async getSupervisorConversationHistory(
+    @Param('threadId') threadId: string,
+    @Req() request: Request
+  ): Promise<SupervisorConversationHistoryResponseDto> {
+    const userId = request.user!.id;
+
+    this.logger.log(
+      `📖 Retrieving supervisor conversation history for thread: ${threadId}, user: ${userId}`
+    );
+
+    try {
+      // Get workflow state from resumption service
+      // Reference: controller-implementation-guide.md:409-413
+      const stateSnapshot =
+        await this.workflowResumptionService.getWorkflowState(
+          'DevBrandSupervisorWorkflow',
+          threadId
+        );
+
+      // Security: Verify thread ownership
+      // Reference: controller-implementation-guide.md:416-422
+      const values = stateSnapshot.values as {
+        metadata?: Record<string, unknown>;
+        messages?: unknown[];
+        current?: unknown;
+        next?: unknown;
+      };
+      const threadUserId = values.metadata?.userId as string | undefined;
+      if (threadUserId && threadUserId !== userId) {
+        throw new UnauthorizedException(
+          `User ${userId} cannot access thread ${threadId}`
         );
       }
 
-      this.logger.log(`✅ DevBrand workflow completed: ${executionId}`);
-    } catch (error) {
+      // Extract conversation messages
+      // Reference: controller-implementation-guide.md:425-429
+      const messages = (values.messages as any[]) || [];
+
+      // Format response with supervisor-specific structure
+      // Reference: controller-implementation-guide.md:431-467
+      return {
+        threadId,
+        userId: threadUserId || userId,
+        conversationHistory: messages.map((msg: any) => ({
+          role: msg._getType(), // 'human' | 'ai' | 'system'
+          content: msg.content,
+          timestamp:
+            msg.additional_kwargs?.timestamp || new Date().toISOString(),
+          agentId: msg.additional_kwargs?.agentId, // Supervisor-specific
+          toolCalls: msg.tool_calls || [],
+        })),
+        metadata: {
+          query: values.metadata?.query as string | undefined,
+          reportTitle: values.metadata?.reportTitle as string | undefined,
+          researchStatus: values.metadata?.researchStatus as string | undefined,
+          confidenceScore: values.metadata?.confidenceScore as
+            | number
+            | undefined,
+        },
+        agentCoordination: {
+          currentAgent: values.current as string | undefined,
+          nextAgent: values.next as string | undefined,
+          agentHistory: this.extractAgentHistory(messages),
+          pendingTasks: stateSnapshot.tasks || [],
+        },
+        nextSteps: stateSnapshot.next || [],
+        waitingForApproval:
+          (values.metadata?.waitingForApproval as boolean) || false,
+        checkpointId: stateSnapshot.config.configurable?.checkpoint_id as
+          | string
+          | undefined,
+      };
+    } catch (error: any) {
       this.logger.error(
-        `❌ DevBrand workflow failed: ${executionId}`,
-        error instanceof Error ? error.stack : error
+        `Failed to retrieve supervisor conversation history for thread ${threadId}:`,
+        error.message
       );
 
-      // Error events are also automatically broadcast via streaming infrastructure
-      // WebSocketBridgeService will emit error updates to subscribed clients
+      // Re-throw authorization errors
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new NotFoundException(
+        `Supervisor conversation history not found for thread ${threadId}`
+      );
     }
+  }
+
+  /**
+   * Create new supervisor conversation thread
+   * @route POST /devbrand/conversation/new
+   * @returns New thread ID with devbrand-{timestamp}-{userId} format
+   *
+   * Implementation: TASK_2025_050 - TASK 3
+   * Reference: implementation-plan.md:596-601
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('conversation/new')
+  async createNewConversation(
+    @Body() dto: NewConversationDto,
+    @Req() request: Request
+  ): Promise<NewConversationResponseDto> {
+    const userId = request.user!.id;
+
+    this.logger.log(
+      `🆕 Creating new supervisor conversation for user: ${userId}${
+        dto.initialQuery ? ` with query: "${dto.initialQuery}"` : ''
+      }`
+    );
+
+    try {
+      const workflowType = 'supervisor';
+
+      // Generate unique thread ID using standardized utility from core
+      // Format: thread_{workflowType}_{uuid-12-chars}
+      const threadId = generateThreadId(workflowType);
+
+      // Create thread in ThreadRegistryStore
+      if (this.threadRegistry) {
+        try {
+          await this.threadRegistry.createThread(userId, {
+            threadId, // Pass generated threadId to prevent mismatch
+            title: dto.initialQuery || 'New Conversation',
+            metadata: {
+              source: 'web_ui',
+              workflowType,
+              initialQuery: dto.initialQuery,
+            },
+          });
+          this.logger.log(`✅ Thread created in registry: ${threadId}`);
+        } catch (error: any) {
+          this.logger.warn(
+            `Failed to create thread in registry: ${error.message}`
+          );
+          // Continue - graceful degradation
+        }
+      }
+
+      return {
+        threadId,
+        status: 'created',
+        conversationUrl: `/devbrand`,
+      };
+    } catch (error: any) {
+      this.logger.error(`Failed to create new conversation:`, error.message);
+      throw new InternalServerErrorException(
+        'Failed to create new conversation'
+      );
+    }
+  }
+
+  /**
+   * Helper: Extract agent history from messages
+   * Filters messages with agentId metadata to track agent coordination flow
+   *
+   * Reference: implementation-plan.md:580-593
+   */
+  private extractAgentHistory(
+    messages: any[]
+  ): Array<{ agentId: string; timestamp: string; action: string }> {
+    return messages
+      .filter((msg) => msg.additional_kwargs?.agentId)
+      .map((msg) => ({
+        agentId: msg.additional_kwargs.agentId,
+        timestamp: msg.additional_kwargs.timestamp || new Date().toISOString(),
+        action: msg.additional_kwargs.action || 'executed',
+      }));
   }
 }

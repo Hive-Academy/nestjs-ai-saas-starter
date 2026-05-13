@@ -176,8 +176,13 @@ export interface WorkflowTimestamps {
 }
 
 /**
- * Workflow state interface that extends BaseWorkflowState with comprehensive workflow properties
- * This interface is used for state management in workflows and includes all properties needed for workflow execution
+ * Workflow state interface that extends BaseWorkflowState with comprehensive workflow properties.
+ * This interface is used for state management in workflows and includes all properties needed for workflow execution.
+ *
+ * @deprecated Do not use as a StateGraph generic constraint.
+ * Use LangGraph Annotation-based state (e.g. AgentStateAnnotation) instead.
+ * This interface remains available for type-checking state shapes, but should not
+ * be passed as a generic parameter to StateGraph, services, or strategies.
  */
 export interface WorkflowState extends BaseWorkflowState {
   // Core workflow properties

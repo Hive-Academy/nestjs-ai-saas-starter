@@ -3,6 +3,23 @@
   "version": "0.0.1",
   "description": "Enterprise-grade Human-in-the-Loop system with ML confidence scoring, approval chains, and memory integration for LangGraph workflows",
   "author": "Hive Academy",
+  "keywords": [
+    "nestjs",
+    "neo4j",
+    "graph-database",
+    "cypher",
+    "relationships",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter.git",
+    "directory": "libs/langgraph-modules/workflow-engine"
+  },
+  "homepage": "https://github.com/hive-academy/nestjs-ai-saas-starter#readme",
+  "bugs": {
+    "url": "https://github.com/hive-academy/nestjs-ai-saas-starter/issues"
+  },
   "license": "MIT",
   "private": false,
   "main": "./index.cjs.js",
@@ -32,17 +49,20 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@hive-academy/langgraph-core": "0.0.1",
-    "reflect-metadata": "^0.1.13",
-    "@nestjs/event-emitter": "^3.0.1",
-    "@nestjs/config": "4.0.2",
-    "@hive-academy/langgraph-memory": "0.0.1"
+    "@nestjs/common": "*",
+    "@hive-academy/langgraph-core": "*",
+    "reflect-metadata": "*",
+    "@nestjs/event-emitter": "*",
+    "@nestjs/config": "*",
+    "@langchain/core": "*",
+    "@langchain/langgraph": "*",
+    "@hive-academy/langgraph-memory": "*",
+    "@hive-academy/langgraph-workflow-engine": "*"
   },
   "devDependencies": {
-    "rollup": "4.49.0",
-    "@rollup/plugin-typescript": "12.1.4",
-    "rollup-plugin-dts": "6.2.3",
-    "@nestjs/testing": "^11.0.0"
+    "rollup": "*",
+    "@rollup/plugin-typescript": "*",
+    "rollup-plugin-dts": "*",
+    "@nestjs/testing": "*"
   }
 }

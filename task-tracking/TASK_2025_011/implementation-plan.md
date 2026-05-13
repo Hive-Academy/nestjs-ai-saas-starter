@@ -359,14 +359,14 @@ describe('NetworkManagerService - Checkpoint Integration', () => {
 ```typescript
 import { Test } from '@nestjs/testing';
 import { MultiAgentModule } from '../multi-agent.module';
-import { LanggraphModulesCheckpointModule } from '@hive-academy/langgraph-checkpoint';
+import { CheckpointModule } from '@hive-academy/langgraph-checkpoint';
 import { NetworkManagerService } from '../network/network-manager.service';
 
 describe('Multi-Agent Checkpoint Integration', () => {
   it('should integrate checkpoint adapter across modules', async () => {
     const module = await Test.createTestingModule({
       imports: [
-        LanggraphModulesCheckpointModule.forRoot({
+        CheckpointModule.forRoot({
           // Test checkpoint config
         }),
         MultiAgentModule.forRoot({

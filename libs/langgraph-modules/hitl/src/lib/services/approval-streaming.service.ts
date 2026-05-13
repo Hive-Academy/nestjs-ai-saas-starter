@@ -11,6 +11,11 @@ import {
 /**
  * Approval Streaming Service
  * Handles real-time streaming for approval and interruption events
+ *
+ * **TASK_2025_040 Phase 2** (Migration to LangGraph Native Recovery):
+ * - Polls state.__interrupt__[0] field instead of recovery cache
+ * - Uses LangGraph native interrupt state for streaming
+ * - No HitlRecoveryService dependency needed
  */
 @Injectable()
 export class ApprovalStreamingService {
@@ -244,5 +249,30 @@ export class ApprovalStreamingService {
   clearAllConnections(): void {
     this.streamConnections.clear();
     this.logger.debug('All streaming connections cleared');
+  }
+
+  /**
+   * Get interrupt payload from LangGraph state
+   *
+   * Helper method to read __interrupt__[0] field for polling approval status
+   * Uses LangGraph native interrupt state instead of recovery cache
+   *
+   * @param checkpointer - LangGraph checkpointer instance
+   * @param threadId - Thread ID to check
+   * @returns Interrupt payload or null if no interrupt
+   */
+  async getInterruptPayload(checkpointer: any, threadId: string): Promise<any> {
+    try {
+      const state = await checkpointer.get({
+        configurable: { thread_id: threadId },
+      });
+      return state?.__interrupt__?.[0] || null;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to get interrupt payload for thread ${threadId}: ${errorMsg}`
+      );
+      return null;
+    }
   }
 }

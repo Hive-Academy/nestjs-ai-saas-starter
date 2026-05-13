@@ -1,0 +1,34 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Platform: Cloud with deployment/server -->
+
+  <!-- Cloud outline -->
+  <path d="M 180 120 Q 200 120 200 140 Q 200 160 180 160 L 76 160 Q 56 160 56 140 Q 56 130 64 122 Q 64 100 84 100 Q 84 80 104 80 Q 114 70 128 70 Q 150 70 160 85 Q 180 90 180 110 Z"
+        fill="none" stroke="#6366F1" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Server/deployment icon inside cloud -->
+  <!-- Server rack -->
+  <rect x="100" y="110" width="56" height="12" rx="2" fill="none" stroke="#6366F1" stroke-width="2"/>
+  <rect x="100" y="126" width="56" height="12" rx="2" fill="none" stroke="#6366F1" stroke-width="2"/>
+
+  <!-- Server indicator lights -->
+  <circle cx="108" cy="116" r="1.5" fill="#6366F1"/>
+  <circle cx="114" cy="116" r="1.5" fill="#6366F1"/>
+  <circle cx="108" cy="132" r="1.5" fill="#6366F1"/>
+  <circle cx="114" cy="132" r="1.5" fill="#6366F1"/>
+
+  <!-- Upward deployment arrow -->
+  <line x1="128" y1="175" x2="128" y2="145" stroke="#6366F1" stroke-width="2.5"/>
+  <polygon points="128,145 124,152 132,152" fill="#6366F1"/>
+
+  <!-- Network nodes (distributed deployment) -->
+  <circle cx="80" cy="95" r="3" fill="#6366F1" opacity="0.6"/>
+  <circle cx="176" cy="95" r="3" fill="#6366F1" opacity="0.6"/>
+  <circle cx="80" cy="145" r="3" fill="#6366F1" opacity="0.6"/>
+  <circle cx="176" cy="145" r="3" fill="#6366F1" opacity="0.6"/>
+
+  <!-- Connection lines (network) -->
+  <line x1="80" y1="95" x2="100" y2="116" stroke="#6366F1" stroke-width="1" opacity="0.3"/>
+  <line x1="176" y1="95" x2="156" y2="116" stroke="#6366F1" stroke-width="1" opacity="0.3"/>
+  <line x1="80" y1="145" x2="100" y2="132" stroke="#6366F1" stroke-width="1" opacity="0.3"/>
+  <line x1="176" y1="145" x2="156" y2="132" stroke="#6366F1" stroke-width="1" opacity="0.3"/>
+</svg>
