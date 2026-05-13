@@ -54,3 +54,4 @@ tsconfig.lib.tsbuildinfo
 /.roomodes
 /apps/dev-brand-api/data
 .claude/**
+.itqan/
