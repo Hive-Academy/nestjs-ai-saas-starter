@@ -10,12 +10,31 @@
  * Reference: https://docs.langchain.com/oss/javascript/langgraph/persistence
  */
 
-import { RedisSaver } from '@langchain/langgraph-checkpoint-redis';
-import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { MemorySaver } from '@langchain/langgraph-checkpoint';
 import type { BaseCheckpointSaver } from '@langchain/langgraph-checkpoint';
+import type * as CheckpointMemory from '@langchain/langgraph-checkpoint';
+import type * as CheckpointRedis from '@langchain/langgraph-checkpoint-redis';
+import type * as CheckpointSqlite from '@langchain/langgraph-checkpoint-sqlite';
 import * as fs from 'fs';
 import * as path from 'path';
+
+/**
+ * Native ESM dynamic import that bypasses webpack's static analyzer.
+ *
+ * Webpack's `target: 'node'` rewrites both `require()` AND `await import()` into
+ * synchronous CJS `require()` calls. That breaks for ESM-only packages
+ * (`@langchain/langgraph-checkpoint*`) because Node refuses to `require()` an
+ * ESM module — surfaces as `ERR_REQUIRE_ESM` at boot.
+ *
+ * Using `new Function('return import(...)')()` evaluates the `import()` at
+ * runtime through `Function`, which webpack's bundler does not statically
+ * analyze. Result: a real native dynamic `import()` survives into the bundle,
+ * Node treats it as ESM, and the package loads correctly.
+ *
+ * @see https://webpack.js.org/api/module-methods/#import-1 (limitations)
+ */
+function esmImport<T>(specifier: string): Promise<T> {
+  return new Function('s', 'return import(s)')(specifier) as Promise<T>;
+}
 
 /**
  * Create checkpoint saver for LangGraph workflows
@@ -35,6 +54,9 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
     // PRODUCTION: RedisSaver (Enterprise-grade, scalable)
     // ===================================================================
     if (env === 'production') {
+      const { RedisSaver } = await esmImport<typeof CheckpointRedis>(
+        '@langchain/langgraph-checkpoint-redis'
+      );
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
       console.log(`📦 Initializing RedisSaver for production...`);
@@ -58,13 +80,16 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
         }`
       );
 
-      return checkpointer;
+      return checkpointer as unknown as BaseCheckpointSaver;
     }
 
     // ===================================================================
     // DEVELOPMENT: SqliteSaver (Local workflows, debugging)
     // ===================================================================
     if (env === 'development') {
+      const { SqliteSaver } = await esmImport<typeof CheckpointSqlite>(
+        '@langchain/langgraph-checkpoint-sqlite'
+      );
       const dbPath =
         process.env.CHECKPOINT_SQLITE_PATH || './data/checkpoints.db';
 
@@ -82,7 +107,7 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
 
       console.log('✅ Checkpoint: SqliteSaver initialized (development)');
 
-      return checkpointer;
+      return checkpointer as unknown as BaseCheckpointSaver;
     }
 
     // ===================================================================
@@ -96,7 +121,10 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
       '   For persistence, set NODE_ENV to "production" or "development"'
     );
 
-    return new MemorySaver();
+    const { MemorySaver } = await esmImport<typeof CheckpointMemory>(
+      '@langchain/langgraph-checkpoint'
+    );
+    return new MemorySaver() as unknown as BaseCheckpointSaver;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -104,7 +132,10 @@ export async function getCheckpointSaver(): Promise<BaseCheckpointSaver> {
     console.error('   Falling back to MemorySaver (non-persistent)');
 
     // Fallback to in-memory saver (no persistence)
-    return new MemorySaver();
+    const { MemorySaver } = await esmImport<typeof CheckpointMemory>(
+      '@langchain/langgraph-checkpoint'
+    );
+    return new MemorySaver() as unknown as BaseCheckpointSaver;
   }
 }
 
