@@ -9,6 +9,7 @@
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "dependsOn": ["dev-brand-api:build-test-bootstrap"],
       "options": {
         "jestConfig": "apps/e2e-diagnostics/jest.config.ts",
         "passWithNoTests": true,

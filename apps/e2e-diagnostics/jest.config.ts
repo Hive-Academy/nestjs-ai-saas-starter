@@ -25,6 +25,11 @@ module.exports = {
   // ESM-shipping deps so SWC transforms them on the fly.
   transformIgnorePatterns: [
     '/node_modules/(?!(uuid|nanoid|chromadb|chromadb-default-embed|@langchain|langchain|@langgraph|p-queue|p-timeout|p-limit|p-retry)/)',
+    // Skip the pre-bundled test-bootstrap artifact — it is already a
+    // self-contained CJS module with all ESM deps inlined. Re-running
+    // swc-jest on it would reintroduce the ERR_REQUIRE_ESM problem this
+    // harness was designed to avoid.
+    '/dist-test/',
   ],
   reporters: ['default', '<rootDir>/src/reporting/diagnostic-reporter.cjs'],
 };

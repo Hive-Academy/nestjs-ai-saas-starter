@@ -22,6 +22,8 @@
  * pollute the report and bury real probe output.
  */
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type {
   INestApplication,
   INestApplicationContext,
@@ -32,18 +34,68 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 
 /**
- * `AppModule` is loaded via `require()` rather than a static import so
- * the e2e-diagnostics tsconfig does not transitively type-check every
- * `@hive-academy/*` library (the libs carry pre-existing strictness
- * violations — TS6133/TS2589 — that are outside this suite's scope).
+ * Absolute path to the pre-built CJS test bundle for `dev-brand-api`.
  *
- * Runtime behaviour is identical to a static import; only the
- * compile-time graph is trimmed.
+ * The bundle is produced by the dedicated `build-test-bootstrap` Nx target
+ * with `externalDependencies: 'none'`, so every ESM-only dep (e.g.
+ * `@langchain/langgraph`, `uuid`, `nanoid`) is inlined into a single CJS
+ * artifact. Loading this artifact — rather than the TypeScript source —
+ * bypasses swc-jest's CJS retransform of those ESM-only packages, which
+ * is the root cause of `ERR_REQUIRE_ESM` at AppModule construction time.
+ *
+ * Resolved from `__dirname` so the path stays correct whether Jest runs
+ * from the workspace root, the project root, or anywhere else.
+ *
+ * Layout (repo-root anchored):
+ *   apps/e2e-diagnostics/src/harness/nest-boot.ts
+ *   →   ../../../..             → repo root
+ *   →   dist-test/apps/dev-brand-api/test-bootstrap.js
+ */
+const TEST_BOOTSTRAP_PATH = resolve(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  '..',
+  'dist-test',
+  'apps',
+  'dev-brand-api',
+  'test-bootstrap.js'
+);
+
+/**
+ * Load `AppModule` from the pre-built test bundle.
+ *
+ * Why the bundle (and not the source):
+ * - swc-jest rewrites static `import` statements to `require()` calls.
+ *   When a `require()` lands on an ESM-only dep (`"type": "module"`),
+ *   Node throws `ERR_REQUIRE_ESM` and the AppModule never constructs.
+ * - The bundle has all ESM deps inlined, so there is no runtime
+ *   `require()` of an ESM module — only normal webpack module IDs
+ *   inside a self-contained CJS file. Node loads it cleanly.
+ *
+ * If the bundle is missing, fail loudly with a remediation hint rather
+ * than crashing deep inside Node's module resolver.
  */
 function loadAppModule(): Type<unknown> {
-  const mod = require('../../../dev-brand-api/src/app/app.module') as {
-    AppModule: Type<unknown>;
+  if (!existsSync(TEST_BOOTSTRAP_PATH)) {
+    throw new Error(
+      'Run `npx nx build-test-bootstrap dev-brand-api` before npm run e2e ' +
+        '(or use the npm e2e script which chains them). ' +
+        `Expected bundle at: ${TEST_BOOTSTRAP_PATH}`
+    );
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require(TEST_BOOTSTRAP_PATH) as {
+    AppModule?: Type<unknown>;
   };
+  if (!mod?.AppModule) {
+    throw new Error(
+      `[nest-boot] test-bootstrap.js did not export AppModule. ` +
+        `Path resolved to: ${TEST_BOOTSTRAP_PATH}. ` +
+        'Re-run `npx nx build-test-bootstrap dev-brand-api`.'
+    );
+  }
   return mod.AppModule;
 }
 
