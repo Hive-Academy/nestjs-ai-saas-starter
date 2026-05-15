@@ -463,3 +463,455 @@ Error: Tavily API key not found. Please provide it as an argument or set the TAV
 - **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
 
 ---
+
+## Findings — Run 2026-05-15T16:38:23.064Z
+
+_Run ID: `a508ded7-b6f8-4047-99ad-3d133fb45063` · Report folder: `2026-05-15T16-38-20-ce033ec8`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: JWT_SECRET is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: JWT_SECRET is not configured. Please set it in your .env file.
+    at InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/apps/dev-brand-api/src/app/auth/auth.module.ts:49:17)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:427:55)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### MISSING — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)
+- **Observed in**: @hive-academy/langgraph-adapters lib (verified absence; only Neo4j HITL + thread-registry adapters currently exported; sampled exports: ApprovalChain, ApprovalChainRepository, ApprovalLevel, ApprovalRequest, ApprovalRequestRepository, ApprovalResponse, ConfidencePattern, ConfidencePatternRepository, …)
+- **Recommended task**: add support for `one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)` in `langgraph-adapters` (surfaced by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`)
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T16:39:02.870Z
+
+_Run ID: `16c9ae4a-b1c8-485a-ad95-e34a231b6beb` · Report folder: `2026-05-15T16-39-01-d7f0b337`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### MISSING — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)
+- **Observed in**: @hive-academy/langgraph-adapters lib (verified absence; only Neo4j HITL + thread-registry adapters currently exported; sampled exports: ApprovalChain, ApprovalChainRepository, ApprovalLevel, ApprovalRequest, ApprovalRequestRepository, ApprovalResponse, ConfidencePattern, ConfidencePatternRepository, …)
+- **Recommended task**: add support for `one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)` in `langgraph-adapters` (surfaced by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`)
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T16:39:44.201Z
+
+_Run ID: `e8fa37e4-81a5-4bc4-b313-dc6ade206ab8` · Report folder: `2026-05-15T16-39-43-05205367`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
