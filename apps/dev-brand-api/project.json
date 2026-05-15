@@ -34,6 +34,20 @@
         }
       }
     },
+    "build-test-bootstrap": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{workspaceRoot}/dist-test/apps/dev-brand-api"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist-test/apps/dev-brand-api",
+        "main": "apps/dev-brand-api/src/test-bootstrap.ts",
+        "tsConfig": "apps/dev-brand-api/tsconfig.app.json",
+        "optimization": false,
+        "isolatedConfig": true,
+        "webpackConfig": "apps/dev-brand-api/webpack.test-bootstrap.config.js"
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
