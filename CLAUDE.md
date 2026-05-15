@@ -10,7 +10,7 @@ NestJS AI SaaS Starter - A sophisticated Nx monorepo for building enterprise-gra
 
 - **Vector Database**: Semantic search via ChromaDB
 - **Graph Database**: Relationship modeling with Neo4j
-- **AI Workflows**: LangGraph orchestration with 11 specialized modules
+- **AI Workflows**: LangGraph orchestration with 7 specialized modules
 - **Target Apps**: AI SaaS platforms, document processing, knowledge management, multi-agent systems, RAG applications
 
 ## ⚠️ CRITICAL RULES
@@ -75,19 +75,23 @@ export class UserServiceV2 {
 1. @hive-academy/nestjs-chromadb - Vector database
 2. @hive-academy/nestjs-neo4j - Graph database
 
-**LangGraph Modules (11)** under @libs/langgraph-modules/:
+**Angular Integration Library (1)**:
 
-1. core - Workflow interfaces, state management
-2. memory - Contextual memory for agents
-3. checkpoint - State persistence
-4. functional-api - Functional programming patterns
-5. multi-agent - Agent coordination
-6. platform - LangGraph Platform integration
-7. time-travel - Workflow debugging
-8. monitoring - Production observability
-9. hitl - Human-in-the-loop patterns
-10. streaming - Real-time processing
-11. workflow-engine - Central orchestration
+1. @hive-academy/langgraph-angular - Angular streaming + gen-UI client
+
+**LangGraph Modules (7)** under @libs/langgraph-modules/:
+
+1. core - Workflow interfaces, state management, annotation-based state
+2. memory - Contextual memory for agents (Thread Registry adapter pattern)
+3. hitl - Human-in-the-loop patterns (LangGraph native Command resume)
+4. monitoring - Production observability
+5. platform - LangGraph Platform integration
+6. workflow-engine - Central orchestration + streaming execution
+7. adapters - Persistence adapters (SQLite, Redis, Postgres) for checkpoint/memory
+
+**Total publishable libs: 10** (`@hive-academy/*`).
+
+**Removed/merged historical modules** (referenced in old docs, no longer exist as separate libs): checkpoint (folded into adapters), functional-api, multi-agent (folded into workflow-engine), time-travel, streaming (folded into workflow-engine).
 
 **Library-Specific Docs**: Each library has comprehensive CLAUDE.md:
 
