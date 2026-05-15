@@ -26,5 +26,34 @@
     "customConditions": null
   },
   "include": ["src/**/*.ts", "jest.config.ts"],
-  "exclude": ["node_modules", "out-tsc", "reports"]
+  "exclude": ["node_modules", "out-tsc", "reports"],
+  "references": [
+    {
+      "path": "../../libs/langgraph-modules/platform"
+    },
+    {
+      "path": "../../libs/nestjs-neo4j"
+    },
+    {
+      "path": "../../libs/langgraph-modules/monitoring"
+    },
+    {
+      "path": "../../libs/langgraph-modules/memory"
+    },
+    {
+      "path": "../../libs/langgraph-modules/workflow-engine"
+    },
+    {
+      "path": "../../libs/langgraph-modules/core"
+    },
+    {
+      "path": "../../libs/nestjs-chromadb"
+    },
+    {
+      "path": "../../libs/langgraph-modules/adapters"
+    },
+    {
+      "path": "../dev-brand-api"
+    }
+  ]
 }
