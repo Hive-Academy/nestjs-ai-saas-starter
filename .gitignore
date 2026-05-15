@@ -55,3 +55,6 @@ tsconfig.lib.tsbuildinfo
 /apps/dev-brand-api/data
 .claude/**
 .itqan/
+
+# Per-app local env files (contain secrets even if dummy)
+apps/*/.env
