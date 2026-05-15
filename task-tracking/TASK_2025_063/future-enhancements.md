@@ -1643,3 +1643,979 @@ Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saa
 - **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
 
 ---
+
+## Findings — Run 2026-05-15T19:04:19.228Z
+
+_Run ID: `cff55be0-0058-4a19-b523-2177f0b2d06a` · Report folder: `2026-05-15T19-04-18-4f7cd48b`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T19:05:52.361Z
+
+_Run ID: `f76c1eb8-8564-4168-8b93-125b28bcade2` · Report folder: `2026-05-15T19-05-51-2d0dc387`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T19:07:03.422Z
+
+_Run ID: `65138749-e57e-433e-b01f-27069c128132` · Report folder: `2026-05-15T19-07-02-97fab23e`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+
+- Is ClsRootModule a valid NestJS module?
+- If HttpAdapterHost is a provider, is it part of the current ClsRootModule?
+- If HttpAdapterHost is exported from a separate @Module, is that module imported within ClsRootModule?
+  @Module({
+  imports: [ /* the Module containing HttpAdapterHost */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Nest can't resolve dependencies of the ClsRootModule (?, ModuleRef). Please make sure that the argument HttpAdapterHost at index [0] is available in the ClsRootModule context.
+
+Potential solutions:
+- Is ClsRootModule a valid NestJS module?
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T19:10:36.828Z
+
+_Run ID: `32c5967e-9891-47c5-8ef3-5e95744cd042` · Report folder: `2026-05-15T19-10-35-08502a41`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: WORKOS_API_KEY is not configured. Please set it in your .env file.
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: WORKOS_API_KEY is not configured. Please set it in your .env file.
+    at new AuthService (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:261943:19)
+    at Injector.instantiateClass (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:422:19)
+    at callback (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/@nestjs/core/injector/injector.js:70:45)
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
