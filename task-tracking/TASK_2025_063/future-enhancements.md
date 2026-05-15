@@ -915,3 +915,463 @@ Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saa
 - **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
 
 ---
+
+## Findings — Run 2026-05-15T17:07:39.753Z
+
+_Run ID: `91d6a625-e2a1-4e60-9c0a-4e515cd35ef2` · Report folder: `2026-05-15T17-07-38-6320e451`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: {"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING_FLAG"}
+```
+
+</details>
+
+### MISSING — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)
+- **Observed in**: @hive-academy/langgraph-adapters lib (verified absence; only Neo4j HITL + thread-registry adapters currently exported; sampled exports: ApprovalChain, ApprovalChainRepository, ApprovalLevel, ApprovalRequest, ApprovalRequestRepository, ApprovalResponse, ConfidencePattern, ConfidencePatternRepository, …)
+- **Recommended task**: add support for `one of [SqliteCheckpointAdapter, SqliteCheckpointSaver, SqliteCheckpointer] — SQLite-backed BaseCheckpointSaver adapter (NestJS-injectable)` in `langgraph-adapters` (surfaced by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`)
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T17:10:49.407Z
+
+_Run ID: `02ccafe4-7f89-4ccc-96ca-f0455a454f19` · Report folder: `2026-05-15T17-10-48-0a6281e8`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: {"code":"ERR_REQUIRE_ESM"}
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+{"code":"ERR_REQUIRE_ESM"}
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-15T18:44:29.659Z
+
+_Run ID: `004f9093-4357-4ffc-8fc4-b5db9f6c2f29` · Report folder: `2026-05-15T18-44-27-9a7a2cc6`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: probe `nestjs-chromadb/round-trip` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `nestjs-chromadb` reported by probe `nestjs-chromadb/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: probe `nestjs-neo4j/round-trip` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `nestjs-neo4j` reported by probe `nestjs-neo4j/round-trip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: probe `langgraph-memory/store-retrieve-roundtrip` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `langgraph-memory` reported by probe `langgraph-memory/store-retrieve-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: Cannot destructure property '**extends' of '\_tslib_js**WEBPACK_IMPORTED_MODULE_0\_\_\_default(...)' as it is undefined.
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+TypeError: Cannot destructure property '__extends' of '_tslib_js__WEBPACK_IMPORTED_MODULE_0___default(...)' as it is undefined.
+    at Module.root (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:276:5)
+    at __webpack_require__ (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:372212:42)
+    at Object.<anonymous> (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:11:17)
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
