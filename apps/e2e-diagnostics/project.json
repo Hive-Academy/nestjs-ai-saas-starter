@@ -1,0 +1,27 @@
+{
+  "name": "e2e-diagnostics",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/e2e-diagnostics/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:e2e-diagnostics"],
+  "implicitDependencies": ["dev-brand-api"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/e2e-diagnostics/jest.config.ts",
+        "passWithNoTests": true,
+        "runInBand": true
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit --project tsconfig.json",
+        "cwd": "apps/e2e-diagnostics"
+      },
+      "cache": false
+    }
+  }
+}

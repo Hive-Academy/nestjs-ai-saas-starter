@@ -35,7 +35,8 @@
     "security:mitigate": "npm cache clean --force && rm -rf node_modules package-lock.json && npm install --registry=https://registry.npmjs.org/",
     "typecheck:all": "nx run-many -t typecheck ",
     "typecheck:libs": "nx run-many -t typecheck --projects=tag:type:library",
-    "typecheck:affected": "nx affected -t typecheck"
+    "typecheck:affected": "nx affected -t typecheck",
+    "e2e": "nx test e2e-diagnostics"
   },
   "private": true,
   "dependencies": {
