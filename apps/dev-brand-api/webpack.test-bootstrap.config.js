@@ -45,6 +45,14 @@ module.exports = {
     // (e.g. file-type) into the bundle. Webpack 5 consumes ESM and emits CJS
     // for `target: 'node'`, which is exactly what this bundle needs.
     conditionNames: ['import', 'node', 'require', 'default'],
+    // Force `tslib` to resolve to its CJS entry. With the `import` condition
+    // prioritized above, webpack would otherwise pick `tslib.es6.mjs`, whose
+    // ESM-only exports (e.g. `__extends`) end up undefined when consumed by
+    // CJS-emitted helpers in the bundle. Pinning to the CJS file restores the
+    // expected runtime shape for downcompiled TS helpers.
+    alias: {
+      tslib: require.resolve('tslib/tslib.js'),
+    },
   },
   // Silence noisy source-map-loader warnings about missing .ts files inside
   // node_modules — they don't affect runtime correctness of the bundle.
