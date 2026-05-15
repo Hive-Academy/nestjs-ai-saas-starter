@@ -51,9 +51,6 @@
     },
     {
       "path": "../../libs/langgraph-modules/adapters"
-    },
-    {
-      "path": "../dev-brand-api"
     }
   ]
 }
