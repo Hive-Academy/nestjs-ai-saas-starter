@@ -32,6 +32,15 @@ const OPTIONAL_PEERS = [
   // shipped package. Externalize so resolution happens at runtime (matches
   // prod-bundle behaviour) — Node 22 handles the require() either way.
   '@hive-academy/langgraph-core',
+  // Externalize @nestjs/core + @nestjs/common so the bundle and the e2e
+  // harness share the same runtime class identities. Without this, the
+  // bundle inlines its own copies of HttpAdapterHost / Reflector / etc.,
+  // and any harness-side DI override (e.g. providing a stub HttpAdapterHost
+  // for ClsRootModule under createApplicationContext()) targets a different
+  // class identity than the bundle's injection metadata — so the override
+  // never matches the inject token and DI still fails.
+  '@nestjs/core',
+  '@nestjs/common',
 ];
 
 module.exports = {
