@@ -2619,3 +2619,206 @@ Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saa
 - **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
 
 ---
+
+## Findings — Run 2026-05-16T15:40:02.614Z
+
+_Run ID: `04dccc34-fddf-450b-b80e-ac33079301ee` · Report folder: `2026-05-16T15-40-00-c8bda42e`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/boot
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/boot` to PASS
+- **Observed**: Error while connecting to neo4j
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/boot`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Error while connecting to neo4j
+    at Neogma.verifyConnectivity (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:117467:23)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:105712:9)
+```
+
+</details>
+
+### FAIL — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: probe `langgraph-workflow-engine/stategraph-stream` to PASS
+- **Observed**: Error while connecting to neo4j
+- **Recommended task**: investigate failure in `langgraph-workflow-engine` reported by probe `langgraph-workflow-engine/stategraph-stream`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Error while connecting to neo4j
+    at Neogma.verifyConnectivity (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:117467:23)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:105712:9)
+```
+
+</details>
+
+### FAIL — langgraph-core: langgraph-core/agent-state-annotation
+
+- **Library**: langgraph-core
+- **Expected**: probe `langgraph-core/agent-state-annotation` to PASS
+- **Observed**: Error while connecting to neo4j
+- **Recommended task**: investigate failure in `langgraph-core` reported by probe `langgraph-core/agent-state-annotation`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Error while connecting to neo4j
+    at Neogma.verifyConnectivity (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:117467:23)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:105712:9)
+```
+
+</details>
+
+### FAIL — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: probe `langgraph-monitoring/counter-roundtrip` to PASS
+- **Observed**: Error while connecting to neo4j
+- **Recommended task**: investigate failure in `langgraph-monitoring` reported by probe `langgraph-monitoring/counter-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Error while connecting to neo4j
+    at Neogma.verifyConnectivity (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:117467:23)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:105712:9)
+```
+
+</details>
+
+### FAIL — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: probe `langgraph-hitl/interrupt-resume-roundtrip` to PASS
+- **Observed**: Error while connecting to neo4j
+- **Recommended task**: investigate failure in `langgraph-hitl` reported by probe `langgraph-hitl/interrupt-resume-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Error while connecting to neo4j
+    at Neogma.verifyConnectivity (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:117467:23)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async InstanceWrapper.useFactory [as metatype] (/Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/dist-test/apps/dev-brand-api/test-bootstrap.js:105712:9)
+```
+
+</details>
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
+
+## Findings — Run 2026-05-16T16:16:32.574Z
+
+_Run ID: `02df8bed-5333-4a52-a4bd-a1efe47186a3` · Report folder: `2026-05-16T16-14-11-2ed28cc9`_
+
+### FAIL — dev-brand-api: dev-brand-api/boot-smoke/health-check
+
+- **Library**: dev-brand-api
+- **Expected**: probe `dev-brand-api/boot-smoke/health-check` to PASS
+- **Observed**: Health check returned status 503
+- **Recommended task**: investigate failure in `dev-brand-api` reported by probe `dev-brand-api/boot-smoke/health-check`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+body: {"status":"error","info":{"libraries":{"status":"up","available":{"@hive-academy/nestjs-chromadb":{"status":"integrated","description":"ChromaDB integration for vector operations","integration":"dependency-injection"},"@hive-academy/nestjs-neo4j":{"status":"integrated","description":"Neo4j integration for graph operations","integration":"dependency-injection"},"@hive-academy/langgraph-memory":{"status":"integrated","description":"Memory module for contextual storage","integration":"dependency-injection"}},"unavailable":[],"totalConfigured":3,"availableCount":3}},"error":{"system":{"status":"down","responseTime":"0.02ms","memory":{"used":"834MB","total":"880MB","limit":"512MB"},"uptime":"24s","nodeVersion":"v22.16.0","timestamp":"2026-05-16T16:14:32.084Z"}},"details":{"libraries":{"status":"up","available":{"@hive-academy/nestjs-chromadb":{"status":"integrated","description":"ChromaDB integration for vector operations","integration":"dependency-injection"},"@hive-academy/nestjs-neo4j":{"status":"integrated","description":"Neo4j integration for graph operations","integration":"dependency-injection"},"@hive-academy/langgraph-memory":{"status":"integrated","description":"Memory module for contextual storage","integration":"dependency-injection"}},"unavailable":[],"totalConfigured":3,"availableCount":3},"system":{"status":"down","responseTime":"0.02ms","memory":{"used":"834MB","total":"880MB","limit":"512MB"},"uptime":"24s","nodeVersion":"v22.16.0","timestamp":"2026-05-16T16:14:32.084Z"}}}
+```
+
+</details>
+
+### MISSING — nestjs-chromadb: nestjs-chromadb/round-trip
+
+- **Library**: nestjs-chromadb
+- **Expected**: ChromaDBService DI provider
+- **Observed in**: dev-brand-api AppModule
+- **Recommended task**: add support for `ChromaDBService DI provider` in `nestjs-chromadb` (surfaced by probe `nestjs-chromadb/round-trip`)
+
+### MISSING — nestjs-neo4j: nestjs-neo4j/round-trip
+
+- **Library**: nestjs-neo4j
+- **Expected**: NeogmaService DI provider
+- **Observed in**: dev-brand-api AppModule
+- **Recommended task**: add support for `NeogmaService DI provider` in `nestjs-neo4j` (surfaced by probe `nestjs-neo4j/round-trip`)
+
+### MISSING — langgraph-workflow-engine: langgraph-workflow-engine/stategraph-stream
+
+- **Library**: langgraph-workflow-engine
+- **Expected**: WorkflowExecutionService DI provider
+- **Observed in**: dev-brand-api AppModule
+- **Recommended task**: add support for `WorkflowExecutionService DI provider` in `langgraph-workflow-engine` (surfaced by probe `langgraph-workflow-engine/stategraph-stream`)
+
+### MISSING — langgraph-monitoring: langgraph-monitoring/counter-roundtrip
+
+- **Library**: langgraph-monitoring
+- **Expected**: MonitoringFacadeService DI provider
+- **Observed in**: dev-brand-api AppModule
+- **Recommended task**: add support for `MonitoringFacadeService DI provider` in `langgraph-monitoring` (surfaced by probe `langgraph-monitoring/counter-roundtrip`)
+
+### MISSING — langgraph-memory: langgraph-memory/store-retrieve-roundtrip
+
+- **Library**: langgraph-memory
+- **Expected**: BASE_STORE_TOKEN provider (BaseStore)
+- **Observed in**: dev-brand-api AppModule (MemoryModule)
+- **Recommended task**: add support for `BASE_STORE_TOKEN provider (BaseStore)` in `langgraph-memory` (surfaced by probe `langgraph-memory/store-retrieve-roundtrip`)
+
+### MISSING — langgraph-hitl: langgraph-hitl/interrupt-resume-roundtrip
+
+- **Library**: langgraph-hitl
+- **Expected**: WorkflowResumptionService DI provider
+- **Observed in**: dev-brand-api AppModule (WorkflowEngineModule registration)
+- **Recommended task**: add support for `WorkflowResumptionService DI provider` in `langgraph-hitl` (surfaced by probe `langgraph-hitl/interrupt-resume-roundtrip`)
+
+### FAIL — langgraph-adapters: langgraph-adapters/sqlite-checkpointer-roundtrip
+
+- **Library**: langgraph-adapters
+- **Expected**: probe `langgraph-adapters/sqlite-checkpointer-roundtrip` to PASS
+- **Observed**: Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+- **Recommended task**: investigate failure in `langgraph-adapters` reported by probe `langgraph-adapters/sqlite-checkpointer-roundtrip`
+
+<details><summary>stack (first 4 lines)</summary>
+
+```
+Error: Must use import to load ES Module: /Volumes/SanDiskSSD/mine/nestjs-ai-saas-starter/node_modules/uuid/dist-node/index.js
+```
+
+</details>
+
+### MISSING — langgraph-platform: langgraph-platform/surface-check
+
+- **Library**: langgraph-platform
+- **Expected**: public platform integration surface
+- **Observed in**: package exports [DEFAULT_PLATFORM_OPTIONS, MultitaskStrategy, PLATFORM_MODULE_OPTIONS, PlatformClientService, PlatformModule, RunStatus, ThreadStatus, WebhookEvent, WebhookService, WebhookStatus] but PlatformModule is not registered in dev-brand-api AppModule (no in-process surface reachable without a remote LangGraph Platform endpoint)
+- **Recommended task**: add support for `public platform integration surface` in `langgraph-platform` (surfaced by probe `langgraph-platform/surface-check`)
+
+---
